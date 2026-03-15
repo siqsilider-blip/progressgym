@@ -14,6 +14,12 @@ type PageProps = {
     }
 }
 
+type RoutineDay = {
+    id: string
+    day_number: number
+    title: string | null
+}
+
 type RoutineDayExercise = {
     id: string
     routine_day_id: string
@@ -85,7 +91,8 @@ export default async function RoutineDetailPage({ params }: PageProps) {
         .select('id, name, muscle_group')
         .order('name', { ascending: true })
 
-    const dayIds = (days || []).map((day) => day.id)
+    const typedDays: RoutineDay[] = (days as RoutineDay[] | null) ?? []
+    const dayIds = typedDays.map((day) => day.id)
 
     const exercisesByDay: Record<string, RoutineDayExercise[]> = {}
 
@@ -155,9 +162,21 @@ export default async function RoutineDetailPage({ params }: PageProps) {
                 <div className="rounded-xl border border-red-900 bg-red-950/40 p-4 text-red-400">
                     Error cargando los días de la rutina.
                 </div>
+            ) : typedDays.length === 0 ? (
+                <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-6">
+                    <h2 className="text-lg font-semibold text-white">
+                        Esta rutina todavía no tiene días creados
+                    </h2>
+                    <p className="mt-2 text-sm text-zinc-400">
+                        La rutina existe, pero no hay registros en <span className="font-medium text-zinc-300">routine_days</span>.
+                    </p>
+                    <p className="mt-2 text-sm text-zinc-500">
+                        El problema probablemente está en el flujo donde creás o asignás la rutina al alumno.
+                    </p>
+                </div>
             ) : (
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                    {(days || []).map((day) => {
+                    {typedDays.map((day) => {
                         const dayExercises = exercisesByDay[day.id] || []
 
                         return (
@@ -187,16 +206,12 @@ export default async function RoutineDetailPage({ params }: PageProps) {
                                             <option value="" disabled>
                                                 Seleccionar ejercicio
                                             </option>
-                                            {(exerciseOptions as ExerciseOption[] | null)?.map(
-                                                (exercise) => (
-                                                    <option key={exercise.id} value={exercise.name}>
-                                                        {exercise.name}
-                                                        {exercise.muscle_group
-                                                            ? ` · ${exercise.muscle_group}`
-                                                            : ''}
-                                                    </option>
-                                                )
-                                            )}
+                                            {(exerciseOptions as ExerciseOption[] | null)?.map((exercise) => (
+                                                <option key={exercise.id} value={exercise.name}>
+                                                    {exercise.name}
+                                                    {exercise.muscle_group ? ` · ${exercise.muscle_group}` : ''}
+                                                </option>
+                                            ))}
                                         </select>
 
                                         <div className="grid grid-cols-3 gap-2">
@@ -375,8 +390,8 @@ export default async function RoutineDetailPage({ params }: PageProps) {
                                                                         key={log.id}
                                                                         className="rounded-lg border border-zinc-800 bg-zinc-900/70 p-2 text-xs text-zinc-300"
                                                                     >
-                                                                        {log.performed_at ?? '-'} ·{' '}
-                                                                        {log.weight ?? '-'} kg · {log.reps ?? '-'} reps
+                                                                        {log.performed_at ?? '-'} · {log.weight ?? '-'} kg ·{' '}
+                                                                        {log.reps ?? '-'} reps
                                                                     </div>
                                                                 ))}
                                                             </div>
