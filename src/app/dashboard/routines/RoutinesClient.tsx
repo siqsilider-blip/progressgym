@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import Link from 'next/link'
 
 type Student = {
@@ -26,11 +26,6 @@ export default function RoutinesClient({
     error,
 }: Props) {
     const [studentId, setStudentId] = useState('')
-    const [mounted, setMounted] = useState(false)
-
-    useEffect(() => {
-        setMounted(true)
-    }, [])
 
     const routineByStudentId = useMemo(() => {
         const map = new Map<string, string>()
@@ -66,9 +61,10 @@ export default function RoutinesClient({
 
                     <select
                         id="student"
+                        key="student-select"
                         value={studentId}
                         onChange={(e) => setStudentId(e.target.value)}
-                        autoComplete="off"
+                        autoComplete="new-password"
                         className="h-11 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 text-sm text-zinc-100 outline-none"
                     >
                         <option value="">Seleccionar...</option>
@@ -86,7 +82,7 @@ export default function RoutinesClient({
                     </div>
                 )}
 
-                {mounted && studentId && !error && (
+                {studentId && !error && (
                     <div className="mt-5">
                         {selectedRoutineId ? (
                             <Link
