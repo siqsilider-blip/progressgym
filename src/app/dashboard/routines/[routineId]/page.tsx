@@ -16,24 +16,34 @@ type PageProps = {
 
 type RoutineDay = {
     id: string
-    day_number: number
+    day_index: number
     title: string | null
-}
-
-type RoutineDayExercise = {
-    id: string
-    routine_day_id: string
-    exercise_name: string
-    sets: string | null
-    reps: string | null
-    rest_seconds: number | null
-    exercise_order: number | null
 }
 
 type ExerciseOption = {
     id: string
     name: string
     muscle_group: string | null
+}
+
+type RoutineDayExercise = {
+    id: string
+    routine_day_id: string
+    exercise_id: string
+    sets: number | null
+    reps: number | null
+    rest_seconds: number | null
+    position: number | null
+    exercises:
+    | {
+        name: string
+        muscle_group: string | null
+    }
+    | {
+        name: string
+        muscle_group: string | null
+    }[]
+    | null
 }
 
 type ExerciseLog = {
@@ -82,9 +92,9 @@ export default async function RoutineDetailPage({ params }: PageProps) {
 
     const { data: days, error: daysError } = await supabase
         .from('routine_days')
-        .select('id, day_number, title')
+        .select('id, day_index, title')
         .eq('routine_id', routine.id)
-        .order('day_number', { ascending: true })
+        .order('day_index', { ascending: true })
 
     const { data: exerciseOptions } = await supabase
         .from('exercises')
@@ -99,13 +109,25 @@ export default async function RoutineDetailPage({ params }: PageProps) {
     if (dayIds.length > 0) {
         const { data: exercises } = await supabase
             .from('routine_day_exercises')
-            .select(
-                'id, routine_day_id, exercise_name, sets, reps, rest_seconds, exercise_order'
-            )
+            .select(`
+        id,
+        routine_day_id,
+        exercise_id,
+        sets,
+        reps,
+        rest_seconds,
+        position,
+        exercises (
+          name,
+          muscle_group
+        )
+      `)
             .in('routine_day_id', dayIds)
-            .order('exercise_order', { ascending: true })
+            .order('position', { ascending: true })
 
-        for (const exercise of (exercises || []) as RoutineDayExercise[]) {
+        const typedExercises = (exercises as unknown as RoutineDayExercise[] | null) ?? []
+
+        for (const exercise of typedExercises) {
             if (!exercisesByDay[exercise.routine_day_id]) {
                 exercisesByDay[exercise.routine_day_id] = []
             }
@@ -130,7 +152,9 @@ export default async function RoutineDetailPage({ params }: PageProps) {
             .order('performed_at', { ascending: false })
             .order('created_at', { ascending: false })
 
-        for (const log of (logs || []) as ExerciseLog[]) {
+        const typedLogs = (logs as ExerciseLog[] | null) ?? []
+
+        for (const log of typedLogs) {
             if (!logsByExercise[log.routine_day_exercise_id]) {
                 logsByExercise[log.routine_day_exercise_id] = []
             }
@@ -168,7 +192,8 @@ export default async function RoutineDetailPage({ params }: PageProps) {
                         Esta rutina todavía no tiene días creados
                     </h2>
                     <p className="mt-2 text-sm text-zinc-400">
-                        La rutina existe, pero no hay registros en <span className="font-medium text-zinc-300">routine_days</span>.
+                        La rutina existe, pero no hay registros en{' '}
+                        <span className="font-medium text-zinc-300">routine_days</span>.
                     </p>
                     <p className="mt-2 text-sm text-zinc-500">
                         El problema probablemente está en el flujo donde creás o asignás la rutina al alumno.
@@ -185,12 +210,10 @@ export default async function RoutineDetailPage({ params }: PageProps) {
                                 className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5"
                             >
                                 <h2 className="text-lg font-semibold text-white">
-                                    {day.title || `Día ${day.day_number}`}
+                                    {day.title || `Día ${day.day_index}`}
                                 </h2>
 
-                                <p className="mt-2 text-sm text-zinc-400">
-                                    Día {day.day_number}
-                                </p>
+                                <p className="mt-2 text-sm text-zinc-400">Día {day.day_index}</p>
 
                                 <div className="mt-4">
                                     <form action={addExerciseToRoutineDay} className="space-y-3">
@@ -258,6 +281,10 @@ export default async function RoutineDetailPage({ params }: PageProps) {
                                                 latestLog?.weight === bestWeight &&
                                                 logs.length > 1
 
+                                            const exerciseRelation = Array.isArray(exercise.exercises)
+                                                ? exercise.exercises[0]
+                                                : exercise.exercises
+
                                             return (
                                                 <div
                                                     key={exercise.id}
@@ -266,12 +293,12 @@ export default async function RoutineDetailPage({ params }: PageProps) {
                                                     <div className="flex items-start justify-between gap-3">
                                                         <div>
                                                             <p className="text-sm font-medium text-white">
-                                                                {index + 1}. {exercise.exercise_name}
+                                                                {index + 1}. {exerciseRelation?.name ?? 'Ejercicio'}
                                                             </p>
 
                                                             <div className="mt-2 flex flex-wrap gap-3 text-xs text-zinc-400">
-                                                                <span>Series: {exercise.sets || '-'}</span>
-                                                                <span>Reps objetivo: {exercise.reps || '-'}</span>
+                                                                <span>Series: {exercise.sets ?? '-'}</span>
+                                                                <span>Reps objetivo: {exercise.reps ?? '-'}</span>
                                                                 <span>
                                                                     Descanso:{' '}
                                                                     {exercise.rest_seconds

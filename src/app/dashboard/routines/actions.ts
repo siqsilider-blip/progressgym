@@ -40,7 +40,7 @@ export async function getRoutineForStudent(studentId: string) {
 
     const { data, error } = await supabase
         .from('routines')
-        .select('id, name, days_per_week, created_at')
+        .select('id, name, days_per_week, created_at, student_id')
         .eq('trainer_id', auth.user.id)
         .eq('student_id', studentId)
         .maybeSingle()
@@ -55,7 +55,21 @@ export async function createRoutine4Days(studentId: string) {
     const { data: auth, error: authErr } = await supabase.auth.getUser()
     if (authErr || !auth?.user) return { ok: false, message: 'No estás logueado.' }
 
-    // 1) Crear rutina (única por alumno)
+    const { data: existing, error: existingError } = await supabase
+        .from('routines')
+        .select('id')
+        .eq('trainer_id', auth.user.id)
+        .eq('student_id', studentId)
+        .maybeSingle()
+
+    if (existingError) {
+        return { ok: false, message: existingError.message }
+    }
+
+    if (existing) {
+        return { ok: true, routineId: existing.id }
+    }
+
     const { data: routine, error: routineErr } = await supabase
         .from('routines')
         .insert({
@@ -67,24 +81,10 @@ export async function createRoutine4Days(studentId: string) {
         .select('id')
         .single()
 
-    // Si ya existía (por constraint unique), devolvemos la existente
-    if (routineErr) {
-        // Intenta traer la existente
-        const { data: existing, error: exErr } = await supabase
-            .from('routines')
-            .select('id')
-            .eq('trainer_id', auth.user.id)
-            .eq('student_id', studentId)
-            .maybeSingle()
-
-        if (exErr || !existing) {
-            return { ok: false, message: routineErr.message }
-        }
-
-        return { ok: true, routineId: existing.id }
+    if (routineErr || !routine) {
+        return { ok: false, message: routineErr?.message ?? 'No se pudo crear la rutina.' }
     }
 
-    // 2) Crear los 4 días default
     const rows = DEFAULT_DAYS.map((d) => ({
         routine_id: routine.id,
         day_index: d.day_index,
@@ -92,10 +92,14 @@ export async function createRoutine4Days(studentId: string) {
     }))
 
     const { error: daysErr } = await supabase.from('routine_days').insert(rows)
-    if (daysErr) return { ok: false, message: daysErr.message }
 
-    revalidatePath('/dashboard/students')
+    if (daysErr) {
+        return { ok: false, message: daysErr.message }
+    }
+
     revalidatePath('/dashboard/routines')
+    revalidatePath(`/dashboard/routines/${routine.id}`)
+
     return { ok: true, routineId: routine.id }
 }
 

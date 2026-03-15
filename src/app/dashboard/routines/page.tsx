@@ -1,8 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
-import { getRoutineForStudent } from './actions'
 import Link from 'next/link'
 
 type Student = {
@@ -11,59 +10,70 @@ type Student = {
     last_name: string
 }
 
+type Routine = {
+    id: string
+    student_id: string
+}
+
 export default function RoutinesPage() {
     const [students, setStudents] = useState<Student[]>([])
+    const [routines, setRoutines] = useState<Routine[]>([])
     const [studentId, setStudentId] = useState('')
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
-    const [routineId, setRoutineId] = useState<string | null>(null)
 
     useEffect(() => {
         ; (async () => {
             setLoading(true)
             setError(null)
 
-            const { data, error } = await supabase
-                .from('students')
-                .select('*')
-                .order('created_at', { ascending: false })
+            const [studentsRes, routinesRes] = await Promise.all([
+                supabase.from('students').select('id, first_name, last_name').order('created_at', { ascending: false }),
+                supabase.from('routines').select('id, student_id'),
+            ])
 
-            if (error) {
-                setError(error.message)
+            if (studentsRes.error) {
+                setError(studentsRes.error.message)
                 setStudents([])
-            } else {
-                const mappedStudents: Student[] = ((data as any[]) || []).map((student) => ({
-                    id: student.id,
-                    first_name: student.first_name ?? '',
-                    last_name: student.last_name ?? '',
-                }))
-
-                setStudents(mappedStudents)
+                setRoutines([])
+                setLoading(false)
+                return
             }
 
+            if (routinesRes.error) {
+                setError(routinesRes.error.message)
+                setStudents([])
+                setRoutines([])
+                setLoading(false)
+                return
+            }
+
+            const mappedStudents: Student[] = ((studentsRes.data as any[]) || []).map((student) => ({
+                id: student.id,
+                first_name: student.first_name ?? '',
+                last_name: student.last_name ?? '',
+            }))
+
+            const mappedRoutines: Routine[] = ((routinesRes.data as any[]) || []).map((routine) => ({
+                id: routine.id,
+                student_id: routine.student_id,
+            }))
+
+            setStudents(mappedStudents)
+            setRoutines(mappedRoutines)
             setLoading(false)
         })()
     }, [])
 
-    async function loadRoutineForSelected() {
-        setRoutineId(null)
-        setError(null)
-
-        if (!studentId) return
-
-        const res = await getRoutineForStudent(studentId)
-
-        if (!res.ok) {
-            setError(res.message ?? 'Error')
-            return
+    const routineByStudentId = useMemo(() => {
+        const map = new Map<string, string>()
+        for (const routine of routines) {
+            map.set(routine.student_id, routine.id)
         }
+        return map
+    }, [routines])
 
-        setRoutineId(res.routine?.id ?? null)
-    }
-
-    useEffect(() => {
-        loadRoutineForSelected()
-    }, [studentId])
+    const selectedRoutineId = studentId ? routineByStudentId.get(studentId) ?? null : null
 
     return (
         <div className="p-8 text-white">
@@ -110,9 +120,9 @@ export default function RoutinesPage() {
 
                 {studentId && !loading && !error && (
                     <div className="mt-5">
-                        {routineId ? (
+                        {selectedRoutineId ? (
                             <Link
-                                href={`/dashboard/routines/${routineId}`}
+                                href={`/dashboard/routines/${selectedRoutineId}`}
                                 className="inline-flex rounded-lg bg-zinc-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700"
                             >
                                 Ver rutina actual
