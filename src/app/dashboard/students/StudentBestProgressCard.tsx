@@ -1,15 +1,31 @@
 import type { StudentBestProgress } from './getStudentBestProgress'
+import { convertWeightFromKg, type WeightUnit } from '@/lib/weight'
+
+type Props = {
+    bestProgress: StudentBestProgress
+    weightUnit: WeightUnit
+}
 
 export default function StudentBestProgressCard({
     bestProgress,
-}: {
-    bestProgress: StudentBestProgress
-}) {
+    weightUnit,
+}: Props) {
     const hasProgress =
         bestProgress.exerciseName &&
-        bestProgress.firstWeight !== null &&
-        bestProgress.lastWeight !== null &&
+        bestProgress.firstWeight != null &&
+        bestProgress.lastWeight != null &&
         bestProgress.progressKg > 0
+
+    const progress = convertWeightFromKg(bestProgress.progressKg, weightUnit)
+    const firstWeight =
+        bestProgress.firstWeight != null
+            ? convertWeightFromKg(bestProgress.firstWeight, weightUnit)
+            : null
+
+    const lastWeight =
+        bestProgress.lastWeight != null
+            ? convertWeightFromKg(bestProgress.lastWeight, weightUnit)
+            : null
 
     return (
         <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-6">
@@ -24,19 +40,17 @@ export default function StudentBestProgressCard({
                     </p>
 
                     <p className="text-2xl font-bold text-green-400">
-                        +{bestProgress.progressKg} kg
+                        +{progress} {weightUnit}
                     </p>
 
                     <p className="text-sm text-zinc-400">
-                        De {bestProgress.firstWeight} kg a {bestProgress.lastWeight} kg
+                        De {firstWeight} {weightUnit} a {lastWeight} {weightUnit}
                     </p>
                 </div>
             ) : (
-                <div>
-                    <p className="text-sm text-zinc-400">
-                        Todavía no hay suficiente historial para calcular progreso.
-                    </p>
-                </div>
+                <p className="text-sm text-zinc-400">
+                    Todavía no hay suficiente historial para calcular progreso.
+                </p>
             )}
         </div>
     )

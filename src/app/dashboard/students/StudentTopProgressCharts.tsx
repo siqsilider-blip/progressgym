@@ -1,3 +1,5 @@
+import { convertWeightFromKg, formatWeight, type WeightUnit } from '@/lib/weight'
+
 type Chart = {
     exerciseName: string
     firstWeight: number
@@ -9,6 +11,11 @@ type Chart = {
 function buildPath(points: { weight: number }[]) {
     const width = 260
     const height = 90
+
+    if (points.length === 1) {
+        const y = height / 2
+        return `M 0 ${y} L ${width} ${y}`
+    }
 
     const weights = points.map((p) => p.weight)
     const min = Math.min(...weights)
@@ -26,8 +33,10 @@ function buildPath(points: { weight: number }[]) {
 
 export default function StudentTopProgressCharts({
     charts,
+    weightUnit,
 }: {
     charts: Chart[]
+    weightUnit: WeightUnit
 }) {
     if (!charts.length) {
         return null
@@ -39,7 +48,12 @@ export default function StudentTopProgressCharts({
 
             <div className="grid gap-4 lg:grid-cols-3">
                 {charts.map((chart) => {
-                    const path = buildPath(chart.points)
+                    const convertedPoints = chart.points.map((point) => ({
+                        ...point,
+                        weight: convertWeightFromKg(point.weight, weightUnit),
+                    }))
+
+                    const path = buildPath(convertedPoints)
 
                     return (
                         <div
@@ -49,11 +63,12 @@ export default function StudentTopProgressCharts({
                             <p className="font-medium">{chart.exerciseName}</p>
 
                             <p className="text-sm text-zinc-400">
-                                {chart.firstWeight} kg → {chart.bestWeight} kg
+                                {formatWeight(chart.firstWeight, weightUnit)} →{' '}
+                                {formatWeight(chart.bestWeight, weightUnit)}
                             </p>
 
-                            <p className="text-green-400 font-semibold">
-                                +{chart.progressKg} kg
+                            <p className="font-semibold text-green-400">
+                                +{formatWeight(chart.progressKg, weightUnit)}
                             </p>
 
                             <svg viewBox="0 0 260 90" className="mt-3 h-20 w-full">

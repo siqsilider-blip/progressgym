@@ -28,7 +28,6 @@ export async function createRoutine(formData: FormData) {
         throw new Error('La cantidad de días debe estar entre 1 y 6.')
     }
 
-    // 1) Ver si ya existe una rutina para este alumno y este trainer
     const { data: existingRoutine, error: existingRoutineError } = await supabase
         .from('routines')
         .select('id')
@@ -40,30 +39,65 @@ export async function createRoutine(formData: FormData) {
         throw new Error(existingRoutineError.message)
     }
 
-    // Si ya existe, redirigir a esa rutina en vez de crear otra
     if (existingRoutine?.id) {
-        redirect(`/dashboard/routines/${existingRoutine.id}`)
+        const routineId = existingRoutine.id
+
+        const { data: existingDays, error: existingDaysError } = await supabase
+            .from('routine_days')
+            .select('id, day_number')
+            .eq('routine_id', routineId)
+
+        if (existingDaysError) {
+            throw new Error(existingDaysError.message)
+        }
+
+        const existingDayNumbers = new Set(
+            (existingDays ?? [])
+                .map((day) => day.day_number)
+                .filter((value) => value !== null)
+        )
+
+        const missingDays = Array.from({ length: daysCount }, (_, index) => ({
+            routine_id: routineId,
+            day_index: index + 1,
+            day_number: index + 1,
+            title: `Día ${index + 1}`,
+            name: `Día ${index + 1}`,
+        })).filter((day) => !existingDayNumbers.has(day.day_number))
+
+        if (missingDays.length > 0) {
+            const { error: missingDaysError } = await supabase
+                .from('routine_days')
+                .insert(missingDays)
+
+            if (missingDaysError) {
+                throw new Error(missingDaysError.message)
+            }
+        }
+
+        redirect(`/dashboard/routines/${routineId}`)
     }
 
-    // 2) Crear la rutina
     const { data: routine, error } = await supabase
         .from('routines')
         .insert({
             name,
             trainer_id: user.id,
             student_id: studentId,
+            days_per_week: daysCount,
         })
-        .select()
+        .select('id')
         .single()
 
     if (error || !routine) {
         throw new Error(error?.message || 'No se pudo crear la rutina.')
     }
 
-    // 3) Crear los días automáticamente
     const days = Array.from({ length: daysCount }, (_, index) => ({
         routine_id: routine.id,
+        day_index: index + 1,
         day_number: index + 1,
+        title: `Día ${index + 1}`,
         name: `Día ${index + 1}`,
     }))
 

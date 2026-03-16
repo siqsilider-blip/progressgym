@@ -19,6 +19,8 @@ import { getStudentRecentPRs } from '../getStudentRecentPRs'
 import StudentRecentPRsCard from '../StudentRecentPRsCard'
 import { getStudentExercisePRs } from '@/lib/getStudentExercisePRs'
 import StudentExercisePRsCard from '@/components/StudentExercisePRsCard'
+import { getTrainerProfile } from '@/lib/getTrainerProfile'
+import { formatWeight, type WeightUnit } from '@/lib/weight'
 
 type PageProps = {
     params: {
@@ -37,6 +39,9 @@ export default async function StudentProfilePage({ params }: PageProps) {
     if (authError || !user) {
         redirect('/login')
     }
+
+    const trainerProfile = await getTrainerProfile()
+    const weightUnit = (trainerProfile?.weight_unit ?? 'kg') as WeightUnit
 
     const { data: student, error: studentError } = await supabase
         .from('students')
@@ -131,15 +136,24 @@ export default async function StudentProfilePage({ params }: PageProps) {
             </div>
 
             <div className="mb-6">
-                <StudentRecentPRsCard prs={recentPRs} />
+                <StudentRecentPRsCard
+                    prs={recentPRs}
+                    weightUnit={weightUnit}
+                />
             </div>
 
             <div className="mb-6">
-                <StudentExercisePRsCard prs={exercisePRs} />
+                <StudentExercisePRsCard
+                    prs={exercisePRs}
+                    weightUnit={weightUnit}
+                />
             </div>
 
             <div className="mb-6 grid gap-6 lg:grid-cols-3">
-                <StudentBestProgressCard bestProgress={bestProgress} />
+                <StudentBestProgressCard
+                    bestProgress={bestProgress}
+                    weightUnit={weightUnit}
+                />
                 <StudentStagnationCard stagnation={stagnation} />
                 <StudentAdherenceCard adherence={adherence} />
             </div>
@@ -165,12 +179,13 @@ export default async function StudentProfilePage({ params }: PageProps) {
                                         {index + 1}. {item.exerciseName}
                                     </p>
                                     <p className="mt-1 text-sm text-zinc-400">
-                                        De {item.firstWeight} kg a {item.bestWeight} kg
+                                        De {formatWeight(item.firstWeight, weightUnit)} a{' '}
+                                        {formatWeight(item.bestWeight, weightUnit)}
                                     </p>
                                 </div>
 
                                 <p className="text-lg font-semibold text-green-400">
-                                    +{item.progressKg} kg
+                                    +{formatWeight(item.progressKg, weightUnit)}
                                 </p>
                             </div>
                         ))}
@@ -179,9 +194,11 @@ export default async function StudentProfilePage({ params }: PageProps) {
             </div>
 
             <div className="mb-6">
-                <StudentTopProgressCharts charts={topProgressCharts} />
+                <StudentTopProgressCharts
+                    charts={topProgressCharts}
+                    weightUnit={weightUnit}
+                />
             </div>
-
             <div className="mb-6">
                 <StudentNotesCard
                     studentId={params.studentId}

@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { convertWeightToKg, type WeightUnit } from '@/lib/weight'
 
 export async function addExerciseToRoutineDay(formData: FormData) {
     const supabase = await createClient()
@@ -133,6 +134,7 @@ export async function addExerciseLog(formData: FormData) {
     const weightRaw = formData.get('weight') as string
     const repsRaw = formData.get('performed_reps') as string
     const performedAt = formData.get('performed_at') as string
+    const weightUnit = ((formData.get('weight_unit') as string) || 'kg') as WeightUnit
 
     const {
         data: { user },
@@ -157,8 +159,13 @@ export async function addExerciseLog(formData: FormData) {
         throw new Error('No tenés acceso a esta rutina.')
     }
 
-    const weight =
+    const weightInput =
         weightRaw && weightRaw.trim() !== '' ? Number(weightRaw) : null
+
+    const weight =
+        weightInput !== null && Number.isFinite(weightInput)
+            ? convertWeightToKg(weightInput, weightUnit)
+            : null
 
     const reps =
         repsRaw && repsRaw.trim() !== '' ? Number(repsRaw) : null
@@ -198,7 +205,7 @@ export async function addExerciseLog(formData: FormData) {
     const { error } = await supabase.from('exercise_logs').insert({
         student_id: studentId,
         routine_day_exercise_id: routineDayExerciseId,
-        weight: Number.isFinite(weight) ? weight : null,
+        weight,
         reps: Number.isFinite(reps) ? reps : null,
         performed_at: performedDate,
     })

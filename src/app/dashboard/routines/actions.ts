@@ -36,7 +36,9 @@ export async function getRoutineForStudent(studentId: string) {
     const supabase = supabaseServer()
 
     const { data: auth, error: authErr } = await supabase.auth.getUser()
-    if (authErr || !auth?.user) return { ok: false, message: 'No estás logueado.' }
+    if (authErr || !auth?.user) {
+        return { ok: false, message: 'No estás logueado.' }
+    }
 
     const { data, error } = await supabase
         .from('routines')
@@ -45,7 +47,10 @@ export async function getRoutineForStudent(studentId: string) {
         .eq('student_id', studentId)
         .maybeSingle()
 
-    if (error) return { ok: false, message: error.message }
+    if (error) {
+        return { ok: false, message: error.message }
+    }
+
     return { ok: true, routine: data ?? null }
 }
 
@@ -53,61 +58,95 @@ export async function createRoutine4Days(studentId: string) {
     const supabase = supabaseServer()
 
     const { data: auth, error: authErr } = await supabase.auth.getUser()
-    if (authErr || !auth?.user) return { ok: false, message: 'No estás logueado.' }
+    if (authErr || !auth?.user) {
+        return { ok: false, message: 'No estás logueado.' }
+    }
 
-    const { data: existing, error: existingError } = await supabase
+    // 1) Buscar si ya existe una rutina para ese alumno
+    const { data: existingRoutine, error: existingRoutineError } = await supabase
         .from('routines')
         .select('id')
         .eq('trainer_id', auth.user.id)
         .eq('student_id', studentId)
         .maybeSingle()
 
-    if (existingError) {
-        return { ok: false, message: existingError.message }
+    if (existingRoutineError) {
+        return { ok: false, message: existingRoutineError.message }
     }
 
-    if (existing) {
-        return { ok: true, routineId: existing.id }
+    let routineId: string
+
+    if (existingRoutine) {
+        routineId = existingRoutine.id
+    } else {
+        // 2) Si no existe, crearla
+        const { data: newRoutine, error: routineErr } = await supabase
+            .from('routines')
+            .insert({
+                trainer_id: auth.user.id,
+                student_id: studentId,
+                name: 'Rutina 4 días',
+                days_per_week: 4,
+            })
+            .select('id')
+            .single()
+
+        if (routineErr || !newRoutine) {
+            return {
+                ok: false,
+                message: routineErr?.message ?? 'No se pudo crear la rutina.',
+            }
+        }
+
+        routineId = newRoutine.id
     }
 
-    const { data: routine, error: routineErr } = await supabase
-        .from('routines')
-        .insert({
-            trainer_id: auth.user.id,
-            student_id: studentId,
-            name: 'Rutina 4 días',
-            days_per_week: 4,
-        })
-        .select('id')
-        .single()
+    // 3) Ver qué días existen ya
+    const { data: existingDays, error: existingDaysError } = await supabase
+        .from('routine_days')
+        .select('id, day_index')
+        .eq('routine_id', routineId)
 
-    if (routineErr || !routine) {
-        return { ok: false, message: routineErr?.message ?? 'No se pudo crear la rutina.' }
+    if (existingDaysError) {
+        return { ok: false, message: existingDaysError.message }
     }
 
-    const rows = DEFAULT_DAYS.map((d) => ({
-        routine_id: routine.id,
-        day_index: d.day_index,
-        title: d.title,
+    const existingDayIndexes = new Set(
+        (existingDays ?? []).map((day) => day.day_index)
+    )
+
+    // 4) Crear solo los días faltantes
+    const missingDays = DEFAULT_DAYS.filter(
+        (day) => !existingDayIndexes.has(day.day_index)
+    ).map((day) => ({
+        routine_id: routineId,
+        day_index: day.day_index,
+        title: day.title,
     }))
 
-    const { error: daysErr } = await supabase.from('routine_days').insert(rows)
+    if (missingDays.length > 0) {
+        const { error: daysErr } = await supabase
+            .from('routine_days')
+            .insert(missingDays)
 
-    if (daysErr) {
-        return { ok: false, message: daysErr.message }
+        if (daysErr) {
+            return { ok: false, message: daysErr.message }
+        }
     }
 
     revalidatePath('/dashboard/routines')
-    revalidatePath(`/dashboard/routines/${routine.id}`)
+    revalidatePath(`/dashboard/routines/${routineId}`)
 
-    return { ok: true, routineId: routine.id }
+    return { ok: true, routineId }
 }
 
 export async function getRoutineDays(routineId: string) {
     const supabase = supabaseServer()
 
     const { data: auth, error: authErr } = await supabase.auth.getUser()
-    if (authErr || !auth?.user) return { ok: false, message: 'No estás logueado.' }
+    if (authErr || !auth?.user) {
+        return { ok: false, message: 'No estás logueado.' }
+    }
 
     const { data, error } = await supabase
         .from('routine_days')
@@ -115,25 +154,38 @@ export async function getRoutineDays(routineId: string) {
         .eq('routine_id', routineId)
         .order('day_index', { ascending: true })
 
-    if (error) return { ok: false, message: error.message }
+    if (error) {
+        return { ok: false, message: error.message }
+    }
+
     return { ok: true, days: data ?? [] }
 }
 
-export async function renameRoutineDay(payload: { routineDayId: string; title: string }) {
+export async function renameRoutineDay(payload: {
+    routineDayId: string
+    title: string
+}) {
     const supabase = supabaseServer()
 
     const { data: auth, error: authErr } = await supabase.auth.getUser()
-    if (authErr || !auth?.user) return { ok: false, message: 'No estás logueado.' }
+    if (authErr || !auth?.user) {
+        return { ok: false, message: 'No estás logueado.' }
+    }
 
     const title = payload.title.trim()
-    if (!title) return { ok: false, message: 'El título no puede estar vacío.' }
+
+    if (!title) {
+        return { ok: false, message: 'El título no puede estar vacío.' }
+    }
 
     const { error } = await supabase
         .from('routine_days')
         .update({ title })
         .eq('id', payload.routineDayId)
 
-    if (error) return { ok: false, message: error.message }
+    if (error) {
+        return { ok: false, message: error.message }
+    }
 
     revalidatePath('/dashboard/routines')
     return { ok: true }

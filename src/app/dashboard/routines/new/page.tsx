@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { createRoutine } from './actions'
+import { getTrainerProfile } from '@/lib/getTrainerProfile'
 
 type PageProps = {
     searchParams: {
@@ -31,13 +32,13 @@ export default async function NewRoutinePage({ searchParams }: PageProps) {
         )
     }
 
-    const { data: student, error } = await supabase
+    const { data: student, error: studentError } = await supabase
         .from('students')
         .select('id, first_name, last_name')
         .eq('id', studentId)
         .single()
 
-    if (error || !student) {
+    if (studentError || !student) {
         return (
             <div className="p-8 text-white">
                 <h1 className="text-3xl font-bold">Nueva rutina</h1>
@@ -46,13 +47,17 @@ export default async function NewRoutinePage({ searchParams }: PageProps) {
         )
     }
 
+    const profile = await getTrainerProfile()
+    const defaultRoutineDays = profile?.default_routine_days ?? 4
+
     return (
         <div className="p-8 text-white">
             <div className="mb-6 flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold">Nueva rutina</h1>
                     <p className="text-zinc-400">
-                        Crear rutina para {student.first_name} {student.last_name}
+                        Crear rutina de {defaultRoutineDays} días para {student.first_name}{' '}
+                        {student.last_name}
                     </p>
                 </div>
 
@@ -76,6 +81,7 @@ export default async function NewRoutinePage({ searchParams }: PageProps) {
                         name="name"
                         required
                         placeholder="Ej: Rutina hipertrofia"
+                        defaultValue={`Rutina ${defaultRoutineDays} días`}
                         className="mt-1 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-white"
                     />
                 </div>
@@ -85,7 +91,7 @@ export default async function NewRoutinePage({ searchParams }: PageProps) {
                     <select
                         name="days_count"
                         required
-                        defaultValue="4"
+                        defaultValue={String(defaultRoutineDays)}
                         className="mt-1 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-white"
                     >
                         <option value="1">1 día</option>

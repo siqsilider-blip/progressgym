@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { formatWeight, type WeightUnit } from '@/lib/weight'
 
 type LeaderboardItem = {
     studentId: string
@@ -9,8 +10,10 @@ type LeaderboardItem = {
 
 export default function TrainerStudentLeaderboardCard({
     ranking,
+    weightUnit,
 }: {
     ranking: LeaderboardItem[]
+    weightUnit: WeightUnit
 }) {
     return (
         <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-6">
@@ -45,7 +48,7 @@ export default function TrainerStudentLeaderboardCard({
                             </div>
 
                             <p className="text-lg font-semibold text-green-400">
-                                +{item.progressKg} kg
+                                +{formatWeight(item.progressKg, weightUnit)}
                             </p>
                         </div>
                     ))}

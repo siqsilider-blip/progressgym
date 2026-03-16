@@ -7,6 +7,8 @@ import {
     addExerciseLog,
 } from './actions'
 import ExerciseProgressChart from '../../../../components/ExerciseProgressChart'
+import { getTrainerProfile } from '@/lib/getTrainerProfile'
+import { formatWeight, type WeightUnit } from '@/lib/weight'
 
 type PageProps = {
     params: {
@@ -58,6 +60,8 @@ type ExerciseLog = {
 
 export default async function RoutineDetailPage({ params }: PageProps) {
     const supabase = await createClient()
+    const trainerProfile = await getTrainerProfile()
+    const weightUnit = (trainerProfile?.weight_unit ?? 'kg') as WeightUnit
 
     const {
         data: { user },
@@ -70,7 +74,7 @@ export default async function RoutineDetailPage({ params }: PageProps) {
 
     const { data: routine, error: routineError } = await supabase
         .from('routines')
-        .select('id, name, trainer_id, student_id')
+        .select('id, name, trainer_id, student_id, days_per_week')
         .eq('id', params.routineId)
         .eq('trainer_id', user.id)
         .single()
@@ -90,11 +94,41 @@ export default async function RoutineDetailPage({ params }: PageProps) {
         .eq('id', routine.student_id)
         .single()
 
-    const { data: days, error: daysError } = await supabase
+    let { data: days, error: daysError } = await supabase
         .from('routine_days')
         .select('id, day_index, title')
         .eq('routine_id', routine.id)
         .order('day_index', { ascending: true })
+
+    if (!daysError && (!days || days.length === 0)) {
+        const daysPerWeek =
+            typeof routine.days_per_week === 'number' &&
+                routine.days_per_week >= 1 &&
+                routine.days_per_week <= 6
+                ? routine.days_per_week
+                : 4
+
+        const defaultDays = Array.from({ length: daysPerWeek }, (_, index) => ({
+            routine_id: routine.id,
+            day_index: index + 1,
+            title: `Día ${index + 1}`,
+        }))
+
+        const { error: repairError } = await supabase
+            .from('routine_days')
+            .insert(defaultDays)
+
+        if (!repairError) {
+            const reload = await supabase
+                .from('routine_days')
+                .select('id, day_index, title')
+                .eq('routine_id', routine.id)
+                .order('day_index', { ascending: true })
+
+            days = reload.data ?? []
+            daysError = reload.error ?? null
+        }
+    }
 
     const { data: exerciseOptions } = await supabase
         .from('exercises')
@@ -110,22 +144,23 @@ export default async function RoutineDetailPage({ params }: PageProps) {
         const { data: exercises } = await supabase
             .from('routine_day_exercises')
             .select(`
-        id,
-        routine_day_id,
-        exercise_id,
-        sets,
-        reps,
-        rest_seconds,
-        position,
-        exercises (
-          name,
-          muscle_group
-        )
-      `)
+                id,
+                routine_day_id,
+                exercise_id,
+                sets,
+                reps,
+                rest_seconds,
+                position,
+                exercises (
+                    name,
+                    muscle_group
+                )
+            `)
             .in('routine_day_id', dayIds)
             .order('position', { ascending: true })
 
-        const typedExercises = (exercises as unknown as RoutineDayExercise[] | null) ?? []
+        const typedExercises =
+            (exercises as unknown as RoutineDayExercise[] | null) ?? []
 
         for (const exercise of typedExercises) {
             if (!exercisesByDay[exercise.routine_day_id]) {
@@ -184,19 +219,16 @@ export default async function RoutineDetailPage({ params }: PageProps) {
 
             {daysError ? (
                 <div className="rounded-xl border border-red-900 bg-red-950/40 p-4 text-red-400">
-                    Error cargando los días de la rutina.
+                    Error cargando o reparando los días de la rutina.
                 </div>
             ) : typedDays.length === 0 ? (
                 <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-6">
                     <h2 className="text-lg font-semibold text-white">
-                        Esta rutina todavía no tiene días creados
+                        No se pudieron generar los días de esta rutina
                     </h2>
                     <p className="mt-2 text-sm text-zinc-400">
-                        La rutina existe, pero no hay registros en{' '}
-                        <span className="font-medium text-zinc-300">routine_days</span>.
-                    </p>
-                    <p className="mt-2 text-sm text-zinc-500">
-                        El problema probablemente está en el flujo donde creás o asignás la rutina al alumno.
+                        La rutina existe, pero sigue sin registros en
+                        routine_days.
                     </p>
                 </div>
             ) : (
@@ -213,12 +245,25 @@ export default async function RoutineDetailPage({ params }: PageProps) {
                                     {day.title || `Día ${day.day_index}`}
                                 </h2>
 
-                                <p className="mt-2 text-sm text-zinc-400">Día {day.day_index}</p>
+                                <p className="mt-2 text-sm text-zinc-400">
+                                    Día {day.day_index}
+                                </p>
 
                                 <div className="mt-4">
-                                    <form action={addExerciseToRoutineDay} className="space-y-3">
-                                        <input type="hidden" name="routineId" value={routine.id} />
-                                        <input type="hidden" name="routineDayId" value={day.id} />
+                                    <form
+                                        action={addExerciseToRoutineDay}
+                                        className="space-y-3"
+                                    >
+                                        <input
+                                            type="hidden"
+                                            name="routineId"
+                                            value={routine.id}
+                                        />
+                                        <input
+                                            type="hidden"
+                                            name="routineDayId"
+                                            value={day.id}
+                                        />
 
                                         <select
                                             name="exercise_name"
@@ -229,10 +274,19 @@ export default async function RoutineDetailPage({ params }: PageProps) {
                                             <option value="" disabled>
                                                 Seleccionar ejercicio
                                             </option>
-                                            {(exerciseOptions as ExerciseOption[] | null)?.map((exercise) => (
-                                                <option key={exercise.id} value={exercise.name}>
+                                            {(
+                                                exerciseOptions as
+                                                | ExerciseOption[]
+                                                | null
+                                            )?.map((exercise) => (
+                                                <option
+                                                    key={exercise.id}
+                                                    value={exercise.name}
+                                                >
                                                     {exercise.name}
-                                                    {exercise.muscle_group ? ` · ${exercise.muscle_group}` : ''}
+                                                    {exercise.muscle_group
+                                                        ? ` · ${exercise.muscle_group}`
+                                                        : ''}
                                                 </option>
                                             ))}
                                         </select>
@@ -268,22 +322,29 @@ export default async function RoutineDetailPage({ params }: PageProps) {
                                 <div className="mt-5 space-y-3">
                                     {dayExercises.length > 0 ? (
                                         dayExercises.map((exercise, index) => {
-                                            const logs = logsByExercise[exercise.id] || []
+                                            const logs =
+                                                logsByExercise[exercise.id] || []
                                             const latestLog = logs[0]
 
                                             const bestWeight = Math.max(
-                                                ...logs.map((log) => log.weight || 0),
+                                                ...logs.map(
+                                                    (log) => log.weight || 0
+                                                ),
                                                 0
                                             )
 
                                             const isPR =
                                                 latestLog?.weight !== null &&
-                                                latestLog?.weight === bestWeight &&
+                                                latestLog?.weight ===
+                                                bestWeight &&
                                                 logs.length > 1
 
-                                            const exerciseRelation = Array.isArray(exercise.exercises)
-                                                ? exercise.exercises[0]
-                                                : exercise.exercises
+                                            const exerciseRelation =
+                                                Array.isArray(
+                                                    exercise.exercises
+                                                )
+                                                    ? exercise.exercises[0]
+                                                    : exercise.exercises
 
                                             return (
                                                 <div
@@ -293,12 +354,23 @@ export default async function RoutineDetailPage({ params }: PageProps) {
                                                     <div className="flex items-start justify-between gap-3">
                                                         <div>
                                                             <p className="text-sm font-medium text-white">
-                                                                {index + 1}. {exerciseRelation?.name ?? 'Ejercicio'}
+                                                                {index + 1}.{' '}
+                                                                {exerciseRelation?.name ??
+                                                                    'Ejercicio'}
                                                             </p>
 
                                                             <div className="mt-2 flex flex-wrap gap-3 text-xs text-zinc-400">
-                                                                <span>Series: {exercise.sets ?? '-'}</span>
-                                                                <span>Reps objetivo: {exercise.reps ?? '-'}</span>
+                                                                <span>
+                                                                    Series:{' '}
+                                                                    {exercise.sets ??
+                                                                        '-'}
+                                                                </span>
+                                                                <span>
+                                                                    Reps
+                                                                    objetivo:{' '}
+                                                                    {exercise.reps ??
+                                                                        '-'}
+                                                                </span>
                                                                 <span>
                                                                     Descanso:{' '}
                                                                     {exercise.rest_seconds
@@ -310,37 +382,62 @@ export default async function RoutineDetailPage({ params }: PageProps) {
                                                             {latestLog ? (
                                                                 <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-900/80 p-3 text-xs text-zinc-300">
                                                                     <p className="font-medium text-zinc-100">
-                                                                        Último registro
+                                                                        Último
+                                                                        registro
                                                                     </p>
                                                                     <p className="mt-1">
-                                                                        Peso: {latestLog.weight ?? '-'} kg · Reps:{' '}
-                                                                        {latestLog.reps ?? '-'} · Fecha:{' '}
-                                                                        {latestLog.performed_at ?? '-'}
+                                                                        Peso:{' '}
+                                                                        {latestLog.weight !=
+                                                                            null
+                                                                            ? formatWeight(
+                                                                                latestLog.weight,
+                                                                                weightUnit
+                                                                            )
+                                                                            : '-'}{' '}
+                                                                        · Reps:{' '}
+                                                                        {latestLog.reps ??
+                                                                            '-'}{' '}
+                                                                        · Fecha:{' '}
+                                                                        {latestLog.performed_at ??
+                                                                            '-'}
                                                                     </p>
 
                                                                     {isPR && (
                                                                         <p className="mt-1 text-xs font-semibold text-green-400">
-                                                                            🔥 Nuevo PR
+                                                                            🔥
+                                                                            Nuevo
+                                                                            PR
                                                                         </p>
                                                                     )}
                                                                 </div>
                                                             ) : (
                                                                 <p className="mt-3 text-xs text-zinc-500">
-                                                                    Todavía no hay registros de carga.
+                                                                    Todavía no
+                                                                    hay
+                                                                    registros de
+                                                                    carga.
                                                                 </p>
                                                             )}
                                                         </div>
 
-                                                        <form action={deleteExerciseFromRoutineDay}>
+                                                        <form
+                                                            action={
+                                                                deleteExerciseFromRoutineDay
+                                                            }
+                                                        >
                                                             <input
                                                                 type="hidden"
                                                                 name="routineId"
-                                                                value={routine.id}
+                                                                value={
+                                                                    routine.id
+                                                                }
                                                             />
                                                             <input
                                                                 type="hidden"
                                                                 name="exerciseId"
-                                                                value={exercise.id}
+                                                                value={
+                                                                    exercise.id
+                                                                }
                                                             />
                                                             <button
                                                                 type="submit"
@@ -363,12 +460,19 @@ export default async function RoutineDetailPage({ params }: PageProps) {
                                                         <input
                                                             type="hidden"
                                                             name="studentId"
-                                                            value={routine.student_id}
+                                                            value={
+                                                                routine.student_id
+                                                            }
                                                         />
                                                         <input
                                                             type="hidden"
                                                             name="routineDayExerciseId"
                                                             value={exercise.id}
+                                                        />
+                                                        <input
+                                                            type="hidden"
+                                                            name="weight_unit"
+                                                            value={weightUnit}
                                                         />
 
                                                         <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
@@ -380,7 +484,7 @@ export default async function RoutineDetailPage({ params }: PageProps) {
                                                                 name="weight"
                                                                 type="number"
                                                                 step="0.5"
-                                                                placeholder="Peso"
+                                                                placeholder={`Peso (${weightUnit})`}
                                                                 className="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-white"
                                                             />
                                                             <input
@@ -392,7 +496,12 @@ export default async function RoutineDetailPage({ params }: PageProps) {
                                                             <input
                                                                 name="performed_at"
                                                                 type="date"
-                                                                defaultValue={new Date().toISOString().slice(0, 10)}
+                                                                defaultValue={new Date()
+                                                                    .toISOString()
+                                                                    .slice(
+                                                                        0,
+                                                                        10
+                                                                    )}
                                                                 className="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-white"
                                                             />
                                                         </div>
@@ -412,18 +521,40 @@ export default async function RoutineDetailPage({ params }: PageProps) {
                                                             </p>
 
                                                             <div className="space-y-2">
-                                                                {logs.slice(0, 5).map((log) => (
-                                                                    <div
-                                                                        key={log.id}
-                                                                        className="rounded-lg border border-zinc-800 bg-zinc-900/70 p-2 text-xs text-zinc-300"
-                                                                    >
-                                                                        {log.performed_at ?? '-'} · {log.weight ?? '-'} kg ·{' '}
-                                                                        {log.reps ?? '-'} reps
-                                                                    </div>
-                                                                ))}
+                                                                {logs
+                                                                    .slice(0, 5)
+                                                                    .map(
+                                                                        (
+                                                                            log
+                                                                        ) => (
+                                                                            <div
+                                                                                key={
+                                                                                    log.id
+                                                                                }
+                                                                                className="rounded-lg border border-zinc-800 bg-zinc-900/70 p-2 text-xs text-zinc-300"
+                                                                            >
+                                                                                {log.performed_at ??
+                                                                                    '-'}{' '}
+                                                                                ·{' '}
+                                                                                {log.weight !=
+                                                                                    null
+                                                                                    ? formatWeight(
+                                                                                        log.weight,
+                                                                                        weightUnit
+                                                                                    )
+                                                                                    : '-'}{' '}
+                                                                                ·{' '}
+                                                                                {log.reps ??
+                                                                                    '-'}{' '}
+                                                                                reps
+                                                                            </div>
+                                                                        )
+                                                                    )}
                                                             </div>
 
-                                                            <ExerciseProgressChart logs={logs} />
+                                                            <ExerciseProgressChart
+                                                                logs={logs}
+                                                            />
                                                         </div>
                                                     )}
                                                 </div>
@@ -431,7 +562,8 @@ export default async function RoutineDetailPage({ params }: PageProps) {
                                         })
                                     ) : (
                                         <p className="text-sm text-zinc-500">
-                                            Todavía no hay ejercicios en este día.
+                                            Todavía no hay ejercicios en este
+                                            día.
                                         </p>
                                     )}
                                 </div>

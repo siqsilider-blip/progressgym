@@ -1,10 +1,13 @@
 import Link from 'next/link'
 import type { TrainerProgressRankingItem } from './getTrainerProgressRanking'
+import { formatWeight, type WeightUnit } from '@/lib/weight'
 
 export default function TrainerProgressRankingCard({
     ranking,
+    weightUnit,
 }: {
     ranking: TrainerProgressRankingItem[]
+    weightUnit: WeightUnit
 }) {
     return (
         <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-6">
@@ -33,13 +36,14 @@ export default function TrainerProgressRankingCard({
                                         {item.exerciseName}
                                     </p>
                                     <p className="mt-1 text-sm text-zinc-500">
-                                        De {item.firstWeight} kg a {item.bestWeight} kg
+                                        De {formatWeight(item.firstWeight, weightUnit)} a{' '}
+                                        {formatWeight(item.bestWeight, weightUnit)}
                                     </p>
                                 </div>
 
                                 <div className="flex items-center gap-4">
                                     <p className="text-lg font-bold text-green-400">
-                                        +{item.progressKg} kg
+                                        +{formatWeight(item.progressKg, weightUnit)}
                                     </p>
 
                                     <Link

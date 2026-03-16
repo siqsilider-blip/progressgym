@@ -1,3 +1,5 @@
+import { formatWeight, type WeightUnit } from '@/lib/weight'
+
 type GlobalPR = {
     weight: number
     reps: number | null
@@ -8,16 +10,22 @@ type GlobalPR = {
 
 type GlobalPRsCardProps = {
     prs: GlobalPR[]
+    weightUnit: WeightUnit
 }
 
-export default function GlobalPRsCard({ prs }: GlobalPRsCardProps) {
+export default function GlobalPRsCard({
+    prs,
+    weightUnit,
+}: GlobalPRsCardProps) {
     return (
         <div className="bg-zinc-900 rounded-2xl p-4">
             <h2 className="text-lg font-bold mb-4">🏆 Global PRs</h2>
 
             <div className="space-y-3">
                 {prs.length === 0 ? (
-                    <p className="text-sm text-zinc-400">Todavía no hay PRs globales.</p>
+                    <p className="text-sm text-zinc-400">
+                        Todavía no hay PRs globales.
+                    </p>
                 ) : (
                     prs.map((pr, i) => (
                         <div
@@ -30,8 +38,12 @@ export default function GlobalPRsCard({ prs }: GlobalPRsCardProps) {
                             </div>
 
                             <div className="text-right">
-                                <p className="font-bold">{pr.weight} kg</p>
-                                <p className="text-sm text-zinc-400">{pr.reps ?? 0} reps</p>
+                                <p className="font-bold">
+                                    {formatWeight(pr.weight, weightUnit)}
+                                </p>
+                                <p className="text-sm text-zinc-400">
+                                    {pr.reps ?? 0} reps
+                                </p>
                             </div>
                         </div>
                     ))

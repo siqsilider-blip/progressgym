@@ -1,3 +1,5 @@
+import { formatWeight, type WeightUnit } from '@/lib/weight'
+
 type PRItem = {
     exerciseName: string
     weight: number
@@ -6,8 +8,10 @@ type PRItem = {
 
 export default function StudentRecentPRsCard({
     prs,
+    weightUnit,
 }: {
     prs: PRItem[]
+    weightUnit: WeightUnit
 }) {
     if (!prs.length) return null
 
@@ -33,7 +37,7 @@ export default function StudentRecentPRsCard({
                         </div>
 
                         <p className="text-lg font-semibold text-green-400">
-                            {pr.weight} kg
+                            {formatWeight(pr.weight, weightUnit)}
                         </p>
                     </div>
                 ))}
