@@ -30,15 +30,22 @@ export async function createExercise(payload: {
     description?: string
     category?: string
     level?: string
+    metric_type?: 'reps' | 'time'
 }) {
     const supabase = supabaseServer()
 
-    const { data: { user }, error: userErr } = await supabase.auth.getUser()
-    if (userErr || !user) return { ok: false, message: 'No estás logueado.' }
+    const {
+        data: { user },
+        error: userErr,
+    } = await supabase.auth.getUser()
 
-    // (Opcional pero recomendado) aseguramos que exista el trainer
-    // Si tu tabla trainers tiene otras columnas NOT NULL, decime y lo adapto.
+    if (userErr || !user) {
+        return { ok: false, message: 'No estás logueado.' }
+    }
+
     await supabase.from('trainers').upsert({ id: user.id }, { onConflict: 'id' })
+
+    const metricType = payload.metric_type === 'time' ? 'time' : 'reps'
 
     const { error } = await supabase.from('exercises').insert({
         trainer_id: user.id,
@@ -46,6 +53,7 @@ export async function createExercise(payload: {
         description: payload.description?.trim() || null,
         category: payload.category || null,
         level: payload.level || null,
+        metric_type: metricType,
     })
 
     if (error) return { ok: false, message: error.message }
@@ -57,16 +65,28 @@ export async function createExercise(payload: {
 export async function listExercises() {
     const supabase = supabaseServer()
 
-    const { data: { user }, error: userErr } = await supabase.auth.getUser()
-    if (userErr || !user) return { ok: false as const, message: 'No estás logueado.', items: [] }
+    const {
+        data: { user },
+        error: userErr,
+    } = await supabase.auth.getUser()
+
+    if (userErr || !user) {
+        return {
+            ok: false as const,
+            message: 'No estás logueado.',
+            items: [],
+        }
+    }
 
     const { data, error } = await supabase
         .from('exercises')
-        .select('id,name,description,category,level')
+        .select('id,name,description,category,level,metric_type')
         .eq('trainer_id', user.id)
         .order('name', { ascending: true })
 
-    if (error) return { ok: false as const, message: error.message, items: [] }
+    if (error) {
+        return { ok: false as const, message: error.message, items: [] }
+    }
 
     return { ok: true as const, items: data ?? [] }
 }
@@ -74,8 +94,14 @@ export async function listExercises() {
 export async function deleteExercise(id: string) {
     const supabase = supabaseServer()
 
-    const { data: { user }, error: userErr } = await supabase.auth.getUser()
-    if (userErr || !user) return { ok: false, message: 'No estás logueado.' }
+    const {
+        data: { user },
+        error: userErr,
+    } = await supabase.auth.getUser()
+
+    if (userErr || !user) {
+        return { ok: false, message: 'No estás logueado.' }
+    }
 
     const { error } = await supabase
         .from('exercises')

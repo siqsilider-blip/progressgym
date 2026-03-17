@@ -54,9 +54,15 @@ export async function addExerciseToRoutineDay(formData: FormData) {
             ? Number(restSecondsRaw)
             : null
 
+    const parsedSets =
+        sets && sets.trim() !== '' ? Number(sets) : null
+
+    const parsedReps =
+        reps && reps.trim() !== '' ? Number(reps) : null
+
     const { data: exercise, error: exerciseError } = await supabase
         .from('exercises')
-        .select('id')
+        .select('id, metric_type')
         .eq('name', exerciseName)
         .maybeSingle()
 
@@ -68,12 +74,16 @@ export async function addExerciseToRoutineDay(formData: FormData) {
         throw new Error('No se encontró el ejercicio seleccionado.')
     }
 
+    const isTimeExercise = exercise.metric_type === 'time'
+
     const { error } = await supabase.from('routine_day_exercises').insert({
         routine_day_id: routineDayId,
         exercise_id: exercise.id,
         position: nextPosition,
-        sets: sets ? Number(sets) : null,
-        reps: reps || null,
+        sets:
+            parsedSets !== null && Number.isFinite(parsedSets) ? parsedSets : null,
+        reps:
+            parsedReps !== null && Number.isFinite(parsedReps) ? parsedReps : null,
         rest_seconds: Number.isFinite(restSeconds) ? restSeconds : null,
     })
 
@@ -134,7 +144,9 @@ export async function addExerciseLog(formData: FormData) {
     const weightRaw = formData.get('weight') as string
     const repsRaw = formData.get('performed_reps') as string
     const performedAt = formData.get('performed_at') as string
-    const weightUnit = ((formData.get('weight_unit') as string) || 'kg') as WeightUnit
+    const weightUnit = (
+        (formData.get('weight_unit') as string) || 'kg'
+    ) as WeightUnit
 
     const {
         data: { user },
@@ -159,16 +171,58 @@ export async function addExerciseLog(formData: FormData) {
         throw new Error('No tenés acceso a esta rutina.')
     }
 
+    const { data: routineExercise, error: routineExerciseError } = await supabase
+        .from('routine_day_exercises')
+        .select(`
+            id,
+            exercise_id,
+            exercises (
+                metric_type
+            )
+        `)
+        .eq('id', routineDayExerciseId)
+        .maybeSingle()
+
+    if (routineExerciseError) {
+        throw new Error(routineExerciseError.message)
+    }
+
+    if (!routineExercise) {
+        throw new Error('No se encontró el ejercicio de la rutina.')
+    }
+
+    const exerciseRelation = Array.isArray(routineExercise.exercises)
+        ? routineExercise.exercises[0]
+        : routineExercise.exercises
+
+    const isTimeExercise = exerciseRelation?.metric_type === 'time'
+
     const weightInput =
         weightRaw && weightRaw.trim() !== '' ? Number(weightRaw) : null
 
+    const repsInput =
+        repsRaw && repsRaw.trim() !== '' ? Number(repsRaw) : null
+
+    if (
+        weightInput !== null &&
+        (!Number.isFinite(weightInput) || weightInput < 0)
+    ) {
+        throw new Error('Peso inválido.')
+    }
+
+    if (repsInput !== null && (!Number.isFinite(repsInput) || repsInput < 0)) {
+        throw new Error(isTimeExercise ? 'Duración inválida.' : 'Repeticiones inválidas.')
+    }
+
     const weight =
-        weightInput !== null && Number.isFinite(weightInput)
+        !isTimeExercise &&
+            weightInput !== null &&
+            Number.isFinite(weightInput)
             ? convertWeightToKg(weightInput, weightUnit)
             : null
 
     const reps =
-        repsRaw && repsRaw.trim() !== '' ? Number(repsRaw) : null
+        repsInput !== null && Number.isFinite(repsInput) ? repsInput : null
 
     const performedDate = performedAt || new Date().toISOString().slice(0, 10)
 
@@ -206,7 +260,7 @@ export async function addExerciseLog(formData: FormData) {
         student_id: studentId,
         routine_day_exercise_id: routineDayExerciseId,
         weight,
-        reps: Number.isFinite(reps) ? reps : null,
+        reps,
         performed_at: performedDate,
     })
 

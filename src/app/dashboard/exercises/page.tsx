@@ -9,6 +9,7 @@ type Exercise = {
     description: string | null
     category: string | null
     level: string | null
+    metric_type: 'reps' | 'time' | null
 }
 
 const CATEGORIES = [
@@ -25,11 +26,17 @@ const CATEGORIES = [
 
 const LEVELS = ['Principiante', 'Intermedio', 'Avanzado']
 
+const METRIC_TYPES = [
+    { value: 'reps', label: 'Fuerza (reps + peso)' },
+    { value: 'time', label: 'Cardio (tiempo)' },
+] as const
+
 export default function ExercisesPage() {
     const [name, setName] = useState('')
     const [description, setDescription] = useState('')
     const [category, setCategory] = useState('')
     const [level, setLevel] = useState('')
+    const [metricType, setMetricType] = useState<'reps' | 'time'>('reps')
 
     const [error, setError] = useState<string | null>(null)
     const [saving, setSaving] = useState(false)
@@ -53,6 +60,12 @@ export default function ExercisesPage() {
         void load()
     }, [])
 
+    useEffect(() => {
+        if (category === 'Cardio') {
+            setMetricType('time')
+        }
+    }, [category])
+
     async function onSubmit(e: React.FormEvent) {
         e.preventDefault()
         setError(null)
@@ -69,6 +82,7 @@ export default function ExercisesPage() {
                 description,
                 category,
                 level,
+                metric_type: metricType,
             })
 
             if (!res.ok) {
@@ -80,6 +94,7 @@ export default function ExercisesPage() {
             setDescription('')
             setCategory('')
             setLevel('')
+            setMetricType('reps')
             await load()
         } finally {
             setSaving(false)
@@ -100,24 +115,25 @@ export default function ExercisesPage() {
 
     return (
         <div className="p-6">
-            <h1 className="text-2xl font-semibold mb-1">Ejercicios</h1>
-            <p className="text-sm text-zinc-400 mb-6">Creá tu librería. Después la vamos a reutilizar para armar rutinas.</p>
+            <h1 className="mb-1 text-2xl font-semibold">Ejercicios</h1>
+            <p className="mb-6 text-sm text-zinc-400">
+                Creá tu librería. Después la vamos a reutilizar para armar rutinas.
+            </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Form */}
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
-                    <h2 className="text-lg font-medium mb-4">Nuevo ejercicio</h2>
+                    <h2 className="mb-4 text-lg font-medium">Nuevo ejercicio</h2>
 
                     <form onSubmit={onSubmit} className="space-y-3">
                         <input
-                            className="w-full h-10 rounded-lg border border-zinc-800 bg-zinc-900 px-3 text-sm"
+                            className="h-10 w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 text-sm"
                             placeholder="Nombre (ej: Hip Thrust)"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                         />
 
                         <textarea
-                            className="w-full min-h-24 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm"
+                            className="min-h-24 w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm"
                             placeholder="Descripción (opcional)"
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
@@ -151,8 +167,22 @@ export default function ExercisesPage() {
                             </select>
                         </div>
 
+                        <select
+                            className="h-10 w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 text-sm"
+                            value={metricType}
+                            onChange={(e) =>
+                                setMetricType(e.target.value as 'reps' | 'time')
+                            }
+                        >
+                            {METRIC_TYPES.map((type) => (
+                                <option key={type.value} value={type.value}>
+                                    {type.label}
+                                </option>
+                            ))}
+                        </select>
+
                         {error && (
-                            <div className="rounded-lg bg-red-500/10 p-3 text-sm text-red-400 border border-red-500/20">
+                            <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400">
                                 {error}
                             </div>
                         )}
@@ -160,40 +190,59 @@ export default function ExercisesPage() {
                         <button
                             type="submit"
                             disabled={saving}
-                            className="h-10 w-full rounded-lg bg-zinc-100 text-zinc-900 text-sm font-medium disabled:opacity-50"
+                            className="h-10 w-full rounded-lg bg-zinc-100 text-sm font-medium text-zinc-900 disabled:opacity-50"
                         >
                             {saving ? 'Guardando...' : 'Agregar ejercicio'}
                         </button>
                     </form>
                 </div>
 
-                {/* List */}
                 <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
-                    <h2 className="text-lg font-medium mb-4">Tu librería</h2>
+                    <h2 className="mb-4 text-lg font-medium">Tu librería</h2>
 
                     {loading ? (
                         <p className="text-sm text-zinc-400">Cargando...</p>
                     ) : items.length === 0 ? (
-                        <p className="text-sm text-zinc-400">No hay ejercicios todavía.</p>
+                        <p className="text-sm text-zinc-400">
+                            No hay ejercicios todavía.
+                        </p>
                     ) : (
                         <div className="space-y-2">
                             {items.map((x) => (
-                                <div key={x.id} className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-3">
+                                <div
+                                    key={x.id}
+                                    className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-3"
+                                >
                                     <div className="flex items-center justify-between gap-3">
                                         <div className="font-medium">{x.name}</div>
+
                                         <div className="flex items-center gap-3">
                                             <div className="text-xs text-zinc-400">
-                                                {[x.category, x.level].filter(Boolean).join(' • ')}
+                                                {[x.category, x.level]
+                                                    .filter(Boolean)
+                                                    .join(' • ')}
+                                                {x.metric_type
+                                                    ? ` • ${x.metric_type === 'time'
+                                                        ? 'Tiempo'
+                                                        : 'Peso/Reps'
+                                                    }`
+                                                    : ''}
                                             </div>
+
                                             <button
                                                 onClick={() => handleDelete(x.id)}
-                                                className="text-xs text-red-500 hover:text-red-400 transition-colors"
+                                                className="text-xs text-red-500 transition-colors hover:text-red-400"
                                             >
                                                 Eliminar
                                             </button>
                                         </div>
                                     </div>
-                                    {x.description ? <div className="text-sm text-zinc-400 mt-1">{x.description}</div> : null}
+
+                                    {x.description ? (
+                                        <div className="mt-1 text-sm text-zinc-400">
+                                            {x.description}
+                                        </div>
+                                    ) : null}
                                 </div>
                             ))}
                         </div>
