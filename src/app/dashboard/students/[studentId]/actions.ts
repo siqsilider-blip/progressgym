@@ -1,39 +1,42 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 
-export async function saveStudentNote(studentId: string, note: string) {
+export async function saveStudentNote(
+    studentId: string,
+    prevState: any,
+    formData: FormData
+) {
     const supabase = await createClient()
 
     const {
         data: { user },
-        error: authError,
     } = await supabase.auth.getUser()
 
-    if (authError || !user) {
-        return { error: 'No autorizado' }
+    if (!user) {
+        return { error: 'No autenticado' }
     }
 
-    const { error } = await supabase
-        .from('student_notes')
-        .upsert(
-            {
-                student_id: studentId,
-                trainer_id: user.id,
-                note,
-            },
-            {
-                onConflict: 'student_id,trainer_id',
-            }
-        )
+    const note = String(formData.get('note') ?? '').trim()
+
+    if (!note) {
+        return { error: 'La nota no puede estar vacía' }
+    }
+
+    const { error } = await supabase.from('student_notes').upsert(
+        {
+            student_id: studentId,
+            trainer_id: user.id,
+            note,
+        },
+        {
+            onConflict: 'student_id,trainer_id',
+        }
+    )
 
     if (error) {
-        console.error('Error saving student note:', error)
-        return { error: 'No se pudo guardar la nota' }
+        return { error: 'Error al guardar la nota' }
     }
-
-    revalidatePath(`/dashboard/students/${studentId}`)
 
     return { success: true }
 }

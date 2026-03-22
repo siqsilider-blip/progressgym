@@ -1,38 +1,47 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
-import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
 
 export async function createStudent(formData: FormData) {
     const supabase = await createClient()
 
-    // Get current trainer
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-        throw new Error('Not authenticated')
+    const {
+        data: { user },
+        error: authError,
+    } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+        redirect('/login')
     }
 
-    const first_name = formData.get('first_name') as string
-    const last_name = formData.get('last_name') as string
-    const email = formData.get('email') as string
-    const active_plan = formData.get('active_plan') as string || 'active'
+    const firstName = String(formData.get('first_name') ?? '').trim()
+    const lastName = String(formData.get('last_name') ?? '').trim()
+    const email = String(formData.get('email') ?? '').trim()
+    const activePlan = String(formData.get('active_plan') ?? 'active').trim()
 
-    const { error } = await supabase
+    if (!firstName || !lastName) {
+        redirect('/dashboard/students/new?message=Completá nombre y apellido')
+    }
+
+    const { data, error } = await supabase
         .from('students')
         .insert({
             trainer_id: user.id,
-            first_name,
-            last_name,
-            email,
-            active_plan
+            first_name: firstName,
+            last_name: lastName,
+            email: email || null,
+            active_plan: activePlan || 'active',
         })
+        .select('id')
+        .single()
 
-    if (error) {
-        console.error('Error creating student:', error)
-        redirect('/dashboard/students/new?message=Failed to create student')
+    if (error || !data) {
+        const message = encodeURIComponent(
+            error?.message || 'No se pudo crear el alumno'
+        )
+        redirect(`/dashboard/students/new?message=${message}`)
     }
 
-    revalidatePath('/dashboard')
-    redirect('/dashboard')
+    redirect(`/dashboard/students/${data.id}`)
 }

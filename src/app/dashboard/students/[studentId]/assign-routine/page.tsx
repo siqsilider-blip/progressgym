@@ -35,25 +35,53 @@ async function assignRoutine(formData: FormData) {
         redirect('/dashboard/students')
     }
 
-    const { data: existingAssignment } = await supabase
-        .from('student_routines')
-        .select('id')
+    const { data: routine, error: routineError } = await supabase
+        .from('routines')
+        .select('id, student_id, trainer_id')
+        .eq('id', routineId)
+        .eq('trainer_id', user.id)
         .eq('student_id', studentId)
-        .maybeSingle()
+        .single()
 
-    if (existingAssignment) {
+    if (routineError || !routine) {
+        throw new Error('La rutina elegida no pertenece a este alumno.')
+    }
+
+    const { data: existingAssignment, error: existingAssignmentError } =
         await supabase
+            .from('student_routines')
+            .select('id')
+            .eq('student_id', studentId)
+            .maybeSingle()
+
+    if (existingAssignmentError) {
+        throw new Error(existingAssignmentError.message)
+    }
+
+    if (existingAssignment?.id) {
+        const { error: updateError } = await supabase
             .from('student_routines')
             .update({
                 routine_id: routineId,
                 assigned_at: new Date().toISOString(),
             })
-            .eq('student_id', studentId)
+            .eq('id', existingAssignment.id)
+
+        if (updateError) {
+            throw new Error(updateError.message)
+        }
     } else {
-        await supabase.from('student_routines').insert({
-            student_id: studentId,
-            routine_id: routineId,
-        })
+        const { error: insertError } = await supabase
+            .from('student_routines')
+            .insert({
+                student_id: studentId,
+                routine_id: routineId,
+                assigned_at: new Date().toISOString(),
+            })
+
+        if (insertError) {
+            throw new Error(insertError.message)
+        }
     }
 
     redirect(`/dashboard/students/${studentId}`)
@@ -86,12 +114,13 @@ export default async function AssignRoutinePage({ params }: PageProps) {
         .from('routines')
         .select('id, name')
         .eq('trainer_id', user.id)
+        .eq('student_id', student.id)
         .order('created_at', { ascending: false })
 
     if (routinesError) {
         return (
             <div className="p-8 text-white">
-                <h1 className="text-2xl font-bold">Assign Routine</h1>
+                <h1 className="text-2xl font-bold">Asignar rutina</h1>
                 <p className="mt-4 text-red-400">Error cargando rutinas.</p>
             </div>
         )
@@ -100,7 +129,7 @@ export default async function AssignRoutinePage({ params }: PageProps) {
     return (
         <div className="p-8 text-white">
             <div className="mb-8">
-                <h1 className="text-3xl font-bold tracking-tight">Assign Routine</h1>
+                <h1 className="text-3xl font-bold tracking-tight">Asignar rutina</h1>
                 <p className="mt-2 text-sm text-zinc-400">
                     Asignar rutina a {student.first_name} {student.last_name}
                 </p>
@@ -138,19 +167,19 @@ export default async function AssignRoutinePage({ params }: PageProps) {
                             type="submit"
                             className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500"
                         >
-                            Save Assignment
+                            Guardar asignación
                         </button>
                     </form>
                 ) : (
                     <div className="space-y-3">
                         <p className="text-zinc-300">
-                            No tenés rutinas creadas todavía.
+                            Este alumno no tiene rutinas propias creadas todavía.
                         </p>
                         <a
-                            href="/dashboard/routines"
+                            href={`/dashboard/routines/new?studentId=${student.id}`}
                             className="inline-flex rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500"
                         >
-                            Go to Routines
+                            Crear rutina para este alumno
                         </a>
                     </div>
                 )}

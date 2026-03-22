@@ -75,6 +75,43 @@ export async function createRoutine(formData: FormData) {
             }
         }
 
+        const { data: existingAssignment, error: existingAssignmentError } =
+            await supabase
+                .from('student_routines')
+                .select('id')
+                .eq('student_id', studentId)
+                .maybeSingle()
+
+        if (existingAssignmentError) {
+            throw new Error(existingAssignmentError.message)
+        }
+
+        if (existingAssignment?.id) {
+            const { error: updateError } = await supabase
+                .from('student_routines')
+                .update({
+                    routine_id: routineId,
+                    assigned_at: new Date().toISOString(),
+                })
+                .eq('id', existingAssignment.id)
+
+            if (updateError) {
+                throw new Error(updateError.message)
+            }
+        } else {
+            const { error: insertError } = await supabase
+                .from('student_routines')
+                .insert({
+                    student_id: studentId,
+                    routine_id: routineId,
+                    assigned_at: new Date().toISOString(),
+                })
+
+            if (insertError) {
+                throw new Error(insertError.message)
+            }
+        }
+
         redirect(`/dashboard/routines/${routineId}`)
     }
 
@@ -105,6 +142,43 @@ export async function createRoutine(formData: FormData) {
 
     if (daysError) {
         throw new Error(daysError.message)
+    }
+
+    const { data: existingAssignment, error: existingAssignmentError } =
+        await supabase
+            .from('student_routines')
+            .select('id')
+            .eq('student_id', studentId)
+            .maybeSingle()
+
+    if (existingAssignmentError) {
+        throw new Error(existingAssignmentError.message)
+    }
+
+    if (existingAssignment?.id) {
+        const { error: updateError } = await supabase
+            .from('student_routines')
+            .update({
+                routine_id: routine.id,
+                assigned_at: new Date().toISOString(),
+            })
+            .eq('id', existingAssignment.id)
+
+        if (updateError) {
+            throw new Error(updateError.message)
+        }
+    } else {
+        const { error: insertError } = await supabase
+            .from('student_routines')
+            .insert({
+                student_id: studentId,
+                routine_id: routine.id,
+                assigned_at: new Date().toISOString(),
+            })
+
+        if (insertError) {
+            throw new Error(insertError.message)
+        }
     }
 
     redirect(`/dashboard/routines/${routine.id}`)

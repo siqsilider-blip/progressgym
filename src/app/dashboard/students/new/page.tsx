@@ -1,106 +1,127 @@
+'use client'
+
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { createStudent } from '@/app/dashboard/students/actions'
+import { useFormStatus } from 'react-dom'
 
-export default async function NewStudentPage(
-    props: {
-        searchParams: Promise<{ [key: string]: string | string[] | undefined }>
-    }
-) {
-    const searchParams = await props.searchParams
+function SubmitButton() {
+    const { pending } = useFormStatus()
+
+    return (
+        <button
+            type="submit"
+            disabled={pending}
+            className={`inline-flex h-11 items-center justify-center rounded-xl px-6 text-sm font-medium text-white transition-all ${pending
+                    ? 'cursor-not-allowed bg-indigo-400'
+                    : 'bg-indigo-600 shadow-lg shadow-indigo-600/20 hover:bg-indigo-500'
+                }`}
+        >
+            {pending ? 'Creando...' : 'Crear alumno'}
+        </button>
+    )
+}
+
+export default function NewStudentPage({
+    searchParams,
+}: {
+    searchParams: { [key: string]: string | string[] | undefined }
+}) {
     const message = searchParams?.message
 
     return (
-        <div className="p-8 max-w-2xl">
-            <div className="mb-6">
-                <Link
-                    href="/dashboard"
-                    className="inline-flex items-center text-sm font-medium text-zinc-400 hover:text-zinc-300 transition-colors mb-4"
-                >
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Back to Dashboard
-                </Link>
-                <h1 className="text-5xl font-extrabold text-blue-600 underline">
-                    TEST TAILWIND
-                </h1>
-                <p className="text-sm text-zinc-400 mt-1">Create a profile for your new client.</p>
-            </div>
+        <div className="p-4 md:p-8">
+            <div className="mx-auto max-w-2xl pt-4">
+                <div className="mb-8 text-left">
+                    <Link
+                        href="/dashboard"
+                        className="inline-flex items-center text-sm font-medium text-zinc-500 transition-colors hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+                    >
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Volver al dashboard
+                    </Link>
 
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 backdrop-blur-xl">
-                <form className="space-y-6" action={createStudent}>
-                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                    <h1 className="mt-4 text-3xl font-bold tracking-tight text-zinc-900 dark:text-white md:text-4xl">
+                        Agregar alumno
+                    </h1>
+
+                    <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+                        Creá un alumno para empezar a asignarle rutinas y seguir su progreso.
+                    </p>
+                </div>
+
+                <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80 md:p-7">
+                    <form className="space-y-5" action={createStudent}>
+                        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                                    Nombre
+                                </label>
+                                <input
+                                    name="first_name"
+                                    required
+                                    className="h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+                                    placeholder="Ej: Juan"
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                                    Apellido
+                                </label>
+                                <input
+                                    name="last_name"
+                                    required
+                                    className="h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+                                    placeholder="Ej: Pérez"
+                                />
+                            </div>
+                        </div>
+
                         <div className="space-y-2">
-                            <label htmlFor="first_name" className="text-sm font-medium leading-none text-zinc-300">
-                                First Name
+                            <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                                Email
                             </label>
                             <input
-                                id="first_name"
-                                name="first_name"
-                                type="text"
-                                required
-                                className="flex h-10 w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-colors"
-                                placeholder="Jane"
+                                name="email"
+                                type="email"
+                                className="h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+                                placeholder="ejemplo@mail.com"
                             />
                         </div>
 
                         <div className="space-y-2">
-                            <label htmlFor="last_name" className="text-sm font-medium leading-none text-zinc-300">
-                                Last Name
+                            <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                                Estado inicial del plan
                             </label>
-                            <input
-                                id="last_name"
-                                name="last_name"
-                                type="text"
-                                required
-                                className="flex h-10 w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-colors"
-                                placeholder="Doe"
-                            />
+                            <select
+                                name="active_plan"
+                                defaultValue="active"
+                                className="h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-100"
+                            >
+                                <option value="active">Activo</option>
+                                <option value="inactive">Inactivo</option>
+                            </select>
                         </div>
-                    </div>
 
-                    <div className="space-y-2">
-                        <label htmlFor="email" className="text-sm font-medium leading-none text-zinc-300">
-                            Email Address
-                        </label>
-                        <input
-                            id="email"
-                            name="email"
-                            type="email"
-                            className="flex h-10 w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-colors"
-                            placeholder="jane.doe@example.com"
-                        />
-                    </div>
+                        {message && (
+                            <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400">
+                                {message}
+                            </div>
+                        )}
 
-                    <div className="space-y-2">
-                        <label htmlFor="active_plan" className="text-sm font-medium leading-none text-zinc-300">
-                            Initial Plan Status
-                        </label>
-                        <select
-                            id="active_plan"
-                            name="active_plan"
-                            className="flex h-10 w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-colors"
-                            defaultValue="active"
-                        >
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
-                        </select>
-                    </div>
+                        <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
+                            <Link
+                                href="/dashboard"
+                                className="flex h-11 items-center justify-center rounded-xl border border-zinc-200 px-5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                            >
+                                Cancelar
+                            </Link>
 
-                    {message && (
-                        <div className="rounded-lg bg-red-500/10 p-3 text-sm text-red-500 border border-red-500/20">
-                            {message}
+                            <SubmitButton />
                         </div>
-                    )}
-
-                    <div className="flex justify-end pt-4">
-                        <button
-                            type="submit"
-                            className="inline-flex h-10 items-center justify-center rounded-lg bg-indigo-500 px-8 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-zinc-950"
-                        >
-                            Create Student
-                        </button>
-                    </div>
-                </form>
+                    </form>
+                </div>
             </div>
         </div>
     )

@@ -19,8 +19,3 @@ export function convertWeightToKg(weight: number, unit: WeightUnit) {
 export function formatWeight(weightKg: number, unit: WeightUnit) {
     return `${convertWeightFromKg(weightKg, unit)} ${unit}`
 }
-
-export function formatWeightValue(weightKg: number | null | undefined, unit: WeightUnit) {
-    if (weightKg == null) return ''
-    return String(convertWeightFromKg(weightKg, unit))
-}

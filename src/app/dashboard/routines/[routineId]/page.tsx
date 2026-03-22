@@ -1,10 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import {
-    deleteExerciseFromRoutineDay,
-    addExerciseLog,
-} from './actions'
+import { deleteExerciseFromRoutineDay } from './actions'
 import ExerciseProgressChart from '../../../../components/ExerciseProgressChart'
 import { getTrainerProfile } from '@/lib/getTrainerProfile'
 import { formatWeight, type WeightUnit } from '@/lib/weight'
@@ -13,6 +10,9 @@ import AddExerciseToRoutineDayForm from './AddExerciseToRoutineDayForm'
 type PageProps = {
     params: {
         routineId: string
+    }
+    searchParams?: {
+        day?: string
     }
 }
 
@@ -56,7 +56,10 @@ type ExerciseLog = {
     created_at?: string | null
 }
 
-export default async function RoutineDetailPage({ params }: PageProps) {
+export default async function RoutineDetailPage({
+    params,
+    searchParams,
+}: PageProps) {
     const supabase = await createClient()
     const trainerProfile = await getTrainerProfile()
     const weightUnit = (trainerProfile?.weight_unit ?? 'kg') as WeightUnit
@@ -79,8 +82,8 @@ export default async function RoutineDetailPage({ params }: PageProps) {
 
     if (routineError || !routine) {
         return (
-            <div className="p-8 text-white">
-                <h1 className="text-3xl font-bold">Rutina</h1>
+            <div className="px-4 pb-6 text-white md:p-8">
+                <h1 className="text-2xl font-bold md:text-3xl">Rutina</h1>
                 <p className="mt-4 text-red-400">Rutina no encontrada.</p>
             </div>
         )
@@ -134,93 +137,126 @@ export default async function RoutineDetailPage({ params }: PageProps) {
         .order('name', { ascending: true })
 
     const typedDays: RoutineDay[] = (days as RoutineDay[] | null) ?? []
-    const dayIds = typedDays.map((day) => day.id)
+
+    const selectedDay =
+        typedDays.find((day) => day.id === searchParams?.day) ?? typedDays[0] ?? null
+
+    const selectedDayIndex = selectedDay
+        ? typedDays.findIndex((day) => day.id === selectedDay.id)
+        : -1
+
+    const previousDay =
+        selectedDayIndex > 0 ? typedDays[selectedDayIndex - 1] : null
+
+    const nextDay =
+        selectedDayIndex >= 0 && selectedDayIndex < typedDays.length - 1
+            ? typedDays[selectedDayIndex + 1]
+            : null
 
     const exercisesByDay: Record<string, RoutineDayExercise[]> = {}
+    const logsByExercise: Record<string, ExerciseLog[]> = {}
 
-    if (dayIds.length > 0) {
+    if (selectedDay) {
         const { data: exercises } = await supabase
             .from('routine_day_exercises')
             .select(`
-                id,
-                routine_day_id,
-                exercise_id,
-                sets,
-                reps,
-                rest_seconds,
-                position,
-                exercises (
-                    name,
-                    muscle_group,
-                    metric_type
-                )
-            `)
-            .in('routine_day_id', dayIds)
+        id,
+        routine_day_id,
+        exercise_id,
+        sets,
+        reps,
+        rest_seconds,
+        position,
+        exercises (
+          name,
+          muscle_group,
+          metric_type
+        )
+      `)
+            .eq('routine_day_id', selectedDay.id)
             .order('position', { ascending: true })
 
         const typedExercises =
             (exercises as unknown as RoutineDayExercise[] | null) ?? []
 
-        for (const exercise of typedExercises) {
-            if (!exercisesByDay[exercise.routine_day_id]) {
-                exercisesByDay[exercise.routine_day_id] = []
+        exercisesByDay[selectedDay.id] = typedExercises
+
+        const allExerciseIds = typedExercises.map((exercise) => exercise.id)
+
+        if (allExerciseIds.length > 0) {
+            const { data: logs } = await supabase
+                .from('exercise_logs')
+                .select(
+                    'id, student_id, routine_day_exercise_id, weight, reps, performed_at, created_at'
+                )
+                .in('routine_day_exercise_id', allExerciseIds)
+                .eq('student_id', routine.student_id)
+                .order('performed_at', { ascending: false })
+                .order('created_at', { ascending: false })
+
+            const typedLogs = (logs as ExerciseLog[] | null) ?? []
+
+            for (const log of typedLogs) {
+                if (!logsByExercise[log.routine_day_exercise_id]) {
+                    logsByExercise[log.routine_day_exercise_id] = []
+                }
+                logsByExercise[log.routine_day_exercise_id].push(log)
             }
-            exercisesByDay[exercise.routine_day_id].push(exercise)
         }
     }
 
-    const allExerciseIds = Object.values(exercisesByDay)
-        .flat()
-        .map((exercise) => exercise.id)
-
-    const logsByExercise: Record<string, ExerciseLog[]> = {}
-
-    if (allExerciseIds.length > 0) {
-        const { data: logs } = await supabase
-            .from('exercise_logs')
-            .select(
-                'id, student_id, routine_day_exercise_id, weight, reps, performed_at, created_at'
-            )
-            .in('routine_day_exercise_id', allExerciseIds)
-            .eq('student_id', routine.student_id)
-            .order('performed_at', { ascending: false })
-            .order('created_at', { ascending: false })
-
-        const typedLogs = (logs as ExerciseLog[] | null) ?? []
-
-        for (const log of typedLogs) {
-            if (!logsByExercise[log.routine_day_exercise_id]) {
-                logsByExercise[log.routine_day_exercise_id] = []
-            }
-            logsByExercise[log.routine_day_exercise_id].push(log)
-        }
-    }
+    const studentName = student
+        ? `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim()
+        : 'Alumno no encontrado'
 
     return (
-        <div className="p-8 text-white">
-            <div className="mb-6 flex items-center justify-between">
+        <div className="px-4 pb-6 text-white md:p-8">
+            <div className="mb-6 flex flex-col gap-4 md:mb-8 md:flex-row md:items-start md:justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold">{routine.name}</h1>
-                    <p className="mt-2 text-sm text-zinc-400">
-                        {student
-                            ? `Alumno: ${student.first_name} ${student.last_name}`
-                            : 'Alumno no encontrado'}
+                    <p className="text-xs font-medium uppercase tracking-wide text-indigo-400">
+                        Rutina
                     </p>
+
+                    <h1 className="mt-1 text-2xl font-bold md:text-3xl">
+                        {routine.name}
+                    </h1>
+
+                    <p className="mt-2 text-sm text-zinc-400">
+                        Alumno: {studentName}
+                    </p>
+
+                    <div className="mt-3 flex flex-wrap gap-2">
+                        <span className="rounded-full border border-zinc-800 bg-zinc-900 px-3 py-1 text-xs text-zinc-300">
+                            {typedDays.length} días
+                        </span>
+                        <span className="rounded-full border border-zinc-800 bg-zinc-900 px-3 py-1 text-xs text-zinc-300">
+                            Pesos en {weightUnit.toUpperCase()}
+                        </span>
+                    </div>
                 </div>
 
-                <Link
-                    href="/dashboard/routines"
-                    className="text-sm text-zinc-300 hover:text-white"
-                >
-                    ← Volver
-                </Link>
+                <div className="flex w-full flex-col gap-3 md:w-auto md:flex-row">
+                    <Link
+                        href={`/dashboard/students/${routine.student_id}/train`}
+                        className="inline-flex w-full items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 text-sm font-medium text-white transition hover:bg-emerald-500 md:w-auto"
+                    >
+                        Ir a entrenar este alumno
+                    </Link>
+
+                    <Link
+                        href="/dashboard/routines"
+                        className="inline-flex w-full items-center justify-center rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-zinc-200 transition hover:bg-zinc-800 md:w-auto"
+                    >
+                        ← Volver
+                    </Link>
+                </div>
             </div>
 
             {daysError ? (
                 <div className="rounded-xl border border-red-900 bg-red-950/40 p-4 text-red-400">
                     Error cargando o reparando los días de la rutina.
                 </div>
-            ) : typedDays.length === 0 ? (
+            ) : typedDays.length === 0 || !selectedDay ? (
                 <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-6">
                     <h2 className="text-lg font-semibold text-white">
                         No se pudieron generar los días de esta rutina
@@ -230,180 +266,178 @@ export default async function RoutineDetailPage({ params }: PageProps) {
                     </p>
                 </div>
             ) : (
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                    {typedDays.map((day) => {
-                        const dayExercises = exercisesByDay[day.id] || []
+                <div className="space-y-4">
+                    <section className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4 md:p-5">
+                        <div className="mb-4">
+                            <h2 className="text-lg font-semibold text-white">Días</h2>
+                            <p className="mt-1 text-sm text-zinc-400">
+                                Editá un día por vez.
+                            </p>
+                        </div>
 
-                        return (
-                            <div
-                                key={day.id}
-                                className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5"
-                            >
+                        <div className="flex gap-2 overflow-x-auto pb-1">
+                            {typedDays.map((day) => {
+                                const isActive = day.id === selectedDay.id
+                                const label = day.title || `Día ${day.day_index}`
+
+                                return (
+                                    <Link
+                                        key={day.id}
+                                        href={`/dashboard/routines/${routine.id}?day=${day.id}`}
+                                        className={`shrink-0 rounded-xl px-4 py-2 text-sm font-medium transition ${isActive
+                                            ? 'bg-indigo-600 text-white'
+                                            : 'border border-zinc-700 bg-zinc-950/60 text-zinc-200 hover:bg-zinc-800'
+                                            }`}
+                                    >
+                                        {label}
+                                    </Link>
+                                )
+                            })}
+                        </div>
+
+                        <div className="mt-4 flex items-center justify-between gap-3">
+                            {previousDay ? (
+                                <Link
+                                    href={`/dashboard/routines/${routine.id}?day=${previousDay.id}`}
+                                    className="rounded-xl border border-zinc-700 bg-zinc-950/60 px-4 py-2 text-sm text-zinc-200 transition hover:bg-zinc-800"
+                                >
+                                    ← Anterior
+                                </Link>
+                            ) : (
+                                <div />
+                            )}
+
+                            {nextDay ? (
+                                <Link
+                                    href={`/dashboard/routines/${routine.id}?day=${nextDay.id}`}
+                                    className="rounded-xl border border-zinc-700 bg-zinc-950/60 px-4 py-2 text-sm text-zinc-200 transition hover:bg-zinc-800"
+                                >
+                                    Siguiente →
+                                </Link>
+                            ) : (
+                                <div />
+                            )}
+                        </div>
+                    </section>
+
+                    <section className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4 md:p-5">
+                        <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                            <div>
                                 <h2 className="text-lg font-semibold text-white">
-                                    {day.title || `Día ${day.day_index}`}
+                                    {selectedDay.title || `Día ${selectedDay.day_index}`}
                                 </h2>
-
-                                <p className="mt-2 text-sm text-zinc-400">
-                                    Día {day.day_index}
+                                <p className="mt-1 text-sm text-zinc-400">
+                                    Día {selectedDay.day_index}
                                 </p>
+                            </div>
 
-                                <div className="mt-4">
-                                    <AddExerciseToRoutineDayForm
-                                        routineId={routine.id}
-                                        routineDayId={day.id}
-                                        exerciseOptions={
-                                            (exerciseOptions as ExerciseOption[] | null) ?? []
-                                        }
-                                    />
+                            <div className="flex flex-wrap gap-2">
+                                <div className="rounded-full border border-zinc-800 bg-zinc-950 px-3 py-1 text-xs text-zinc-400">
+                                    {(exercisesByDay[selectedDay.id] || []).length} ejercicios
                                 </div>
 
-                                <div className="mt-5 space-y-3">
-                                    {dayExercises.length > 0 ? (
-                                        dayExercises.map((exercise, index) => {
-                                            const logs =
-                                                logsByExercise[exercise.id] || []
-                                            const latestLog = logs[0]
+                                <Link
+                                    href={`/dashboard/students/${routine.student_id}/train?day=${selectedDay.id}`}
+                                    className="inline-flex items-center justify-center rounded-full bg-emerald-600 px-3 py-1 text-xs font-medium text-white transition hover:bg-emerald-500"
+                                >
+                                    Ir a entrenar este alumno
+                                </Link>
+                            </div>
+                        </div>
 
-                                            const relation = Array.isArray(exercise.exercises)
-                                                ? exercise.exercises[0]
-                                                : exercise.exercises
+                        <div className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-3 md:p-4">
+                            <p className="mb-3 text-xs font-medium uppercase tracking-wide text-zinc-500">
+                                Agregar ejercicio
+                            </p>
 
-                                            const isTime =
-                                                relation?.metric_type === 'time'
+                            <AddExerciseToRoutineDayForm
+                                routineId={routine.id}
+                                routineDayId={selectedDay.id}
+                                exerciseOptions={
+                                    (exerciseOptions as ExerciseOption[] | null) ?? []
+                                }
+                            />
+                        </div>
 
-                                            const bestWeight = Math.max(
-                                                ...logs.map((log) => log.weight || 0),
-                                                0
-                                            )
+                        <div className="mt-4 space-y-3">
+                            {(exercisesByDay[selectedDay.id] || []).length > 0 ? (
+                                (exercisesByDay[selectedDay.id] || []).map((exercise, index) => {
+                                    const logs = logsByExercise[exercise.id] || []
+                                    const latestLog = logs[0]
 
-                                            const isPR =
-                                                !isTime &&
-                                                latestLog?.weight !== null &&
-                                                latestLog?.weight === bestWeight &&
-                                                logs.length > 1
+                                    const relation = Array.isArray(exercise.exercises)
+                                        ? exercise.exercises[0]
+                                        : exercise.exercises
 
-                                            return (
-                                                <div
-                                                    key={exercise.id}
-                                                    className="rounded-xl border border-zinc-800 bg-zinc-950/70 p-3"
-                                                >
-                                                    <div className="flex items-start justify-between gap-3">
-                                                        <div className="min-w-0">
-                                                            <div className="flex items-center gap-2">
-                                                                <p className="text-sm font-medium text-white">
-                                                                    {index + 1}.{' '}
-                                                                    {relation?.name ?? 'Ejercicio'}
-                                                                </p>
+                                    const isTime = relation?.metric_type === 'time'
 
-                                                                <span
-                                                                    className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${isTime
-                                                                            ? 'border-blue-500/20 bg-blue-500/15 text-blue-300'
-                                                                            : 'border-green-500/20 bg-green-500/15 text-green-300'
-                                                                        }`}
-                                                                >
-                                                                    {isTime ? 'Cardio' : 'Fuerza'}
+                                    const bestWeight = Math.max(
+                                        ...logs.map((log) => log.weight || 0),
+                                        0
+                                    )
+
+                                    const isPR =
+                                        !isTime &&
+                                        latestLog?.weight !== null &&
+                                        latestLog?.weight === bestWeight &&
+                                        logs.length > 1
+
+                                    return (
+                                        <div
+                                            key={exercise.id}
+                                            className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-4"
+                                        >
+                                            <div className="flex flex-col gap-3">
+                                                <div className="flex items-start justify-between gap-3">
+                                                    <div className="min-w-0">
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <p className="text-base font-semibold text-white">
+                                                                {index + 1}. {relation?.name ?? 'Ejercicio'}
+                                                            </p>
+
+                                                            <span
+                                                                className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${isTime
+                                                                    ? 'border-blue-500/20 bg-blue-500/15 text-blue-300'
+                                                                    : 'border-green-500/20 bg-green-500/15 text-green-300'
+                                                                    }`}
+                                                            >
+                                                                {isTime ? 'Cardio' : 'Fuerza'}
+                                                            </span>
+
+                                                            {relation?.muscle_group && (
+                                                                <span className="rounded-full border border-zinc-700 bg-zinc-900 px-2 py-0.5 text-[10px] text-zinc-400">
+                                                                    {relation.muscle_group}
                                                                 </span>
-                                                            </div>
-
-                                                            <div className="mt-2 flex flex-wrap gap-3 text-xs text-zinc-400">
-                                                                <span>
-                                                                    {exercise.sets ?? '-'} series
-                                                                </span>
-
-                                                                {isTime ? (
-                                                                    <span>
-                                                                        {exercise.reps != null
-                                                                            ? `${exercise.reps} min objetivo`
-                                                                            : 'Sin duración'}
-                                                                    </span>
-                                                                ) : (
-                                                                    <span>
-                                                                        {exercise.reps ?? '-'} reps
-                                                                        objetivo
-                                                                    </span>
-                                                                )}
-
-                                                                <span>
-                                                                    Descanso:{' '}
-                                                                    {exercise.rest_seconds
-                                                                        ? `${exercise.rest_seconds}s`
-                                                                        : '-'}
-                                                                </span>
-                                                            </div>
-
-                                                            {latestLog ? (
-                                                                <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-900/80 p-3 text-xs text-zinc-300">
-                                                                    <p className="font-medium text-zinc-100">
-                                                                        Último registro
-                                                                    </p>
-
-                                                                    {isTime ? (
-                                                                        <p className="mt-1">
-                                                                            Duración:{' '}
-                                                                            {latestLog.reps != null
-                                                                                ? `${latestLog.reps} min`
-                                                                                : '-'}{' '}
-                                                                            · Fecha:{' '}
-                                                                            {latestLog.performed_at ??
-                                                                                '-'}
-                                                                        </p>
-                                                                    ) : (
-                                                                        <p className="mt-1">
-                                                                            Peso:{' '}
-                                                                            {latestLog.weight != null
-                                                                                ? formatWeight(
-                                                                                    latestLog.weight,
-                                                                                    weightUnit
-                                                                                )
-                                                                                : '-'}{' '}
-                                                                            · Reps:{' '}
-                                                                            {latestLog.reps ?? '-'}{' '}
-                                                                            · Fecha:{' '}
-                                                                            {latestLog.performed_at ??
-                                                                                '-'}
-                                                                        </p>
-                                                                    )}
-
-                                                                    {isPR && (
-                                                                        <p className="mt-1 text-xs font-semibold text-green-400">
-                                                                            🔥 Nuevo PR
-                                                                        </p>
-                                                                    )}
-                                                                </div>
-                                                            ) : (
-                                                                <p className="mt-3 text-xs text-zinc-500">
-                                                                    Todavía no hay registros de
-                                                                    carga.
-                                                                </p>
                                                             )}
                                                         </div>
 
-                                                        <form
-                                                            action={deleteExerciseFromRoutineDay}
-                                                        >
-                                                            <input
-                                                                type="hidden"
-                                                                name="routineId"
-                                                                value={routine.id}
-                                                            />
-                                                            <input
-                                                                type="hidden"
-                                                                name="exerciseId"
-                                                                value={exercise.id}
-                                                            />
-                                                            <button
-                                                                type="submit"
-                                                                className="rounded-lg border border-red-900 px-3 py-1 text-xs text-red-400 hover:bg-red-950/40"
-                                                            >
-                                                                Eliminar
-                                                            </button>
-                                                        </form>
+                                                        <div className="mt-3 flex flex-wrap gap-2 text-xs text-zinc-400">
+                                                            <span className="rounded-full border border-zinc-800 bg-zinc-900 px-2.5 py-1">
+                                                                {exercise.sets ?? '-'} series
+                                                            </span>
+
+                                                            {isTime ? (
+                                                                <span className="rounded-full border border-zinc-800 bg-zinc-900 px-2.5 py-1">
+                                                                    {exercise.reps != null
+                                                                        ? `${exercise.reps} min objetivo`
+                                                                        : 'Sin duración'}
+                                                                </span>
+                                                            ) : (
+                                                                <span className="rounded-full border border-zinc-800 bg-zinc-900 px-2.5 py-1">
+                                                                    {exercise.reps ?? '-'} reps objetivo
+                                                                </span>
+                                                            )}
+
+                                                            <span className="rounded-full border border-zinc-800 bg-zinc-900 px-2.5 py-1">
+                                                                Descanso:{' '}
+                                                                {exercise.rest_seconds
+                                                                    ? `${exercise.rest_seconds}s`
+                                                                    : '-'}
+                                                            </span>
+                                                        </div>
                                                     </div>
 
-                                                    <form
-                                                        action={addExerciseLog}
-                                                        className="mt-4 space-y-3 border-t border-zinc-800 pt-4"
-                                                    >
+                                                    <form action={deleteExerciseFromRoutineDay}>
                                                         <input
                                                             type="hidden"
                                                             name="routineId"
@@ -411,111 +445,98 @@ export default async function RoutineDetailPage({ params }: PageProps) {
                                                         />
                                                         <input
                                                             type="hidden"
-                                                            name="studentId"
-                                                            value={routine.student_id}
-                                                        />
-                                                        <input
-                                                            type="hidden"
-                                                            name="routineDayExerciseId"
+                                                            name="exerciseId"
                                                             value={exercise.id}
                                                         />
-                                                        <input
-                                                            type="hidden"
-                                                            name="weight_unit"
-                                                            value={weightUnit}
-                                                        />
-
-                                                        <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-                                                            {isTime
-                                                                ? 'Registro de cardio'
-                                                                : 'Registro de carga'}
-                                                        </p>
-
-                                                        {isTime ? (
-                                                            <div className="grid grid-cols-2 gap-2">
-                                                                <input
-                                                                    name="performed_reps"
-                                                                    type="number"
-                                                                    placeholder="Duración (min)"
-                                                                    className="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-white"
-                                                                />
-                                                                <input
-                                                                    name="performed_at"
-                                                                    type="date"
-                                                                    defaultValue={new Date()
-                                                                        .toISOString()
-                                                                        .slice(0, 10)}
-                                                                    className="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-white"
-                                                                />
-                                                            </div>
-                                                        ) : (
-                                                            <div className="grid grid-cols-3 gap-2">
-                                                                <input
-                                                                    name="weight"
-                                                                    type="number"
-                                                                    step="0.5"
-                                                                    placeholder={`Peso (${weightUnit})`}
-                                                                    className="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-white"
-                                                                />
-                                                                <input
-                                                                    name="performed_reps"
-                                                                    type="number"
-                                                                    placeholder="Reps"
-                                                                    className="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-white"
-                                                                />
-                                                                <input
-                                                                    name="performed_at"
-                                                                    type="date"
-                                                                    defaultValue={new Date()
-                                                                        .toISOString()
-                                                                        .slice(0, 10)}
-                                                                    className="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-white"
-                                                                />
-                                                            </div>
-                                                        )}
-
                                                         <button
                                                             type="submit"
-                                                            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+                                                            className="rounded-xl border border-red-900 px-3 py-2 text-xs text-red-400 transition hover:bg-red-950/40"
                                                         >
-                                                            {isTime ? 'Guardar cardio' : 'Guardar carga'}
+                                                            Eliminar
                                                         </button>
                                                     </form>
+                                                </div>
 
-                                                    {logs.length > 0 && (
-                                                        <div className="mt-4 border-t border-zinc-800 pt-4">
-                                                            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-500">
-                                                                Historial
-                                                            </p>
+                                                <div className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-3">
+                                                    <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                                                        {isTime ? 'Último registro' : 'Última carga'}
+                                                    </p>
 
+                                                    {latestLog ? (
+                                                        <>
+                                                            {isTime ? (
+                                                                <p className="mt-2 text-sm text-zinc-200">
+                                                                    {latestLog.reps != null
+                                                                        ? `${latestLog.reps} min`
+                                                                        : '-'}{' '}
+                                                                    · {latestLog.performed_at ?? '-'}
+                                                                </p>
+                                                            ) : (
+                                                                <p className="mt-2 text-sm text-zinc-200">
+                                                                    {latestLog.weight != null
+                                                                        ? formatWeight(
+                                                                            latestLog.weight,
+                                                                            weightUnit
+                                                                        )
+                                                                        : '-'}{' '}
+                                                                    · {latestLog.reps ?? '-'} reps ·{' '}
+                                                                    {latestLog.performed_at ?? '-'}
+                                                                </p>
+                                                            )}
+
+                                                            {isPR && (
+                                                                <p className="mt-1 text-xs font-semibold text-green-400">
+                                                                    🔥 Nuevo PR
+                                                                </p>
+                                                            )}
+                                                        </>
+                                                    ) : (
+                                                        <p className="mt-2 text-sm text-zinc-500">
+                                                            Todavía no hay registros.
+                                                        </p>
+                                                    )}
+                                                </div>
+
+                                                <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-3">
+                                                    <p className="text-sm font-medium text-amber-200">
+                                                        Las cargas se registran desde Entrenar
+                                                    </p>
+                                                    <p className="mt-1 text-xs text-amber-300/80">
+                                                        Acá planificás la rutina. Para cargar pesos y reps reales,
+                                                        usá la pantalla de entrenamiento.
+                                                    </p>
+                                                </div>
+
+                                                {logs.length > 0 && (
+                                                    <details className="rounded-xl border border-zinc-800 bg-zinc-900/50">
+                                                        <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium text-zinc-200">
+                                                            Ver historial
+                                                        </summary>
+
+                                                        <div className="border-t border-zinc-800 px-4 py-4">
                                                             <div className="space-y-2">
                                                                 {logs.slice(0, 5).map((log) => (
                                                                     <div
                                                                         key={log.id}
-                                                                        className="rounded-lg border border-zinc-800 bg-zinc-900/70 p-2 text-xs text-zinc-300"
+                                                                        className="rounded-lg border border-zinc-800 bg-zinc-950/70 p-2 text-xs text-zinc-300"
                                                                     >
                                                                         {isTime ? (
                                                                             <>
-                                                                                {log.performed_at ??
-                                                                                    '-'}{' '}
-                                                                                ·{' '}
+                                                                                {log.performed_at ?? '-'} ·{' '}
                                                                                 {log.reps != null
                                                                                     ? `${log.reps} min`
                                                                                     : '-'}
                                                                             </>
                                                                         ) : (
                                                                             <>
-                                                                                {log.performed_at ??
-                                                                                    '-'}{' '}
-                                                                                ·{' '}
+                                                                                {log.performed_at ?? '-'} ·{' '}
                                                                                 {log.weight != null
                                                                                     ? formatWeight(
                                                                                         log.weight,
                                                                                         weightUnit
                                                                                     )
                                                                                     : '-'}{' '}
-                                                                                ·{' '}
-                                                                                {log.reps ?? '-'} reps
+                                                                                · {log.reps ?? '-'} reps
                                                                             </>
                                                                         )}
                                                                     </div>
@@ -523,24 +544,24 @@ export default async function RoutineDetailPage({ params }: PageProps) {
                                                             </div>
 
                                                             {!isTime && (
-                                                                <ExerciseProgressChart
-                                                                    logs={logs}
-                                                                />
+                                                                <div className="mt-4">
+                                                                    <ExerciseProgressChart logs={logs} />
+                                                                </div>
                                                             )}
                                                         </div>
-                                                    )}
-                                                </div>
-                                            )
-                                        })
-                                    ) : (
-                                        <p className="text-sm text-zinc-500">
-                                            Todavía no hay ejercicios en este día.
-                                        </p>
-                                    )}
+                                                    </details>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )
+                                })
+                            ) : (
+                                <div className="rounded-2xl border border-dashed border-zinc-800 bg-zinc-950/40 p-4 text-sm text-zinc-500">
+                                    Todavía no hay ejercicios en este día.
                                 </div>
-                            </div>
-                        )
-                    })}
+                            )}
+                        </div>
+                    </section>
                 </div>
             )}
         </div>

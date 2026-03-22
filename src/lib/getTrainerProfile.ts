@@ -18,16 +18,32 @@ export async function getTrainerProfile(): Promise<TrainerProfile | null> {
         return null
     }
 
-    const { data, error } = await supabase
-        .from('trainer_profiles')
-        .select('display_name, gym_name, weight_unit, default_routine_days')
-        .eq('user_id', user.id)
-        .maybeSingle()
+    const [{ data: trainerProfile, error: trainerError }, { data: profile, error: profileError }] =
+        await Promise.all([
+            supabase
+                .from('trainer_profiles')
+                .select('display_name, gym_name, default_routine_days')
+                .eq('user_id', user.id)
+                .maybeSingle(),
+            supabase
+                .from('profiles')
+                .select('weight_unit')
+                .eq('id', user.id)
+                .maybeSingle(),
+        ])
 
-    if (error) {
-        console.error('Error fetching trainer profile:', error)
-        return null
+    if (trainerError) {
+        console.error('Error fetching trainer profile:', trainerError)
     }
 
-    return (data as TrainerProfile | null) ?? null
+    if (profileError) {
+        console.error('Error fetching profile weight unit:', profileError)
+    }
+
+    return {
+        display_name: trainerProfile?.display_name ?? null,
+        gym_name: trainerProfile?.gym_name ?? null,
+        default_routine_days: trainerProfile?.default_routine_days ?? null,
+        weight_unit: profile?.weight_unit ?? 'kg',
+    }
 }
