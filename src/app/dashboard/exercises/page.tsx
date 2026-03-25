@@ -43,6 +43,8 @@ export default function ExercisesPage() {
     const [items, setItems] = useState<Exercise[]>([])
     const [loading, setLoading] = useState(true)
 
+    const [selectedId, setSelectedId] = useState<string | null>(null)
+
     async function load() {
         setLoading(true)
         const res = await listExercises()
@@ -102,43 +104,47 @@ export default function ExercisesPage() {
     }
 
     async function handleDelete(id: string) {
-        if (!confirm('¿Estás seguro de que querés eliminar este ejercicio?')) return
+        if (!confirm('¿Eliminar este ejercicio?')) return
 
-        setError(null)
         const res = await deleteExercise(id)
         if (!res.ok) {
             setError(res.message)
             return
         }
+
+        if (selectedId === id) {
+            setSelectedId(null)
+        }
+
         await load()
     }
 
     return (
-        <div className="p-6">
-            <h1 className="mb-1 text-2xl font-semibold text-zinc-900 dark:text-white">
+        <div className="min-h-screen bg-zinc-100 p-6 dark:bg-transparent">
+            <h1 className="mb-1 text-3xl font-bold text-zinc-900 dark:text-white">
                 Ejercicios
             </h1>
 
             <p className="mb-6 text-sm text-zinc-600 dark:text-zinc-400">
-                Creá tu librería. Después la vamos a reutilizar para armar rutinas.
+                Creá tu librería y reutilizala en las rutinas.
             </p>
 
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50">
-                    <h2 className="mb-4 text-lg font-medium text-zinc-900 dark:text-white">
+                <div className="rounded-2xl border border-zinc-300 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50">
+                    <h2 className="mb-4 text-lg font-semibold text-zinc-900 dark:text-white">
                         Nuevo ejercicio
                     </h2>
 
                     <form onSubmit={onSubmit} className="space-y-3">
                         <input
-                            className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+                            className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
                             placeholder="Nombre (ej: Hip Thrust)"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                         />
 
                         <textarea
-                            className="min-h-24 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+                            className="min-h-24 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
                             placeholder="Descripción (opcional)"
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
@@ -146,7 +152,7 @@ export default function ExercisesPage() {
 
                         <div className="grid grid-cols-2 gap-3">
                             <select
-                                className="h-10 rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100"
+                                className="h-10 rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
                                 value={category}
                                 onChange={(e) => setCategory(e.target.value)}
                             >
@@ -159,7 +165,7 @@ export default function ExercisesPage() {
                             </select>
 
                             <select
-                                className="h-10 rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100"
+                                className="h-10 rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
                                 value={level}
                                 onChange={(e) => setLevel(e.target.value)}
                             >
@@ -173,7 +179,7 @@ export default function ExercisesPage() {
                         </div>
 
                         <select
-                            className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100"
+                            className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
                             value={metricType}
                             onChange={(e) =>
                                 setMetricType(e.target.value as 'reps' | 'time')
@@ -187,7 +193,7 @@ export default function ExercisesPage() {
                         </select>
 
                         {error && (
-                            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400">
+                            <div className="text-sm text-red-600 dark:text-red-400">
                                 {error}
                             </div>
                         )}
@@ -195,15 +201,15 @@ export default function ExercisesPage() {
                         <button
                             type="submit"
                             disabled={saving}
-                            className="h-10 w-full rounded-lg bg-zinc-900 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+                            className="h-11 w-full rounded-lg bg-blue-600 text-sm font-semibold text-white transition hover:bg-blue-500 active:scale-[0.98] disabled:opacity-50"
                         >
                             {saving ? 'Guardando...' : 'Agregar ejercicio'}
                         </button>
                     </form>
                 </div>
 
-                <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50">
-                    <h2 className="mb-4 text-lg font-medium text-zinc-900 dark:text-white">
+                <div className="rounded-2xl border border-zinc-300 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50">
+                    <h2 className="mb-4 text-lg font-semibold text-zinc-900 dark:text-white">
                         Tu librería
                     </h2>
 
@@ -216,46 +222,68 @@ export default function ExercisesPage() {
                             No hay ejercicios todavía.
                         </p>
                     ) : (
-                        <div className="space-y-2">
-                            {items.map((x) => (
-                                <div
-                                    key={x.id}
-                                    className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-950/40"
-                                >
-                                    <div className="flex items-center justify-between gap-3">
-                                        <div className="font-medium text-zinc-900 dark:text-zinc-100">
-                                            {x.name}
-                                        </div>
+                        <div className="space-y-3">
+                            {items.map((x) => {
+                                const selected = selectedId === x.id
 
-                                        <div className="flex items-center gap-3">
-                                            <div className="text-xs text-zinc-500 dark:text-zinc-400">
-                                                {[x.category, x.level]
-                                                    .filter(Boolean)
-                                                    .join(' • ')}
-                                                {x.metric_type
-                                                    ? ` • ${x.metric_type === 'time'
-                                                        ? 'Tiempo'
-                                                        : 'Peso/Reps'
-                                                    }`
-                                                    : ''}
+                                return (
+                                    <div
+                                        key={x.id}
+                                        onClick={() => setSelectedId(x.id)}
+                                        className={[
+                                            'cursor-pointer rounded-xl border p-4 transition duration-200 hover:shadow-md',
+                                            selected
+                                                ? 'border-blue-500 bg-blue-50 shadow-sm dark:border-blue-500 dark:bg-blue-500/10'
+                                                : 'border-zinc-300 bg-white hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-950/40 dark:hover:bg-zinc-900',
+                                        ].join(' ')}
+                                    >
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="font-medium text-zinc-900 dark:text-zinc-100">
+                                                {x.name}
                                             </div>
 
                                             <button
-                                                onClick={() => handleDelete(x.id)}
-                                                className="text-xs text-red-600 transition-colors hover:text-red-500 dark:text-red-500 dark:hover:text-red-400"
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    handleDelete(x.id)
+                                                }}
+                                                className="rounded-md px-2 py-1 text-sm text-red-600 transition hover:bg-red-50 hover:text-red-500 dark:text-red-500 dark:hover:bg-red-500/10 dark:hover:text-red-400"
+                                                aria-label={`Eliminar ${x.name}`}
                                             >
-                                                Eliminar
+                                                🗑
                                             </button>
                                         </div>
-                                    </div>
 
-                                    {x.description ? (
-                                        <div className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-                                            {x.description}
+                                        <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                                            {x.category && (
+                                                <span className="rounded-full bg-blue-100 px-2 py-0.5 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300">
+                                                    {x.category}
+                                                </span>
+                                            )}
+
+                                            {x.level && (
+                                                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
+                                                    {x.level}
+                                                </span>
+                                            )}
+
+                                            {x.metric_type && (
+                                                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
+                                                    {x.metric_type === 'time'
+                                                        ? 'Tiempo'
+                                                        : 'Peso/Reps'}
+                                                </span>
+                                            )}
                                         </div>
-                                    ) : null}
-                                </div>
-                            ))}
+
+                                        {x.description && (
+                                            <div className="mt-3 text-sm text-zinc-700 dark:text-zinc-400">
+                                                {x.description}
+                                            </div>
+                                        )}
+                                    </div>
+                                )
+                            })}
                         </div>
                     )}
                 </div>

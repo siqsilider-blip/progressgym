@@ -2,6 +2,7 @@ import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { formatWeight, type WeightUnit } from '@/lib/weight'
 import { ArrowRight, Trophy } from 'lucide-react'
+import AppCard from '@/components/ui/app-card'
 
 type LeaderboardItem = {
     studentId: string
@@ -22,29 +23,18 @@ export default async function TrainerStudentLeaderboardCard({
     const isLight = theme === 'light'
 
     return (
-        <div
-            className={`rounded-3xl border p-6 ${isLight
-                    ? 'border-zinc-200 bg-white'
-                    : 'border-zinc-800 bg-zinc-900/60'
-                }`}
-        >
+        <AppCard className="p-6">
             <div className="mb-6 flex items-center gap-3">
                 <div className="rounded-2xl bg-emerald-500/10 p-3 text-emerald-500">
                     <Trophy className="h-5 w-5" />
                 </div>
 
                 <div>
-                    <h2
-                        className={`text-lg font-semibold ${isLight ? 'text-zinc-900' : 'text-white'
-                            }`}
-                    >
+                    <h2 className="text-lg font-semibold text-card-foreground">
                         Ranking de alumnos
                     </h2>
 
-                    <p
-                        className={`text-sm ${isLight ? 'text-zinc-600' : 'text-zinc-400'
-                            }`}
-                    >
+                    <p className="text-sm text-muted-foreground">
                         Mejores progresos recientes
                     </p>
                 </div>
@@ -53,8 +43,8 @@ export default async function TrainerStudentLeaderboardCard({
             {ranking.length === 0 ? (
                 <div
                     className={`rounded-2xl border border-dashed p-5 text-sm ${isLight
-                            ? 'border-zinc-300 bg-zinc-50 text-zinc-600'
-                            : 'border-zinc-700 bg-zinc-950/50 text-zinc-400'
+                            ? 'border-border bg-muted/50 text-muted-foreground'
+                            : 'border-border bg-muted/30 text-muted-foreground'
                         }`}
                 >
                     Todavía no hay suficiente progreso registrado.
@@ -72,34 +62,26 @@ export default async function TrainerStudentLeaderboardCard({
                                             ? 'border-emerald-200 bg-emerald-50'
                                             : 'border-emerald-500/30 bg-emerald-500/5'
                                         : isLight
-                                            ? 'border-zinc-200 bg-zinc-50 hover:border-zinc-300 hover:bg-white'
-                                            : 'border-zinc-800 bg-zinc-950/60 hover:border-zinc-700'
+                                            ? 'border-border bg-muted/50 hover:border-zinc-300 hover:bg-card'
+                                            : 'border-border bg-muted/30 hover:border-zinc-700 hover:bg-card/90'
                                     }`}
                             >
                                 <div className="flex items-center gap-4">
                                     <div
                                         className={`flex h-11 w-11 items-center justify-center rounded-full text-sm font-bold ${isTop
                                                 ? 'bg-emerald-500 text-white'
-                                                : isLight
-                                                    ? 'bg-zinc-200 text-zinc-700'
-                                                    : 'bg-zinc-800 text-zinc-200'
+                                                : 'bg-secondary text-secondary-foreground'
                                             }`}
                                     >
                                         {index + 1}
                                     </div>
 
                                     <div>
-                                        <p
-                                            className={`font-semibold ${isLight ? 'text-zinc-900' : 'text-white'
-                                                }`}
-                                        >
+                                        <p className="font-semibold text-card-foreground">
                                             {item.studentName}
                                         </p>
 
-                                        <p
-                                            className={`mt-1 text-sm ${isLight ? 'text-zinc-600' : 'text-zinc-400'
-                                                }`}
-                                        >
+                                        <p className="mt-1 text-sm text-muted-foreground">
                                             {item.bestExerciseName
                                                 ? `Mejor ejercicio: ${item.bestExerciseName}`
                                                 : 'Sin datos de ejercicio'}
@@ -119,9 +101,7 @@ export default async function TrainerStudentLeaderboardCard({
                                     <p
                                         className={`text-xl font-bold ${isTop
                                                 ? 'text-emerald-500'
-                                                : isLight
-                                                    ? 'text-zinc-900'
-                                                    : 'text-zinc-100'
+                                                : 'text-card-foreground'
                                             }`}
                                     >
                                         +{formatWeight(item.progressKg, weightUnit)}
@@ -138,6 +118,6 @@ export default async function TrainerStudentLeaderboardCard({
                     })}
                 </div>
             )}
-        </div>
+        </AppCard>
     )
 }

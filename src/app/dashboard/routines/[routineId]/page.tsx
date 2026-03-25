@@ -82,9 +82,9 @@ export default async function RoutineDetailPage({
 
     if (routineError || !routine) {
         return (
-            <div className="px-4 pb-6 text-white md:p-8">
+            <div className="px-4 pb-6 text-foreground md:p-8">
                 <h1 className="text-2xl font-bold md:text-3xl">Rutina</h1>
-                <p className="mt-4 text-red-400">Rutina no encontrada.</p>
+                <p className="mt-4 text-red-500">Rutina no encontrada.</p>
             </div>
         )
     }
@@ -210,26 +210,26 @@ export default async function RoutineDetailPage({
         : 'Alumno no encontrado'
 
     return (
-        <div className="px-4 pb-6 text-white md:p-8">
+        <div className="px-4 pb-6 text-foreground md:p-8">
             <div className="mb-6 flex flex-col gap-4 md:mb-8 md:flex-row md:items-start md:justify-between">
                 <div>
-                    <p className="text-xs font-medium uppercase tracking-wide text-indigo-400">
+                    <p className="text-xs font-medium uppercase tracking-wide text-indigo-500">
                         Rutina
                     </p>
 
-                    <h1 className="mt-1 text-2xl font-bold md:text-3xl">
+                    <h1 className="mt-1 text-2xl font-bold text-card-foreground md:text-3xl">
                         {routine.name}
                     </h1>
 
-                    <p className="mt-2 text-sm text-zinc-400">
+                    <p className="mt-2 text-sm text-muted-foreground">
                         Alumno: {studentName}
                     </p>
 
                     <div className="mt-3 flex flex-wrap gap-2">
-                        <span className="rounded-full border border-zinc-800 bg-zinc-900 px-3 py-1 text-xs text-zinc-300">
+                        <span className="rounded-full border border-border bg-secondary px-3 py-1 text-xs text-secondary-foreground">
                             {typedDays.length} días
                         </span>
-                        <span className="rounded-full border border-zinc-800 bg-zinc-900 px-3 py-1 text-xs text-zinc-300">
+                        <span className="rounded-full border border-border bg-secondary px-3 py-1 text-xs text-secondary-foreground">
                             Pesos en {weightUnit.toUpperCase()}
                         </span>
                     </div>
@@ -245,7 +245,7 @@ export default async function RoutineDetailPage({
 
                     <Link
                         href="/dashboard/routines"
-                        className="inline-flex w-full items-center justify-center rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-zinc-200 transition hover:bg-zinc-800 md:w-auto"
+                        className="inline-flex w-full items-center justify-center rounded-xl border border-border bg-secondary px-4 py-3 text-sm text-secondary-foreground transition hover:bg-muted md:w-auto"
                     >
                         ← Volver
                     </Link>
@@ -253,24 +253,24 @@ export default async function RoutineDetailPage({
             </div>
 
             {daysError ? (
-                <div className="rounded-xl border border-red-900 bg-red-950/40 p-4 text-red-400">
+                <div className="rounded-xl border border-red-300 bg-red-50 p-4 text-red-600 dark:border-red-900 dark:bg-red-950/40 dark:text-red-400">
                     Error cargando o reparando los días de la rutina.
                 </div>
             ) : typedDays.length === 0 || !selectedDay ? (
-                <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-6">
-                    <h2 className="text-lg font-semibold text-white">
+                <div className="rounded-2xl border border-border bg-card p-6">
+                    <h2 className="text-lg font-semibold text-card-foreground">
                         No se pudieron generar los días de esta rutina
                     </h2>
-                    <p className="mt-2 text-sm text-zinc-400">
+                    <p className="mt-2 text-sm text-muted-foreground">
                         La rutina existe, pero sigue sin registros en routine_days.
                     </p>
                 </div>
             ) : (
                 <div className="space-y-4">
-                    <section className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4 md:p-5">
+                    <section className="rounded-2xl border border-border bg-card p-4 md:p-5">
                         <div className="mb-4">
-                            <h2 className="text-lg font-semibold text-white">Días</h2>
-                            <p className="mt-1 text-sm text-zinc-400">
+                            <h2 className="text-lg font-semibold text-card-foreground">Días</h2>
+                            <p className="mt-1 text-sm text-muted-foreground">
                                 Editá un día por vez.
                             </p>
                         </div>
@@ -285,8 +285,8 @@ export default async function RoutineDetailPage({
                                         key={day.id}
                                         href={`/dashboard/routines/${routine.id}?day=${day.id}`}
                                         className={`shrink-0 rounded-xl px-4 py-2 text-sm font-medium transition ${isActive
-                                            ? 'bg-indigo-600 text-white'
-                                            : 'border border-zinc-700 bg-zinc-950/60 text-zinc-200 hover:bg-zinc-800'
+                                                ? 'bg-indigo-600 text-white'
+                                                : 'border border-border bg-secondary text-secondary-foreground hover:bg-muted'
                                             }`}
                                     >
                                         {label}
@@ -299,7 +299,7 @@ export default async function RoutineDetailPage({
                             {previousDay ? (
                                 <Link
                                     href={`/dashboard/routines/${routine.id}?day=${previousDay.id}`}
-                                    className="rounded-xl border border-zinc-700 bg-zinc-950/60 px-4 py-2 text-sm text-zinc-200 transition hover:bg-zinc-800"
+                                    className="rounded-xl border border-border bg-secondary px-4 py-2 text-sm text-secondary-foreground transition hover:bg-muted"
                                 >
                                     ← Anterior
                                 </Link>
@@ -310,7 +310,7 @@ export default async function RoutineDetailPage({
                             {nextDay ? (
                                 <Link
                                     href={`/dashboard/routines/${routine.id}?day=${nextDay.id}`}
-                                    className="rounded-xl border border-zinc-700 bg-zinc-950/60 px-4 py-2 text-sm text-zinc-200 transition hover:bg-zinc-800"
+                                    className="rounded-xl border border-border bg-secondary px-4 py-2 text-sm text-secondary-foreground transition hover:bg-muted"
                                 >
                                     Siguiente →
                                 </Link>
@@ -320,19 +320,19 @@ export default async function RoutineDetailPage({
                         </div>
                     </section>
 
-                    <section className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4 md:p-5">
+                    <section className="rounded-2xl border border-border bg-card p-4 md:p-5">
                         <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                             <div>
-                                <h2 className="text-lg font-semibold text-white">
+                                <h2 className="text-lg font-semibold text-card-foreground">
                                     {selectedDay.title || `Día ${selectedDay.day_index}`}
                                 </h2>
-                                <p className="mt-1 text-sm text-zinc-400">
+                                <p className="mt-1 text-sm text-muted-foreground">
                                     Día {selectedDay.day_index}
                                 </p>
                             </div>
 
                             <div className="flex flex-wrap gap-2">
-                                <div className="rounded-full border border-zinc-800 bg-zinc-950 px-3 py-1 text-xs text-zinc-400">
+                                <div className="rounded-full border border-border bg-secondary px-3 py-1 text-xs text-secondary-foreground">
                                     {(exercisesByDay[selectedDay.id] || []).length} ejercicios
                                 </div>
 
@@ -345,8 +345,8 @@ export default async function RoutineDetailPage({
                             </div>
                         </div>
 
-                        <div className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-3 md:p-4">
-                            <p className="mb-3 text-xs font-medium uppercase tracking-wide text-zinc-500">
+                        <div className="rounded-2xl border border-border bg-muted/40 p-3 md:p-4">
+                            <p className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                                 Agregar ejercicio
                             </p>
 
@@ -385,50 +385,50 @@ export default async function RoutineDetailPage({
                                     return (
                                         <div
                                             key={exercise.id}
-                                            className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-4"
+                                            className="rounded-2xl border border-border bg-muted/40 p-4"
                                         >
                                             <div className="flex flex-col gap-3">
                                                 <div className="flex items-start justify-between gap-3">
                                                     <div className="min-w-0">
                                                         <div className="flex flex-wrap items-center gap-2">
-                                                            <p className="text-base font-semibold text-white">
+                                                            <p className="text-base font-semibold text-card-foreground">
                                                                 {index + 1}. {relation?.name ?? 'Ejercicio'}
                                                             </p>
 
                                                             <span
                                                                 className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${isTime
-                                                                    ? 'border-blue-500/20 bg-blue-500/15 text-blue-300'
-                                                                    : 'border-green-500/20 bg-green-500/15 text-green-300'
+                                                                        ? 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/15 dark:text-blue-300'
+                                                                        : 'border-green-200 bg-green-50 text-green-700 dark:border-green-500/20 dark:bg-green-500/15 dark:text-green-300'
                                                                     }`}
                                                             >
                                                                 {isTime ? 'Cardio' : 'Fuerza'}
                                                             </span>
 
                                                             {relation?.muscle_group && (
-                                                                <span className="rounded-full border border-zinc-700 bg-zinc-900 px-2 py-0.5 text-[10px] text-zinc-400">
+                                                                <span className="rounded-full border border-border bg-secondary px-2 py-0.5 text-[10px] text-secondary-foreground">
                                                                     {relation.muscle_group}
                                                                 </span>
                                                             )}
                                                         </div>
 
-                                                        <div className="mt-3 flex flex-wrap gap-2 text-xs text-zinc-400">
-                                                            <span className="rounded-full border border-zinc-800 bg-zinc-900 px-2.5 py-1">
+                                                        <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                                            <span className="rounded-full border border-border bg-secondary px-2.5 py-1 text-secondary-foreground">
                                                                 {exercise.sets ?? '-'} series
                                                             </span>
 
                                                             {isTime ? (
-                                                                <span className="rounded-full border border-zinc-800 bg-zinc-900 px-2.5 py-1">
+                                                                <span className="rounded-full border border-border bg-secondary px-2.5 py-1 text-secondary-foreground">
                                                                     {exercise.reps != null
                                                                         ? `${exercise.reps} min objetivo`
                                                                         : 'Sin duración'}
                                                                 </span>
                                                             ) : (
-                                                                <span className="rounded-full border border-zinc-800 bg-zinc-900 px-2.5 py-1">
+                                                                <span className="rounded-full border border-border bg-secondary px-2.5 py-1 text-secondary-foreground">
                                                                     {exercise.reps ?? '-'} reps objetivo
                                                                 </span>
                                                             )}
 
-                                                            <span className="rounded-full border border-zinc-800 bg-zinc-900 px-2.5 py-1">
+                                                            <span className="rounded-full border border-border bg-secondary px-2.5 py-1 text-secondary-foreground">
                                                                 Descanso:{' '}
                                                                 {exercise.rest_seconds
                                                                     ? `${exercise.rest_seconds}s`
@@ -450,29 +450,29 @@ export default async function RoutineDetailPage({
                                                         />
                                                         <button
                                                             type="submit"
-                                                            className="rounded-xl border border-red-900 px-3 py-2 text-xs text-red-400 transition hover:bg-red-950/40"
+                                                            className="rounded-xl border border-red-300 px-3 py-2 text-xs text-red-600 transition hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/40"
                                                         >
                                                             Eliminar
                                                         </button>
                                                     </form>
                                                 </div>
 
-                                                <div className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-3">
-                                                    <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                                                <div className="rounded-xl border border-border bg-card p-3">
+                                                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                                                         {isTime ? 'Último registro' : 'Última carga'}
                                                     </p>
 
                                                     {latestLog ? (
                                                         <>
                                                             {isTime ? (
-                                                                <p className="mt-2 text-sm text-zinc-200">
+                                                                <p className="mt-2 text-sm text-card-foreground">
                                                                     {latestLog.reps != null
                                                                         ? `${latestLog.reps} min`
                                                                         : '-'}{' '}
                                                                     · {latestLog.performed_at ?? '-'}
                                                                 </p>
                                                             ) : (
-                                                                <p className="mt-2 text-sm text-zinc-200">
+                                                                <p className="mt-2 text-sm text-card-foreground">
                                                                     {latestLog.weight != null
                                                                         ? formatWeight(
                                                                             latestLog.weight,
@@ -485,40 +485,40 @@ export default async function RoutineDetailPage({
                                                             )}
 
                                                             {isPR && (
-                                                                <p className="mt-1 text-xs font-semibold text-green-400">
+                                                                <p className="mt-1 text-xs font-semibold text-green-500">
                                                                     🔥 Nuevo PR
                                                                 </p>
                                                             )}
                                                         </>
                                                     ) : (
-                                                        <p className="mt-2 text-sm text-zinc-500">
+                                                        <p className="mt-2 text-sm text-muted-foreground">
                                                             Todavía no hay registros.
                                                         </p>
                                                     )}
                                                 </div>
 
-                                                <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-3">
-                                                    <p className="text-sm font-medium text-amber-200">
+                                                <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-500/20 dark:bg-amber-500/10">
+                                                    <p className="text-sm font-medium text-amber-700 dark:text-amber-200">
                                                         Las cargas se registran desde Entrenar
                                                     </p>
-                                                    <p className="mt-1 text-xs text-amber-300/80">
+                                                    <p className="mt-1 text-xs text-amber-600 dark:text-amber-300/80">
                                                         Acá planificás la rutina. Para cargar pesos y reps reales,
                                                         usá la pantalla de entrenamiento.
                                                     </p>
                                                 </div>
 
                                                 {logs.length > 0 && (
-                                                    <details className="rounded-xl border border-zinc-800 bg-zinc-900/50">
-                                                        <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium text-zinc-200">
+                                                    <details className="rounded-xl border border-border bg-card">
+                                                        <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium text-card-foreground">
                                                             Ver historial
                                                         </summary>
 
-                                                        <div className="border-t border-zinc-800 px-4 py-4">
+                                                        <div className="border-t border-border px-4 py-4">
                                                             <div className="space-y-2">
                                                                 {logs.slice(0, 5).map((log) => (
                                                                     <div
                                                                         key={log.id}
-                                                                        className="rounded-lg border border-zinc-800 bg-zinc-950/70 p-2 text-xs text-zinc-300"
+                                                                        className="rounded-lg border border-border bg-muted/40 p-2 text-xs text-card-foreground"
                                                                     >
                                                                         {isTime ? (
                                                                             <>
@@ -556,7 +556,7 @@ export default async function RoutineDetailPage({
                                     )
                                 })
                             ) : (
-                                <div className="rounded-2xl border border-dashed border-zinc-800 bg-zinc-950/40 p-4 text-sm text-zinc-500">
+                                <div className="rounded-2xl border border-dashed border-border bg-muted/30 p-4 text-sm text-muted-foreground">
                                     Todavía no hay ejercicios en este día.
                                 </div>
                             )}

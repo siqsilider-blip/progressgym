@@ -1,4 +1,5 @@
 import { Activity, AlertTriangle, Trophy, Users } from 'lucide-react'
+import AppCard from '@/components/ui/app-card'
 
 export default function WeeklySummaryCard({
     activeStudents,
@@ -17,46 +18,47 @@ export default function WeeklySummaryCard({
             value: activeStudents,
             helper: 'Entrenaron en 7 días',
             icon: Users,
-            iconClassName: 'text-emerald-400',
+            iconClassName: 'text-emerald-500',
             iconBgClassName: 'bg-emerald-500/10',
-            valueClassName: 'text-emerald-400',
+            valueClassName: 'text-emerald-500',
         },
         {
             label: 'Alertas',
             value: alertsCount,
             helper: 'Pendientes de revisar',
             icon: AlertTriangle,
-            iconClassName: 'text-amber-400',
+            iconClassName: 'text-amber-500',
             iconBgClassName: 'bg-amber-500/10',
-            valueClassName: 'text-amber-400',
+            valueClassName: 'text-amber-500',
         },
         {
             label: 'PRs',
             value: totalPRs,
             helper: 'Detectados en total',
             icon: Trophy,
-            iconClassName: 'text-indigo-400',
+            iconClassName: 'text-indigo-500',
             iconBgClassName: 'bg-indigo-500/10',
-            valueClassName: 'text-indigo-400',
+            valueClassName: 'text-indigo-500',
         },
         {
             label: 'Actividad',
             value: recentWorkoutsCount,
             helper: 'Entrenamientos recientes',
             icon: Activity,
-            iconClassName: 'text-cyan-400',
+            iconClassName: 'text-cyan-500',
             iconBgClassName: 'bg-cyan-500/10',
-            valueClassName: 'text-cyan-400',
+            valueClassName: 'text-cyan-500',
         },
     ] as const
 
     return (
-        <div className="rounded-3xl border border-zinc-800 bg-zinc-900/60 p-6">
+        <AppCard className="p-6">
             <div className="mb-6">
-                <h2 className="text-lg font-semibold text-white">
+                <h2 className="text-lg font-semibold text-card-foreground">
                     Resumen semanal
                 </h2>
-                <p className="text-sm text-zinc-400">
+
+                <p className="text-sm text-muted-foreground">
                     Panorama rápido del estado actual del panel
                 </p>
             </div>
@@ -68,19 +70,21 @@ export default function WeeklySummaryCard({
                     return (
                         <div
                             key={item.label}
-                            className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-4"
+                            className="rounded-2xl border border-border bg-muted/40 p-4"
                         >
                             <div className="flex items-start justify-between gap-3">
                                 <div>
-                                    <p className="text-sm text-zinc-400">
+                                    <p className="text-sm text-muted-foreground">
                                         {item.label}
                                     </p>
+
                                     <p
                                         className={`mt-2 text-2xl font-bold ${item.valueClassName}`}
                                     >
                                         {item.value}
                                     </p>
-                                    <p className="mt-1 text-xs text-zinc-500">
+
+                                    <p className="mt-1 text-xs text-muted-foreground">
                                         {item.helper}
                                     </p>
                                 </div>
@@ -97,6 +101,6 @@ export default function WeeklySummaryCard({
                     )
                 })}
             </div>
-        </div>
+        </AppCard>
     )
 }

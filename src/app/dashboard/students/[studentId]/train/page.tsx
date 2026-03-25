@@ -60,7 +60,7 @@ export default async function StudentTrainPage({
 
     if (studentError || !student) {
         return (
-            <div className="p-6 text-white">
+            <div className="p-6 text-foreground">
                 <h1 className="text-xl font-semibold">No se encontró el alumno.</h1>
             </div>
         )
@@ -128,13 +128,13 @@ export default async function StudentTrainPage({
 
     if (!assignedRoutineId) {
         return (
-            <div className="p-6 text-white md:p-8">
-                <div className="mx-auto max-w-3xl rounded-2xl border border-zinc-800 bg-zinc-900/60 p-6">
-                    <h1 className="text-2xl font-bold">
+            <div className="p-6 text-foreground md:p-8">
+                <div className="mx-auto max-w-3xl rounded-2xl border border-border bg-card p-6">
+                    <h1 className="text-2xl font-bold text-card-foreground">
                         {student.first_name} {student.last_name}
                     </h1>
 
-                    <p className="mt-2 text-sm text-zinc-400">
+                    <p className="mt-2 text-sm text-muted-foreground">
                         Este alumno todavía no tiene una rutina asignada.
                     </p>
 
@@ -148,7 +148,7 @@ export default async function StudentTrainPage({
 
                         <Link
                             href={`/dashboard/students/${params.studentId}`}
-                            className="rounded-lg border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-100 transition hover:bg-zinc-800"
+                            className="rounded-lg border border-border bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground transition hover:bg-muted"
                         >
                             Volver al perfil
                         </Link>
@@ -289,49 +289,49 @@ export default async function StudentTrainPage({
     }
 
     return (
-        <div className="p-3 pb-40 text-white md:p-6 md:pb-28">
+        <div className="p-3 pb-40 text-foreground md:p-6 md:pb-28">
             <div className="mx-auto max-w-4xl">
-                <div className="mb-3 rounded-xl border border-zinc-800 bg-zinc-900/60 p-3 md:mb-4 md:p-4">
+                <div className="mb-3 rounded-xl border border-border bg-card p-3 md:mb-4 md:p-4">
                     <div className="flex items-center justify-between gap-3">
                         <div className="min-w-0">
-                            <h1 className="truncate text-lg font-semibold text-white md:text-xl">
+                            <h1 className="truncate text-lg font-semibold text-card-foreground md:text-xl">
                                 {student.first_name} {student.last_name}
                             </h1>
 
-                            <p className="truncate text-xs text-zinc-400">
+                            <p className="truncate text-xs text-muted-foreground">
                                 {routine?.name ?? routineName}
                             </p>
                         </div>
 
                         <Link
                             href={`/dashboard/students/${params.studentId}`}
-                            className="shrink-0 rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-200 transition hover:bg-zinc-800"
+                            className="shrink-0 rounded-lg border border-border bg-secondary px-3 py-1.5 text-xs text-secondary-foreground transition hover:bg-muted"
                         >
                             Volver
                         </Link>
                     </div>
 
                     <div className="mt-3 flex gap-2 overflow-x-auto pb-1 text-[10px]">
-                        <span className="whitespace-nowrap rounded-full border border-zinc-700 bg-zinc-950/60 px-2.5 py-1 text-zinc-300">
+                        <span className="whitespace-nowrap rounded-full border border-border bg-secondary px-2.5 py-1 text-secondary-foreground">
                             {selectedDayLabel}
                         </span>
-                        <span className="whitespace-nowrap rounded-full border border-zinc-700 bg-zinc-950/60 px-2.5 py-1 text-zinc-300">
+                        <span className="whitespace-nowrap rounded-full border border-border bg-secondary px-2.5 py-1 text-secondary-foreground">
                             {totalExercises} ej
                         </span>
-                        <span className="whitespace-nowrap rounded-full border border-zinc-700 bg-zinc-950/60 px-2.5 py-1 text-zinc-300">
+                        <span className="whitespace-nowrap rounded-full border border-border bg-secondary px-2.5 py-1 text-secondary-foreground">
                             {totalSets} sets
                         </span>
                     </div>
                 </div>
 
                 {searchParams?.saved === '1' && (
-                    <div className="mb-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-300">
+                    <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
                         Entrenamiento guardado correctamente.
                     </div>
                 )}
 
                 {searchParams?.error === 'empty' && (
-                    <div className="mb-4 rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-300">
+                    <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300">
                         Completá al menos una serie antes de guardar.
                     </div>
                 )}
@@ -349,7 +349,7 @@ export default async function StudentTrainPage({
                                     href={`/dashboard/students/${params.studentId}/train?day=${day.id}`}
                                     className={`whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition ${isActive
                                             ? 'bg-indigo-600 text-white'
-                                            : 'border border-zinc-800 bg-zinc-900 text-zinc-300 hover:bg-zinc-800'
+                                            : 'border border-border bg-secondary text-secondary-foreground hover:bg-muted'
                                         }`}
                                 >
                                     {label}
@@ -360,15 +360,15 @@ export default async function StudentTrainPage({
                 </div>
 
                 {!selectedDay ? (
-                    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-6 text-sm text-zinc-400">
+                    <div className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">
                         Esta rutina no tiene días creados todavía.
                     </div>
                 ) : exercisesForDay.length === 0 ? (
-                    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4">
-                        <h3 className="text-lg font-semibold text-zinc-100">
+                    <div className="rounded-2xl border border-border bg-card p-4">
+                        <h3 className="text-lg font-semibold text-card-foreground">
                             Este día todavía no tiene ejercicios cargados.
                         </h3>
-                        <p className="mt-2 text-sm text-zinc-400">
+                        <p className="mt-2 text-sm text-muted-foreground">
                             Agregá ejercicios a este día para poder registrar la sesión.
                         </p>
                     </div>
@@ -377,26 +377,26 @@ export default async function StudentTrainPage({
                         <input type="hidden" name="student_id" value={student.id} />
                         <input type="hidden" name="selected_day_id" value={selectedDay.id} />
 
-                        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4 md:p-5">
+                        <div className="rounded-2xl border border-border bg-card p-4 md:p-5">
                             <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                                 <div>
-                                    <h2 className="text-base font-semibold text-zinc-100 md:text-lg">
+                                    <h2 className="text-base font-semibold text-card-foreground md:text-lg">
                                         Registro de sesión
                                     </h2>
-                                    <p className="text-sm text-zinc-400">
+                                    <p className="text-sm text-muted-foreground">
                                         Cargá los datos reales en formato rápido.
                                     </p>
                                 </div>
 
                                 <div className="w-full md:w-auto">
-                                    <label className="mb-2 block text-sm text-zinc-400">
+                                    <label className="mb-2 block text-sm text-muted-foreground">
                                         Fecha
                                     </label>
                                     <input
                                         type="date"
                                         name="performed_at"
                                         defaultValue={today}
-                                        className="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none transition focus:border-indigo-500 md:w-[220px]"
+                                        className="w-full rounded-xl border border-border bg-input px-3 py-2 text-sm text-foreground outline-none transition focus:border-indigo-500 md:w-[220px]"
                                     />
                                 </div>
                             </div>
@@ -421,34 +421,34 @@ export default async function StudentTrainPage({
                             return (
                                 <section
                                     key={exercise.id}
-                                    className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/60"
+                                    className="overflow-hidden rounded-2xl border border-border bg-card"
                                 >
-                                    <div className="flex items-start justify-between gap-3 border-b border-zinc-800 px-4 py-3 md:px-5 md:py-4">
+                                    <div className="flex items-start justify-between gap-3 border-b border-border px-4 py-3 md:px-5 md:py-4">
                                         <div className="min-w-0">
-                                            <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-zinc-500">
+                                            <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
                                                 Ejercicio {exerciseIndex + 1}
                                             </p>
 
-                                            <h3 className="mt-1 truncate text-base font-semibold text-zinc-100 md:text-lg">
+                                            <h3 className="mt-1 truncate text-base font-semibold text-card-foreground md:text-lg">
                                                 {exerciseName}
                                             </h3>
                                         </div>
 
                                         <div className="flex shrink-0 flex-wrap justify-end gap-2 text-[10px] md:text-xs">
-                                            <span className="rounded-full border border-zinc-700 bg-zinc-950/60 px-2.5 py-1 text-zinc-300">
+                                            <span className="rounded-full border border-border bg-secondary px-2.5 py-1 text-secondary-foreground">
                                                 {setsCount} series
                                             </span>
 
                                             {objectiveText && (
-                                                <span className="rounded-full border border-zinc-700 bg-zinc-950/60 px-2.5 py-1 text-zinc-300">
+                                                <span className="rounded-full border border-border bg-secondary px-2.5 py-1 text-secondary-foreground">
                                                     {objectiveText}
                                                 </span>
                                             )}
 
                                             <span
                                                 className={`rounded-full border px-2.5 py-1 ${isCardio
-                                                        ? 'border-sky-500/20 bg-sky-500/10 text-sky-300'
-                                                        : 'border-violet-500/20 bg-violet-500/10 text-violet-300'
+                                                        ? 'border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-300'
+                                                        : 'border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-300'
                                                     }`}
                                             >
                                                 {isCardio ? 'Cardio' : 'Fuerza'}
@@ -471,13 +471,13 @@ export default async function StudentTrainPage({
 
                         <div className="h-32 md:h-20" />
 
-                        <div className="fixed bottom-16 left-0 right-0 z-30 border-t border-zinc-800 bg-zinc-950/95 backdrop-blur md:bottom-0">
+                        <div className="fixed bottom-16 left-0 right-0 z-30 border-t border-border bg-background/95 backdrop-blur md:bottom-0">
                             <div className="mx-auto flex max-w-4xl flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between md:px-8">
                                 <div>
-                                    <p className="text-sm font-medium text-zinc-100">
+                                    <p className="text-sm font-medium text-card-foreground">
                                         Guardar sesión
                                     </p>
-                                    <p className="text-xs text-zinc-400">
+                                    <p className="text-xs text-muted-foreground">
                                         {selectedDayLabel} • {totalExercises} ejercicios
                                     </p>
                                 </div>
@@ -485,7 +485,7 @@ export default async function StudentTrainPage({
                                 <div className="flex flex-col gap-3 sm:flex-row">
                                     <Link
                                         href={`/dashboard/students/${params.studentId}`}
-                                        className="rounded-xl border border-zinc-700 px-5 py-3 text-center text-sm font-medium text-zinc-100 transition hover:bg-zinc-800"
+                                        className="rounded-xl border border-border bg-secondary px-5 py-3 text-center text-sm font-medium text-secondary-foreground transition hover:bg-muted"
                                     >
                                         Cancelar
                                     </Link>

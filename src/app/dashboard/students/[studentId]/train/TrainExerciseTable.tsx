@@ -92,14 +92,14 @@ export default function TrainExerciseTable({
 
     return (
         <div className="px-2 py-2 md:px-4 md:py-4">
-            <div className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950/50">
-                <div className="grid grid-cols-[56px_1fr_1fr] border-b border-zinc-800 bg-zinc-900/80 px-2 py-2 text-[10px] font-semibold uppercase tracking-wide text-zinc-500 md:grid-cols-[72px_1fr_1fr] md:px-4 md:text-[11px]">
+            <div className="overflow-hidden rounded-xl border border-border bg-muted/30">
+                <div className="grid grid-cols-[56px_1fr_1fr] border-b border-border bg-muted/60 px-2 py-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground md:grid-cols-[72px_1fr_1fr] md:px-4 md:text-[11px]">
                     <div>Serie</div>
                     <div>{isCardio ? 'Tiempo' : `Peso (${weightUnit})`}</div>
                     <div>{isCardio ? 'Nivel / dist.' : 'Reps'}</div>
                 </div>
 
-                <div className="divide-y divide-zinc-800">
+                <div className="divide-y divide-border">
                     {Array.from({ length: setsCount }).map((_, setIndex) => {
                         const initialWeight = initialWeights?.[setIndex]
                         const initialRep = initialReps?.[setIndex]
@@ -109,7 +109,7 @@ export default function TrainExerciseTable({
                                 key={`${exerciseId}-${setIndex}`}
                                 className="grid grid-cols-[56px_1fr_1fr] items-center gap-2 px-2 py-2 md:grid-cols-[72px_1fr_1fr] md:gap-3 md:px-4 md:py-3"
                             >
-                                <div className="text-sm font-medium text-zinc-300">
+                                <div className="text-sm font-medium text-card-foreground">
                                     {setIndex + 1}
                                 </div>
 
@@ -131,7 +131,7 @@ export default function TrainExerciseTable({
                                         inputMode="decimal"
                                         name={`weight_${exerciseId}_${setIndex}`}
                                         defaultValue={initialWeight ?? undefined}
-                                        className="h-10 w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 text-sm text-zinc-100 outline-none transition focus:border-indigo-500"
+                                        className="h-10 w-full rounded-lg border border-border bg-input px-3 text-sm text-foreground outline-none transition focus:border-indigo-500"
                                         placeholder={isCardio ? '20' : '20'}
                                         onChange={(e) => markManual(setIndex, e)}
                                         onBlur={(e) => {
@@ -160,7 +160,7 @@ export default function TrainExerciseTable({
                                         inputMode="numeric"
                                         name={`reps_${exerciseId}_${setIndex}`}
                                         defaultValue={initialRep ?? defaultReps ?? undefined}
-                                        className="h-10 w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 text-sm text-zinc-100 outline-none transition focus:border-indigo-500"
+                                        className="h-10 w-full rounded-lg border border-border bg-input px-3 text-sm text-foreground outline-none transition focus:border-indigo-500"
                                         placeholder={isCardio ? '5' : '12'}
                                         onChange={(e) => markManual(setIndex, e)}
                                         onBlur={(e) => {

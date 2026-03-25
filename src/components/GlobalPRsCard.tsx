@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { ChevronDown, ChevronUp, Medal, Trophy } from 'lucide-react'
+import AppCard from '@/components/ui/app-card'
 import { formatWeight, type WeightUnit } from '@/lib/weight'
 
 type GlobalPR = {
@@ -33,24 +34,25 @@ export default function GlobalPRsCard({
     const hasMore = prs.length > INITIAL_VISIBLE
 
     return (
-        <div className="rounded-3xl border border-zinc-800 bg-zinc-900/60 p-6">
+        <AppCard className="p-6">
             <div className="mb-6 flex items-center gap-3">
-                <div className="rounded-2xl bg-amber-500/10 p-3 text-amber-400">
+                <div className="rounded-2xl bg-amber-500/10 p-3 text-amber-500">
                     <Trophy className="h-5 w-5" />
                 </div>
 
                 <div>
-                    <h2 className="text-lg font-semibold text-white">
+                    <h2 className="text-lg font-semibold text-card-foreground">
                         Global PRs
                     </h2>
-                    <p className="text-sm text-zinc-400">
+
+                    <p className="text-sm text-muted-foreground">
                         Mejores marcas registradas entre todos tus alumnos
                     </p>
                 </div>
             </div>
 
             {prs.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-zinc-700 bg-zinc-950/50 p-5 text-sm text-zinc-400">
+                <div className="rounded-2xl border border-dashed border-border bg-muted/40 p-5 text-sm text-muted-foreground">
                     Todavía no hay PRs globales.
                 </div>
             ) : (
@@ -63,15 +65,15 @@ export default function GlobalPRsCard({
                                 <div
                                     key={`${pr.exerciseName}-${pr.studentName}-${i}`}
                                     className={`group flex items-center justify-between rounded-2xl border p-4 transition ${isTop
-                                            ? 'border-amber-500/30 bg-amber-500/5'
-                                            : 'border-zinc-800 bg-zinc-950/60 hover:border-zinc-700 hover:bg-zinc-900/80'
+                                            ? 'border-amber-200 bg-amber-50 dark:border-amber-500/30 dark:bg-amber-500/5'
+                                            : 'border-border bg-muted/40 hover:bg-muted/70 dark:bg-muted/30 dark:hover:bg-card/90'
                                         }`}
                                 >
                                     <div className="flex min-w-0 items-center gap-4">
                                         <div
                                             className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${isTop
-                                                    ? 'bg-amber-500 text-black'
-                                                    : 'bg-zinc-800 text-zinc-300'
+                                                    ? 'bg-amber-500 text-white dark:text-black'
+                                                    : 'bg-secondary text-secondary-foreground'
                                                 }`}
                                         >
                                             {isTop ? (
@@ -82,10 +84,11 @@ export default function GlobalPRsCard({
                                         </div>
 
                                         <div className="min-w-0">
-                                            <p className="truncate font-semibold text-white">
+                                            <p className="truncate font-semibold text-card-foreground">
                                                 {pr.exerciseName}
                                             </p>
-                                            <p className="mt-1 text-sm text-zinc-400">
+
+                                            <p className="mt-1 text-sm text-muted-foreground">
                                                 {pr.studentName}
                                             </p>
                                         </div>
@@ -93,20 +96,18 @@ export default function GlobalPRsCard({
 
                                     <div className="ml-4 shrink-0 text-right">
                                         <p
-                                            className={`text-xl font-bold ${isTop
-                                                    ? 'text-amber-400'
-                                                    : 'text-zinc-100'
+                                            className={`text-xl font-bold ${isTop ? 'text-amber-500' : 'text-card-foreground'
                                                 }`}
                                         >
                                             {formatWeight(pr.weight, weightUnit)}
                                         </p>
 
-                                        <p className="mt-1 text-xs text-zinc-500">
+                                        <p className="mt-1 text-xs text-muted-foreground">
                                             {pr.reps ?? 0} reps
                                         </p>
 
                                         {isTop && (
-                                            <p className="mt-1 text-xs font-medium text-amber-400">
+                                            <p className="mt-1 text-xs font-medium text-amber-500">
                                                 Mejor marca
                                             </p>
                                         )}
@@ -121,7 +122,7 @@ export default function GlobalPRsCard({
                             <button
                                 type="button"
                                 onClick={() => setExpanded((prev) => !prev)}
-                                className="inline-flex items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-950/60 px-4 py-2 text-sm font-medium text-zinc-300 transition hover:border-zinc-600 hover:bg-zinc-900 hover:text-white"
+                                className="inline-flex items-center gap-2 rounded-xl border border-border bg-muted/40 px-4 py-2 text-sm font-medium text-card-foreground transition hover:bg-muted/70"
                             >
                                 {expanded ? (
                                     <>
@@ -139,6 +140,6 @@ export default function GlobalPRsCard({
                     )}
                 </>
             )}
-        </div>
+        </AppCard>
     )
 }

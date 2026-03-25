@@ -6,6 +6,7 @@ import {
     UserCheck,
     Users,
 } from 'lucide-react'
+import AppCard from '@/components/ui/app-card'
 import type { TrainerDashboardStats } from './getTrainerDashboardStats'
 
 export default async function TrainerDashboardCards({
@@ -23,9 +24,9 @@ export default async function TrainerDashboardCards({
             value: stats.totalStudents,
             helper: 'Total registrados',
             icon: Users,
-            valueClassName: isLight ? 'text-zinc-900' : 'text-zinc-100',
+            valueClassName: 'text-foreground',
             iconClassName: isLight ? 'text-zinc-700' : 'text-zinc-300',
-            iconBgClassName: isLight ? 'bg-zinc-100' : 'bg-zinc-800/80',
+            iconBgClassName: isLight ? 'bg-muted' : 'bg-muted/80',
         },
         {
             label: 'Activos',
@@ -59,7 +60,7 @@ export default async function TrainerDashboardCards({
             value: stats.studentsWithRoutine,
             helper: 'Asignados',
             icon: ClipboardList,
-            valueClassName: isLight ? 'text-zinc-900' : 'text-zinc-100',
+            valueClassName: 'text-foreground',
             iconClassName: 'text-cyan-500',
             iconBgClassName: isLight ? 'bg-cyan-50' : 'bg-cyan-500/10',
         },
@@ -71,19 +72,16 @@ export default async function TrainerDashboardCards({
                 const Icon = card.icon
 
                 return (
-                    <div
+                    <AppCard
                         key={card.label}
-                        className={`rounded-3xl border p-4 transition md:p-5 ${isLight
-                                ? 'border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50'
-                                : 'border-zinc-800 bg-zinc-900/60 hover:border-zinc-700 hover:bg-zinc-900'
+                        className={`p-4 transition md:p-5 ${isLight
+                                ? 'hover:border-zinc-300 hover:bg-muted/40'
+                                : 'hover:border-zinc-700 hover:bg-card/90'
                             }`}
                     >
                         <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
-                                <p
-                                    className={`text-xs md:text-sm ${isLight ? 'text-zinc-600' : 'text-zinc-400'
-                                        }`}
-                                >
+                                <p className="text-xs text-muted-foreground md:text-sm">
                                     {card.label}
                                 </p>
 
@@ -93,10 +91,7 @@ export default async function TrainerDashboardCards({
                                     {card.value}
                                 </p>
 
-                                <p
-                                    className={`mt-1 text-[11px] md:text-sm ${isLight ? 'text-zinc-500' : 'text-zinc-500'
-                                        }`}
-                                >
+                                <p className="mt-1 text-[11px] text-muted-foreground md:text-sm">
                                     {card.helper}
                                 </p>
                             </div>
@@ -109,7 +104,7 @@ export default async function TrainerDashboardCards({
                                 />
                             </div>
                         </div>
-                    </div>
+                    </AppCard>
                 )
             })}
         </div>

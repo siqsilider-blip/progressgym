@@ -21,12 +21,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en" className={theme} suppressHydrationWarning>
-      <body
-        className={`${inter.className} min-h-screen ${theme === 'light'
-            ? 'bg-zinc-100 text-zinc-900'
-            : 'bg-zinc-950 text-zinc-50'
-          }`}
-      >
+      <body className={`${inter.className} min-h-screen bg-background text-foreground antialiased`}>
         {children}
       </body>
     </html>

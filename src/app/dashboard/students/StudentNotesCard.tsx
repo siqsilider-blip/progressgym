@@ -22,7 +22,7 @@ function SaveButton() {
         <button
             type="submit"
             disabled={pending}
-            className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
         >
             {pending ? 'Guardando...' : 'Guardar nota'}
         </button>
@@ -37,39 +37,32 @@ export default function StudentNotesCard({
     const [state, formAction] = useFormState(saveStudentNoteWithId, initialState)
 
     return (
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5">
-            <div className="mb-4">
-                <h2 className="text-lg font-semibold text-zinc-100">
-                    Notas del entrenador
-                </h2>
-                <p className="mt-1 text-sm text-zinc-400">
-                    Observaciones, molestias, técnica, objetivos o seguimiento.
-                </p>
-            </div>
+        <form action={formAction} className="space-y-4">
+            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                Observaciones, molestias, técnica, objetivos o seguimiento.
+            </p>
 
-            <form action={formAction} className="space-y-4">
-                <textarea
-                    name="note"
-                    defaultValue={initialNote}
-                    rows={6}
-                    placeholder="Escribí observaciones del alumno..."
-                    className="w-full rounded-xl border border-zinc-800 bg-zinc-950/60 px-4 py-3 text-sm text-zinc-100 outline-none transition placeholder:text-zinc-500 focus:border-indigo-500"
-                />
+            <textarea
+                name="note"
+                defaultValue={initialNote}
+                rows={4}
+                placeholder="Escribí observaciones del alumno..."
+                className="w-full rounded-2xl border border-zinc-300 bg-zinc-50 px-4 py-3 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-500 focus:border-indigo-500 dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-100"
+            />
 
-                <div className="flex items-center justify-between gap-3">
-                    <div className="text-xs text-zinc-500">
-                        {state?.error ? (
-                            <span className="text-red-400">{state.error}</span>
-                        ) : state?.success ? (
-                            <span className="text-emerald-400">Nota guardada.</span>
-                        ) : (
-                            'Guardá observaciones para hacer seguimiento.'
-                        )}
-                    </div>
-
-                    <SaveButton />
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="text-xs text-zinc-500">
+                    {state?.error ? (
+                        <span className="text-red-500 dark:text-red-400">{state.error}</span>
+                    ) : state?.success ? (
+                        <span className="text-emerald-600 dark:text-emerald-400">Nota guardada.</span>
+                    ) : (
+                        'Guardá observaciones para hacer seguimiento.'
+                    )}
                 </div>
-            </form>
-        </div>
+
+                <SaveButton />
+            </div>
+        </form>
     )
 }
