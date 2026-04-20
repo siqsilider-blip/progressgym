@@ -2,7 +2,6 @@ import { cookies } from 'next/headers'
 import {
     Activity,
     ClipboardList,
-    TrendingUp,
     UserCheck,
     Users,
 } from 'lucide-react'
@@ -11,8 +10,10 @@ import type { TrainerDashboardStats } from './getTrainerDashboardStats'
 
 export default async function TrainerDashboardCards({
     stats,
+    riskCount,
 }: {
     stats: TrainerDashboardStats
+    riskCount: number
 }) {
     const cookieStore = await cookies()
     const theme = cookieStore.get('theme')?.value === 'light' ? 'light' : 'dark'
@@ -29,31 +30,15 @@ export default async function TrainerDashboardCards({
             iconBgClassName: isLight ? 'bg-muted' : 'bg-muted/80',
         },
         {
-            label: 'Activos',
-            value: stats.activeStudents,
-            helper: 'Entrenaron 7 días',
-            icon: UserCheck,
-            valueClassName: 'text-emerald-500',
-            iconClassName: 'text-emerald-500',
-            iconBgClassName: isLight ? 'bg-emerald-50' : 'bg-emerald-500/10',
-        },
-        {
-            label: 'Inactivos',
-            value: stats.inactiveStudents,
-            helper: 'Sin entrenar',
+            label: 'En riesgo',
+            value: riskCount,
+            helper: 'Requieren atención',
             icon: Activity,
-            valueClassName: 'text-amber-500',
-            iconClassName: 'text-amber-500',
-            iconBgClassName: isLight ? 'bg-amber-50' : 'bg-amber-500/10',
-        },
-        {
-            label: 'PRs',
-            value: stats.totalPRs,
-            helper: 'Detectados',
-            icon: TrendingUp,
-            valueClassName: 'text-indigo-500',
-            iconClassName: 'text-indigo-500',
-            iconBgClassName: isLight ? 'bg-indigo-50' : 'bg-indigo-500/10',
+            valueClassName: riskCount > 0 ? 'text-amber-500' : 'text-foreground',
+            iconClassName: riskCount > 0 ? 'text-amber-500' : 'text-zinc-400',
+            iconBgClassName: riskCount > 0
+                ? (isLight ? 'bg-amber-50' : 'bg-amber-500/10')
+                : (isLight ? 'bg-muted' : 'bg-muted/80'),
         },
         {
             label: 'Con rutina',
@@ -64,10 +49,19 @@ export default async function TrainerDashboardCards({
             iconClassName: 'text-cyan-500',
             iconBgClassName: isLight ? 'bg-cyan-50' : 'bg-cyan-500/10',
         },
+        {
+            label: 'Activos 7 días',
+            value: stats.activeStudents,
+            helper: 'Entrenaron esta semana',
+            icon: UserCheck,
+            valueClassName: 'text-emerald-500',
+            iconClassName: 'text-emerald-500',
+            iconBgClassName: isLight ? 'bg-emerald-50' : 'bg-emerald-500/10',
+        },
     ] as const
 
     return (
-        <div className="grid grid-cols-2 gap-3 xl:grid-cols-5">
+        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
             {cards.map((card) => {
                 const Icon = card.icon
 

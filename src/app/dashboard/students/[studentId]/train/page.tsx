@@ -3,8 +3,9 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getTrainerProfile } from '@/lib/getTrainerProfile'
 import { type WeightUnit } from '@/lib/weight'
-import { saveWorkoutSession } from './actions'
-import TrainExerciseTable from './TrainExerciseTable'
+import { startWorkoutSession } from './workout-session'
+import { getExerciseMaxWeights } from './train-focused-actions'
+import TrainFocusedView from './TrainFocusedView'
 
 type PageProps = {
     params: {
@@ -50,6 +51,7 @@ export default async function StudentTrainPage({
 
     const trainerProfile = await getTrainerProfile()
     const weightUnit = (trainerProfile?.weight_unit ?? 'kg') as WeightUnit
+    const showPrs = trainerProfile?.show_prs ?? true
 
     const { data: student, error: studentError } = await supabase
         .from('students')
@@ -185,12 +187,13 @@ export default async function StudentTrainPage({
         exercise_id: string | null
         sets: number | null
         reps: number | null
+        rest_seconds: number | null
     }[] = []
 
     if (selectedDayId) {
         const { data: rde } = await supabase
             .from('routine_day_exercises')
-            .select('id, exercise_id, sets, reps')
+            .select('id, exercise_id, sets, reps, rest_seconds')
             .eq('routine_day_id', selectedDayId)
             .order('id', { ascending: true })
 
@@ -288,40 +291,80 @@ export default async function StudentTrainPage({
         }
     }
 
+    let workoutSessionId: string | null = null
+
+    if (selectedDayId && exercisesForDay.length > 0) {
+        const sessionResult = await startWorkoutSession({
+            studentId: params.studentId,
+            trainerId: user.id,
+            routineDayId: selectedDayId,
+        })
+        workoutSessionId = sessionResult.sessionId
+    }
+
+    const focusedExercises = exercisesForDay.map((exercise) => {
+        const exerciseMeta = exercise.exercise_id
+            ? exerciseMap.get(exercise.exercise_id) ?? null
+            : null
+
+        const setsCount = Math.max(1, Number(exercise.sets ?? 1))
+        const previousSession = logsByExerciseId.get(exercise.id)
+
+        const previousWeights: (number | null)[] = []
+        const previousReps: (number | null)[] = []
+
+        for (let i = 0; i < setsCount; i++) {
+            previousWeights.push(previousSession?.weights[i] ?? null)
+            previousReps.push(previousSession?.reps[i] ?? null)
+        }
+
+        return {
+            id: exercise.id,
+            exerciseId: exercise.exercise_id ?? null,
+            exerciseName: exerciseMeta?.name ?? 'Ejercicio',
+            isCardio: exerciseMeta?.metric_type === 'time',
+            setsCount,
+            targetReps: exercise.reps != null ? String(exercise.reps) : null,
+            restSeconds: exercise.rest_seconds ?? 60,
+            previousWeights,
+            previousReps,
+        }
+    })
+
+    const rdeIds = exercisesForDay.map((e) => e.id)
+    const focusedMaxWeights = await getExerciseMaxWeights({
+        studentId: params.studentId,
+        routineDayExerciseIds: rdeIds,
+    })
+
+    const fullName =
+        `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim() || 'Alumno'
+
     return (
-        <div className="p-3 pb-40 text-foreground md:p-6 md:pb-28">
+        <div className="p-3 pb-52 text-foreground md:p-6 md:pb-36">
             <div className="mx-auto max-w-4xl">
-                <div className="mb-3 rounded-xl border border-border bg-card p-3 md:mb-4 md:p-4">
+                <div className="mb-4 border-b border-border pb-4">
                     <div className="flex items-center justify-between gap-3">
                         <div className="min-w-0">
-                            <h1 className="truncate text-lg font-semibold text-card-foreground md:text-xl">
+                            <h1 className="truncate text-base font-semibold text-foreground">
                                 {student.first_name} {student.last_name}
                             </h1>
-
                             <p className="truncate text-xs text-muted-foreground">
-                                {routine?.name ?? routineName}
+                                {selectedDayLabel} · {routine?.name ?? routineName}
                             </p>
                         </div>
 
                         <Link
                             href={`/dashboard/students/${params.studentId}`}
-                            className="shrink-0 rounded-lg border border-border bg-secondary px-3 py-1.5 text-xs text-secondary-foreground transition hover:bg-muted"
+                            className="shrink-0 text-xs text-muted-foreground transition hover:text-foreground"
                         >
                             Volver
                         </Link>
                     </div>
 
-                    <div className="mt-3 flex gap-2 overflow-x-auto pb-1 text-[10px]">
-                        <span className="whitespace-nowrap rounded-full border border-border bg-secondary px-2.5 py-1 text-secondary-foreground">
-                            {selectedDayLabel}
-                        </span>
-                        <span className="whitespace-nowrap rounded-full border border-border bg-secondary px-2.5 py-1 text-secondary-foreground">
-                            {totalExercises} ej
-                        </span>
-                        <span className="whitespace-nowrap rounded-full border border-border bg-secondary px-2.5 py-1 text-secondary-foreground">
-                            {totalSets} sets
-                        </span>
-                    </div>
+                    <p className="mt-1.5 text-[11px] text-muted-foreground/70">
+                        {totalExercises} ejercicios · {totalSets} series · {weightUnit}
+                    </p>
                 </div>
 
                 {searchParams?.saved === '1' && (
@@ -336,7 +379,7 @@ export default async function StudentTrainPage({
                     </div>
                 )}
 
-                <div className="mb-3">
+                <div className="mb-4">
                     <div className="flex gap-2 overflow-x-auto pb-2">
                         {routineDays?.map((day, index) => {
                             const label =
@@ -372,134 +415,24 @@ export default async function StudentTrainPage({
                             Agregá ejercicios a este día para poder registrar la sesión.
                         </p>
                     </div>
+                ) : workoutSessionId ? (
+                    <TrainFocusedView
+                        sessionId={workoutSessionId}
+                        studentId={student.id}
+                        studentName={fullName}
+                        dayLabel={selectedDayLabel}
+                        routineName={routine?.name ?? routineName}
+                        performedAt={today}
+                        exercises={focusedExercises}
+                        maxWeights={focusedMaxWeights}
+                        weightUnit={weightUnit}
+                        returnHref={`/dashboard/students/${params.studentId}`}
+                        showPrs={showPrs}
+                    />
                 ) : (
-                    <form action={saveWorkoutSession} className="space-y-3 md:space-y-4">
-                        <input type="hidden" name="student_id" value={student.id} />
-                        <input type="hidden" name="selected_day_id" value={selectedDay.id} />
-
-                        <div className="rounded-2xl border border-border bg-card p-4 md:p-5">
-                            <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-                                <div>
-                                    <h2 className="text-base font-semibold text-card-foreground md:text-lg">
-                                        Registro de sesión
-                                    </h2>
-                                    <p className="text-sm text-muted-foreground">
-                                        Cargá los datos reales en formato rápido.
-                                    </p>
-                                </div>
-
-                                <div className="w-full md:w-auto">
-                                    <label className="mb-2 block text-sm text-muted-foreground">
-                                        Fecha
-                                    </label>
-                                    <input
-                                        type="date"
-                                        name="performed_at"
-                                        defaultValue={today}
-                                        className="w-full rounded-xl border border-border bg-input px-3 py-2 text-sm text-foreground outline-none transition focus:border-indigo-500 md:w-[220px]"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {exercisesForDay.map((exercise, exerciseIndex) => {
-                            const exerciseMeta = exercise.exercise_id
-                                ? exerciseMap.get(exercise.exercise_id) ?? null
-                                : null
-
-                            const exerciseName = exerciseMeta?.name ?? 'Ejercicio'
-                            const isCardio = exerciseMeta?.metric_type === 'time'
-                            const setsCount = Math.max(1, Number(exercise.sets ?? 1))
-                            const objectiveText = exercise.reps
-                                ? isCardio
-                                    ? `${exercise.reps} min`
-                                    : `${exercise.reps} reps`
-                                : null
-
-                            const previousSession = logsByExerciseId.get(exercise.id)
-
-                            return (
-                                <section
-                                    key={exercise.id}
-                                    className="overflow-hidden rounded-2xl border border-border bg-card"
-                                >
-                                    <div className="flex items-start justify-between gap-3 border-b border-border px-4 py-3 md:px-5 md:py-4">
-                                        <div className="min-w-0">
-                                            <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
-                                                Ejercicio {exerciseIndex + 1}
-                                            </p>
-
-                                            <h3 className="mt-1 truncate text-base font-semibold text-card-foreground md:text-lg">
-                                                {exerciseName}
-                                            </h3>
-                                        </div>
-
-                                        <div className="flex shrink-0 flex-wrap justify-end gap-2 text-[10px] md:text-xs">
-                                            <span className="rounded-full border border-border bg-secondary px-2.5 py-1 text-secondary-foreground">
-                                                {setsCount} series
-                                            </span>
-
-                                            {objectiveText && (
-                                                <span className="rounded-full border border-border bg-secondary px-2.5 py-1 text-secondary-foreground">
-                                                    {objectiveText}
-                                                </span>
-                                            )}
-
-                                            <span
-                                                className={`rounded-full border px-2.5 py-1 ${isCardio
-                                                        ? 'border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-300'
-                                                        : 'border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-300'
-                                                    }`}
-                                            >
-                                                {isCardio ? 'Cardio' : 'Fuerza'}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <TrainExerciseTable
-                                        exerciseId={exercise.id}
-                                        isCardio={isCardio}
-                                        setsCount={setsCount}
-                                        weightUnit={weightUnit}
-                                        defaultReps={exercise.reps}
-                                        initialWeights={previousSession?.weights}
-                                        initialReps={previousSession?.reps}
-                                    />
-                                </section>
-                            )
-                        })}
-
-                        <div className="h-32 md:h-20" />
-
-                        <div className="fixed bottom-16 left-0 right-0 z-30 border-t border-border bg-background/95 backdrop-blur md:bottom-0">
-                            <div className="mx-auto flex max-w-4xl flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between md:px-8">
-                                <div>
-                                    <p className="text-sm font-medium text-card-foreground">
-                                        Guardar sesión
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                        {selectedDayLabel} • {totalExercises} ejercicios
-                                    </p>
-                                </div>
-
-                                <div className="flex flex-col gap-3 sm:flex-row">
-                                    <Link
-                                        href={`/dashboard/students/${params.studentId}`}
-                                        className="rounded-xl border border-border bg-secondary px-5 py-3 text-center text-sm font-medium text-secondary-foreground transition hover:bg-muted"
-                                    >
-                                        Cancelar
-                                    </Link>
-
-                                    <button
-                                        type="submit"
-                                        className="rounded-xl bg-indigo-600 px-5 py-3 text-sm font-medium text-white transition hover:bg-indigo-500"
-                                    >
-                                        Guardar entrenamiento
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </form>
+                    <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300">
+                        No se pudo iniciar la sesión de entrenamiento. Intentá recargar la página.
+                    </div>
                 )}
             </div>
         </div>

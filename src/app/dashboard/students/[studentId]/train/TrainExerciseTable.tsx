@@ -7,9 +7,27 @@ type Props = {
     isCardio: boolean
     setsCount: number
     weightUnit: string
+    restSeconds: number
     defaultReps?: number | null
     initialWeights?: Array<number | string | null | undefined>
     initialReps?: Array<number | string | null | undefined>
+}
+
+type SetRow = {
+    weight: string
+    reps: string
+    manualWeight: boolean
+    manualReps: boolean
+    committed: boolean
+}
+
+function normalizeValue(value: number | string | null | undefined): string {
+    if (value === null || value === undefined) return ''
+    return String(value)
+}
+
+function isRowComplete(row: { weight: string; reps: string }) {
+    return Boolean(row.weight.trim() && row.reps.trim())
 }
 
 export default function TrainExerciseTable({
@@ -17,164 +35,291 @@ export default function TrainExerciseTable({
     isCardio,
     setsCount,
     weightUnit,
+    restSeconds,
     defaultReps,
     initialWeights,
     initialReps,
 }: Props) {
-    const handleFirstSetCommit = (field: 'weight' | 'reps', value: string) => {
-        for (let i = 1; i < setsCount; i++) {
-            const next = document.querySelector(
-                `input[name="${field}_${exerciseId}_${i}"]`
-            ) as HTMLInputElement | null
-
-            if (!next) continue
-
-            const wasManual = next.dataset.manual === 'true'
-            if (wasManual) continue
-
-            next.value = value
-            next.dataset.autofilled = 'true'
-        }
-    }
-
-    const markManual = (
-        setIndex: number,
-        e: React.ChangeEvent<HTMLInputElement>
-    ) => {
-        if (setIndex === 0) return
-        e.currentTarget.dataset.manual = 'true'
-        e.currentTarget.dataset.autofilled = 'false'
-    }
-
-    const focusNextInput = (currentInput: HTMLInputElement) => {
-        const form = currentInput.form
-        if (!form) return
-
-        const allInputs = Array.from(
-            form.querySelectorAll<HTMLInputElement>(
-                'input[name^="weight_"], input[name^="reps_"]'
+    const buildInitialRows = React.useCallback((): SetRow[] => {
+        return Array.from({ length: setsCount }, (_, index) => {
+            const weight = normalizeValue(initialWeights?.[index])
+            const reps = normalizeValue(
+                initialReps?.[index] ?? (index === 0 ? defaultReps : undefined)
             )
-        ).filter((input) => !input.disabled && input.type !== 'hidden')
 
-        const currentIndex = allInputs.indexOf(currentInput)
-        if (currentIndex === -1) return
+            return {
+                weight,
+                reps,
+                manualWeight: false,
+                manualReps: false,
+                committed: isRowComplete({ weight, reps }),
+            }
+        })
+    }, [setsCount, initialWeights, initialReps, defaultReps])
 
-        const nextInput = allInputs[currentIndex + 1]
-        if (!nextInput) return
+    const [rows, setRows] = React.useState<SetRow[]>(buildInitialRows)
 
-        nextInput.focus()
+    React.useEffect(() => {
+        setRows(buildInitialRows())
+    }, [buildInitialRows])
+
+    const inputRefs = React.useRef<Record<string, HTMLInputElement | null>>({})
+
+    const setInputRef =
+        (key: string) =>
+            (element: HTMLInputElement | null): void => {
+                inputRefs.current[key] = element
+            }
+
+    const triggerGlobalRestTimer = React.useCallback(() => {
+        if (typeof window === 'undefined') return
+
+        window.dispatchEvent(
+            new CustomEvent('progressgym:start-rest-timer', {
+                detail: {
+                    seconds: restSeconds > 0 ? restSeconds : 60,
+                },
+            })
+        )
+    }, [restSeconds])
+
+    const doneSets = React.useMemo(
+        () => rows.map((row) => row.committed && isRowComplete(row)),
+        [rows]
+    )
+
+    const activeSet = React.useMemo(() => {
+        const firstIncomplete = rows.findIndex(
+            (row) => !(row.committed && isRowComplete(row))
+        )
+        return firstIncomplete === -1 ? Math.max(setsCount - 1, 0) : firstIncomplete
+    }, [rows, setsCount])
+
+    const focusInput = React.useCallback((setIndex: number, field: 'weight' | 'reps') => {
+        const key = `${field}-${setIndex}`
+        const input = inputRefs.current[key]
+        if (!input) return
+
+        input.focus()
+
+        requestAnimationFrame(() => {
+            try {
+                input.select()
+            } catch { }
+        })
+    }, [])
+
+    const focusNextInput = React.useCallback(
+        (setIndex: number, field: 'weight' | 'reps') => {
+            if (field === 'weight') {
+                focusInput(setIndex, 'reps')
+                return
+            }
+
+            if (setIndex + 1 < setsCount) {
+                focusInput(setIndex + 1, 'weight')
+            }
+        },
+        [focusInput, setsCount]
+    )
+
+    const handleAutofillFromFirstSet = React.useCallback(
+        (field: 'weight' | 'reps', value: string) => {
+            if (!value.trim()) return
+
+            setRows((prev) =>
+                prev.map((row, index) => {
+                    if (index === 0) return row
+
+                    if (field === 'weight') {
+                        if (row.manualWeight) return row
+                        return { ...row, weight: value }
+                    }
+
+                    if (row.manualReps) return row
+                    return { ...row, reps: value }
+                })
+            )
+        },
+        []
+    )
+
+    const updateField = React.useCallback(
+        (setIndex: number, field: 'weight' | 'reps', value: string) => {
+            setRows((prev) => {
+                const next = [...prev]
+                const current = prev[setIndex]
+
+                next[setIndex] =
+                    field === 'weight'
+                        ? {
+                            ...current,
+                            weight: value,
+                            manualWeight: setIndex === 0 ? current.manualWeight : true,
+                            committed: false,
+                        }
+                        : {
+                            ...current,
+                            reps: value,
+                            manualReps: setIndex === 0 ? current.manualReps : true,
+                            committed: false,
+                        }
+
+                return next
+            })
+        },
+        []
+    )
+
+    const commitRow = React.useCallback(
+        (setIndex: number, field: 'weight' | 'reps') => {
+            let shouldStartTimer = false
+            let shouldMoveNext = false
+
+            setRows((prev) => {
+                const next = [...prev]
+                const current = prev[setIndex]
+                const wasCommitted = current.committed
+                const nowComplete = isRowComplete(current)
+
+                if (setIndex === 0) {
+                    const value = current[field]
+                    if (value.trim()) {
+                        for (let i = 1; i < next.length; i++) {
+                            const row = next[i]
+
+                            if (field === 'weight') {
+                                if (!row.manualWeight) {
+                                    next[i] = { ...row, weight: value }
+                                }
+                            } else {
+                                if (!row.manualReps) {
+                                    next[i] = { ...row, reps: value }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (nowComplete) {
+                    next[setIndex] = {
+                        ...next[setIndex],
+                        committed: true,
+                    }
+
+                    if (!wasCommitted) {
+                        shouldStartTimer = true
+                        shouldMoveNext = field === 'reps'
+                    }
+                }
+
+                return next
+            })
+
+            if (shouldStartTimer) {
+                queueMicrotask(() => {
+                    triggerGlobalRestTimer()
+
+                    if (shouldMoveNext && setIndex + 1 < setsCount) {
+                        focusInput(setIndex + 1, 'weight')
+                    }
+                })
+            }
+        },
+        [focusInput, setsCount, triggerGlobalRestTimer]
+    )
+
+    const handleKeyDown = React.useCallback(
+        (
+            e: React.KeyboardEvent<HTMLInputElement>,
+            setIndex: number,
+            field: 'weight' | 'reps'
+        ) => {
+            if (e.key !== 'Enter') return
+            e.preventDefault()
+
+            commitRow(setIndex, field)
+
+            if (field === 'weight') {
+                focusInput(setIndex, 'reps')
+            }
+        },
+        [commitRow, focusInput]
+    )
+
+    const handleFocus = React.useCallback((e: React.FocusEvent<HTMLInputElement>) => {
+        const input = e.currentTarget
 
         setTimeout(() => {
-            nextInput.select()
+            try {
+                input.select()
+            } catch { }
         }, 0)
-    }
-
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key !== 'Enter') return
-
-        e.preventDefault()
-
-        const input = e.currentTarget
-        input.blur()
-
-        requestAnimationFrame(() => {
-            focusNextInput(input)
-        })
-    }
-
-    const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-        const input = e.currentTarget
-
-        requestAnimationFrame(() => {
-            input.select()
-        })
-    }
+    }, [])
 
     return (
-        <div className="px-2 py-2 md:px-4 md:py-4">
-            <div className="overflow-hidden rounded-xl border border-border bg-muted/30">
-                <div className="grid grid-cols-[56px_1fr_1fr] border-b border-border bg-muted/60 px-2 py-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground md:grid-cols-[72px_1fr_1fr] md:px-4 md:text-[11px]">
-                    <div>Serie</div>
-                    <div>{isCardio ? 'Tiempo' : `Peso (${weightUnit})`}</div>
-                    <div>{isCardio ? 'Nivel / dist.' : 'Reps'}</div>
-                </div>
+        <div className="px-2 py-3 md:px-4">
+            <div className="space-y-2">
+                {rows.map((row, setIndex) => {
+                    const isDone = doneSets[setIndex]
+                    const isActive = activeSet === setIndex
 
-                <div className="divide-y divide-border">
-                    {Array.from({ length: setsCount }).map((_, setIndex) => {
-                        const initialWeight = initialWeights?.[setIndex]
-                        const initialRep = initialReps?.[setIndex]
+                    return (
+                        <div
+                            key={`${exerciseId}-${setIndex}`}
+                            className={`flex items-center gap-2 rounded-xl border p-2 transition ${isDone
+                                    ? 'border-green-300 bg-green-50 dark:bg-green-500/10'
+                                    : isActive
+                                        ? 'border-indigo-400 bg-indigo-50 dark:border-indigo-500 dark:bg-indigo-500/10'
+                                        : 'border-border bg-muted/30'
+                                }`}
+                        >
+                            <input
+                                type="checkbox"
+                                checked={isDone}
+                                readOnly
+                                className="h-4 w-4"
+                            />
 
-                        return (
-                            <div
-                                key={`${exerciseId}-${setIndex}`}
-                                className="grid grid-cols-[56px_1fr_1fr] items-center gap-2 px-2 py-2 md:grid-cols-[72px_1fr_1fr] md:gap-3 md:px-4 md:py-3"
-                            >
-                                <div className="text-sm font-medium text-card-foreground">
-                                    {setIndex + 1}
-                                </div>
+                            <div className="w-8 text-sm font-medium">S{setIndex + 1}</div>
 
-                                <div>
-                                    <label
-                                        htmlFor={`weight_${exerciseId}_${setIndex}`}
-                                        className="sr-only"
-                                    >
-                                        {isCardio
-                                            ? `Tiempo serie ${setIndex + 1}`
-                                            : `Peso serie ${setIndex + 1}`}
-                                    </label>
+                            <input
+                                ref={setInputRef(`weight-${setIndex}`)}
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                inputMode="decimal"
+                                name={`weight_${exerciseId}_${setIndex}`}
+                                value={row.weight}
+                                placeholder={isCardio ? '20' : weightUnit}
+                                className="h-10 w-full rounded-lg border border-border bg-input px-2 text-sm"
+                                onChange={(e) =>
+                                    updateField(setIndex, 'weight', e.currentTarget.value)
+                                }
+                                onBlur={() => commitRow(setIndex, 'weight')}
+                                onKeyDown={(e) => handleKeyDown(e, setIndex, 'weight')}
+                                onFocus={handleFocus}
+                            />
 
-                                    <input
-                                        id={`weight_${exerciseId}_${setIndex}`}
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        inputMode="decimal"
-                                        name={`weight_${exerciseId}_${setIndex}`}
-                                        defaultValue={initialWeight ?? undefined}
-                                        className="h-10 w-full rounded-lg border border-border bg-input px-3 text-sm text-foreground outline-none transition focus:border-indigo-500"
-                                        placeholder={isCardio ? '20' : '20'}
-                                        onChange={(e) => markManual(setIndex, e)}
-                                        onBlur={(e) => {
-                                            if (setIndex !== 0) return
-                                            handleFirstSetCommit('weight', e.currentTarget.value)
-                                        }}
-                                        onKeyDown={handleKeyDown}
-                                        onFocus={handleFocus}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label
-                                        htmlFor={`reps_${exerciseId}_${setIndex}`}
-                                        className="sr-only"
-                                    >
-                                        {isCardio
-                                            ? `Nivel o distancia serie ${setIndex + 1}`
-                                            : `Repeticiones serie ${setIndex + 1}`}
-                                    </label>
-
-                                    <input
-                                        id={`reps_${exerciseId}_${setIndex}`}
-                                        type="number"
-                                        min="0"
-                                        inputMode="numeric"
-                                        name={`reps_${exerciseId}_${setIndex}`}
-                                        defaultValue={initialRep ?? defaultReps ?? undefined}
-                                        className="h-10 w-full rounded-lg border border-border bg-input px-3 text-sm text-foreground outline-none transition focus:border-indigo-500"
-                                        placeholder={isCardio ? '5' : '12'}
-                                        onChange={(e) => markManual(setIndex, e)}
-                                        onBlur={(e) => {
-                                            if (setIndex !== 0) return
-                                            handleFirstSetCommit('reps', e.currentTarget.value)
-                                        }}
-                                        onKeyDown={handleKeyDown}
-                                        onFocus={handleFocus}
-                                    />
-                                </div>
-                            </div>
-                        )
-                    })}
-                </div>
+                            <input
+                                ref={setInputRef(`reps-${setIndex}`)}
+                                type="number"
+                                min="0"
+                                inputMode="numeric"
+                                name={`reps_${exerciseId}_${setIndex}`}
+                                value={row.reps}
+                                placeholder={isCardio ? 'min' : 'reps'}
+                                className="h-10 w-full rounded-lg border border-border bg-input px-2 text-sm"
+                                onChange={(e) =>
+                                    updateField(setIndex, 'reps', e.currentTarget.value)
+                                }
+                                onBlur={() => commitRow(setIndex, 'reps')}
+                                onKeyDown={(e) => handleKeyDown(e, setIndex, 'reps')}
+                                onFocus={handleFocus}
+                            />
+                        </div>
+                    )
+                })}
             </div>
         </div>
     )

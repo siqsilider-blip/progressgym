@@ -4,6 +4,8 @@ export type StudentStats = {
     lastWorkoutAt: string | null
     totalSessions: number
     totalPRs: number
+    totalVolume: number
+    last30DaysVolume: number
     status: 'active' | 'inactive' | 'new'
 }
 
@@ -22,7 +24,7 @@ export async function getStudentStats(studentId: string): Promise<StudentStats> 
 
     const { data: logs, error: logsError } = await supabase
         .from('exercise_logs')
-        .select('id, routine_day_exercise_id, weight, created_at')
+        .select('id, routine_day_exercise_id, weight, reps, created_at')
         .eq('student_id', studentId)
         .order('created_at', { ascending: true })
 
@@ -43,9 +45,16 @@ export async function getStudentStats(studentId: string): Promise<StudentStats> 
         Array<{
             id: string
             weight: number | null
+            reps: number | null
             created_at: string
         }>
     >()
+
+    let totalVolume = 0
+    let last30DaysVolume = 0
+
+    const now = new Date()
+    const THIRTY_DAYS_MS = 1000 * 60 * 60 * 24 * 30
 
     for (const log of safeLogs) {
         const key = String(log.routine_day_exercise_id)
@@ -57,8 +66,22 @@ export async function getStudentStats(studentId: string): Promise<StudentStats> 
         logsByExercise.get(key)!.push({
             id: log.id,
             weight: log.weight,
+            reps: log.reps,
             created_at: log.created_at,
         })
+
+        const weight = typeof log.weight === 'number' ? log.weight : 0
+        const reps = typeof log.reps === 'number' ? log.reps : 0
+        const logVolume = weight * reps
+
+        totalVolume += logVolume
+
+        const logDate = new Date(log.created_at)
+        const diffMs = now.getTime() - logDate.getTime()
+
+        if (diffMs <= THIRTY_DAYS_MS) {
+            last30DaysVolume += logVolume
+        }
     }
 
     let totalPRs = 0
@@ -71,13 +94,18 @@ export async function getStudentStats(studentId: string): Promise<StudentStats> 
 
             if (currentLog.weight == null) continue
 
-            const previousLogs = exerciseLogs.slice(0, i)
+            const previousLogs = exerciseLogs
+                .slice(0, i)
+                .filter((log) => log.weight != null)
+
+            if (previousLogs.length === 0) continue
+
             const previousBest = Math.max(
-                ...previousLogs.map((log) => log.weight || 0),
-                0
+                ...previousLogs.map((log) => log.weight as number)
             )
 
-            const isPR = currentLog.weight === previousBest || currentLog.weight > previousBest
+            // PR real: solo si supera el mejor peso anterior
+            const isPR = currentLog.weight > previousBest
 
             if (isPR) {
                 totalPRs++
@@ -88,7 +116,6 @@ export async function getStudentStats(studentId: string): Promise<StudentStats> 
     let status: StudentStats['status'] = 'new'
 
     if (lastWorkoutAt) {
-        const now = new Date()
         const last = new Date(lastWorkoutAt)
 
         const diffDays = Math.floor(
@@ -106,6 +133,8 @@ export async function getStudentStats(studentId: string): Promise<StudentStats> 
         lastWorkoutAt,
         totalSessions,
         totalPRs,
+        totalVolume,
+        last30DaysVolume,
         status,
     }
 }

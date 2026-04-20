@@ -1,12 +1,6 @@
 import Link from 'next/link'
 import { cookies } from 'next/headers'
-import {
-    AlertTriangle,
-    ArrowRight,
-    Trophy,
-    Users,
-    Zap,
-} from 'lucide-react'
+import { ClipboardList, MessageSquare, Users, Zap } from 'lucide-react'
 import TrainerAlertsCard from './TrainerAlertsCard'
 import TrainerDashboardCards from './TrainerDashboardCards'
 import TrainerProgressRankingCard from './TrainerProgressRankingCard'
@@ -52,137 +46,90 @@ export default async function DashboardPage() {
 
     const weightUnit = (trainerProfile?.weight_unit ?? 'kg') as WeightUnit
     const featuredStudent = studentLeaderboard?.[0]
-    const recentStudent = recentActivity?.[0]
-
-    const headlineInsights = [
-        {
-            icon: Users,
-            label: `${stats.activeStudents} activos`,
-        },
-        {
-            icon: AlertTriangle,
-            label: alerts.length === 1 ? '1 alerta' : `${alerts.length} alertas`,
-        },
-        {
-            icon: Trophy,
-            label: stats.totalPRs === 1 ? '1 PR' : `${stats.totalPRs} PRs`,
-        },
-    ]
 
     return (
-        <div className="space-y-5 p-4 pb-24 md:space-y-8 md:p-8">
-            <section className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-                <div className="max-w-2xl">
-                    <p className="text-xs font-medium text-indigo-500">
-                        ProgressGym
-                    </p>
+        <div className="space-y-5 p-4 pb-24 md:space-y-6 md:p-8">
 
-                    <h1 className="mt-1 text-3xl font-bold tracking-tight text-foreground md:text-4xl">
+            {/* ── Header ── */}
+            <section className="flex items-start justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
                         Dashboard
                     </h1>
-
-                    <p className="mt-2 text-sm text-muted-foreground md:text-base">
-                        Tu panel de trabajo para seguir alumnos, detectar alertas y registrar progreso.
+                    <p className="mt-1 text-sm text-muted-foreground">
+                        Resumen del día y prioridades
                     </p>
-
-                    <p className="mt-2 text-xs text-muted-foreground">
-                        Mostrando pesos en {weightUnit.toUpperCase()}
-                    </p>
-
-                    <div className="mt-3 flex flex-wrap gap-2">
-                        {headlineInsights.map((item) => {
-                            const Icon = item.icon
-
-                            return (
-                                <div
-                                    key={item.label}
-                                    className="flex items-center gap-1.5 rounded-full border border-border bg-secondary px-2.5 py-1 text-[10px] text-secondary-foreground"
-                                >
-                                    <Icon className="h-3 w-3 text-indigo-500" />
-                                    {item.label}
-                                </div>
-                            )
-                        })}
-                    </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:w-auto xl:min-w-[320px]">
-                    <Link
-                        href="/dashboard/students/new"
-                        className="rounded-xl bg-indigo-600 px-4 py-3 text-center text-sm font-medium text-white transition hover:bg-indigo-500"
-                    >
-                        + Agregar alumno
-                    </Link>
-
-                    <Link
-                        href="/dashboard/routines"
-                        className="rounded-xl border border-border bg-secondary px-4 py-3 text-center text-sm font-medium text-secondary-foreground transition hover:bg-muted"
-                    >
-                        Ver rutinas
-                    </Link>
-                </div>
+                <Link
+                    href="/dashboard/new"
+                    className="shrink-0 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-500"
+                >
+                    + Agregar alumno
+                </Link>
             </section>
 
-            <section className="grid gap-3 md:grid-cols-2">
+            {/* ── Quick actions (grid 2×2 en mobile) ── */}
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                 <Link
-                    href={
-                        recentStudent
-                            ? `/dashboard/students/${recentStudent.studentId}/train`
-                            : '/dashboard/students'
-                    }
-                    className="rounded-2xl border border-border bg-card p-4 transition hover:bg-muted/40"
+                    href="/dashboard/train"
+                    className="flex items-center gap-2 rounded-xl border border-border bg-secondary px-4 py-3 text-sm font-medium text-secondary-foreground transition hover:bg-muted"
                 >
-                    <div className="flex items-start justify-between gap-3">
-                        <div>
-                            <p className="text-sm font-medium text-card-foreground">
-                                Entrenar alumno
-                            </p>
-                            <p className="mt-1 text-xs text-muted-foreground">
-                                Registrá una sesión rápido desde el panel
-                            </p>
-                        </div>
-                        <Zap className="h-5 w-5 text-emerald-500" />
-                    </div>
+                    <Zap className="h-4 w-4 shrink-0 text-emerald-500" />
+                    Entrenar
                 </Link>
-
                 <Link
                     href="/dashboard/students"
-                    className="rounded-2xl border border-border bg-card p-4 transition hover:bg-muted/40"
+                    className="flex items-center gap-2 rounded-xl border border-border bg-secondary px-4 py-3 text-sm font-medium text-secondary-foreground transition hover:bg-muted"
                 >
-                    <div className="flex items-start justify-between gap-3">
-                        <div>
-                            <p className="text-sm font-medium text-card-foreground">
-                                Revisar alumnos
-                            </p>
-                            <p className="mt-1 text-xs text-muted-foreground">
-                                Ver perfiles, progreso y estado general
-                            </p>
-                        </div>
-                        <ArrowRight className="h-5 w-5 text-indigo-500" />
-                    </div>
+                    <Users className="h-4 w-4 shrink-0 text-indigo-500" />
+                    Alumnos
                 </Link>
-            </section>
+                <Link
+                    href="/dashboard/routines"
+                    className="flex items-center gap-2 rounded-xl border border-border bg-secondary px-4 py-3 text-sm font-medium text-secondary-foreground transition hover:bg-muted"
+                >
+                    <ClipboardList className="h-4 w-4 shrink-0 text-cyan-500" />
+                    Rutinas
+                </Link>
+                <Link
+                    href="/dashboard/contacts"
+                    className="flex items-center gap-2 rounded-xl border border-border bg-secondary px-4 py-3 text-sm font-medium text-secondary-foreground transition hover:bg-muted"
+                >
+                    <MessageSquare className="h-4 w-4 shrink-0 text-zinc-400" />
+                    Contactos
+                </Link>
+            </div>
 
-            <TrainerDashboardCards stats={stats} />
+            {/* ── Métricas (4 cards) ── */}
+            <TrainerDashboardCards stats={stats} riskCount={alerts.length} />
 
+            {/* ── Alumnos en riesgo (bloque protagonista) ── */}
+            <AtRiskStudentsCard alerts={alerts} />
+
+            {/* ── Actividad reciente + Mejor progreso del mes ── */}
             <section className="grid gap-5 xl:grid-cols-12">
                 <div className="order-1 xl:col-span-8">
-                    <AtRiskStudentsCard alerts={alerts} />
+                    <RecentWorkoutActivityCard
+                        activity={recentActivity ?? []}
+                        weightUnit={weightUnit}
+                        theme={theme}
+                    />
                 </div>
 
-                <div className="order-3 xl:order-2 xl:col-span-4">
+                <div className="order-2 xl:col-span-4">
                     <AppCard className="p-5">
                         <p className="text-xs font-medium uppercase tracking-wide text-indigo-500">
-                            Alumno destacado
+                            Mejor progreso del mes
                         </p>
 
                         {featuredStudent ? (
                             <>
-                                <h2 className="mt-2 text-2xl font-bold text-card-foreground">
+                                <h2 className="mt-2 text-xl font-bold text-card-foreground">
                                     {featuredStudent.studentName}
                                 </h2>
 
-                                <p className="mt-1 text-sm text-muted-foreground">
+                                <p className="mt-0.5 text-sm text-muted-foreground">
                                     {featuredStudent.bestExerciseName || 'Sin ejercicio destacado'}
                                 </p>
 
@@ -191,20 +138,20 @@ export default async function DashboardPage() {
                                 </p>
 
                                 <p className="mt-1 text-xs text-muted-foreground">
-                                    Mejor progreso del ranking actual
+                                    Mayor avance en el ranking actual
                                 </p>
 
                                 <div className="mt-5 flex gap-2">
                                     <Link
                                         href={`/dashboard/students/${featuredStudent.studentId}`}
-                                        className="flex-1 rounded-xl border border-border bg-secondary px-4 py-3 text-center text-sm font-medium text-secondary-foreground transition hover:bg-muted"
+                                        className="flex-1 rounded-xl border border-border bg-secondary px-4 py-2.5 text-center text-sm font-medium text-secondary-foreground transition hover:bg-muted"
                                     >
                                         Ver perfil
                                     </Link>
 
                                     <Link
                                         href={`/dashboard/students/${featuredStudent.studentId}/train`}
-                                        className="flex-1 rounded-xl bg-emerald-600 px-4 py-3 text-center text-sm font-medium text-white transition hover:bg-emerald-500"
+                                        className="flex-1 rounded-xl bg-emerald-600 px-4 py-2.5 text-center text-sm font-medium text-white transition hover:bg-emerald-500"
                                     >
                                         Entrenar
                                     </Link>
@@ -212,26 +159,19 @@ export default async function DashboardPage() {
                             </>
                         ) : (
                             <p className="mt-3 text-sm text-muted-foreground">
-                                Todavía no hay datos suficientes para destacar un alumno.
+                                Todavía no hay datos suficientes para mostrar un alumno destacado.
                             </p>
                         )}
                     </AppCard>
                 </div>
-
-                <div className="order-2 xl:order-3 xl:col-span-12">
-                    <RecentWorkoutActivityCard
-                        activity={recentActivity ?? []}
-                        weightUnit={weightUnit}
-                        theme={theme}
-                    />
-                </div>
             </section>
 
+            {/* ── xl only ── */}
             <div className="hidden xl:block">
                 <TrainerAlertsCard alerts={alerts ?? []} />
             </div>
 
-            <section className="hidden xl:grid gap-6 xl:grid-cols-12">
+            <section className="hidden gap-6 xl:grid xl:grid-cols-12">
                 <div className="xl:col-span-7">
                     <TrainerProgressRankingCard
                         ranking={progressRanking ?? []}
@@ -251,7 +191,7 @@ export default async function DashboardPage() {
                 <GlobalPRsCard prs={globalPRs ?? []} weightUnit={weightUnit} />
             </div>
 
-            <section className="hidden xl:grid gap-6 xl:grid-cols-2">
+            <section className="hidden gap-6 xl:grid xl:grid-cols-2">
                 <WeeklyActivityChart data={weeklyActivity ?? []} />
 
                 <AppCard className="p-5">
@@ -265,9 +205,7 @@ export default async function DashboardPage() {
 
                     <div className="mt-4 space-y-3">
                         <div className="rounded-2xl border border-border bg-muted/40 p-4">
-                            <p className="text-sm font-medium text-card-foreground">
-                                Alertas activas
-                            </p>
+                            <p className="text-sm font-medium text-card-foreground">Alertas activas</p>
                             <p className="mt-1 text-sm text-muted-foreground">
                                 {alerts.length === 0
                                     ? 'No hay alertas urgentes.'
@@ -276,24 +214,20 @@ export default async function DashboardPage() {
                         </div>
 
                         <div className="rounded-2xl border border-border bg-muted/40 p-4">
-                            <p className="text-sm font-medium text-card-foreground">
-                                Actividad reciente
-                            </p>
+                            <p className="text-sm font-medium text-card-foreground">Actividad reciente</p>
                             <p className="mt-1 text-sm text-muted-foreground">
                                 {recentActivity.length === 0
                                     ? 'Todavía no hay entrenamientos recientes.'
-                                    : `${recentActivity.length} registro${recentActivity.length === 1 ? '' : 's'} reciente${recentActivity.length === 1 ? '' : 's'} cargado${recentActivity.length === 1 ? '' : 's'}.`}
+                                    : `${recentActivity.length} registro${recentActivity.length === 1 ? '' : 's'} reciente${recentActivity.length === 1 ? '' : 's'}.`}
                             </p>
                         </div>
 
                         <div className="rounded-2xl border border-border bg-muted/40 p-4">
-                            <p className="text-sm font-medium text-card-foreground">
-                                PRs detectados
-                            </p>
+                            <p className="text-sm font-medium text-card-foreground">PRs detectados</p>
                             <p className="mt-1 text-sm text-muted-foreground">
                                 {stats.totalPRs === 0
                                     ? 'Todavía no hay PRs detectados.'
-                                    : `${stats.totalPRs} PR${stats.totalPRs === 1 ? '' : 's'} acumulado${stats.totalPRs === 1 ? '' : 's'} en el panel.`}
+                                    : `${stats.totalPRs} PR${stats.totalPRs === 1 ? '' : 's'} acumulado${stats.totalPRs === 1 ? '' : 's'}.`}
                             </p>
                         </div>
                     </div>

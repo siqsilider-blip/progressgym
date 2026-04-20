@@ -5,6 +5,11 @@ export type TrainerProfile = {
     gym_name: string | null
     weight_unit: string | null
     default_routine_days: number | null
+    default_sets: number
+    default_reps: number
+    default_rest: number
+    show_prs: boolean
+    show_charts: boolean
 }
 
 export async function getTrainerProfile(): Promise<TrainerProfile | null> {
@@ -22,7 +27,7 @@ export async function getTrainerProfile(): Promise<TrainerProfile | null> {
         await Promise.all([
             supabase
                 .from('trainer_profiles')
-                .select('display_name, gym_name, default_routine_days')
+                .select('display_name, gym_name, default_routine_days, default_sets, default_reps, default_rest, show_prs, show_charts')
                 .eq('user_id', user.id)
                 .maybeSingle(),
             supabase
@@ -45,5 +50,10 @@ export async function getTrainerProfile(): Promise<TrainerProfile | null> {
         gym_name: trainerProfile?.gym_name ?? null,
         default_routine_days: trainerProfile?.default_routine_days ?? null,
         weight_unit: profile?.weight_unit ?? 'kg',
+        default_sets: (trainerProfile as any)?.default_sets ?? 3,
+        default_reps: (trainerProfile as any)?.default_reps ?? 10,
+        default_rest: (trainerProfile as any)?.default_rest ?? 60,
+        show_prs: (trainerProfile as any)?.show_prs ?? true,
+        show_charts: (trainerProfile as any)?.show_charts ?? true,
     }
 }

@@ -2,6 +2,8 @@ type StudentStats = {
     lastWorkoutAt: string | null
     totalSessions: number
     totalPRs: number
+    totalVolume: number
+    last30DaysVolume: number
     status: 'active' | 'inactive' | 'new'
 }
 
@@ -23,9 +25,13 @@ function formatStatus(status: StudentStats['status']) {
     }
 }
 
+function formatVolume(value: number) {
+    return new Intl.NumberFormat('es-AR').format(Math.round(value))
+}
+
 export default function StudentStatsCards({ stats }: { stats: StudentStats }) {
     return (
-        <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
             <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/60">
                 <p className="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                     Último entrenamiento
@@ -54,6 +60,24 @@ export default function StudentStatsCards({ stats }: { stats: StudentStats }) {
             </div>
 
             <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/60">
+                <p className="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                    Volumen total
+                </p>
+                <p className="mt-2 text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+                    {formatVolume(stats.totalVolume)} kg
+                </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/60">
+                <p className="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                    Volumen 30 días
+                </p>
+                <p className="mt-2 text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+                    {formatVolume(stats.last30DaysVolume)} kg
+                </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/60 sm:col-span-2 xl:col-span-5">
                 <p className="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                     Estado
                 </p>

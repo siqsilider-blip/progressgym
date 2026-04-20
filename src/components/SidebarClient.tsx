@@ -7,6 +7,8 @@ import {
     Users,
     LogOut,
     ClipboardList,
+    Plus,
+    UserPlus,
 } from 'lucide-react'
 
 type SidebarClientProps = {
@@ -38,6 +40,13 @@ export default function SidebarClient({
                 path === '/dashboard/students' || path.startsWith('/dashboard/students/'),
         },
         {
+            href: '/dashboard/new',
+            label: 'Nuevo',
+            mobileLabel: 'Nuevo',
+            icon: Plus,
+            match: (path: string) => path === '/dashboard/new',
+        },
+        {
             href: '/dashboard/routines',
             label: 'Rutinas',
             mobileLabel: 'Rutinas',
@@ -45,7 +54,17 @@ export default function SidebarClient({
             match: (path: string) =>
                 path === '/dashboard/routines' || path.startsWith('/dashboard/routines/'),
         },
+        {
+            href: '/dashboard/contacts',
+            label: 'Contactos',
+            mobileLabel: 'Contactos',
+            icon: UserPlus,
+            match: (path: string) =>
+                path === '/dashboard/contacts' || path.startsWith('/dashboard/contacts/'),
+        },
     ]
+
+    const desktopNavItems = navItems.filter((item) => item.label !== 'Nuevo')
 
     const baseItem = isLight
         ? 'flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-900'
@@ -66,8 +85,8 @@ export default function SidebarClient({
         <>
             <aside
                 className={`hidden md:flex md:w-72 md:flex-col md:border-r ${isLight
-                    ? 'border-zinc-200 bg-white text-zinc-900'
-                    : 'border-zinc-800 bg-zinc-950 text-zinc-100'
+                        ? 'border-zinc-200 bg-white text-zinc-900'
+                        : 'border-zinc-800 bg-zinc-950 text-zinc-100'
                     }`}
             >
                 <div className="border-b border-inherit px-6 py-6">
@@ -81,7 +100,7 @@ export default function SidebarClient({
 
                 <nav className="flex-1 px-3 py-4">
                     <div className="space-y-1">
-                        {navItems.map((item) => {
+                        {desktopNavItems.map((item) => {
                             const Icon = item.icon
                             const isActive = item.match(pathname)
 
@@ -111,8 +130,8 @@ export default function SidebarClient({
 
             <div
                 className={`fixed inset-x-0 top-0 z-40 flex h-14 items-center justify-between border-b px-4 md:hidden ${isLight
-                    ? 'border-zinc-200 bg-white/95 text-zinc-900'
-                    : 'border-zinc-800 bg-zinc-950/95 text-zinc-100'
+                        ? 'border-zinc-200 bg-white/95 text-zinc-900'
+                        : 'border-zinc-800 bg-zinc-950/95 text-zinc-100'
                     } backdrop-blur`}
             >
                 <Link href="/dashboard" className="font-semibold tracking-tight">
@@ -124,11 +143,11 @@ export default function SidebarClient({
 
             <nav
                 className={`fixed inset-x-0 bottom-0 z-40 border-t md:hidden ${isLight
-                    ? 'border-zinc-200 bg-white/95'
-                    : 'border-zinc-800 bg-zinc-950/95'
+                        ? 'border-zinc-200 bg-white/95'
+                        : 'border-zinc-800 bg-zinc-950/95'
                     } backdrop-blur`}
             >
-                <div className="grid grid-cols-3">
+                <div className="grid grid-cols-5">
                     {navItems.map((item) => {
                         const Icon = item.icon
                         const isActive = item.match(pathname)

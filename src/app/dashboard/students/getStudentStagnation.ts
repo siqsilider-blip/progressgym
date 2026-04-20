@@ -1,187 +1,174 @@
 import { createClient } from '@/lib/supabase/server'
 
-export type StudentStagnation = {
-    exerciseName: string | null
-    daysWithoutImprovement: number
-    lastBestWeight: number | null
-    detected: boolean
+export type StudentStagnationItem = {
+    exerciseId: string
+    exerciseName: string
+    bestWeight: number
+    lastWeight: number
+    lastPerformedAt: string | null
+    sessionsWithoutImprovement: number
+    stagnated: boolean
+}
+
+type SessionBest = {
+    performedAt: string
+    bestWeight: number
 }
 
 export async function getStudentStagnation(
     studentId: string
-): Promise<StudentStagnation> {
+): Promise<StudentStagnationItem[]> {
     const supabase = await createClient()
 
-    const { data: logs, error: logsError } = await supabase
+    const { data: logs, error } = await supabase
         .from('exercise_logs')
         .select(`
-      routine_day_exercise_id,
-      weight,
-      created_at
-    `)
+            id,
+            weight,
+            performed_at,
+            routine_day_exercise_id,
+            routine_day_exercises (
+                id,
+                exercise_id,
+                exercises!fk_rde_exercise (
+                    id,
+                    name
+                )
+            )
+        `)
         .eq('student_id', studentId)
         .not('weight', 'is', null)
-        .order('created_at', { ascending: true })
+        .order('performed_at', { ascending: true })
 
-    if (logsError) {
-        console.error('Error fetching stagnation:', logsError)
-        return {
-            exerciseName: null,
-            daysWithoutImprovement: 0,
-            lastBestWeight: null,
-            detected: false,
-        }
+    if (error) {
+        console.error('Error fetching stagnation logs:', error)
+        return []
     }
 
-    const routineDayExerciseIds = Array.from(
-        new Set(
-            (logs ?? [])
-                .map((log) => log.routine_day_exercise_id)
-                .filter((id) => id !== null)
-        )
-    )
+    const safeLogs = logs ?? []
 
-    if (routineDayExerciseIds.length === 0) {
-        return {
-            exerciseName: null,
-            daysWithoutImprovement: 0,
-            lastBestWeight: null,
-            detected: false,
-        }
-    }
-
-    const { data: routineDayExercises, error: rdeError } = await supabase
-        .from('routine_day_exercises')
-        .select('id, exercise_id')
-        .in('id', routineDayExerciseIds)
-
-    if (rdeError) {
-        console.error('Error fetching routine_day_exercises for stagnation:', rdeError)
-        return {
-            exerciseName: null,
-            daysWithoutImprovement: 0,
-            lastBestWeight: null,
-            detected: false,
-        }
-    }
-
-    const exerciseIds = Array.from(
-        new Set(
-            (routineDayExercises ?? [])
-                .map((item) => item.exercise_id)
-                .filter((id) => id !== null)
-        )
-    )
-
-    if (exerciseIds.length === 0) {
-        return {
-            exerciseName: null,
-            daysWithoutImprovement: 0,
-            lastBestWeight: null,
-            detected: false,
-        }
-    }
-
-    const { data: exercises, error: exercisesError } = await supabase
-        .from('exercises')
-        .select('id, name')
-        .in('id', exerciseIds)
-
-    if (exercisesError) {
-        console.error('Error fetching exercises for stagnation:', exercisesError)
-        return {
-            exerciseName: null,
-            daysWithoutImprovement: 0,
-            lastBestWeight: null,
-            detected: false,
-        }
-    }
-
-    const routineDayExerciseToExerciseId = new Map<string, string>()
-    for (const item of routineDayExercises ?? []) {
-        if (item.id && item.exercise_id) {
-            routineDayExerciseToExerciseId.set(item.id, item.exercise_id)
-        }
-    }
-
-    const exerciseIdToName = new Map<string, string>()
-    for (const exercise of exercises ?? []) {
-        if (exercise.id) {
-            exerciseIdToName.set(exercise.id, exercise.name ?? 'Ejercicio')
-        }
-    }
-
-    const grouped = new Map<
+    const sessionsByExercise = new Map<
         string,
         {
             exerciseName: string
-            maxWeight: number
-            maxWeightLastSeenAt: string
-            totalLogs: number
+            sessions: Map<string, SessionBest>
         }
     >()
 
-    for (const log of logs ?? []) {
-        if (log.weight == null || !log.routine_day_exercise_id) continue
+    for (const log of safeLogs as any[]) {
+        const exercise = log?.routine_day_exercises?.exercises
+        const exerciseId = String(exercise?.id ?? '')
+        const exerciseName = String(exercise?.name ?? 'Ejercicio')
+        const performedAt = String(log?.performed_at ?? '')
+        const weight = Number(log?.weight ?? 0)
 
-        const exerciseId = routineDayExerciseToExerciseId.get(log.routine_day_exercise_id)
-        if (!exerciseId) continue
+        if (!exerciseId || !performedAt || !Number.isFinite(weight) || weight <= 0) {
+            continue
+        }
 
-        const key = exerciseId
-        const weight = Number(log.weight)
-        const createdAt = String(log.created_at)
-        const exerciseName = exerciseIdToName.get(exerciseId) ?? 'Ejercicio'
-
-        if (!grouped.has(key)) {
-            grouped.set(key, {
+        if (!sessionsByExercise.has(exerciseId)) {
+            sessionsByExercise.set(exerciseId, {
                 exerciseName,
-                maxWeight: weight,
-                maxWeightLastSeenAt: createdAt,
-                totalLogs: 1,
+                sessions: new Map<string, SessionBest>(),
             })
-        } else {
-            const current = grouped.get(key)!
+        }
 
-            current.totalLogs += 1
+        const exerciseEntry = sessionsByExercise.get(exerciseId)!
+        const existingSession = exerciseEntry.sessions.get(performedAt)
 
-            if (weight > current.maxWeight) {
-                current.maxWeight = weight
-                current.maxWeightLastSeenAt = createdAt
-            } else if (weight === current.maxWeight) {
-                current.maxWeightLastSeenAt = createdAt
-            }
-
-            grouped.set(key, current)
+        if (!existingSession || weight > existingSession.bestWeight) {
+            exerciseEntry.sessions.set(performedAt, {
+                performedAt,
+                bestWeight: weight,
+            })
         }
     }
 
-    let stagnatedExerciseName: string | null = null
-    let stagnatedDays = 0
-    let stagnatedBestWeight: number | null = null
+    const results: StudentStagnationItem[] = []
 
-    const now = new Date()
-
-    for (const [, value] of grouped) {
-        if (value.totalLogs < 2) continue
-
-        const bestDate = new Date(value.maxWeightLastSeenAt)
-        const diffDays = Math.floor(
-            (now.getTime() - bestDate.getTime()) / (1000 * 60 * 60 * 24)
+    for (const [exerciseId, entry] of sessionsByExercise.entries()) {
+        const orderedSessions = Array.from(entry.sessions.values()).sort(
+            (a, b) =>
+                new Date(a.performedAt).getTime() - new Date(b.performedAt).getTime()
         )
 
-        if (diffDays > stagnatedDays) {
-            stagnatedDays = diffDays
-            stagnatedExerciseName = value.exerciseName
-            stagnatedBestWeight = value.maxWeight
+        if (orderedSessions.length < 4) {
+            continue
         }
+
+        const bestWeightOverall = Math.max(
+            ...orderedSessions.map((session) => session.bestWeight)
+        )
+
+        let sessionsWithoutImprovement = 0
+
+        for (let i = orderedSessions.length - 1; i >= 0; i--) {
+            const current = orderedSessions[i]
+            const previousSessions = orderedSessions.slice(0, i)
+
+            if (previousSessions.length === 0) {
+                break
+            }
+
+            const previousBest = Math.max(
+                ...previousSessions.map((session) => session.bestWeight)
+            )
+
+            if (current.bestWeight > previousBest) {
+                break
+            }
+
+            sessionsWithoutImprovement++
+        }
+
+        const lastSession = orderedSessions[orderedSessions.length - 1]
+        const last4Sessions = orderedSessions.slice(-4)
+
+        let stagnated = false
+
+        if (last4Sessions.length === 4) {
+            const sessionIndexStart = orderedSessions.length - 4
+            const previousToWindow = orderedSessions.slice(0, sessionIndexStart)
+
+            if (previousToWindow.length > 0) {
+                const bestBeforeWindow = Math.max(
+                    ...previousToWindow.map((session) => session.bestWeight)
+                )
+
+                const improvedInsideWindow = last4Sessions.some(
+                    (session) => session.bestWeight > bestBeforeWindow
+                )
+
+                stagnated = !improvedInsideWindow
+            } else {
+                const firstWindowBest = last4Sessions[0].bestWeight
+                const improvedInsideWindow = last4Sessions.some(
+                    (session) => session.bestWeight > firstWindowBest
+                )
+
+                stagnated = !improvedInsideWindow
+            }
+        }
+
+        results.push({
+            exerciseId,
+            exerciseName: entry.exerciseName,
+            bestWeight: bestWeightOverall,
+            lastWeight: lastSession.bestWeight,
+            lastPerformedAt: lastSession.performedAt,
+            sessionsWithoutImprovement,
+            stagnated,
+        })
     }
 
-    const detected = stagnatedExerciseName !== null && stagnatedDays >= 14
+    return results
+        .filter((item) => item.stagnated || item.sessionsWithoutImprovement >= 4)
+        .sort((a, b) => {
+            if (b.sessionsWithoutImprovement !== a.sessionsWithoutImprovement) {
+                return b.sessionsWithoutImprovement - a.sessionsWithoutImprovement
+            }
 
-    return {
-        exerciseName: stagnatedExerciseName,
-        daysWithoutImprovement: stagnatedDays,
-        lastBestWeight: stagnatedBestWeight,
-        detected,
-    }
+            return b.bestWeight - a.bestWeight
+        })
+        .slice(0, 5)
 }
