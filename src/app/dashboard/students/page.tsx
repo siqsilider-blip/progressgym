@@ -3,7 +3,6 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import StudentsList from '@/components/StudentsList'
 import { getStudentRisk } from './[studentId]/getStudentRisk'
-import { getStudentsAlerts } from './getStudentsAlerts'
 import StudentsAlertsCard from '@/components/StudentsAlertsCard'
 
 type StudentRisk = {
@@ -114,7 +113,15 @@ export default async function StudentsPage() {
 
     studentsWithRisk.sort((a, b) => b.risk.score - a.risk.score)
 
-    const alerts = await getStudentsAlerts()
+    const alerts = studentsWithRisk
+        .filter((s) => s.risk.level === 'critical' || s.risk.level === 'high')
+        .map((s) => ({
+            id: s.id,
+            name: s.first_name ?? 'Alumno',
+            level: s.risk.level as 'critical' | 'high',
+            score: s.risk.score,
+        }))
+        .sort((a, b) => b.score - a.score)
 
     const summary = studentsWithRisk.reduce(
         (acc, student) => {

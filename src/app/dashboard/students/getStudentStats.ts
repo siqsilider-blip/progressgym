@@ -12,19 +12,9 @@ export type StudentStats = {
 export async function getStudentStats(studentId: string): Promise<StudentStats> {
     const supabase = await createClient()
 
-    const { data: workouts, error: workoutsError } = await supabase
-        .from('workouts')
-        .select('id, created_at')
-        .eq('student_id', studentId)
-        .order('created_at', { ascending: false })
-
-    if (workoutsError) {
-        console.error('Error fetching workouts:', workoutsError)
-    }
-
     const { data: logs, error: logsError } = await supabase
         .from('exercise_logs')
-        .select('id, routine_day_exercise_id, weight, reps, created_at')
+        .select('id, routine_day_exercise_id, weight, reps, created_at, performed_at')
         .eq('student_id', studentId)
         .order('created_at', { ascending: true })
 
@@ -32,13 +22,30 @@ export async function getStudentStats(studentId: string): Promise<StudentStats> 
         console.error('Error fetching exercise logs:', logsError)
     }
 
-    const safeWorkouts = workouts ?? []
     const safeLogs = logs ?? []
 
-    const lastWorkoutAt =
-        safeWorkouts.length > 0 ? safeWorkouts[0].created_at : null
+    // Calcular días únicos de entrenamiento desde exercise_logs
+    const uniqueTrainingDays = new Set(
+        safeLogs
+            .map((log) => {
+                const date = log.performed_at ?? log.created_at
+                if (!date) return null
+                return String(date).split('T')[0]
+            })
+            .filter(Boolean)
+    )
 
-    const totalSessions = safeWorkouts.length
+    const totalSessions = uniqueTrainingDays.size
+
+    // Último entrenamiento: el más reciente de los logs
+    const sortedLogs = [...safeLogs].sort((a, b) => {
+        const dateA = new Date(a.performed_at ?? a.created_at ?? 0).getTime()
+        const dateB = new Date(b.performed_at ?? b.created_at ?? 0).getTime()
+        return dateB - dateA
+    })
+    const lastWorkoutAt = sortedLogs.length > 0
+        ? (sortedLogs[0].performed_at ?? sortedLogs[0].created_at ?? null)
+        : null
 
     const logsByExercise = new Map<
         string,

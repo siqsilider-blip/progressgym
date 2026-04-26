@@ -10,6 +10,7 @@ export async function saveSet(payload: {
     setIndex: number
     weight: number | null
     reps: number | null
+    rpe?: number | null
     performedAt: string
 }): Promise<{ ok: boolean; error: string | null; action: 'inserted' | 'updated' | null }> {
     try {
@@ -42,6 +43,7 @@ export async function saveSet(payload: {
                 .update({
                     weight: payload.weight,
                     reps: payload.reps,
+                    rpe: payload.rpe ?? null,
                     performed_at: payload.performedAt,
                 })
                 .eq('id', existingLog.id)
@@ -62,6 +64,7 @@ export async function saveSet(payload: {
                 workout_session_id: payload.sessionId,
                 weight: payload.weight,
                 reps: payload.reps,
+                rpe: payload.rpe ?? null,
                 performed_at: payload.performedAt,
                 set_index: payload.setIndex,
             })

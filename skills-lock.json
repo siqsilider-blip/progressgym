@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "skills": {
+    "frontend-design": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "516bd2154eb843a8240e43d5b285229129853114ad7075a5e141e1c08e408c84"
+    },
+    "marketing-ideas": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "computedHash": "ece95da6d74dc84deb45035109311748697b7b074af1a78e111299464306cad2"
+    },
+    "ui-ux-pro-max": {
+      "source": "nextlevelbuilder/ui-ux-pro-max-skill",
+      "sourceType": "github",
+      "computedHash": "6337038fe1fe6bbe1b9f252ab678ee575859190bab6f0f246f4061824eb40875"
+    }
+  }
+}

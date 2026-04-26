@@ -8,11 +8,11 @@ import { getExerciseMaxWeights } from './train-focused-actions'
 import TrainFocusedView from './TrainFocusedView'
 
 type PageProps = {
-    params: {
-        studentId: string
-    }
+    params: { studentId: string }
     searchParams?: {
         day?: string
+        week?: string
+        month?: string
         saved?: string
         error?: string
     }
@@ -168,19 +168,49 @@ export default async function StudentTrainPage({
         .eq('trainer_id', user.id)
         .maybeSingle()
 
-    const { data: routineDays } = await supabase
-        .from('routine_days')
-        .select('id, name, day_number')
+    // 1. Obtener meses de la rutina
+    const { data: routineMonths } = await supabase
+        .from('routine_months')
+        .select('id, month_number, name')
         .eq('routine_id', assignedRoutineId)
-        .order('day_number', { ascending: true })
+        .order('month_number', { ascending: true })
+
+    const months = routineMonths ?? []
+
+    // 2. Seleccionar mes activo
+    const selectedMonth = months.find(m => m.id === searchParams?.month)
+        ?? months[0]
+        ?? null
+
+    // 3. Obtener semanas del mes activo
+    const { data: monthWeeks } = selectedMonth ? await supabase
+        .from('routine_weeks')
+        .select('id, week_number, name')
+        .eq('routine_month_id', selectedMonth.id)
+        .order('week_number', { ascending: true })
+        : { data: [] }
+
+    const weeks = monthWeeks ?? []
+
+    // 4. Seleccionar semana activa
+    const selectedWeek = weeks.find(w => w.id === searchParams?.week)
+        ?? weeks[0]
+        ?? null
+
+    // 5. Obtener días de la semana activa (NO de toda la rutina)
+    const { data: routineDays } = selectedWeek ? await supabase
+        .from('routine_days')
+        .select('id, name, day_index')
+        .eq('routine_week_id', selectedWeek.id)
+        .order('day_index', { ascending: true })
+        : { data: [] }
 
     const selectedDayId =
-        searchParams?.day && routineDays?.some((day) => day.id === searchParams.day)
+        searchParams?.day && (routineDays ?? []).some(d => d.id === searchParams.day)
             ? searchParams.day
-            : routineDays?.[0]?.id ?? null
+            : (routineDays ?? [])[0]?.id ?? null
 
-    const selectedDay =
-        routineDays?.find((day) => day.id === selectedDayId) ?? null
+    const selectedDay = (routineDays ?? []).find(d => d.id === selectedDayId) ?? null
 
     let exercisesForDay: {
         id: string
@@ -235,15 +265,15 @@ export default async function StudentTrainPage({
 
     const selectedDayLabel = selectedDay?.name?.trim()
         ? selectedDay.name.trim()
-        : selectedDay?.day_number
-            ? `Día ${selectedDay.day_number}`
+        : (selectedDay as any)?.day_index
+            ? `Día ${(selectedDay as any).day_index}`
             : 'Día seleccionado'
 
     const routineDayExerciseIds = exercisesForDay.map((item) => item.id)
 
     const logsByExerciseId = new Map<
         string,
-        { weights: Array<number | null>; reps: Array<number | null> }
+        { weights: Array<number | null>; reps: Array<number | null>; lastPerformedAt: string | null }
     >()
 
     if (routineDayExerciseIds.length > 0) {
@@ -287,7 +317,7 @@ export default async function StudentTrainPage({
             const weights = latestSessionLogs.map((log) => log.weight ?? null)
             const reps = latestSessionLogs.map((log) => log.reps ?? null)
 
-            logsByExerciseId.set(exerciseRow.id, { weights, reps })
+            logsByExerciseId.set(exerciseRow.id, { weights, reps, lastPerformedAt: latestPerformedAt ?? null })
         }
     }
 
@@ -328,6 +358,7 @@ export default async function StudentTrainPage({
             restSeconds: exercise.rest_seconds ?? 60,
             previousWeights,
             previousReps,
+            lastPerformedAt: previousSession?.lastPerformedAt ?? null,
         }
     })
 
@@ -350,7 +381,9 @@ export default async function StudentTrainPage({
                                 {student.first_name} {student.last_name}
                             </h1>
                             <p className="truncate text-xs text-muted-foreground">
-                                {selectedDayLabel} · {routine?.name ?? routineName}
+                                {routine?.name ?? routineName}
+                                {selectedMonth ? ` · ${selectedMonth.name || `Mes ${selectedMonth.month_number}`}` : ''}
+                                {selectedWeek ? ` · ${selectedWeek.name || `Sem. ${selectedWeek.week_number}`}` : ''}
                             </p>
                         </div>
 
@@ -379,32 +412,96 @@ export default async function StudentTrainPage({
                     </div>
                 )}
 
-                <div className="mb-4">
-                    <div className="flex gap-2 overflow-x-auto pb-2">
-                        {routineDays?.map((day, index) => {
-                            const label =
-                                day.name?.trim() || `Día ${day.day_number ?? index + 1}`
-                            const isActive = day.id === selectedDayId
-
-                            return (
-                                <Link
-                                    key={day.id}
-                                    href={`/dashboard/students/${params.studentId}/train?day=${day.id}`}
-                                    className={`whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition ${isActive
-                                            ? 'bg-indigo-600 text-white'
-                                            : 'border border-border bg-secondary text-secondary-foreground hover:bg-muted'
+                {/* Selector de meses */}
+                {months.length > 0 && (
+                    <div className="mb-2 flex items-center gap-2">
+                        <span className="w-16 shrink-0 text-[9px] font-medium uppercase tracking-widest text-muted-foreground/60">
+                            Mesociclo
+                        </span>
+                        <div className="flex gap-1.5 overflow-x-auto pb-1">
+                            {months.map((month) => {
+                                const isActive = month.id === selectedMonth?.id
+                                return (
+                                    <Link
+                                        key={month.id}
+                                        href={`/dashboard/students/${params.studentId}/train?month=${month.id}`}
+                                        className={`shrink-0 rounded-xl px-3 py-2 text-xs font-medium transition ${
+                                            isActive
+                                                ? 'bg-indigo-600 text-white'
+                                                : 'border border-border bg-secondary text-secondary-foreground hover:bg-muted'
                                         }`}
-                                >
-                                    {label}
-                                </Link>
-                            )
-                        })}
+                                    >
+                                        {month.name || `Mes ${month.month_number}`}
+                                    </Link>
+                                )
+                            })}
+                        </div>
                     </div>
-                </div>
+                )}
 
-                {!selectedDay ? (
+                {/* Selector de semanas */}
+                {weeks.length > 0 && (
+                    <div className="mb-2 flex items-center gap-2">
+                        <span className="w-16 shrink-0 text-[9px] font-medium uppercase tracking-widest text-muted-foreground/60">
+                            Semana
+                        </span>
+                        <div className="flex gap-1.5 overflow-x-auto pb-1">
+                            {weeks.map((week) => {
+                                const isActive = week.id === selectedWeek?.id
+                                return (
+                                    <Link
+                                        key={week.id}
+                                        href={`/dashboard/students/${params.studentId}/train?month=${selectedMonth?.id}&week=${week.id}`}
+                                        className={`shrink-0 rounded-xl px-3 py-2 text-xs font-medium transition ${
+                                            isActive
+                                                ? 'bg-indigo-500/20 text-indigo-400 ring-1 ring-indigo-500'
+                                                : 'border border-border bg-secondary text-secondary-foreground hover:bg-muted'
+                                        }`}
+                                    >
+                                        {week.name || `Sem. ${week.week_number}`}
+                                    </Link>
+                                )
+                            })}
+                        </div>
+                    </div>
+                )}
+
+                {/* Selector de días */}
+                {(routineDays ?? []).length > 0 && (
+                    <div className="mb-4">
+                        <div className="flex gap-1.5 overflow-x-auto pb-1">
+                            {(routineDays ?? []).map((day, index) => {
+                                const label = day.name?.trim() || `Día ${(day as any).day_index ?? index + 1}`
+                                const isActive = day.id === selectedDayId
+                                return (
+                                    <Link
+                                        key={day.id}
+                                        href={`/dashboard/students/${params.studentId}/train?month=${selectedMonth?.id}&week=${selectedWeek?.id}&day=${day.id}`}
+                                        className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+                                            isActive
+                                                ? 'bg-indigo-600 text-white'
+                                                : 'border border-border bg-secondary text-secondary-foreground hover:bg-muted'
+                                        }`}
+                                    >
+                                        {label}
+                                    </Link>
+                                )
+                            })}
+                        </div>
+                    </div>
+                )}
+
+                {!selectedMonth ? (
                     <div className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">
-                        Esta rutina no tiene días creados todavía.
+                        Esta rutina no tiene mesociclos creados todavía.
+                    </div>
+                ) : !selectedWeek ? (
+                    <div className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">
+                        Este mesociclo no tiene semanas todavía.
+                    </div>
+                ) : !selectedDay ? (
+                    <div className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">
+                        Esta semana no tiene días creados todavía.
                     </div>
                 ) : exercisesForDay.length === 0 ? (
                     <div className="rounded-2xl border border-border bg-card p-4">

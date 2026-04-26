@@ -15,6 +15,7 @@ type SetState = {
     status: SetStatus
     weight: string
     reps: string
+    rpe: string
     saved: boolean
     isPR: boolean
 }
@@ -29,6 +30,7 @@ type ExerciseData = {
     restSeconds: number
     previousWeights: (number | null)[]
     previousReps: (number | null)[]
+    lastPerformedAt?: string | null
 }
 
 type Props = {
@@ -76,6 +78,7 @@ export default function TrainFocusedView({
 
     // ── Core state ──
     const [currentExerciseIndex, setCurrentExerciseIndex] = React.useState(0)
+    const [showRpeInfo, setShowRpeInfo] = React.useState(false)
     const [sets, setSets] = React.useState<SetState[][]>(() => initAllSets(exercises))
     const [phase, setPhase] = React.useState<Phase>('training')
     const [saving, setSaving] = React.useState(false)
@@ -155,6 +158,7 @@ export default function TrainFocusedView({
                     status: i === 0 ? 'active' : 'pending',
                     weight: prevWeight != null ? String(prevWeight) : '',
                     reps: prevReps != null ? String(prevReps) : '',
+                    rpe: '',
                     saved: false,
                     isPR: false,
                 })
@@ -171,6 +175,14 @@ export default function TrainFocusedView({
         })
     }
 
+    function updateSetRpe(setIdx: number, value: string) {
+        setSets((prev) => {
+            const copy = prev.map((exSets) => exSets.map((s) => ({ ...s })))
+            copy[currentExerciseIndex][setIdx].rpe = value
+            return copy
+        })
+    }
+
     async function confirmSet(targetSetIndex?: number) {
         if (saving) return
 
@@ -182,6 +194,7 @@ export default function TrainFocusedView({
 
         const weightVal = targetSet.weight.trim() !== '' ? Number(targetSet.weight) : null
         const repsVal = targetSet.reps.trim() !== '' ? Number(targetSet.reps) : null
+        const rpeVal = targetSet.rpe.trim() !== '' ? Number(targetSet.rpe) : null
 
         if (weightVal === null && repsVal === null) return
 
@@ -194,6 +207,7 @@ export default function TrainFocusedView({
             setIndex: targetSet.setIndex,
             weight: weightVal,
             reps: repsVal,
+            rpe: rpeVal,
             performedAt,
         })
 
@@ -736,6 +750,25 @@ export default function TrainFocusedView({
                         ? ` · ${exercise.targetReps} ${exercise.isCardio ? 'min' : 'reps'}`
                         : ''}
                 </p>
+                {exercise.lastPerformedAt && (
+                    <p className="mt-0.5 text-[10px] text-muted-foreground">
+                        Última vez: {(() => {
+                            const d = new Date(exercise.lastPerformedAt!)
+                            const diffDays = Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24))
+                            if (diffDays === 0) return 'hoy'
+                            if (diffDays === 1) return 'ayer'
+                            if (diffDays < 7) return `hace ${diffDays} días`
+                            if (diffDays < 14) return 'hace 1 semana'
+                            return `hace ${Math.floor(diffDays / 7)} semanas`
+                        })()}
+                        {exercise.previousWeights[0] != null && (
+                            <span className="ml-1 font-medium text-foreground">
+                                · {exercise.previousWeights[0]} {weightUnit}
+                                {exercise.previousReps[0] != null && ` × ${exercise.previousReps[0]}`}
+                            </span>
+                        )}
+                    </p>
+                )}
             </div>
 
             {/* ── Exercise nav indicators ── */}
@@ -864,6 +897,12 @@ export default function TrainFocusedView({
                                             <span className="shrink-0 text-sm">🏆</span>
                                         )}
 
+                                        {isCompleted && set.rpe !== '' && (
+                                            <span className="shrink-0 rounded-md bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium text-zinc-500 dark:bg-zinc-700 dark:text-zinc-400">
+                                                RPE {set.rpe}
+                                            </span>
+                                        )}
+
                                         {isPending && (
                                             <button
                                                 type="button"
@@ -895,6 +934,49 @@ export default function TrainFocusedView({
                                     </p>
                                 )}
                             </div>
+
+                            {isActive && (
+                                <div className="mt-3 border-t border-indigo-200 pt-3 dark:border-indigo-500/30">
+                                    <div className="flex items-center gap-1.5 mb-1">
+                                        <span className="text-[9px] font-medium uppercase tracking-wider text-muted-foreground">
+                                            RPE
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowRpeInfo(!showRpeInfo)}
+                                            className="flex h-3.5 w-3.5 items-center justify-center rounded-full border border-border text-[8px] text-muted-foreground transition hover:text-foreground"
+                                        >
+                                            ?
+                                        </button>
+                                    </div>
+                                    {showRpeInfo && (
+                                        <div className="mb-2 rounded-xl border border-border bg-secondary/60 px-3 py-2 text-[10px] text-muted-foreground leading-relaxed">
+                                            <p className="font-medium text-foreground mb-0.5">
+                                                RPE — Esfuerzo percibido (1-10)
+                                            </p>
+                                            <p>1-4: Muy fácil · 5-6: Moderado</p>
+                                            <p>7-8: Difícil, podés más · 9: Casi al límite</p>
+                                            <p>10: Máximo esfuerzo, no podés más</p>
+                                        </div>
+                                    )}
+                                    <div className="flex gap-1">
+                                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+                                            <button
+                                                key={n}
+                                                type="button"
+                                                onClick={() => updateSetRpe(idx, set.rpe === String(n) ? '' : String(n))}
+                                                className={`h-7 w-7 rounded-lg text-[11px] font-medium transition active:scale-90 ${
+                                                    set.rpe === String(n)
+                                                        ? 'bg-indigo-600 text-white'
+                                                        : 'border border-border bg-secondary text-secondary-foreground hover:bg-muted'
+                                                }`}
+                                            >
+                                                {n}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )
                 })}

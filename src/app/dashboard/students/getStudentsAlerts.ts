@@ -1,5 +1,3 @@
-'use server'
-
 import { createClient } from '@/lib/supabase/server'
 import { getStudentRisk } from './[studentId]/getStudentRisk'
 
@@ -19,13 +17,17 @@ export async function getStudentsAlerts(): Promise<StudentAlert[]> {
 
     if (!students) return []
 
+    const results = await Promise.all(
+        students.map(async (student) => {
+            const risk = await getStudentRisk(student.id)
+            return { student, risk }
+        })
+    )
+
     const alerts: StudentAlert[] = []
 
-    for (const student of students) {
-        const risk = await getStudentRisk(student.id)
-
+    for (const { student, risk } of results) {
         if (!risk) continue
-
         if (risk.level === 'critical' || risk.level === 'high') {
             alerts.push({
                 id: student.id,

@@ -1,11 +1,11 @@
 'use client'
 
 import * as React from 'react'
-import { updateRoutineName } from './actions'
 
 type Props = {
     routineId: string
     initialName: string
+    updateAction: (input: { routineId: string; name: string }) => Promise<{ ok: boolean; error?: string }>
 }
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error'
@@ -13,6 +13,7 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 export default function RoutineNameEditor({
     routineId,
     initialName,
+    updateAction,
 }: Props) {
     const [value, setValue] = React.useState(initialName)
     const [saveState, setSaveState] = React.useState<SaveState>('idle')
@@ -61,7 +62,7 @@ export default function RoutineNameEditor({
             setSaveState('saving')
             setErrorMessage('')
 
-            const result = await updateRoutineName({
+            const result = await updateAction({
                 routineId,
                 name: trimmed,
             })

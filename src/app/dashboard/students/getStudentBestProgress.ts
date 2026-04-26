@@ -4,7 +4,7 @@ export type StudentBestProgress = {
     exerciseName: string | null
     progressKg: number
     firstWeight: number | null
-    lastWeight: number | null
+    bestWeight: number | null
 }
 
 export async function getStudentBestProgress(
@@ -29,7 +29,7 @@ export async function getStudentBestProgress(
             exerciseName: null,
             progressKg: 0,
             firstWeight: null,
-            lastWeight: null,
+            bestWeight: null,
         }
     }
 
@@ -46,7 +46,7 @@ export async function getStudentBestProgress(
             exerciseName: null,
             progressKg: 0,
             firstWeight: null,
-            lastWeight: null,
+            bestWeight: null,
         }
     }
 
@@ -61,7 +61,7 @@ export async function getStudentBestProgress(
             exerciseName: null,
             progressKg: 0,
             firstWeight: null,
-            lastWeight: null,
+            bestWeight: null,
         }
     }
 
@@ -78,7 +78,7 @@ export async function getStudentBestProgress(
             exerciseName: null,
             progressKg: 0,
             firstWeight: null,
-            lastWeight: null,
+            bestWeight: null,
         }
     }
 
@@ -93,7 +93,7 @@ export async function getStudentBestProgress(
             exerciseName: null,
             progressKg: 0,
             firstWeight: null,
-            lastWeight: null,
+            bestWeight: null,
         }
     }
 
@@ -116,7 +116,7 @@ export async function getStudentBestProgress(
         {
             exerciseName: string
             firstWeight: number
-            lastWeight: number
+            bestWeight: number
         }
     >()
 
@@ -133,11 +133,15 @@ export async function getStudentBestProgress(
             grouped.set(key, {
                 exerciseName,
                 firstWeight: Number(log.weight),
-                lastWeight: Number(log.weight),
+                bestWeight: Number(log.weight),
             })
         } else {
             const current = grouped.get(key)!
-            current.lastWeight = Number(log.weight)
+            const w = Number(log.weight)
+            // firstWeight = el peso más bajo histórico (punto de partida)
+            current.firstWeight = Math.min(current.firstWeight, w)
+            // bestWeight = el peso más alto histórico (mejor marca)
+            current.bestWeight = Math.max(current.bestWeight, w)
             grouped.set(key, current)
         }
     }
@@ -148,13 +152,14 @@ export async function getStudentBestProgress(
     let bestLastWeight: number | null = null
 
     for (const [, value] of grouped) {
-        const progress = value.lastWeight - value.firstWeight
+        const progress = value.bestWeight - value.firstWeight
+        if (progress <= 0) continue
 
         if (progress > bestProgressKg) {
             bestProgressKg = progress
             bestExerciseName = value.exerciseName
             bestFirstWeight = value.firstWeight
-            bestLastWeight = value.lastWeight
+            bestLastWeight = value.bestWeight
         }
     }
 
@@ -162,6 +167,6 @@ export async function getStudentBestProgress(
         exerciseName: bestExerciseName,
         progressKg: bestProgressKg,
         firstWeight: bestFirstWeight,
-        lastWeight: bestLastWeight,
+        bestWeight: bestLastWeight,
     }
 }

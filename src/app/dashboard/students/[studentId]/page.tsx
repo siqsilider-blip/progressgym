@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getStudentAdherence } from '../getStudentAdherence'
@@ -38,14 +39,66 @@ export default async function StudentProfilePage({ params }: PageProps) {
         return <div className="p-6">No se encontró el alumno.</div>
     }
 
-    const [adherence, stagnation, bestPR, recentPRs, risk, trainerProfile] = await Promise.all([
+    const [adherence, stagnation, bestPR, recentPRs, risk, trainerProfile, routineAssignment] = await Promise.all([
         getStudentAdherence(studentId),
         getStudentStagnation(studentId),
         getStudentBestProgress(studentId),
         getStudentRecentPRs(studentId),
         getStudentRisk(studentId),
         supabase.from('trainer_profiles').select('show_prs').eq('user_id', user.id).maybeSingle(),
+        supabase.from('student_routines').select('routine_id').eq('student_id', studentId).maybeSingle(),
     ])
+
+    const assignedRoutineId = routineAssignment.data?.routine_id ?? null
+
+    // Buscar el último log del alumno para saber en qué semana está
+    let lastTrainMonth: string | null = null
+    let lastTrainWeek: string | null = null
+
+    if (assignedRoutineId) {
+        const { data: lastLog } = await supabase
+            .from('exercise_logs')
+            .select('routine_day_exercise_id, performed_at')
+            .eq('student_id', params.studentId)
+            .not('routine_day_exercise_id', 'is', null)
+            .order('performed_at', { ascending: false })
+            .limit(1)
+            .maybeSingle()
+
+        if (lastLog?.routine_day_exercise_id) {
+            const { data: rde } = await supabase
+                .from('routine_day_exercises')
+                .select('routine_day_id')
+                .eq('id', lastLog.routine_day_exercise_id)
+                .maybeSingle()
+
+            if (rde?.routine_day_id) {
+                const { data: day } = await supabase
+                    .from('routine_days')
+                    .select('routine_week_id')
+                    .eq('id', rde.routine_day_id)
+                    .maybeSingle()
+
+                if (day?.routine_week_id) {
+                    lastTrainWeek = day.routine_week_id
+
+                    const { data: week } = await supabase
+                        .from('routine_weeks')
+                        .select('routine_month_id')
+                        .eq('id', day.routine_week_id)
+                        .maybeSingle()
+
+                    if (week?.routine_month_id) {
+                        lastTrainMonth = week.routine_month_id
+                    }
+                }
+            }
+        }
+    }
+
+    const trainHref = lastTrainMonth && lastTrainWeek
+        ? `/dashboard/students/${params.studentId}/train?month=${lastTrainMonth}&week=${lastTrainWeek}`
+        : `/dashboard/students/${params.studentId}/train`
 
     const showPrs = (trainerProfile.data as any)?.show_prs ?? true
 
@@ -53,7 +106,7 @@ export default async function StudentProfilePage({ params }: PageProps) {
         `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim() || 'Alumno'
 
     return (
-        <div className="space-y-4 p-4 md:p-6">
+        <div className="space-y-4 p-4 pb-36 md:p-6">
             <div className="flex items-start justify-between gap-3">
                 <div>
                     <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
@@ -104,6 +157,32 @@ export default async function StudentProfilePage({ params }: PageProps) {
                 weightUnit="kg"
                 showPrs={showPrs}
             />
+
+            <div className="fixed bottom-16 left-0 right-0 z-30 border-t border-border bg-background/95 backdrop-blur md:bottom-0">
+                <div className="mx-auto flex max-w-xl gap-3 px-4 py-3">
+                    {assignedRoutineId ? (
+                        <Link
+                            href={`/dashboard/routines/${assignedRoutineId}`}
+                            className="flex-1 rounded-xl border border-border bg-secondary px-4 py-3 text-center text-sm font-medium text-secondary-foreground transition hover:bg-muted"
+                        >
+                            Ver rutina
+                        </Link>
+                    ) : (
+                        <Link
+                            href={`/dashboard/students/${params.studentId}/assign-routine`}
+                            className="flex-1 rounded-xl border border-border bg-secondary px-4 py-3 text-center text-sm font-medium text-secondary-foreground transition hover:bg-muted"
+                        >
+                            Asignar rutina
+                        </Link>
+                    )}
+                    <Link
+                        href={trainHref}
+                        className="flex-1 rounded-xl bg-indigo-600 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-indigo-500"
+                    >
+                        Entrenar
+                    </Link>
+                </div>
+            </div>
         </div>
     )
 }

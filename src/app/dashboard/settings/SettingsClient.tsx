@@ -2,7 +2,8 @@
 
 import { useState, useMemo } from 'react'
 import { User, Mail, Shield, Moon, Scale, Dumbbell, BarChart2, Bell, Building2, LogOut, Lock, Trash2 } from 'lucide-react'
-import { saveSettings, signOutAction, type SettingsData } from './actions'
+import { saveSettings, signOutAction } from './actions'
+import { type SettingsData } from './types'
 
 type Props = {
     email: string

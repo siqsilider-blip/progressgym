@@ -57,13 +57,12 @@ export async function getTrainerDashboardStats(): Promise<TrainerDashboardStats>
 
     const sevenDaysAgo = new Date()
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-
     const sevenDaysAgoIso = sevenDaysAgo.toISOString()
 
-    const [recentWorkoutsResult, routinesResult] = await Promise.all([
+    const [recentLogsResult, routinesResult] = await Promise.all([
         supabase
-            .from('workouts')
-            .select('student_id, created_at')
+            .from('exercise_logs')
+            .select('student_id')
             .in('student_id', studentIds)
             .gte('created_at', sevenDaysAgoIso),
 
@@ -73,19 +72,19 @@ export async function getTrainerDashboardStats(): Promise<TrainerDashboardStats>
             .in('student_id', studentIds),
     ])
 
-    if (recentWorkoutsResult.error) {
-        console.error('Error fetching recent workouts:', recentWorkoutsResult.error)
+    if (recentLogsResult.error) {
+        console.error('Error fetching recent logs:', recentLogsResult.error)
     }
 
     if (routinesResult.error) {
         console.error('Error fetching student routines:', routinesResult.error)
     }
 
-    const recentWorkouts = recentWorkoutsResult.data ?? []
+    const recentLogs = recentLogsResult.data ?? []
     const routines = routinesResult.data ?? []
 
     const activeStudentIds = new Set(
-        recentWorkouts.map((workout) => workout.student_id)
+        recentLogs.map((log) => log.student_id).filter(Boolean)
     )
 
     const routineStudentIds = new Set(
@@ -95,7 +94,6 @@ export async function getTrainerDashboardStats(): Promise<TrainerDashboardStats>
     const activeStudents = activeStudentIds.size
     const inactiveStudents = totalStudents - activeStudents
 
-    // Por ahora en 0 hasta ver cómo guardás los PR reales
     const totalPRs = 0
 
     const studentsWithRoutine = routineStudentIds.size
