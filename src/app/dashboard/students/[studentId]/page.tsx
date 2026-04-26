@@ -11,6 +11,7 @@ import StudentBestProgressCard from '../StudentBestProgressCard'
 import StudentRecentPRsCard from '../StudentRecentPRsCard'
 import StudentRiskCard from './StudentRiskCard'
 import { getStudentRisk } from './getStudentRisk'
+import DeleteStudentButton from './DeleteStudentButton'
 
 type PageProps = {
     params: {
@@ -157,6 +158,8 @@ export default async function StudentProfilePage({ params }: PageProps) {
                 weightUnit="kg"
                 showPrs={showPrs}
             />
+
+            <DeleteStudentButton studentId={params.studentId} />
 
             <div className="fixed bottom-16 left-0 right-0 z-30 border-t border-border bg-background/95 backdrop-blur md:bottom-0">
                 <div className="mx-auto flex max-w-xl gap-3 px-4 py-3">
