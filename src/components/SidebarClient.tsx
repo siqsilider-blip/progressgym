@@ -8,7 +8,8 @@ import {
     LogOut,
     ClipboardList,
     Plus,
-    UserPlus,
+    Dumbbell,
+    Settings,
 } from 'lucide-react'
 
 type SidebarClientProps = {
@@ -55,12 +56,12 @@ export default function SidebarClient({
                 path === '/dashboard/routines' || path.startsWith('/dashboard/routines/'),
         },
         {
-            href: '/dashboard/contacts',
-            label: 'Contactos',
-            mobileLabel: 'Contactos',
-            icon: UserPlus,
+            href: '/dashboard/exercises',
+            label: 'Ejercicios',
+            mobileLabel: 'Ejercicios',
+            icon: Dumbbell,
             match: (path: string) =>
-                path === '/dashboard/contacts' || path.startsWith('/dashboard/contacts/'),
+                path === '/dashboard/exercises' || path.startsWith('/dashboard/exercises/'),
         },
     ]
 
@@ -138,7 +139,9 @@ export default function SidebarClient({
                     ProgressGym
                 </Link>
 
-                <div className="w-5" />
+                <Link href="/dashboard/settings" className={`flex h-8 w-8 items-center justify-center rounded-lg ${isLight ? 'text-zinc-500 hover:bg-zinc-100' : 'text-zinc-400 hover:bg-zinc-800'}`}>
+                    <Settings className="h-4 w-4" />
+                </Link>
             </div>
 
             <nav

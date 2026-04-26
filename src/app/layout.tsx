@@ -8,6 +8,7 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'ProgressGym',
   description: 'SaaS for personal trainers',
+  manifest: '/manifest.webmanifest',
 }
 
 export default async function RootLayout({
