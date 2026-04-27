@@ -9,6 +9,10 @@ export const metadata: Metadata = {
   title: 'ProgressGym',
   description: 'SaaS for personal trainers',
   manifest: '/manifest.webmanifest',
+  // 👇 Esta es la única parte nueva que agregamos
+  icons: {
+    apple: '/icon-192.png',
+  },
 }
 
 export default async function RootLayout({
