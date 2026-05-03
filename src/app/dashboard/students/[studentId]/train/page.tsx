@@ -15,6 +15,7 @@ type PageProps = {
         month?: string
         saved?: string
         error?: string
+        from?: string
     }
 }
 
@@ -32,6 +33,7 @@ type ExerciseLog = {
     performed_at: string | null
     created_at: string | null
     set_index: number | null
+    workout_session_id: string | null
 }
 
 export default async function StudentTrainPage({
@@ -225,7 +227,7 @@ export default async function StudentTrainPage({
             .from('routine_day_exercises')
             .select('id, exercise_id, sets, reps, rest_seconds')
             .eq('routine_day_id', selectedDayId)
-            .order('id', { ascending: true })
+            .order('position', { ascending: true, nullsFirst: false })
 
         exercisesForDay = rde ?? []
     }
@@ -280,11 +282,11 @@ export default async function StudentTrainPage({
         const { data: allLogs } = await supabase
             .from('exercise_logs')
             .select(
-                'id, routine_day_exercise_id, weight, reps, performed_at, created_at, set_index'
+                'id, routine_day_exercise_id, weight, reps, performed_at, created_at, set_index, workout_session_id'
             )
             .eq('student_id', params.studentId)
             .in('routine_day_exercise_id', routineDayExerciseIds)
-            .order('performed_at', { ascending: false })
+            .order('created_at', { ascending: false })
             .order('set_index', { ascending: true })
 
         const typedLogs = (allLogs as ExerciseLog[] | null) ?? []
@@ -298,12 +300,18 @@ export default async function StudentTrainPage({
 
             if (logsForExercise.length === 0) continue
 
-            const latestPerformedAt =
-                logsForExercise.find((log) => log.performed_at)?.performed_at ?? null
+            const latestSessionId = logsForExercise[0]?.workout_session_id ?? null
+            const latestCreatedAt = logsForExercise[0]?.created_at ?? null
 
-            let latestSessionLogs = latestPerformedAt
-                ? logsForExercise.filter((log) => log.performed_at === latestPerformedAt)
-                : logsForExercise
+            let latestSessionLogs = latestSessionId
+                ? logsForExercise.filter((log) => log.workout_session_id === latestSessionId)
+                : latestCreatedAt
+                    ? logsForExercise.filter((log) => {
+                        const logDate = String(log.created_at ?? '').split('T')[0]
+                        const latestDate = String(latestCreatedAt).split('T')[0]
+                        return logDate === latestDate
+                    })
+                    : logsForExercise
 
             latestSessionLogs = latestSessionLogs
                 .slice()
@@ -316,12 +324,19 @@ export default async function StudentTrainPage({
 
             const weights = latestSessionLogs.map((log) => log.weight ?? null)
             const reps = latestSessionLogs.map((log) => log.reps ?? null)
+            const lastPerformedAt = latestSessionLogs[0]?.performed_at ??
+                String(latestSessionLogs[0]?.created_at ?? '').split('T')[0] ?? null
 
-            logsByExerciseId.set(exerciseRow.id, { weights, reps, lastPerformedAt: latestPerformedAt ?? null })
+            logsByExerciseId.set(exerciseRow.id, {
+                weights,
+                reps,
+                lastPerformedAt,
+            })
         }
     }
 
     let workoutSessionId: string | null = null
+    let sessionJustCompleted = false
 
     if (selectedDayId && exercisesForDay.length > 0) {
         const sessionResult = await startWorkoutSession({
@@ -330,6 +345,7 @@ export default async function StudentTrainPage({
             routineDayId: selectedDayId,
         })
         workoutSessionId = sessionResult.sessionId
+        sessionJustCompleted = sessionResult.justCompleted
     }
 
     const focusedExercises = exercisesForDay.map((exercise) => {
@@ -388,7 +404,11 @@ export default async function StudentTrainPage({
                         </div>
 
                         <Link
-                            href={`/dashboard/students/${params.studentId}`}
+                            href={
+                                searchParams?.from === 'routine' && assignedRoutineId
+                                    ? `/dashboard/routines/${assignedRoutineId}`
+                                    : `/dashboard/students/${params.studentId}`
+                            }
                             className="shrink-0 text-xs text-muted-foreground transition hover:text-foreground"
                         >
                             Volver
@@ -514,7 +534,9 @@ export default async function StudentTrainPage({
                     </div>
                 ) : workoutSessionId ? (
                     <TrainFocusedView
+                        key={workoutSessionId}
                         sessionId={workoutSessionId}
+                        initialPhase={sessionJustCompleted ? 'summary' : 'training'}
                         studentId={student.id}
                         studentName={fullName}
                         dayLabel={selectedDayLabel}

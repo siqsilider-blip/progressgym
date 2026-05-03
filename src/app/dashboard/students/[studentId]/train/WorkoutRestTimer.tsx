@@ -8,6 +8,52 @@ export default function WorkoutRestTimer() {
     const [baseSeconds, setBaseSeconds] = React.useState(60)
     const [flashDone, setFlashDone] = React.useState(false)
 
+    const audioContextRef = React.useRef<AudioContext | null>(null)
+    const audioSourceRef = React.useRef<AudioBufferSourceNode | null>(null)
+
+    function startSilentAudio() {
+        try {
+            const ctx = new AudioContext()
+            const buffer = ctx.createBuffer(1, ctx.sampleRate * 0.1, ctx.sampleRate)
+            const source = ctx.createBufferSource()
+            source.buffer = buffer
+            source.loop = true
+            source.connect(ctx.destination)
+            source.start()
+            audioContextRef.current = ctx
+            audioSourceRef.current = source
+        } catch (e) {
+            console.log('Audio context not available:', e)
+        }
+    }
+
+    function stopSilentAudio() {
+        try {
+            audioSourceRef.current?.stop()
+            audioContextRef.current?.close()
+            audioContextRef.current = null
+            audioSourceRef.current = null
+        } catch (e) {}
+    }
+
+    function setupMediaSession(totalSeconds: number) {
+        if (!('mediaSession' in navigator)) return
+
+        navigator.mediaSession.metadata = new MediaMetadata({
+            title: 'Descanso activo',
+            artist: 'ProgressGym',
+            album: `${Math.floor(totalSeconds / 60)}:${String(totalSeconds % 60).padStart(2, '0')} min`,
+        })
+
+        navigator.mediaSession.setActionHandler('pause', () => {
+            setIsRunning(false)
+        })
+
+        navigator.mediaSession.setActionHandler('play', () => {
+            setIsRunning(true)
+        })
+    }
+
     React.useEffect(() => {
         const handleStart = (event: Event) => {
             const customEvent = event as CustomEvent<{ seconds?: number }>
@@ -17,6 +63,8 @@ export default function WorkoutRestTimer() {
             setTimeLeft(seconds)
             setIsRunning(true)
             setFlashDone(false)
+            startSilentAudio()
+            setupMediaSession(seconds)
         }
 
         window.addEventListener(
@@ -29,6 +77,7 @@ export default function WorkoutRestTimer() {
                 'progressgym:start-rest-timer',
                 handleStart as EventListener
             )
+            stopSilentAudio()
         }
     }, [])
 
@@ -59,6 +108,13 @@ export default function WorkoutRestTimer() {
 
         return () => window.clearInterval(interval)
     }, [isRunning, timeLeft])
+
+    // Stop silent audio whenever the timer stops (end or pause)
+    React.useEffect(() => {
+        if (!isRunning) {
+            stopSilentAudio()
+        }
+    }, [isRunning])
 
     const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60)

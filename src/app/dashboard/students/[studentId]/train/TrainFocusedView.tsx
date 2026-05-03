@@ -45,6 +45,7 @@ type Props = {
     weightUnit: string
     returnHref: string
     showPrs?: boolean
+    initialPhase?: Phase
 }
 
 type Phase = 'training' | 'rest' | 'transition' | 'summary'
@@ -73,6 +74,7 @@ export default function TrainFocusedView({
     weightUnit,
     returnHref,
     showPrs = true,
+    initialPhase,
 }: Props) {
     const router = useRouter()
 
@@ -80,7 +82,7 @@ export default function TrainFocusedView({
     const [currentExerciseIndex, setCurrentExerciseIndex] = React.useState(0)
     const [showRpeInfo, setShowRpeInfo] = React.useState(false)
     const [sets, setSets] = React.useState<SetState[][]>(() => initAllSets(exercises))
-    const [phase, setPhase] = React.useState<Phase>('training')
+    const [phase, setPhase] = React.useState<Phase>(initialPhase ?? 'training')
     const [saving, setSaving] = React.useState(false)
     const [prsThisSession, setPrsThisSession] = React.useState(0)
     const [completedSetsTotal, setCompletedSetsTotal] = React.useState(0)
@@ -111,6 +113,7 @@ export default function TrainFocusedView({
     const repsInputRef = React.useRef<HTMLInputElement>(null)
 
     const exercise = exercises[currentExerciseIndex]
+    console.log('exercise isCardio:', exercise?.exerciseName, exercise?.isCardio)
     const exerciseSets = sets[currentExerciseIndex] ?? []
     const activeSetIndex = exerciseSets.findIndex((s) => s.status === 'active')
     const activeSet = activeSetIndex >= 0 ? exerciseSets[activeSetIndex] : null
@@ -498,60 +501,84 @@ export default function TrainFocusedView({
 
     if (phase === 'summary') {
         return (
-            <div className="mx-auto max-w-lg px-4 py-8 pb-safe">
-                <div className="rounded-3xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-6 shadow-sm dark:border-emerald-500/20 dark:from-emerald-500/10 dark:to-zinc-900">
+            <div
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
+                onClick={() => setPhase('training')}
+            >
+                <div
+                    className="w-full max-w-lg rounded-3xl border border-border bg-card p-6 shadow-xl"
+                    onClick={(e) => e.stopPropagation()}
+                >
                     <div className="text-center">
                         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-3xl dark:bg-emerald-500/20">
                             💪
                         </div>
-
-                        <h2 className="mt-4 text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+                        <h2 className="mt-4 text-2xl font-bold text-card-foreground">
                             Sesión completada
                         </h2>
-
-                        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                        <p className="mt-1 text-sm text-muted-foreground">
                             {studentName} · {dayLabel}
                         </p>
                     </div>
 
                     <div className="mt-6 grid grid-cols-3 gap-3">
-                        <div className="rounded-2xl bg-white p-3 text-center shadow-sm dark:bg-zinc-800">
-                            <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+                        <div className="rounded-2xl bg-secondary p-3 text-center">
+                            <p className="text-2xl font-bold text-card-foreground">
                                 {summaryData?.totalSets ?? completedSetsTotal}
                             </p>
-                            <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">
+                            <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                                 Series
                             </p>
                         </div>
-
-                        <div className="rounded-2xl bg-white p-3 text-center shadow-sm dark:bg-zinc-800">
-                            <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+                        <div className="rounded-2xl bg-secondary p-3 text-center">
+                            <p className="text-2xl font-bold text-card-foreground">
                                 {summaryData?.durationSeconds
                                     ? formatDuration(summaryData.durationSeconds)
                                     : '—'}
                             </p>
-                            <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">
+                            <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                                 Duración
                             </p>
                         </div>
-
-                        <div className="rounded-2xl bg-white p-3 text-center shadow-sm dark:bg-zinc-800">
+                        <div className="rounded-2xl bg-secondary p-3 text-center">
                             <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
                                 {prsThisSession}
                             </p>
-                            <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">
+                            <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                                 PRs
                             </p>
                         </div>
                     </div>
 
-                    <button
-                        type="button"
-                        onClick={() => router.push(returnHref)}
-                        className="mt-6 w-full rounded-2xl bg-emerald-600 px-4 py-3.5 text-center text-sm font-semibold text-white transition hover:bg-emerald-500 active:scale-[0.97]"
-                    >
-                        Volver al perfil
-                    </button>
+                    <div className="mt-5 flex flex-col gap-2">
+                        <button
+                            type="button"
+                            onClick={() => router.push(returnHref)}
+                            className="w-full rounded-2xl bg-emerald-600 px-4 py-3.5 text-center text-sm font-semibold text-white transition hover:bg-emerald-500 active:scale-[0.97]"
+                        >
+                            Ir al perfil
+                        </button>
+                        <div className="grid grid-cols-2 gap-2">
+                            <button
+                                type="button"
+                                onClick={() => router.push(`/dashboard/students/${studentId}/progress`)}
+                                className="rounded-2xl border border-border bg-secondary px-4 py-3 text-center text-sm font-medium text-secondary-foreground transition hover:bg-muted active:scale-[0.97]"
+                            >
+                                Ver progreso
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => router.push(returnHref.replace('/train', ''))}
+                                className="rounded-2xl border border-border bg-secondary px-4 py-3 text-center text-sm font-medium text-secondary-foreground transition hover:bg-muted active:scale-[0.97]"
+                            >
+                                Ver rutina
+                            </button>
+                        </div>
+                    </div>
+
+                    <p className="mt-3 text-center text-xs text-muted-foreground">
+                        Tocá fuera para seguir entrenando
+                    </p>
                 </div>
             </div>
         )
@@ -774,8 +801,8 @@ export default function TrainFocusedView({
             {/* ── Exercise nav indicators ── */}
             <div className="mt-3 flex gap-1.5 overflow-x-auto pb-1">
                 {exercises.map((ex, idx) => {
-                    const exSets = sets[idx]
-                    const allDone = exSets.every(
+                    const exSets = sets[idx] ?? []
+                    const allDone = exSets.length > 0 && exSets.every(
                         (s) => s.status === 'completed' || s.status === 'skipped'
                     )
                     const isCurrent = idx === currentExerciseIndex
@@ -838,6 +865,7 @@ export default function TrainFocusedView({
 
                                 {isEditable && (
                                     <div className="flex flex-1 items-center gap-2">
+                                        {!exercise.isCardio && (
                                         <div className="flex-1">
                                             <label className="text-[9px] font-medium uppercase tracking-wider text-muted-foreground">
                                                 {weightUnit}
@@ -865,6 +893,7 @@ export default function TrainFocusedView({
                                                     }`}
                                             />
                                         </div>
+                                        )}
 
                                         <div className="flex-1">
                                             <label className="text-[9px] font-medium uppercase tracking-wider text-muted-foreground">

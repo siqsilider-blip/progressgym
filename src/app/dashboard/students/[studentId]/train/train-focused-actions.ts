@@ -146,9 +146,7 @@ export async function completeSession(payload: {
         }
 
         revalidatePath(`/dashboard/students/${payload.studentId}`)
-        revalidatePath(`/dashboard/students/${payload.studentId}/train`)
-        revalidatePath('/dashboard')
-
+        revalidatePath(`/dashboard/students/${payload.studentId}/progress`)
         return { ok: true, error: null, durationSeconds, totalSets: count }
     } catch (err) {
         console.error('Error inesperado en completeSession:', err)

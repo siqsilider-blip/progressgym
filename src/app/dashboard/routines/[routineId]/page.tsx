@@ -131,7 +131,6 @@ export default async function RoutineDetailPage({
         console.error('[RoutineDetailPage] routine_weeks query error:', weeksResult.error.message, weeksResult.error.code)
     }
 
-    // Auto-create week 1 for routines that predate multi-week support
     if (weeks.length === 0) {
         const { data: newWeek } = await supabase
             .from('routine_weeks')
@@ -173,7 +172,6 @@ export default async function RoutineDetailPage({
         daysError = result.error ?? null
     }
 
-    // Auto-repair: seed default days for week 1 if empty (handles newly migrated routines)
     if (!daysError && selectedWeek?.week_number === 1 && (!days || days.length === 0)) {
         const daysPerWeek =
             typeof routine.days_per_week === 'number' &&
@@ -293,24 +291,31 @@ export default async function RoutineDetailPage({
     )
 
     return (
-        <div className="p-4 pb-24 text-foreground md:p-8">
-            <div className="mx-auto max-w-3xl space-y-4 md:space-y-5">
-                {/* Navbar */}
+        <div className="p-4 pb-24 text-foreground md:p-6">
+            <div className="mx-auto max-w-3xl space-y-5">
+
+                {/* ── Header ── */}
                 <div className="flex items-center gap-3">
                     <BackButton />
+
                     <div className="min-w-0 flex-1">
                         <RoutineNameEditor
                             routineId={routine.id}
                             initialName={routine.name ?? ''}
                             updateAction={updateRoutineName}
                         />
-                        <p className="mt-0.5 text-[11px] text-muted-foreground truncate">
-                            {studentName} · {months.length} {months.length === 1 ? 'mesociclo' : 'mesociclos'} · {weeksForMonth.length} semanas
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                            {studentName}
+                            <span className="mx-1.5 text-border">·</span>
+                            {months.length} {months.length === 1 ? 'mesociclo' : 'mesociclos'}
+                            <span className="mx-1.5 text-border">·</span>
+                            {weeksForMonth.length} {weeksForMonth.length === 1 ? 'semana' : 'semanas'}
                         </p>
                     </div>
+
                     <Link
-                        href={`/dashboard/students/${routine.student_id}/train`}
-                        className="shrink-0 flex h-10 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500"
+                        href={`/dashboard/students/${routine.student_id}/train?month=${selectedMonth?.id ?? ''}&week=${selectedWeek?.id ?? ''}&day=${selectedDay?.id ?? ''}&from=routine`}
+                        className="shrink-0 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-500 active:scale-[0.97]"
                     >
                         Entrenar
                     </Link>
@@ -322,7 +327,7 @@ export default async function RoutineDetailPage({
                     </div>
                 ) : (
                     <>
-                        {/* ── Mesociclo selector ── */}
+                        {/* ── Mesociclo / Semana selector ── */}
                         <WeekMonthSelector
                             routineId={routine.id}
                             months={months}
@@ -339,225 +344,249 @@ export default async function RoutineDetailPage({
                         />
 
                         {!selectedDay ? (
-                            <div className="rounded-2xl border border-border bg-card p-6">
-                                <h2 className="text-base font-semibold text-card-foreground">
+                            <div className="rounded-2xl border border-dashed border-border bg-card/60 p-8 text-center">
+                                <p className="text-sm font-medium text-card-foreground">
                                     Esta semana no tiene días
-                                </h2>
-                                <p className="mt-1 text-sm text-muted-foreground">
+                                </p>
+                                <p className="mt-1 text-xs text-muted-foreground">
                                     Usá &ldquo;Duplicar semana anterior&rdquo; para copiar desde una semana existente.
                                 </p>
                             </div>
                         ) : (
                             <>
-                                {/* Day tabs */}
-                                <div className="rounded-2xl border border-border bg-card p-3 shadow-sm md:p-4">
-                                    <div className="flex gap-2 overflow-x-auto pb-1">
-                                        {typedDays.map((day) => {
-                                            const isActive = day.id === selectedDay.id
-                                            const label = day.title || `Día ${day.day_index}`
+                                {/* ── Day tabs ── */}
+                                <div className="flex gap-1.5 overflow-x-auto pb-1">
+                                    {typedDays.map((day) => {
+                                        const isActive = day.id === selectedDay.id
+                                        const label = day.title || `Día ${day.day_index}`
+                                        const dayExercises = exercisesByDay[day.id] ?? []
+                                        const hasDayExercises = dayExercises.length > 0
 
-                                            return (
-                                                <Link
-                                                    key={day.id}
-                                                    href={`/dashboard/routines/${routine.id}?month=${selectedMonth?.id}&week=${selectedWeek!.id}&day=${day.id}`}
-                                                    className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition ${
-                                                        isActive
-                                                            ? 'bg-indigo-600 text-white shadow-sm'
-                                                            : 'border border-border bg-secondary text-secondary-foreground hover:bg-muted'
+                                        return (
+                                            <Link
+                                                key={day.id}
+                                                href={`/dashboard/routines/${routine.id}?month=${selectedMonth?.id}&week=${selectedWeek!.id}&day=${day.id}`}
+                                                className={`relative shrink-0 rounded-xl px-4 py-2 text-xs font-semibold transition active:scale-[0.96] ${isActive
+                                                        ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/25'
+                                                        : 'border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground'
                                                     }`}
-                                                >
-                                                    {label}
-                                                </Link>
-                                            )
-                                        })}
-                                    </div>
+                                            >
+                                                {label}
+                                                {hasDayExercises && !isActive && (
+                                                    <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                                )}
+                                            </Link>
+                                        )
+                                    })}
                                 </div>
 
-                                {/* Day detail */}
-                                <div className="rounded-2xl border border-border bg-card shadow-sm">
-                                    <div className="border-b border-border p-4 md:p-5">
-                                        <h2 className="truncate text-base font-bold text-card-foreground">
+                                {/* ── Day header ── */}
+                                <div className="flex items-end justify-between gap-3">
+                                    <div>
+                                        <h2 className="text-lg font-bold text-foreground">
                                             {selectedDay.title || `Día ${selectedDay.day_index}`}
                                         </h2>
                                         <p className="mt-0.5 text-xs text-muted-foreground">
-                                            {currentDayExercises.length} ejercicios · {totalSetsForDay} series
+                                            {currentDayExercises.length} {currentDayExercises.length === 1 ? 'ejercicio' : 'ejercicios'}
+                                            <span className="mx-1.5 text-border">·</span>
+                                            {totalSetsForDay} series
                                         </p>
                                     </div>
+                                </div>
 
-                                    <div className="border-b border-border bg-muted/30 p-4 md:p-5">
-                                        <p className="mb-3 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-                                            Agregar ejercicio
-                                        </p>
+                                {/* ── Add exercise ── */}
+                                <div className="rounded-2xl border border-dashed border-indigo-500/20 bg-indigo-500/[0.03] p-4 dark:bg-indigo-500/[0.06]">
+                                    <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-indigo-500">
+                                        Agregar ejercicio
+                                    </p>
 
-                                        <AddExerciseToRoutineDayForm
-                                            serverAction={addExerciseToRoutineDay as unknown as (formData: FormData) => Promise<void>}
-                                            routineId={routine.id}
-                                            routineDayId={selectedDay.id}
-                                            exerciseOptions={
-                                                (exerciseOptions as ExerciseOption[] | null) ?? []
-                                            }
-                                            defaultSets={trainerProfile?.default_sets ?? 3}
-                                            defaultReps={trainerProfile?.default_reps ?? 10}
-                                            defaultRest={trainerProfile?.default_rest ?? 60}
-                                        />
-                                    </div>
+                                    <AddExerciseToRoutineDayForm
+                                        serverAction={addExerciseToRoutineDay as unknown as (formData: FormData) => Promise<void>}
+                                        routineId={routine.id}
+                                        routineDayId={selectedDay.id}
+                                        exerciseOptions={
+                                            (exerciseOptions as ExerciseOption[] | null) ?? []
+                                        }
+                                        defaultSets={trainerProfile?.default_sets ?? 3}
+                                        defaultReps={trainerProfile?.default_reps ?? 10}
+                                        defaultRest={trainerProfile?.default_rest ?? 60}
+                                    />
+                                </div>
 
-                                    <div className="divide-y divide-border">
-                                        {currentDayExercises.length > 0 ? (
-                                            currentDayExercises.map((exercise, index) => {
-                                                const logs = logsByExercise[exercise.id] || []
-                                                const latestLog = logs[0]
+                                {/* ── Exercises list ── */}
+                                <div className="space-y-2.5">
+                                    {currentDayExercises.length > 0 ? (
+                                        currentDayExercises.map((exercise, index) => {
+                                            const logs = logsByExercise[exercise.id] || []
+                                            const latestLog = logs[0]
 
-                                                const relation = Array.isArray(exercise.exercise)
-                                                    ? exercise.exercise[0]
-                                                    : exercise.exercise
+                                            const relation = Array.isArray(exercise.exercise)
+                                                ? exercise.exercise[0]
+                                                : exercise.exercise
 
-                                                const isTime = relation?.metric_type === 'time'
+                                            const isTime = relation?.metric_type === 'time'
 
-                                                const bestWeight = Math.max(
-                                                    ...logs.map((log) => log.weight || 0),
-                                                    0
-                                                )
+                                            const bestWeight = Math.max(
+                                                ...logs.map((log) => log.weight || 0),
+                                                0
+                                            )
 
-                                                const isPR =
-                                                    !isTime &&
-                                                    latestLog?.weight !== null &&
-                                                    latestLog?.weight === bestWeight &&
-                                                    logs.length > 1
+                                            const isPR =
+                                                !isTime &&
+                                                latestLog?.weight !== null &&
+                                                latestLog?.weight === bestWeight &&
+                                                logs.length > 1
 
-                                                return (
-                                                    <div
-                                                        key={exercise.id}
-                                                        className="p-3"
-                                                    >
-                                                        <div className="flex items-start justify-between gap-3">
-                                                            <div className="min-w-0 flex-1">
-                                                                <div className="flex flex-wrap items-center gap-2">
-                                                                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-secondary text-[10px] font-bold text-secondary-foreground">
-                                                                        {index + 1}
-                                                                    </div>
+                                            return (
+                                                <div
+                                                    key={exercise.id}
+                                                    className="group rounded-2xl border border-border bg-card p-4 shadow-sm transition hover:shadow-md"
+                                                >
+                                                    <div className="flex items-start justify-between gap-3">
+                                                        <div className="min-w-0 flex-1">
+                                                            <div className="flex items-center gap-2.5">
+                                                                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-indigo-500/10 text-xs font-bold text-indigo-500">
+                                                                    {index + 1}
+                                                                </div>
 
-                                                                    <h3 className="truncate text-sm font-semibold text-card-foreground">
+                                                                <div className="min-w-0">
+                                                                    <h3 className="truncate text-sm font-bold text-card-foreground">
                                                                         {relation?.name ?? 'Ejercicio'}
                                                                     </h3>
-
                                                                     {relation?.muscle_group && (
-                                                                        <span className="rounded px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                                                                        <span className="text-[10px] text-muted-foreground">
                                                                             {relation.muscle_group}
                                                                         </span>
                                                                     )}
                                                                 </div>
+                                                            </div>
 
-                                                                <p className="mt-1 text-xs text-muted-foreground">
+                                                            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                                                                <span className="rounded-md bg-secondary px-2 py-0.5 text-[10px] font-medium text-secondary-foreground">
                                                                     {exercise.sets ?? '-'} × {isTime
                                                                         ? exercise.reps != null ? `${exercise.reps} min` : '-'
                                                                         : `${exercise.reps ?? '-'} reps`}
-                                                                    {exercise.rest_seconds ? ` · ${exercise.rest_seconds}s` : ''}
-                                                                </p>
+                                                                </span>
+                                                                {exercise.rest_seconds && (
+                                                                    <span className="rounded-md bg-secondary px-2 py-0.5 text-[10px] font-medium text-secondary-foreground">
+                                                                        {exercise.rest_seconds}s
+                                                                    </span>
+                                                                )}
                                                             </div>
-
-                                                            <form action={deleteExerciseFromRoutineDay}>
-                                                                <input type="hidden" name="routineId" value={routine.id} />
-                                                                <input type="hidden" name="exerciseId" value={exercise.id} />
-                                                                <input type="hidden" name="dayId" value={selectedDay.id} />
-                                                                <input type="hidden" name="weekId" value={selectedWeek!.id} />
-                                                                <button
-                                                                    type="submit"
-                                                                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-red-200 text-red-500 transition hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950/40"
-                                                                    title="Eliminar ejercicio"
-                                                                >
-                                                                    <svg
-                                                                        className="h-3.5 w-3.5"
-                                                                        fill="none"
-                                                                        viewBox="0 0 24 24"
-                                                                        stroke="currentColor"
-                                                                        strokeWidth={2}
-                                                                    >
-                                                                        <path
-                                                                            strokeLinecap="round"
-                                                                            strokeLinejoin="round"
-                                                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                                                        />
-                                                                    </svg>
-                                                                </button>
-                                                            </form>
                                                         </div>
 
-                                                        {latestLog && (
-                                                            <p className="mt-1.5 text-xs text-muted-foreground">
+                                                        <form action={deleteExerciseFromRoutineDay}>
+                                                            <input type="hidden" name="routineId" value={routine.id} />
+                                                            <input type="hidden" name="exerciseId" value={exercise.id} />
+                                                            <input type="hidden" name="dayId" value={selectedDay.id} />
+                                                            <input type="hidden" name="weekId" value={selectedWeek!.id} />
+                                                            <button
+                                                                type="submit"
+                                                                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-muted-foreground opacity-0 transition hover:bg-red-50 hover:text-red-500 group-hover:opacity-100 dark:hover:bg-red-950/40"
+                                                                title="Eliminar ejercicio"
+                                                            >
+                                                                <svg
+                                                                    className="h-3.5 w-3.5"
+                                                                    fill="none"
+                                                                    viewBox="0 0 24 24"
+                                                                    stroke="currentColor"
+                                                                    strokeWidth={2}
+                                                                >
+                                                                    <path
+                                                                        strokeLinecap="round"
+                                                                        strokeLinejoin="round"
+                                                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                                                    />
+                                                                </svg>
+                                                            </button>
+                                                        </form>
+                                                    </div>
+
+                                                    {latestLog && (
+                                                        <div className="mt-3 flex items-center gap-2 rounded-xl bg-muted/40 px-3 py-2">
+                                                            <span className="text-[10px] text-muted-foreground">Última vez:</span>
+                                                            <span className="text-xs font-medium text-foreground">
                                                                 {isTime
                                                                     ? latestLog.reps != null ? `${latestLog.reps} min` : '-'
                                                                     : `${latestLog.weight != null ? formatWeight(latestLog.weight, weightUnit) : '-'} · ${latestLog.reps ?? '-'} reps`}
-                                                                {' · '}{latestLog.performed_at ?? '-'}
-                                                                {isPR && <span className="ml-1 font-semibold text-emerald-500">🏆 PR</span>}
-                                                            </p>
-                                                        )}
+                                                            </span>
+                                                            <span className="text-[10px] text-muted-foreground">
+                                                                · {latestLog.performed_at ?? '-'}
+                                                            </span>
+                                                            {isPR && (
+                                                                <span className="ml-auto rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-500">
+                                                                    🏆 PR
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    )}
 
-                                                        {(() => {
-                                                            const dailyLogs = Object.values(
-                                                                logs.reduce<Record<string, ExerciseLog>>((acc, log) => {
-                                                                    const date = (log.performed_at ?? log.id).split('T')[0]
-                                                                    if (!acc[date]) {
-                                                                        acc[date] = log
-                                                                    } else {
-                                                                        const best = isTime ? (acc[date].reps ?? 0) : (acc[date].weight ?? 0)
-                                                                        const candidate = isTime ? (log.reps ?? 0) : (log.weight ?? 0)
-                                                                        if (candidate > best) acc[date] = log
-                                                                    }
-                                                                    return acc
-                                                                }, {})
-                                                            ).slice(0, 3)
+                                                    {(() => {
+                                                        const dailyLogs = Object.values(
+                                                            logs.reduce<Record<string, ExerciseLog>>((acc, log) => {
+                                                                const date = (log.performed_at ?? log.id).split('T')[0]
+                                                                if (!acc[date]) {
+                                                                    acc[date] = log
+                                                                } else {
+                                                                    const best = isTime ? (acc[date].reps ?? 0) : (acc[date].weight ?? 0)
+                                                                    const candidate = isTime ? (log.reps ?? 0) : (log.weight ?? 0)
+                                                                    if (candidate > best) acc[date] = log
+                                                                }
+                                                                return acc
+                                                            }, {})
+                                                        ).slice(0, 3)
 
-                                                            return dailyLogs.length > 1 ? (
-                                                                <details className="mt-3 rounded-xl border border-border bg-card">
-                                                                    <summary className="cursor-pointer list-none px-3 py-2.5 text-xs font-medium text-muted-foreground transition hover:text-card-foreground">
-                                                                        Ver historial ({dailyLogs.length} días)
-                                                                    </summary>
+                                                        return dailyLogs.length > 1 ? (
+                                                            <details className="mt-3 overflow-hidden rounded-xl border border-border">
+                                                                <summary className="cursor-pointer list-none px-3 py-2.5 text-xs font-medium text-muted-foreground transition hover:text-card-foreground">
+                                                                    Historial ({dailyLogs.length} días)
+                                                                </summary>
 
-                                                                    <div className="border-t border-border p-3">
-                                                                        <div className="space-y-1.5">
-                                                                            {dailyLogs.map((log) => (
-                                                                                <div
-                                                                                    key={log.id}
-                                                                                    className="flex items-center justify-between rounded-lg bg-muted/40 px-3 py-2 text-xs text-card-foreground"
-                                                                                >
-                                                                                    <span className="text-muted-foreground">
-                                                                                        {(log.performed_at ?? '-').split('T')[0]}
-                                                                                    </span>
-                                                                                    <span className="font-medium">
-                                                                                        {isTime ? (
-                                                                                            <>{log.reps != null ? `${log.reps} min` : '-'}</>
-                                                                                        ) : (
-                                                                                            <>
-                                                                                                {log.weight != null
-                                                                                                    ? formatWeight(log.weight, weightUnit)
-                                                                                                    : '-'}{' '}
-                                                                                                · {log.reps ?? '-'} reps
-                                                                                            </>
-                                                                                        )}
-                                                                                    </span>
-                                                                                </div>
-                                                                            ))}
-                                                                        </div>
-
-                                                                        {!isTime && (
-                                                                            <div className="mt-3">
-                                                                                <ExerciseProgressChart logs={logs} />
+                                                                <div className="border-t border-border bg-muted/20 p-3">
+                                                                    <div className="space-y-1">
+                                                                        {dailyLogs.map((log) => (
+                                                                            <div
+                                                                                key={log.id}
+                                                                                className="flex items-center justify-between rounded-lg px-3 py-1.5 text-xs"
+                                                                            >
+                                                                                <span className="tabular-nums text-muted-foreground">
+                                                                                    {(log.performed_at ?? '-').split('T')[0]}
+                                                                                </span>
+                                                                                <span className="font-medium text-card-foreground">
+                                                                                    {isTime ? (
+                                                                                        <>{log.reps != null ? `${log.reps} min` : '-'}</>
+                                                                                    ) : (
+                                                                                        <>
+                                                                                            {log.weight != null
+                                                                                                ? formatWeight(log.weight, weightUnit)
+                                                                                                : '-'}{' '}
+                                                                                            · {log.reps ?? '-'} reps
+                                                                                        </>
+                                                                                    )}
+                                                                                </span>
                                                                             </div>
-                                                                        )}
+                                                                        ))}
                                                                     </div>
-                                                                </details>
-                                                            ) : null
-                                                        })()}
-                                                    </div>
-                                                )
-                                            })
-                                        ) : (
-                                            <div className="p-6 text-center text-sm text-muted-foreground">
-                                                Todavía no hay ejercicios en este día. Usá el formulario de arriba para agregar.
-                                            </div>
-                                        )}
-                                    </div>
+
+                                                                    {!isTime && (
+                                                                        <div className="mt-3">
+                                                                            <ExerciseProgressChart logs={logs} />
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </details>
+                                                        ) : null
+                                                    })()}
+                                                </div>
+                                            )
+                                        })
+                                    ) : (
+                                        <div className="rounded-2xl border border-dashed border-border bg-card/50 p-8 text-center">
+                                            <p className="text-sm text-muted-foreground">
+                                                Todavía no hay ejercicios en este día.
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             </>
                         )}

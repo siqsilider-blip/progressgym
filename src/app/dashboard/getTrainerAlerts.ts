@@ -37,10 +37,11 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
 
     const [workoutsResult, routinesResult] = await Promise.all([
         supabase
-            .from('workouts')
-            .select('student_id, created_at')
+            .from('exercise_logs')
+            .select('student_id, performed_at')
             .in('student_id', studentIds)
-            .order('created_at', { ascending: false }),
+            .not('performed_at', 'is', null)
+            .order('performed_at', { ascending: false }),
 
         supabase
             .from('student_routines')
@@ -60,9 +61,9 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
     const routines = routinesResult.data ?? []
 
     const lastWorkoutByStudent = new Map<string, string>()
-    for (const workout of workouts) {
-        if (!lastWorkoutByStudent.has(workout.student_id)) {
-            lastWorkoutByStudent.set(workout.student_id, workout.created_at)
+    for (const log of workouts) {
+        if (!lastWorkoutByStudent.has(log.student_id) && log.performed_at) {
+            lastWorkoutByStudent.set(log.student_id, String(log.performed_at))
         }
     }
 

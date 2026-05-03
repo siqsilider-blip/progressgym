@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import React, { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { updateContactNoRedirect } from './actions'
+import { updateContactNoRedirect, deleteContact } from './actions'
 
 export type Contact = {
     id: string
@@ -218,6 +218,7 @@ export default function ContactsClient({
     stats: Stats
 }) {
     const [editingContact, setEditingContact] = useState<Contact | null>(null)
+    const [confirmDeleteId, setConfirmDeleteId] = React.useState<string | null>(null)
     const today = startOfToday()
 
     const sorted = [...contacts].sort((a, b) => {
@@ -338,6 +339,34 @@ export default function ContactsClient({
                                 >
                                     Editar
                                 </button>
+                                {confirmDeleteId === c.id ? (
+                                    <div className="flex items-center gap-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => setConfirmDeleteId(null)}
+                                            className="rounded-lg border border-border bg-secondary px-2.5 py-1.5 text-xs text-secondary-foreground transition hover:bg-muted"
+                                        >
+                                            No
+                                        </button>
+                                        <form action={deleteContact}>
+                                            <input type="hidden" name="id" value={c.id} />
+                                            <button
+                                                type="submit"
+                                                className="rounded-lg bg-red-600 px-2.5 py-1.5 text-xs font-medium text-white transition hover:bg-red-500"
+                                            >
+                                                Sí
+                                            </button>
+                                        </form>
+                                    </div>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        onClick={() => setConfirmDeleteId(c.id)}
+                                        className="rounded-lg border border-red-200 px-2.5 py-1.5 text-xs text-red-500 transition hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950/40"
+                                    >
+                                        Eliminar
+                                    </button>
+                                )}
                             </div>
                         </div>
                     )

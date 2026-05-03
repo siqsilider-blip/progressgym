@@ -12,6 +12,7 @@ import StudentRecentPRsCard from '../StudentRecentPRsCard'
 import StudentRiskCard from './StudentRiskCard'
 import { getStudentRisk } from './getStudentRisk'
 import DeleteStudentButton from './DeleteStudentButton'
+import LinkStudentAccountForm from './LinkStudentAccountForm'
 
 type PageProps = {
     params: {
@@ -40,7 +41,7 @@ export default async function StudentProfilePage({ params }: PageProps) {
         return <div className="p-6">No se encontró el alumno.</div>
     }
 
-    const [adherence, stagnation, bestPR, recentPRs, risk, trainerProfile, routineAssignment] = await Promise.all([
+    const [adherence, stagnation, bestPR, recentPRs, risk, trainerProfile, routineAssignment, linkedProfile] = await Promise.all([
         getStudentAdherence(studentId),
         getStudentStagnation(studentId),
         getStudentBestProgress(studentId),
@@ -48,6 +49,7 @@ export default async function StudentProfilePage({ params }: PageProps) {
         getStudentRisk(studentId),
         supabase.from('trainer_profiles').select('show_prs').eq('user_id', user.id).maybeSingle(),
         supabase.from('student_routines').select('routine_id').eq('student_id', studentId).maybeSingle(),
+        supabase.from('profiles').select('id, email').eq('student_id', studentId).maybeSingle(),
     ])
 
     const assignedRoutineId = routineAssignment.data?.routine_id ?? null
@@ -159,10 +161,16 @@ export default async function StudentProfilePage({ params }: PageProps) {
                 showPrs={showPrs}
             />
 
+            <LinkStudentAccountForm
+                studentId={params.studentId}
+                isLinked={!!linkedProfile.data?.id}
+                linkedEmail={linkedProfile.data?.email}
+            />
+
             <DeleteStudentButton studentId={params.studentId} />
 
             <div className="fixed bottom-16 left-0 right-0 z-30 border-t border-border bg-background/95 backdrop-blur md:bottom-0">
-                <div className="mx-auto flex max-w-xl gap-3 px-4 py-3">
+                <div className="mx-auto grid max-w-xl grid-cols-3 gap-3 px-4 py-3">
                     {assignedRoutineId ? (
                         <Link
                             href={`/dashboard/routines/${assignedRoutineId}`}
@@ -179,10 +187,22 @@ export default async function StudentProfilePage({ params }: PageProps) {
                         </Link>
                     )}
                     <Link
+                        href={`/dashboard/students/${params.studentId}/progress`}
+                        className="flex-1 rounded-xl border border-indigo-300/40 bg-indigo-500/10 px-4 py-3 text-center text-sm font-semibold text-indigo-400 transition hover:bg-indigo-500/20"
+                    >
+                        📊 Progreso
+                    </Link>
+                    <Link
                         href={trainHref}
                         className="flex-1 rounded-xl bg-indigo-600 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-indigo-500"
                     >
                         Entrenar
+                    </Link>
+                    <Link
+                        href={`/dashboard/students/${params.studentId}/history`}
+                        className="col-span-2 rounded-2xl border border-border bg-secondary px-4 py-3 text-center text-sm font-medium text-secondary-foreground transition hover:bg-muted"
+                    >
+                        Ver historial de sesiones
                     </Link>
                 </div>
             </div>

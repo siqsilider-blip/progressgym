@@ -134,3 +134,32 @@ export async function archiveContact(id: string) {
 
     revalidatePath('/dashboard/contacts')
 }
+
+export async function deleteContact(formData: FormData) {
+    const supabase = await createClient()
+
+    const {
+        data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+        redirect('/login')
+    }
+
+    const id = String(formData.get('id') || '').trim()
+    if (!id) return
+
+    const { error } = await supabase
+        .from('contacts')
+        .delete()
+        .eq('id', id)
+        .eq('trainer_id', user.id)
+
+    if (error) {
+        console.error('Error deleting contact:', error)
+        return
+    }
+
+    revalidatePath('/dashboard/contacts')
+    redirect('/dashboard/contacts')
+}
