@@ -104,17 +104,31 @@ export async function completeSession(payload: {
 
         const { data: session } = await supabase
             .from('workout_sessions')
-            .select('id, started_at, status')
+            .select('id, started_at, status, student_id, trainer_id, duration_seconds')
             .eq('id', payload.sessionId)
-            .eq('trainer_id', user.id)
+            .eq('student_id', payload.studentId)
             .single()
 
         if (!session) {
             return { ok: false, error: 'Sesión no encontrada', durationSeconds: null, totalSets: 0 }
         }
 
+        if (session.status === 'completed') {
+            const { count } = await supabase
+                .from('exercise_logs')
+                .select('id', { count: 'exact', head: true })
+                .eq('workout_session_id', payload.sessionId)
+
+            return {
+                ok: true,
+                error: null,
+                durationSeconds: session.duration_seconds ?? null,
+                totalSets: count ?? 0
+            }
+        }
+
         if (session.status !== 'in_progress') {
-            return { ok: false, error: 'La sesión ya fue finalizada', durationSeconds: null, totalSets: 0 }
+            return { ok: false, error: 'Estado de sesión inválido', durationSeconds: null, totalSets: 0 }
         }
 
         const { count } = await supabase
@@ -187,4 +201,27 @@ export async function getExerciseMaxWeights(payload: {
     }
 
     return maxWeights
+}
+
+export async function saveSessionNote(payload: {
+    sessionId: string
+    studentId: string
+    note: string
+}): Promise<{ ok: boolean; error: string | null }> {
+    try {
+        const supabase = await createClient()
+        const { data: { user }, error: authError } = await supabase.auth.getUser()
+        if (authError || !user) return { ok: false, error: 'No autenticado' }
+
+        const { error } = await supabase
+            .from('workout_sessions')
+            .update({ notes: payload.note.trim() })
+            .eq('id', payload.sessionId)
+            .eq('student_id', payload.studentId)
+
+        if (error) return { ok: false, error: error.message }
+        return { ok: true, error: null }
+    } catch (err) {
+        return { ok: false, error: 'Error inesperado' }
+    }
 }

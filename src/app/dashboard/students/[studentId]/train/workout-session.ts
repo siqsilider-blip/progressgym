@@ -26,8 +26,8 @@ export async function startWorkoutSession(payload: {
         return { sessionId: existingSession.id, resumed: true, justCompleted: false }
     }
 
-    // 2. Buscar sesión completed en el último minuto (evitar recrear)
-    const oneMinuteAgo = new Date(Date.now() - 60_000).toISOString()
+    // 2. Buscar sesión completed en los últimos 10 minutos (evitar recrear)
+    const tenMinutesAgo = new Date(Date.now() - 600_000).toISOString()
     const { data: recentCompleted } = await supabase
         .from('workout_sessions')
         .select('id')
@@ -35,7 +35,7 @@ export async function startWorkoutSession(payload: {
         .eq('trainer_id', payload.trainerId)
         .eq('routine_day_id', payload.routineDayId)
         .eq('status', 'completed')
-        .gte('finished_at', oneMinuteAgo)
+        .gte('finished_at', tenMinutesAgo)
         .maybeSingle()
 
     if (recentCompleted?.id) {

@@ -130,7 +130,14 @@ export default async function AppHistoryPage() {
                                                     {session.exercises.map((ex, idx) => (
                                                         <div key={idx} className="flex items-center justify-between gap-3 rounded-xl bg-muted/40 px-3 py-2">
                                                             <div className="min-w-0">
-                                                                <p className="truncate text-xs font-medium text-card-foreground">{ex.exerciseName}</p>
+                                                                <p className="truncate text-xs font-medium text-card-foreground">
+                                                                    {ex.exerciseName}
+                                                                    {ex.avgRpe !== null && (
+                                                                        <span className="ml-1 rounded-md bg-zinc-100 px-1 py-0.5 text-[9px] font-medium text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
+                                                                            RPE {ex.avgRpe}
+                                                                        </span>
+                                                                    )}
+                                                                </p>
                                                                 <p className="text-[10px] text-muted-foreground">{ex.sets} series</p>
                                                             </div>
                                                             {!ex.isCardio && ex.bestWeight !== null && (
@@ -140,6 +147,12 @@ export default async function AppHistoryPage() {
                                                             )}
                                                         </div>
                                                     ))}
+                                                </div>
+                                            )}
+                                            {session.note && (
+                                                <div className="mt-3 rounded-xl border border-border bg-muted/30 px-3 py-2">
+                                                    <p className="text-[10px] font-medium text-muted-foreground">Nota</p>
+                                                    <p className="mt-0.5 text-xs text-card-foreground">{session.note}</p>
                                                 </div>
                                             )}
                                         </div>

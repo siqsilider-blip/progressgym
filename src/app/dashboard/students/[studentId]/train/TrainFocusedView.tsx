@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
-import { saveSet, completeSession } from './train-focused-actions'
+import { saveSet, completeSession, saveSessionNote } from './train-focused-actions'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -101,6 +101,9 @@ export default function TrainFocusedView({
         durationSeconds: number | null
         totalSets: number
     } | null>(null)
+    const [sessionNote, setSessionNote] = React.useState('')
+    const [savingNote, setSavingNote] = React.useState(false)
+    const [noteSaved, setNoteSaved] = React.useState(false)
 
     // ── PR flash ──
     const [prFlash, setPrFlash] = React.useState(false)
@@ -499,6 +502,15 @@ export default function TrainFocusedView({
         return `${mins}m ${secs}s`
     }
 
+    async function saveNote() {
+        if (!sessionNote.trim()) return
+        setSavingNote(true)
+        await saveSessionNote({ sessionId, studentId, note: sessionNote })
+        setSavingNote(false)
+        setNoteSaved(true)
+        setTimeout(() => setNoteSaved(false), 2000)
+    }
+
     if (phase === 'summary') {
         return (
             <div
@@ -550,7 +562,29 @@ export default function TrainFocusedView({
                         </div>
                     </div>
 
-                    <div className="mt-5 flex flex-col gap-2">
+                    <div className="mt-5 space-y-3">
+                        <div>
+                            <label className="text-xs font-medium text-muted-foreground">
+                                ¿Cómo fue la sesión? (opcional)
+                            </label>
+                            <textarea
+                                value={sessionNote}
+                                onChange={(e) => { setSessionNote(e.target.value); setNoteSaved(false) }}
+                                placeholder="Ej: Subí el peso en press, me costó el último set..."
+                                rows={2}
+                                className="mt-1.5 w-full resize-none rounded-2xl border border-border bg-input px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 placeholder:text-muted-foreground"
+                            />
+                            {sessionNote.trim() && (
+                                <button
+                                    type="button"
+                                    onClick={saveNote}
+                                    disabled={savingNote}
+                                    className="mt-1.5 rounded-xl bg-indigo-600/10 px-3 py-1.5 text-xs font-medium text-indigo-500 transition hover:bg-indigo-600/20 disabled:opacity-50"
+                                >
+                                    {savingNote ? 'Guardando...' : noteSaved ? '✓ Guardado' : 'Guardar nota'}
+                                </button>
+                            )}
+                        </div>
                         <button
                             type="button"
                             onClick={() => router.push(returnHref)}

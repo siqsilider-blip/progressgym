@@ -5,6 +5,7 @@ export type SessionExerciseSummary = {
     sets: number
     bestWeight: number | null
     bestReps: number | null
+    avgRpe: number | null
     isCardio: boolean
 }
 
@@ -15,6 +16,7 @@ export type SessionHistoryItem = {
     durationSeconds: number | null
     dayLabel: string
     totalSets: number
+    note: string | null
     exercises: SessionExerciseSummary[]
 }
 
@@ -24,12 +26,23 @@ export async function getStudentSessionHistory(
 ): Promise<SessionHistoryItem[]> {
     const supabase = await createClient()
 
-    // 1. Traer sesiones completadas del alumno
+    // 1. Traer IDs de sesiones que tienen logs
+    const { data: logsIndex } = await supabase
+        .from('exercise_logs')
+        .select('workout_session_id')
+        .eq('student_id', studentId)
+        .not('workout_session_id', 'is', null)
+
+    const sessionIdsWithLogs = [...new Set((logsIndex ?? []).map(l => l.workout_session_id).filter(Boolean))]
+    if (sessionIdsWithLogs.length === 0) return []
+
+    // 2. Traer sesiones completadas del alumno (solo las que tienen logs)
     const { data: sessions, error: sessionsError } = await supabase
         .from('workout_sessions')
-        .select('id, performed_date, started_at, finished_at, duration_seconds, routine_day_id')
+        .select('id, performed_date, started_at, finished_at, duration_seconds, routine_day_id, notes')
         .eq('student_id', studentId)
         .eq('status', 'completed')
+        .in('id', sessionIdsWithLogs)
         .order('performed_date', { ascending: false })
         .order('started_at', { ascending: false })
         .limit(limit)
@@ -58,7 +71,7 @@ export async function getStudentSessionHistory(
     // 3. Traer todos los logs de esas sesiones
     const { data: logs, error: logsError } = await supabase
         .from('exercise_logs')
-        .select('workout_session_id, routine_day_exercise_id, weight, reps, set_index')
+        .select('workout_session_id, routine_day_exercise_id, weight, reps, rpe, set_index')
         .in('workout_session_id', sessionIds)
         .eq('student_id', studentId)
 
@@ -117,6 +130,7 @@ export async function getStudentSessionHistory(
             isCardio: boolean
             weights: (number | null)[]
             reps: (number | null)[]
+            rpes: (number | null)[]
         }>()
 
         for (const log of sessionLogs) {
@@ -130,24 +144,30 @@ export async function getStudentSessionHistory(
                     isCardio: meta.isCardio,
                     weights: [],
                     reps: [],
+                    rpes: [],
                 })
             }
 
             const group = exerciseGroups.get(log.routine_day_exercise_id)!
             group.weights.push(log.weight ?? null)
             group.reps.push(log.reps ?? null)
+            group.rpes.push(log.rpe ?? null)
         }
 
         const exercises: SessionExerciseSummary[] = []
         for (const [, group] of exerciseGroups) {
             const validWeights = group.weights.filter((w): w is number => w !== null)
             const validReps = group.reps.filter((r): r is number => r !== null)
+            const validRpes = group.rpes.filter((r): r is number => r !== null)
 
             exercises.push({
                 exerciseName: group.name,
                 sets: group.weights.length,
                 bestWeight: validWeights.length > 0 ? Math.max(...validWeights) : null,
                 bestReps: validReps.length > 0 ? Math.max(...validReps) : null,
+                avgRpe: validRpes.length > 0
+                    ? Math.round((validRpes.reduce((a, b) => a + b, 0) / validRpes.length) * 10) / 10
+                    : null,
                 isCardio: group.isCardio,
             })
         }
@@ -161,6 +181,7 @@ export async function getStudentSessionHistory(
                 ? (dayLabelMap.get(session.routine_day_id) ?? 'Sesión')
                 : 'Sesión',
             totalSets: sessionLogs.length,
+            note: session.notes ?? null,
             exercises,
         }
     })
