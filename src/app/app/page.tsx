@@ -179,7 +179,7 @@ export default async function AppHomePage() {
 
                 {/* ── Header ── */}
                 <div className="pt-2">
-                    <p className="text-xs font-medium text-indigo-500">ProgressGym</p>
+                    <p className="text-xs font-medium text-indigo-500">Progrezzia</p>
                     <h1 className="mt-1 text-2xl font-black text-foreground">
                         {greeting}, {firstName} 👋
                     </h1>

@@ -107,7 +107,7 @@ export default function RoutinesClient({ students, routines, error }: Props) {
                     <div className="flex items-start justify-between gap-3">
                         <div>
                             <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-indigo-500">
-                                ProgressGym
+                                Progrezzia
                             </p>
                             <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-foreground">
                                 Rutinas
@@ -116,11 +116,10 @@ export default function RoutinesClient({ students, routines, error }: Props) {
                                 {totalWithRoutine} con rutina · {totalWithoutRoutine} sin asignar
                             </p>
                         </div>
-                        <span className={`mt-1 shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${
-                            totalWithoutRoutine === 0
+                        <span className={`mt-1 shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${totalWithoutRoutine === 0
                                 ? 'bg-emerald-500/10 text-emerald-500 ring-1 ring-emerald-500/30'
                                 : 'bg-amber-500/10 text-amber-500 ring-1 ring-amber-500/30'
-                        }`}>
+                            }`}>
                             {totalWithoutRoutine === 0 ? 'Todo al día' : `${totalWithoutRoutine} pendiente${totalWithoutRoutine !== 1 ? 's' : ''}`}
                         </span>
                     </div>
@@ -172,11 +171,10 @@ export default function RoutinesClient({ students, routines, error }: Props) {
                                 return (
                                     <div
                                         key={student.id}
-                                        className={`flex items-center gap-3 rounded-2xl border bg-card p-3.5 shadow-sm transition hover:shadow-md ${
-                                            isActive
+                                        className={`flex items-center gap-3 rounded-2xl border bg-card p-3.5 shadow-sm transition hover:shadow-md ${isActive
                                                 ? 'border-l-2 border-l-emerald-500 border-border'
                                                 : 'border-l-2 border-l-zinc-300 border-border dark:border-l-zinc-600'
-                                        }`}
+                                            }`}
                                     >
                                         {/* Avatar */}
                                         <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${gradient} text-sm font-bold text-white shadow-sm`}>
@@ -189,11 +187,10 @@ export default function RoutinesClient({ students, routines, error }: Props) {
                                                 <p className="truncate text-sm font-bold text-card-foreground">
                                                     {name}
                                                 </p>
-                                                <span className={`flex shrink-0 items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
-                                                    isActive
+                                                <span className={`flex shrink-0 items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${isActive
                                                         ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
                                                         : 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'
-                                                }`}>
+                                                    }`}>
                                                     <span className={`h-1 w-1 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-zinc-400'}`} />
                                                     {isActive ? 'Activo' : 'Inactivo'}
                                                 </span>

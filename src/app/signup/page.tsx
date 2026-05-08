@@ -10,7 +10,7 @@ export default function SignupPage() {
                         <Dumbbell className="h-7 w-7 text-white" />
                     </div>
                     <h1 className="text-2xl font-bold tracking-tight">Crear cuenta</h1>
-                    <p className="text-sm text-zinc-400">¿Cómo vas a usar ProgressGym?</p>
+                    <p className="text-sm text-zinc-400">¿Cómo vas a usar Progrezzia?</p>
                 </div>
 
                 <div className="space-y-3">

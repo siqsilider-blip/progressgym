@@ -86,13 +86,13 @@ export default function SidebarClient({
         <>
             <aside
                 className={`hidden md:flex md:w-72 md:flex-col md:border-r ${isLight
-                        ? 'border-zinc-200 bg-white text-zinc-900'
-                        : 'border-zinc-800 bg-zinc-950 text-zinc-100'
+                    ? 'border-zinc-200 bg-white text-zinc-900'
+                    : 'border-zinc-800 bg-zinc-950 text-zinc-100'
                     }`}
             >
                 <div className="border-b border-inherit px-6 py-6">
                     <Link href="/dashboard" className="block">
-                        <h1 className="text-2xl font-bold tracking-tight">ProgressGym</h1>
+                        <h1 className="text-2xl font-bold tracking-tight">Progrezzia</h1>
                         <p className={`mt-1 text-sm ${isLight ? 'text-zinc-500' : 'text-zinc-400'}`}>
                             Panel del entrenador
                         </p>
@@ -131,12 +131,12 @@ export default function SidebarClient({
 
             <div
                 className={`fixed inset-x-0 top-0 z-40 flex h-14 items-center justify-between border-b px-4 md:hidden ${isLight
-                        ? 'border-zinc-200 bg-white/95 text-zinc-900'
-                        : 'border-zinc-800 bg-zinc-950/95 text-zinc-100'
+                    ? 'border-zinc-200 bg-white/95 text-zinc-900'
+                    : 'border-zinc-800 bg-zinc-950/95 text-zinc-100'
                     } backdrop-blur`}
             >
                 <Link href="/dashboard" className="font-semibold tracking-tight">
-                    ProgressGym
+                    Progrezzia
                 </Link>
 
                 <Link href="/dashboard/settings" className={`flex h-8 w-8 items-center justify-center rounded-lg ${isLight ? 'text-zinc-500 hover:bg-zinc-100' : 'text-zinc-400 hover:bg-zinc-800'}`}>
@@ -146,8 +146,8 @@ export default function SidebarClient({
 
             <nav
                 className={`fixed inset-x-0 bottom-0 z-40 border-t md:hidden ${isLight
-                        ? 'border-zinc-200 bg-white/95'
-                        : 'border-zinc-800 bg-zinc-950/95'
+                    ? 'border-zinc-200 bg-white/95'
+                    : 'border-zinc-800 bg-zinc-950/95'
                     } backdrop-blur`}
             >
                 <div className="grid grid-cols-5">

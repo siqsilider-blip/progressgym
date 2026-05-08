@@ -6,8 +6,8 @@ import { cookies } from 'next/headers'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'ProgressGym',
-  description: 'SaaS for personal trainers',
+  title: 'Progrezzia',
+  description: 'La herramienta para entrenadores personales que quieren gestionar alumnos, registrar sesiones y ver el progreso real.',
   manifest: '/manifest.webmanifest',
   // 👇 Esta es la única parte nueva que agregamos
   icons: {

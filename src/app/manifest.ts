@@ -2,8 +2,8 @@ import { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
     return {
-        name: 'ProgressGym',
-        short_name: 'ProgressGym',
+        name: 'Progrezzia',
+        short_name: 'Progrezzia',
         description: 'App de entrenamiento para entrenadores personales',
         start_url: '/dashboard',
         display: 'standalone',
