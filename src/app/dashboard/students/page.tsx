@@ -146,7 +146,7 @@ export default async function StudentsPage() {
                             <div className="col-span-3 text-right">Acciones</div>
                         </div>
 
-                        <div className="divide-y" style={{ divideColor: 'rgba(255,255,255,0.05)' }}>
+                        <div className="divide-y divide-white/5">
                             {studentsWithRisk.map((student) => {
                                 const fullName = `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim() || 'Sin nombre'
                                 const initials = getInitials(student.first_name, student.last_name)
