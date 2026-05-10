@@ -1,11 +1,4 @@
-import { cookies } from 'next/headers'
-import {
-    Activity,
-    ClipboardList,
-    UserCheck,
-    Users,
-} from 'lucide-react'
-import AppCard from '@/components/ui/app-card'
+import { Activity, ClipboardList, UserCheck, Users } from 'lucide-react'
 import type { TrainerDashboardStats } from './getTrainerDashboardStats'
 
 export default async function TrainerDashboardCards({
@@ -15,90 +8,77 @@ export default async function TrainerDashboardCards({
     stats: TrainerDashboardStats
     riskCount: number
 }) {
-    const cookieStore = await cookies()
-    const theme = cookieStore.get('theme')?.value === 'light' ? 'light' : 'dark'
-    const isLight = theme === 'light'
-
     const cards = [
         {
             label: 'Alumnos',
             value: stats.totalStudents,
             helper: 'Total registrados',
             icon: Users,
-            valueClassName: 'text-foreground',
-            iconClassName: isLight ? 'text-zinc-700' : 'text-zinc-300',
-            iconBgClassName: isLight ? 'bg-muted' : 'bg-muted/80',
+            valueColor: 'text-white',
+            iconColor: 'text-white/40',
+            iconBg: 'rgba(255,255,255,0.06)',
+            glow: 'rgba(124,58,237,0.08)',
+            border: 'rgba(255,255,255,0.07)',
         },
         {
             label: 'En riesgo',
             value: riskCount,
             helper: 'Requieren atención',
             icon: Activity,
-            valueClassName: riskCount > 0 ? 'text-amber-500' : 'text-foreground',
-            iconClassName: riskCount > 0 ? 'text-amber-500' : 'text-zinc-400',
-            iconBgClassName: riskCount > 0
-                ? (isLight ? 'bg-amber-50' : 'bg-amber-500/10')
-                : (isLight ? 'bg-muted' : 'bg-muted/80'),
+            valueColor: riskCount > 0 ? 'text-amber-400' : 'text-white',
+            iconColor: riskCount > 0 ? 'text-amber-400' : 'text-white/40',
+            iconBg: riskCount > 0 ? 'rgba(245,158,11,0.12)' : 'rgba(255,255,255,0.06)',
+            glow: riskCount > 0 ? 'rgba(245,158,11,0.06)' : 'transparent',
+            border: riskCount > 0 ? 'rgba(245,158,11,0.2)' : 'rgba(255,255,255,0.07)',
         },
         {
             label: 'Con rutina',
             value: stats.studentsWithRoutine,
             helper: 'Asignados',
             icon: ClipboardList,
-            valueClassName: 'text-foreground',
-            iconClassName: 'text-cyan-500',
-            iconBgClassName: isLight ? 'bg-cyan-50' : 'bg-cyan-500/10',
+            valueColor: 'text-white',
+            iconColor: 'text-indigo-400',
+            iconBg: 'rgba(99,102,241,0.12)',
+            glow: 'transparent',
+            border: 'rgba(255,255,255,0.07)',
         },
         {
             label: 'Activos 7 días',
             value: stats.activeStudents,
             helper: 'Entrenaron esta semana',
             icon: UserCheck,
-            valueClassName: 'text-emerald-500',
-            iconClassName: 'text-emerald-500',
-            iconBgClassName: isLight ? 'bg-emerald-50' : 'bg-emerald-500/10',
+            valueColor: 'text-emerald-400',
+            iconColor: 'text-emerald-400',
+            iconBg: 'rgba(16,185,129,0.12)',
+            glow: 'rgba(16,185,129,0.06)',
+            border: 'rgba(16,185,129,0.15)',
         },
-    ] as const
+    ]
 
     return (
         <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
             {cards.map((card) => {
                 const Icon = card.icon
-
                 return (
-                    <AppCard
+                    <div
                         key={card.label}
-                        className={`p-4 transition md:p-5 ${isLight
-                                ? 'hover:border-zinc-300 hover:bg-muted/40'
-                                : 'hover:border-zinc-700 hover:bg-card/90'
-                            }`}
+                        className="rounded-2xl border p-4 transition"
+                        style={{
+                            background: card.glow,
+                            borderColor: card.border,
+                        }}
                     >
-                        <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                                <p className="text-xs text-muted-foreground md:text-sm">
-                                    {card.label}
-                                </p>
-
-                                <p
-                                    className={`mt-2 text-3xl font-bold tracking-tight ${card.valueClassName}`}
-                                >
-                                    {card.value}
-                                </p>
-
-                                <p className="mt-1 text-[11px] text-muted-foreground md:text-sm">
-                                    {card.helper}
-                                </p>
-                            </div>
-
-                            <div
-                                className={`rounded-2xl p-2.5 md:p-3 ${card.iconBgClassName}`}
-                            >
-                                <Icon
-                                    className={`h-4 w-4 md:h-5 md:w-5 ${card.iconClassName}`}
-                                />
+                        <div className="flex items-start justify-between gap-2">
+                            <p className="text-xs text-white/40">{card.label}</p>
+                            <div className="rounded-xl p-2" style={{ background: card.iconBg }}>
+                                <Icon className={`h-3.5 w-3.5 ${card.iconColor}`} />
                             </div>
                         </div>
-                    </AppCard>
+                        <p className={`mt-2 text-3xl font-black tracking-tight ${card.valueColor}`}>
+                            {card.value}
+                        </p>
+                        <p className="mt-1 text-[10px] text-white/25">{card.helper}</p>
+                    </div>
                 )
             })}
         </div>

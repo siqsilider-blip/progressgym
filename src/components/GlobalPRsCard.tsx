@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from 'react'
 import { ChevronDown, ChevronUp, Medal, Trophy } from 'lucide-react'
-import AppCard from '@/components/ui/app-card'
 import { formatWeight, type WeightUnit } from '@/lib/weight'
 
 type GlobalPR = {
@@ -34,7 +33,7 @@ export default function GlobalPRsCard({
     const hasMore = prs.length > INITIAL_VISIBLE
 
     return (
-        <AppCard className="p-6">
+        <div className="rounded-2xl border p-6" style={{borderColor: 'rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)'}}>
             <div className="mb-6 flex items-center gap-3">
                 <div className="rounded-2xl bg-amber-500/10 p-3 text-amber-500">
                     <Trophy className="h-5 w-5" />
@@ -140,6 +139,6 @@ export default function GlobalPRsCard({
                     )}
                 </>
             )}
-        </AppCard>
+        </div>
     )
 }

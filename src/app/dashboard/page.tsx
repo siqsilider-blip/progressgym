@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { cookies } from 'next/headers'
-import { ClipboardList, MessageSquare, Users, Zap, AlertTriangle, Trophy, TrendingUp } from 'lucide-react'
+import { ClipboardList, MessageSquare, Users, Zap } from 'lucide-react'
 import TrainerAlertsCard from './TrainerAlertsCard'
 import TrainerDashboardCards from './TrainerDashboardCards'
 import TrainerProgressRankingCard from './TrainerProgressRankingCard'
@@ -91,28 +91,6 @@ export default async function DashboardPage() {
                             <Icon className={`h-4 w-4 shrink-0 ${item.color}`} />
                             {item.label}
                         </Link>
-                    )
-                })}
-            </div>
-
-            {/* ── Headline stats ── */}
-            <div className="grid grid-cols-3 gap-2">
-                {[
-                    { label: 'Alumnos activos', value: stats.activeStudents, icon: Users, color: 'text-violet-400', glow: 'rgba(124,58,237,0.15)' },
-                    { label: 'Alertas', value: alerts.length, icon: AlertTriangle, color: 'text-amber-400', glow: 'rgba(245,158,11,0.12)' },
-                    { label: 'PRs', value: stats.totalPRs, icon: Trophy, color: 'text-emerald-400', glow: 'rgba(16,185,129,0.12)' },
-                ].map((s) => {
-                    const Icon = s.icon
-                    return (
-                        <div
-                            key={s.label}
-                            className="rounded-2xl border p-3 text-center"
-                            style={{ borderColor: 'rgba(255,255,255,0.07)', background: s.glow }}
-                        >
-                            <Icon className={`mx-auto h-4 w-4 ${s.color} mb-1.5`} />
-                            <p className={`text-2xl font-black ${s.color}`}>{s.value}</p>
-                            <p className="mt-0.5 text-[9px] font-medium text-white/30">{s.label}</p>
-                        </div>
                     )
                 })}
             </div>

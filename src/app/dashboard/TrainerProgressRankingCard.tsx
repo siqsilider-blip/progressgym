@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { ArrowRight, TrendingUp } from 'lucide-react'
-import AppCard from '@/components/ui/app-card'
 import type { TrainerProgressRankingItem } from './getTrainerProgressRanking'
 import { formatWeight, type WeightUnit } from '@/lib/weight'
 
@@ -30,7 +29,7 @@ export default function TrainerProgressRankingCard({
     )
 
     return (
-        <AppCard className="p-4 md:p-6">
+        <div className="rounded-2xl border p-4 md:p-6" style={{borderColor: 'rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)'}}>
             <div className="mb-5 flex items-center gap-3 md:mb-6">
                 <div className="rounded-2xl bg-indigo-500/10 p-3 text-indigo-500">
                     <TrendingUp className="h-5 w-5" />
@@ -118,6 +117,6 @@ export default function TrainerProgressRankingCard({
                     )}
                 </div>
             )}
-        </AppCard>
+        </div>
     )
 }

@@ -1,6 +1,5 @@
 'use client'
 
-import AppCard from '@/components/ui/app-card'
 
 export default function WeeklyActivityChart({
     data,
@@ -12,7 +11,7 @@ export default function WeeklyActivityChart({
     const max = Math.max(...safeData.map((d) => d.count), 1)
 
     return (
-        <AppCard className="p-6">
+        <div className="rounded-2xl border p-6" style={{borderColor: 'rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)'}}>
             <h2 className="text-lg font-semibold text-card-foreground mb-4">
                 Actividad semanal
             </h2>
@@ -36,6 +35,6 @@ export default function WeeklyActivityChart({
                     })}
                 </div>
             )}
-        </AppCard>
+        </div>
     )
 }

@@ -2,7 +2,6 @@ import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { formatWeight, type WeightUnit } from '@/lib/weight'
 import { ArrowRight, Trophy } from 'lucide-react'
-import AppCard from '@/components/ui/app-card'
 
 type LeaderboardItem = {
     studentId: string
@@ -23,7 +22,7 @@ export default async function TrainerStudentLeaderboardCard({
     const isLight = theme === 'light'
 
     return (
-        <AppCard className="p-6">
+        <div className="rounded-2xl border p-6" style={{borderColor: 'rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)'}}>
             <div className="mb-6 flex items-center gap-3">
                 <div className="rounded-2xl bg-emerald-500/10 p-3 text-emerald-500">
                     <Trophy className="h-5 w-5" />
@@ -118,6 +117,6 @@ export default async function TrainerStudentLeaderboardCard({
                     })}
                 </div>
             )}
-        </AppCard>
+        </div>
     )
 }

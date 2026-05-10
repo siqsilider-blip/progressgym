@@ -1,5 +1,4 @@
 import { Activity, AlertTriangle, Trophy, Users } from 'lucide-react'
-import AppCard from '@/components/ui/app-card'
 
 export default function WeeklySummaryCard({
     activeStudents,
@@ -52,7 +51,7 @@ export default function WeeklySummaryCard({
     ] as const
 
     return (
-        <AppCard className="p-6">
+        <div className="rounded-2xl border p-6" style={{borderColor: 'rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)'}}>
             <div className="mb-6">
                 <h2 className="text-lg font-semibold text-card-foreground">
                     Resumen semanal
@@ -101,6 +100,6 @@ export default function WeeklySummaryCard({
                     )
                 })}
             </div>
-        </AppCard>
+        </div>
     )
 }

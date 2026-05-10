@@ -2,7 +2,6 @@ import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { AlertTriangle, ArrowRight, UserMinus, UserX } from 'lucide-react'
 import AppBadge from '@/components/ui/app-badge'
-import AppCard from '@/components/ui/app-card'
 import type { TrainerAlert } from './getTrainerAlerts'
 
 function getRiskMeta(type: TrainerAlert['type'], isLight: boolean) {
@@ -72,7 +71,7 @@ export default async function AtRiskStudentsCard({
     const atRiskAlerts = alerts.slice(0, 4)
 
     return (
-        <AppCard className="p-6">
+        <div className="rounded-2xl border p-6" style={{borderColor: 'rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)'}}>
             <div className="mb-6 flex items-center gap-3">
                 <div className="rounded-2xl bg-amber-500/10 p-3 text-amber-500">
                     <AlertTriangle className="h-5 w-5" />
@@ -143,6 +142,6 @@ export default async function AtRiskStudentsCard({
                     })}
                 </div>
             )}
-        </AppCard>
+        </div>
     )
 }
