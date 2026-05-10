@@ -22,7 +22,6 @@ export default function SidebarClient({
     signOutAction,
 }: SidebarClientProps) {
     const pathname = usePathname()
-    const isLight = theme === 'light'
 
     const navItems = [
         {
@@ -67,40 +66,31 @@ export default function SidebarClient({
 
     const desktopNavItems = navItems.filter((item) => item.label !== 'Nuevo')
 
-    const baseItem = isLight
-        ? 'flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-900'
-        : 'flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-zinc-300 transition hover:bg-zinc-900 hover:text-white'
-
-    const activeItem = isLight
-        ? 'flex items-center gap-3 rounded-xl bg-zinc-900 px-4 py-3 text-sm font-medium text-white'
-        : 'flex items-center gap-3 rounded-xl bg-white px-4 py-3 text-sm font-medium text-black'
-
-    const mobileBase = isLight
-        ? 'flex flex-col items-center justify-center gap-1 py-2 text-[11px] text-zinc-700'
-        : 'flex flex-col items-center justify-center gap-1 py-2 text-[11px] text-zinc-300'
-
-    const mobileActive =
-        'flex flex-col items-center justify-center gap-1 py-2 text-[11px] text-indigo-500'
-
     return (
         <>
-            <aside
-                className={`hidden md:flex md:w-72 md:flex-col md:border-r ${isLight
-                    ? 'border-zinc-200 bg-white text-zinc-900'
-                    : 'border-zinc-800 bg-zinc-950 text-zinc-100'
-                    }`}
-            >
-                <div className="border-b border-inherit px-6 py-6">
+            {/* ── Sidebar desktop ── */}
+            <aside className="hidden md:flex md:w-64 md:flex-col md:border-r border-white/[0.06] bg-[#07070a] text-white">
+                <div className="border-b border-white/[0.06] px-6 py-6">
                     <Link href="/dashboard" className="block">
-                        <h1 className="text-2xl font-bold tracking-tight">Progrezzia</h1>
-                        <p className={`mt-1 text-sm ${isLight ? 'text-zinc-500' : 'text-zinc-400'}`}>
-                            Panel del entrenador
-                        </p>
+                        <div className="flex items-center gap-2.5">
+                            <div
+                                className="flex h-7 w-7 items-center justify-center rounded-lg"
+                                style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)', boxShadow: '0 0 16px rgba(124,58,237,0.4)' }}
+                            >
+                                <svg className="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h1 className="text-sm font-black tracking-tight text-white">Progrezzia</h1>
+                                <p className="text-[10px] text-white/30">Panel del entrenador</p>
+                            </div>
+                        </div>
                     </Link>
                 </div>
 
                 <nav className="flex-1 px-3 py-4">
-                    <div className="space-y-1">
+                    <div className="space-y-0.5">
                         {desktopNavItems.map((item) => {
                             const Icon = item.icon
                             const isActive = item.match(pathname)
@@ -109,9 +99,12 @@ export default function SidebarClient({
                                 <Link
                                     key={item.href}
                                     href={item.href}
-                                    className={isActive ? activeItem : baseItem}
+                                    className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${isActive
+                                            ? 'bg-violet-500/15 text-violet-300 border border-violet-500/20'
+                                            : 'text-white/40 hover:bg-white/[0.04] hover:text-white/80 border border-transparent'
+                                        }`}
                                 >
-                                    <Icon className="h-4 w-4" />
+                                    <Icon className={`h-4 w-4 ${isActive ? 'text-violet-400' : ''}`} />
                                     {item.label}
                                 </Link>
                             )
@@ -119,9 +112,22 @@ export default function SidebarClient({
                     </div>
                 </nav>
 
-                <div className="border-t border-inherit p-3">
+                <div className="border-t border-white/[0.06] p-3">
+                    <Link
+                        href="/dashboard/settings"
+                        className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all mb-1 ${pathname === '/dashboard/settings'
+                                ? 'bg-violet-500/15 text-violet-300 border border-violet-500/20'
+                                : 'text-white/40 hover:bg-white/[0.04] hover:text-white/80 border border-transparent'
+                            }`}
+                    >
+                        <Settings className="h-4 w-4" />
+                        Configuración
+                    </Link>
                     <form action={signOutAction}>
-                        <button type="submit" className={`${baseItem} w-full`}>
+                        <button
+                            type="submit"
+                            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/40 transition-all hover:bg-white/[0.04] hover:text-white/80 border border-transparent"
+                        >
                             <LogOut className="h-4 w-4" />
                             Cerrar sesión
                         </button>
@@ -129,27 +135,30 @@ export default function SidebarClient({
                 </div>
             </aside>
 
-            <div
-                className={`fixed inset-x-0 top-0 z-40 flex h-14 items-center justify-between border-b px-4 md:hidden ${isLight
-                    ? 'border-zinc-200 bg-white/95 text-zinc-900'
-                    : 'border-zinc-800 bg-zinc-950/95 text-zinc-100'
-                    } backdrop-blur`}
-            >
-                <Link href="/dashboard" className="font-semibold tracking-tight">
-                    Progrezzia
+            {/* ── Header mobile ── */}
+            <div className="fixed inset-x-0 top-0 z-40 flex h-14 items-center justify-between border-b border-white/[0.06] px-4 md:hidden bg-[#07070a]/95 backdrop-blur">
+                <Link href="/dashboard" className="flex items-center gap-2">
+                    <div
+                        className="flex h-6 w-6 items-center justify-center rounded-lg"
+                        style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)' }}
+                    >
+                        <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                        </svg>
+                    </div>
+                    <span className="text-sm font-black text-white">Progrezzia</span>
                 </Link>
 
-                <Link href="/dashboard/settings" className={`flex h-8 w-8 items-center justify-center rounded-lg ${isLight ? 'text-zinc-500 hover:bg-zinc-100' : 'text-zinc-400 hover:bg-zinc-800'}`}>
+                <Link
+                    href="/dashboard/settings"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-white/40 hover:bg-white/[0.06] hover:text-white transition-colors"
+                >
                     <Settings className="h-4 w-4" />
                 </Link>
             </div>
 
-            <nav
-                className={`fixed inset-x-0 bottom-0 z-40 border-t md:hidden ${isLight
-                    ? 'border-zinc-200 bg-white/95'
-                    : 'border-zinc-800 bg-zinc-950/95'
-                    } backdrop-blur`}
-            >
+            {/* ── Nav mobile bottom ── */}
+            <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-white/[0.06] md:hidden bg-[#07070a]/95 backdrop-blur">
                 <div className="grid grid-cols-5">
                     {navItems.map((item) => {
                         const Icon = item.icon
@@ -159,9 +168,12 @@ export default function SidebarClient({
                             <Link
                                 key={item.href}
                                 href={item.href}
-                                className={isActive ? mobileActive : mobileBase}
+                                className={`flex flex-col items-center justify-center gap-1 py-2.5 text-[10px] font-medium transition-colors ${isActive
+                                        ? 'text-violet-400'
+                                        : 'text-white/30 hover:text-white/60'
+                                    }`}
                             >
-                                <Icon className="h-4 w-4" />
+                                <Icon className={`h-4 w-4 ${isActive ? 'stroke-[2.5]' : ''}`} />
                                 <span>{item.mobileLabel}</span>
                             </Link>
                         )
