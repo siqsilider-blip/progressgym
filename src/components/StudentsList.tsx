@@ -12,7 +12,6 @@ type Student = {
     first_name: string | null
     last_name: string | null
     email: string | null
-    phone: string | null
     active_plan: string | null
     created_at: string | null
     risk: StudentRisk
@@ -170,16 +169,6 @@ export default function StudentsList({ students, routinesByStudentId }: Props) {
                                     >
                                         Rutina
                                     </a>
-                                    {student.phone && (
-                                        <a
-                                            href={`https://wa.me/${student.phone}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="rounded-xl border border-border bg-secondary px-3 py-2 text-xs font-medium text-secondary-foreground transition hover:bg-muted"
-                                        >
-                                            Wsp
-                                        </a>
-                                    )}
                                 </div>
 
                             </div>
