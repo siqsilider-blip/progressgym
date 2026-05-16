@@ -40,10 +40,12 @@ export async function signupStudent(formData: FormData) {
     const { data, error } = await supabase.auth.signUp({ email, password })
 
     if (error) {
+        console.error('[signupStudent] Supabase error:', error)
         redirect('/signup/student?message=No se pudo crear la cuenta')
     }
 
     if (data.user) {
+        console.log('[signupStudent] Usuario creado:', { id: data.user.id, email: data.user.email })
         await supabase.from('profiles').insert({
             id: data.user.id,
             email,

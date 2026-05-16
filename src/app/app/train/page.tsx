@@ -16,6 +16,7 @@ type ExerciseMeta = {
     id: string
     name: string | null
     metric_type: 'reps' | 'time' | null
+    video_url: string | null
 }
 
 type ExerciseLog = {
@@ -159,7 +160,7 @@ export default async function AppTrainPage({ searchParams }: PageProps) {
     if (exerciseIds.length > 0) {
         const { data } = await supabase
             .from('exercises')
-            .select('id, name, metric_type')
+            .select('id, name, metric_type, video_url')
             .in('id', exerciseIds)
         exercises = (data as ExerciseMeta[] | null) ?? []
     }
@@ -242,6 +243,7 @@ export default async function AppTrainPage({ searchParams }: PageProps) {
             previousWeights,
             previousReps,
             lastPerformedAt: previousSession?.lastPerformedAt ?? null,
+            video_url: meta?.video_url ?? null,
         }
     })
 

@@ -94,11 +94,11 @@ export default async function StudentsPage() {
             {/* Header */}
             <div className="mb-5 flex items-start justify-between gap-4">
                 <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-violet-500">Alumnos</p>
-                    <h1 className="mt-0.5 text-2xl font-black tracking-tight text-white">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-500">Progrezzia</p>
+                    <h1 className="mt-0.5 text-2xl font-black tracking-tight text-white md:text-3xl">
                         {summary.total} {summary.total === 1 ? 'alumno' : 'alumnos'}
                     </h1>
-                    <p className="mt-1 text-xs text-white/40">
+                    <p className="mt-1 text-sm text-muted-foreground">
                         {summary.critical > 0
                             ? `${summary.critical} crítico${summary.critical === 1 ? '' : 's'} · ordenados por riesgo`
                             : summary.high > 0

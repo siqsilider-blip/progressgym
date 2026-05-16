@@ -8,6 +8,7 @@ export default function WorkoutRestTimer() {
     const [baseSeconds, setBaseSeconds] = React.useState(60)
     const [flashDone, setFlashDone] = React.useState(false)
 
+    const endTimeRef = React.useRef<number | null>(null)
     const audioContextRef = React.useRef<AudioContext | null>(null)
     const audioSourceRef = React.useRef<AudioBufferSourceNode | null>(null)
 
@@ -59,6 +60,11 @@ export default function WorkoutRestTimer() {
             const customEvent = event as CustomEvent<{ seconds?: number }>
             const seconds = customEvent.detail?.seconds ?? 60
 
+            endTimeRef.current = Date.now() + seconds * 1000
+            if (Notification.permission === 'default') {
+                Notification.requestPermission()
+            }
+
             setBaseSeconds(seconds)
             setTimeLeft(seconds)
             setIsRunning(true)
@@ -84,30 +90,36 @@ export default function WorkoutRestTimer() {
     React.useEffect(() => {
         if (!isRunning || timeLeft <= 0) return
 
+        // Re-anchor end time on every start/resume based on current timeLeft
+        endTimeRef.current = Date.now() + timeLeft * 1000
+
         const interval = window.setInterval(() => {
-            setTimeLeft((prev) => {
-                if (prev <= 1) {
-                    window.clearInterval(interval)
-                    setIsRunning(false)
-                    setFlashDone(true)
+            if (endTimeRef.current === null) return
+            const remaining = Math.ceil((endTimeRef.current - Date.now()) / 1000)
+            if (remaining <= 0) {
+                window.clearInterval(interval)
+                setIsRunning(false)
+                setTimeLeft(0)
+                setFlashDone(true)
 
-                    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-                        navigator.vibrate(300)
-                    }
-
-                    window.setTimeout(() => {
-                        setFlashDone(false)
-                    }, 1200)
-
-                    return 0
+                if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+                    navigator.vibrate(300)
+                }
+                if (Notification.permission === 'granted') {
+                    new Notification('¡Descanso terminado!', {
+                        body: 'Es hora de la próxima serie 💪',
+                        icon: '/icon.png',
+                    })
                 }
 
-                return prev - 1
-            })
-        }, 1000)
+                window.setTimeout(() => setFlashDone(false), 1200)
+                return
+            }
+            setTimeLeft(remaining)
+        }, 250)
 
         return () => window.clearInterval(interval)
-    }, [isRunning, timeLeft])
+    }, [isRunning])
 
     // Stop silent audio whenever the timer stops (end or pause)
     React.useEffect(() => {
@@ -151,7 +163,10 @@ export default function WorkoutRestTimer() {
                 <div className="flex shrink-0 gap-2">
                     <button
                         type="button"
-                        onClick={() => setTimeLeft((prev) => prev + 15)}
+                        onClick={() => {
+                            if (endTimeRef.current !== null) endTimeRef.current += 15000
+                            setTimeLeft((prev) => prev + 15)
+                        }}
                         className="rounded-lg border border-border bg-secondary px-3 py-2 text-xs font-medium text-secondary-foreground transition hover:bg-muted"
                     >
                         +15s
@@ -160,6 +175,7 @@ export default function WorkoutRestTimer() {
                     <button
                         type="button"
                         onClick={() => {
+                            endTimeRef.current = null
                             setTimeLeft(baseSeconds)
                             setIsRunning(false)
                             setFlashDone(false)

@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
+import { PlayCircle } from 'lucide-react'
 import { saveSet, completeSession, saveSessionNote } from './train-focused-actions'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -31,6 +32,7 @@ type ExerciseData = {
     previousWeights: (number | null)[]
     previousReps: (number | null)[]
     lastPerformedAt?: string | null
+    video_url?: string | null
 }
 
 type Props = {
@@ -811,6 +813,17 @@ export default function TrainFocusedView({
                         ? ` · ${exercise.targetReps} ${exercise.isCardio ? 'min' : 'reps'}`
                         : ''}
                 </p>
+                {exercise.video_url && (
+                    <a
+                        href={exercise.video_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-3 py-1.5 text-xs font-medium text-indigo-400 transition hover:bg-indigo-500/20"
+                    >
+                        <PlayCircle className="h-3.5 w-3.5" />
+                        Ver ejercicio
+                    </a>
+                )}
                 {exercise.lastPerformedAt && (
                     <p className="mt-0.5 text-[10px] text-muted-foreground">
                         Última vez: {(() => {

@@ -31,6 +31,7 @@ export async function createExercise(payload: {
     category?: string
     level?: string
     metric_type?: 'reps' | 'time'
+    video_url?: string
 }) {
     const supabase = supabaseServer()
 
@@ -54,6 +55,7 @@ export async function createExercise(payload: {
         category: payload.category || null,
         level: payload.level || null,
         metric_type: metricType,
+        video_url: payload.video_url?.trim() || null,
     })
 
     if (error) return { ok: false, message: error.message }
@@ -80,8 +82,8 @@ export async function listExercises() {
 
     const { data, error } = await supabase
         .from('exercises')
-        .select('id,name,description,category,level,metric_type')
-        .eq('trainer_id', user.id)
+        .select('id, name, muscle_group, video_url, trainer_id')
+        .or(`trainer_id.eq.${user.id},trainer_id.is.null`)
         .order('name', { ascending: true })
 
     if (error) {
@@ -89,6 +91,38 @@ export async function listExercises() {
     }
 
     return { ok: true as const, items: data ?? [] }
+}
+
+export async function updateExercise(id: string, payload: {
+    name: string
+    muscle_group?: string
+    video_url?: string
+}) {
+    const supabase = supabaseServer()
+
+    const {
+        data: { user },
+        error: userErr,
+    } = await supabase.auth.getUser()
+
+    if (userErr || !user) {
+        return { ok: false, message: 'No estás logueado.' }
+    }
+
+    const { error } = await supabase
+        .from('exercises')
+        .update({
+            name: payload.name.trim(),
+            muscle_group: payload.muscle_group || null,
+            video_url: payload.video_url?.trim() || null,
+        })
+        .eq('id', id)
+        .eq('trainer_id', user.id)
+
+    if (error) return { ok: false, message: error.message }
+
+    revalidatePath('/dashboard/exercises')
+    return { ok: true as const }
 }
 
 export async function deleteExercise(id: string) {
