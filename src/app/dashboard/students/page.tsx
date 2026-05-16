@@ -14,6 +14,7 @@ type Student = {
     first_name: string | null
     last_name: string | null
     email: string | null
+    phone: string | null
     active_plan: string | null
     created_at: string | null
     risk: StudentRisk
@@ -42,7 +43,7 @@ export default async function StudentsPage() {
 
     const { data: studentsData, error: studentsError } = await supabase
         .from('students')
-        .select('id, first_name, last_name, email, active_plan, created_at')
+        .select('id, first_name, last_name, email, phone, active_plan, created_at')
         .eq('trainer_id', user.id)
 
     if (studentsError) {
