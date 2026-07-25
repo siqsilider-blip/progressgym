@@ -320,6 +320,7 @@ export default async function AppTrainPage({ searchParams }: PageProps) {
                 maxWeights={maxWeights}
                 weightUnit="kg"
                 returnHref="/app"
+                progressHref="/app/progress"
                 showPrs={true}
             />
         </div>

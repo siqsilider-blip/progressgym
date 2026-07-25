@@ -546,6 +546,7 @@ export default async function StudentTrainPage({
                         maxWeights={focusedMaxWeights}
                         weightUnit={weightUnit}
                         returnHref={`/dashboard/students/${params.studentId}`}
+                        progressHref={`/dashboard/students/${params.studentId}/progress`}
                         showPrs={showPrs}
                     />
                 ) : (

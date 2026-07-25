@@ -46,6 +46,7 @@ type Props = {
     maxWeights: Record<string, number>
     weightUnit: string
     returnHref: string
+    progressHref: string
     showPrs?: boolean
     initialPhase?: Phase
 }
@@ -75,6 +76,7 @@ export default function TrainFocusedView({
     maxWeights: initialMaxWeights,
     weightUnit,
     returnHref,
+    progressHref,
     showPrs = true,
     initialPhase,
 }: Props) {
@@ -597,7 +599,7 @@ export default function TrainFocusedView({
                         <div className="grid grid-cols-2 gap-2">
                             <button
                                 type="button"
-                                onClick={() => router.push(`/dashboard/students/${studentId}/progress`)}
+                                onClick={() => router.push(progressHref)}
                                 className="rounded-2xl border border-border bg-secondary px-4 py-3 text-center text-sm font-medium text-secondary-foreground transition hover:bg-muted active:scale-[0.97]"
                             >
                                 Ver progreso
