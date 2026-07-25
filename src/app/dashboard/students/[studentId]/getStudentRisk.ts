@@ -10,7 +10,7 @@ type RiskMetricsRow = {
     progress_count: number | null
 }
 
-function fallbackRisk(): StudentRiskResult {
+export function fallbackRisk(): StudentRiskResult {
     return calculateStudentRisk({
         lastWorkoutAt: null,
         adherenceRate: null,
