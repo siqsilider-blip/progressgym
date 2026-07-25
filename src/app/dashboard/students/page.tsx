@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import StudentsList from '@/components/StudentsList'
-import { getStudentRisk } from './[studentId]/getStudentRisk'
+import { getStudentsRiskBatch } from './[studentId]/getStudentRisk'
 
 type StudentRisk = {
     score: number
@@ -57,12 +57,14 @@ export default async function StudentsPage() {
 
     const students = (studentsData ?? []) as StudentRow[]
 
-    const studentsWithRisk = await Promise.all(
-        students.map(async (student) => ({
-            ...student,
-            risk: await getStudentRisk(student.id),
-        }))
-    )
+    const riskMap = await getStudentsRiskBatch(students.map((s) => s.id))
+    const studentsWithRisk = students.map((student) => ({
+        ...student,
+        risk: riskMap.get(student.id) ?? {
+            score: 0,
+            level: 'low' as const,
+        } as any,
+    }))
 
     studentsWithRisk.sort((a, b) => b.risk.score - a.risk.score)
 
