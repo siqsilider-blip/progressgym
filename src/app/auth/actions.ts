@@ -1,6 +1,7 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 
 // ─── Signup entrenador ───
@@ -70,7 +71,6 @@ export async function loginTrainer(formData: FormData) {
         redirect('/login/trainer?message=Email o contraseña incorrectos')
     }
 
-    // Verificar que sea trainer
     const { data: { user } } = await supabase.auth.getUser()
     if (user) {
         const { data: profile } = await supabase
@@ -101,7 +101,6 @@ export async function loginStudent(formData: FormData) {
         redirect('/login/student?message=Email o contraseña incorrectos')
     }
 
-    // Verificar que sea student
     const { data: { user } } = await supabase.auth.getUser()
     if (user) {
         const { data: profile } = await supabase
@@ -153,4 +152,72 @@ export async function logout() {
     const supabase = await createClient()
     await supabase.auth.signOut()
     redirect('/login')
+}
+
+// ─── Pedir reset de contraseña (entrenador o alumno, mismo flujo) ───
+export async function requestPasswordReset(formData: FormData) {
+    const supabase = await createClient()
+    const email = (formData.get('email') as string)?.trim()
+
+    if (!email) {
+        redirect('/forgot-password?message=Ingresá tu email')
+    }
+
+    const headersList = await headers()
+    const host = headersList.get('host')
+    const protocol = host?.includes('localhost') ? 'http' : 'https'
+    const origin = `${protocol}://${host}`
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${origin}/auth/confirm?next=/reset-password`,
+    })
+
+    // Por seguridad, no confirmamos si el email existe o no.
+    // Siempre mostramos el mismo mensaje de éxito.
+    if (error) {
+        console.error('[requestPasswordReset] error:', error)
+    }
+
+    redirect('/forgot-password?sent=1')
+}
+
+// ─── Actualizar contraseña (después de clickear el link del mail) ───
+export async function updatePassword(formData: FormData) {
+    const supabase = await createClient()
+
+    const password = formData.get('password') as string
+    const confirmPassword = formData.get('confirm_password') as string
+
+    if (!password || password.length < 6) {
+        redirect('/reset-password?message=La contraseña debe tener al menos 6 caracteres')
+    }
+
+    if (password !== confirmPassword) {
+        redirect('/reset-password?message=Las contraseñas no coinciden')
+    }
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+        redirect('/forgot-password?message=El link expiró. Pedí uno nuevo.')
+    }
+
+    const { error } = await supabase.auth.updateUser({ password })
+
+    if (error) {
+        console.error('[updatePassword] error:', error)
+        redirect('/reset-password?message=No se pudo actualizar la contraseña')
+    }
+
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .maybeSingle()
+
+    if (profile?.role === 'student') {
+        redirect('/app?message=Contraseña actualizada')
+    }
+
+    redirect('/dashboard?message=Contraseña actualizada')
 }

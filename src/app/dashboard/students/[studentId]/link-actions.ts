@@ -20,8 +20,8 @@ export async function linkStudentToUser(payload: {
     email: string
 }): Promise<{ ok: boolean; message: string }> {
     const supabase = await createClient()
-
     const { data: { user }, error: authError } = await supabase.auth.getUser()
+
     if (authError || !user) {
         return { ok: false, message: 'No autenticado' }
     }
@@ -38,11 +38,44 @@ export async function linkStudentToUser(payload: {
         return { ok: false, message: 'Alumno no encontrado' }
     }
 
-    console.log('[linkStudent] email buscado:', payload.email)
+    // Normalizamos el email que llega del formulario (trim + lowercase)
+    const searchEmail = payload.email.trim().toLowerCase()
 
-    // 1. Buscar en auth.users por email via admin
-    const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers()
-    const foundUser = authUsers?.users?.find(u => u.email === payload.email)
+    console.log('[linkStudent] email buscado (normalizado):', searchEmail)
+
+    // 1. Buscar en auth.users por email via admin, trayendo TODAS las páginas
+    //    y comparando de forma normalizada (case-insensitive, sin espacios)
+    let foundUser: { id: string; email?: string; user_metadata?: any } | undefined
+    let page = 1
+    const perPage = 200
+
+    while (!foundUser) {
+        const { data: authUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers({
+            page,
+            perPage,
+        })
+
+        if (listError) {
+            console.error('[linkStudent] error listando usuarios:', listError)
+            return { ok: false, message: 'Error al buscar la cuenta.' }
+        }
+
+        const users = authUsers?.users ?? []
+
+        console.log(
+            '[linkStudent] página', page, '- emails en esta página:',
+            users.map(u => u.email)
+        )
+
+        foundUser = users.find(
+            (u) => u.email?.trim().toLowerCase() === searchEmail
+        )
+
+        // Si no hay más páginas, cortamos el loop
+        if (!foundUser && users.length < perPage) break
+
+        page++
+    }
 
     console.log('[linkStudent] foundUser:', foundUser?.id, foundUser?.email)
 
@@ -80,7 +113,6 @@ export async function linkStudentToUser(payload: {
     }
 
     revalidatePath(`/dashboard/students/${payload.studentId}`)
-
     return { ok: true, message: 'Cuenta vinculada correctamente.' }
 }
 
@@ -88,8 +120,8 @@ export async function unlinkStudentFromUser(payload: {
     studentId: string
 }): Promise<{ ok: boolean; message: string }> {
     const supabase = await createClient()
-
     const { data: { user }, error: authError } = await supabase.auth.getUser()
+
     if (authError || !user) {
         return { ok: false, message: 'No autenticado' }
     }

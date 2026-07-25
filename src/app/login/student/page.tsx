@@ -93,6 +93,12 @@ export default async function StudentLoginPage(
                             />
                         </div>
 
+                        <div className="text-right -mt-2">
+                            <a href="/forgot-password" className="text-xs font-medium text-emerald-400 hover:text-emerald-300 transition-colors">
+                                ¿Olvidaste tu contraseña?
+                            </a>
+                        </div>
+
                         {message && (
                             <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-xs text-red-400">
                                 {String(message)}

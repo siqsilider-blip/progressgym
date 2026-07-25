@@ -35,6 +35,8 @@ export async function middleware(request: NextRequest) {
         pathname.startsWith('/login/') ||
         pathname === '/signup' ||
         pathname.startsWith('/signup/') ||
+        pathname === '/forgot-password' ||
+        pathname === '/reset-password' ||
         pathname.startsWith('/auth')
 
     // Sin sesión en ruta protegida → login

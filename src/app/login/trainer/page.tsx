@@ -93,6 +93,12 @@ export default async function TrainerLoginPage(
                             />
                         </div>
 
+                        <div className="text-right -mt-2">
+                            <a href="/forgot-password" className="text-xs font-medium text-violet-400 hover:text-violet-300 transition-colors">
+                                ¿Olvidaste tu contraseña?
+                            </a>
+                        </div>
+
                         {message && (
                             <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-xs text-red-400">
                                 {String(message)}
