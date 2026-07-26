@@ -1,24 +1,25 @@
-export default function Loading() {
+export default function StudentProfileLoading() {
     return (
-        <div className="animate-pulse p-4 pb-24 md:p-8">
-            <div className="mb-6 flex items-start justify-between gap-4">
-                <div className="space-y-2">
-                    <div className="h-7 w-48 rounded-lg bg-muted" />
-                    <div className="h-4 w-32 rounded-md bg-muted" />
+        <div className="p-4 pb-28 text-foreground md:p-8 animate-pulse">
+            <div className="mx-auto max-w-5xl space-y-5 md:space-y-6">
+                <div className="h-40 rounded-3xl border border-white/[0.06] bg-white/[0.03]" />
+
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                    {[0, 1, 2, 3].map((i) => (
+                        <div key={i} className="h-20 rounded-2xl border border-white/[0.06] bg-white/[0.03]" />
+                    ))}
                 </div>
-                <div className="h-10 w-24 shrink-0 rounded-lg bg-muted" />
-            </div>
 
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                {Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="h-24 rounded-2xl border border-border bg-card" />
-                ))}
-            </div>
-
-            <div className="mt-4 space-y-3">
-                <div className="h-40 rounded-2xl border border-border bg-card" />
-                <div className="h-32 rounded-2xl border border-border bg-card" />
-                <div className="h-48 rounded-2xl border border-border bg-card" />
+                <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+                    <div className="space-y-4">
+                        <div className="h-48 rounded-3xl border border-white/[0.06] bg-white/[0.03]" />
+                        <div className="h-32 rounded-3xl border border-white/[0.06] bg-white/[0.03]" />
+                    </div>
+                    <div className="space-y-4">
+                        <div className="h-40 rounded-3xl border border-white/[0.06] bg-white/[0.03]" />
+                        <div className="h-40 rounded-3xl border border-white/[0.06] bg-white/[0.03]" />
+                    </div>
+                </div>
             </div>
         </div>
     )
