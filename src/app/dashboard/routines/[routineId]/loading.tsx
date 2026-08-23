@@ -1,26 +1,23 @@
-export default function Loading() {
+export default function RoutineDetailLoading() {
     return (
-        <div className="animate-pulse p-3 pb-24 md:p-6">
-            <div className="mx-auto max-w-3xl">
-                <div className="mb-4 flex items-center gap-3">
-                    <div className="h-9 w-9 shrink-0 rounded-xl bg-muted" />
-                    <div className="h-7 flex-1 rounded-lg bg-muted" />
+        <div className="p-4 pb-24 text-foreground md:p-8 animate-pulse">
+            <div className="mx-auto max-w-4xl space-y-5">
+                <div className="space-y-2">
+                    <div className="h-4 w-32 rounded bg-white/[0.06]" />
+                    <div className="h-8 w-56 rounded bg-white/[0.08]" />
                 </div>
 
-                <div className="mb-4 space-y-1.5">
-                    <div className="h-4 w-56 rounded-md bg-muted" />
-                    <div className="h-11 rounded-xl bg-muted" />
-                </div>
-
-                <div className="mb-4 flex gap-2">
-                    {Array.from({ length: 3 }).map((_, i) => (
-                        <div key={i} className="h-9 w-20 rounded-lg bg-muted" />
+                <div className="flex gap-2">
+                    {[0, 1, 2].map((i) => (
+                        <div key={i} className="h-9 w-24 rounded-xl bg-white/[0.06]" />
                     ))}
                 </div>
 
-                {Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="mb-3 h-16 rounded-xl border border-border bg-card" />
-                ))}
+                <div className="space-y-3">
+                    {[0, 1, 2, 3].map((i) => (
+                        <div key={i} className="h-20 rounded-2xl border border-white/[0.06] bg-white/[0.03]" />
+                    ))}
+                </div>
             </div>
         </div>
     )
