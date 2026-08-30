@@ -45,6 +45,7 @@ export async function getStudentAdherence(
         .from('student_routines')
         .select('routine_id')
         .eq('student_id', studentId)
+        .eq('status', 'active')
         .maybeSingle()
 
     let plannedSessions = 12 // default 3 días/semana x 4 semanas

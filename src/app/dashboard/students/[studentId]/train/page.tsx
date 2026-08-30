@@ -70,6 +70,11 @@ export default async function StudentTrainPage({
         )
     }
 
+    // Fase 0B: student_routines (con status='active') es la ÚNICA fuente
+    // de verdad. Se eliminó el fallback viejo a routines.student_id + el
+    // self-heal que insertaba/actualizaba student_routines desde acá -- si
+    // no hay una fila 'active', no hay rutina activa, punto. (Ver sección 8
+    // de DISEÑO_FASE_0B.md.)
     let assignedRoutineId: string | null = null
     let routineName = 'Rutina asignada'
 
@@ -77,56 +82,20 @@ export default async function StudentTrainPage({
         .from('student_routines')
         .select('routine_id')
         .eq('student_id', params.studentId)
+        .eq('status', 'active')
         .maybeSingle()
 
     if (assignment?.routine_id) {
         const { data: assignedRoutine } = await supabase
             .from('routines')
-            .select('id, name, student_id, trainer_id')
+            .select('id, name')
             .eq('id', assignment.routine_id)
             .eq('trainer_id', user.id)
-            .eq('student_id', params.studentId)
             .maybeSingle()
 
         if (assignedRoutine?.id) {
             assignedRoutineId = assignedRoutine.id
             routineName = assignedRoutine.name ?? 'Rutina asignada'
-        }
-    }
-
-    if (!assignedRoutineId) {
-        const { data: fallbackRoutine } = await supabase
-            .from('routines')
-            .select('id, name')
-            .eq('student_id', params.studentId)
-            .eq('trainer_id', user.id)
-            .maybeSingle()
-
-        if (fallbackRoutine?.id) {
-            assignedRoutineId = fallbackRoutine.id
-            routineName = fallbackRoutine.name ?? 'Rutina asignada'
-
-            const { data: existingAssignment } = await supabase
-                .from('student_routines')
-                .select('id')
-                .eq('student_id', params.studentId)
-                .maybeSingle()
-
-            if (existingAssignment?.id) {
-                await supabase
-                    .from('student_routines')
-                    .update({
-                        routine_id: fallbackRoutine.id,
-                        assigned_at: new Date().toISOString(),
-                    })
-                    .eq('id', existingAssignment.id)
-            } else {
-                await supabase.from('student_routines').insert({
-                    student_id: params.studentId,
-                    routine_id: fallbackRoutine.id,
-                    assigned_at: new Date().toISOString(),
-                })
-            }
         }
     }
 

@@ -56,6 +56,7 @@ export default async function RoutinesPage() {
         .from('student_routines')
         .select('student_id, routine_id')
         .in('student_id', studentIds)
+        .eq('status', 'active')
 
     const assignmentMap = new Map<string, string>()
     for (const a of assignments ?? []) {

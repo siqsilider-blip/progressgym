@@ -41,6 +41,7 @@ export default async function AppHomePage() {
         .from('student_routines')
         .select('routine_id')
         .eq('student_id', studentId)
+        .eq('status', 'active')
         .maybeSingle()
 
     let routineName: string | null = null

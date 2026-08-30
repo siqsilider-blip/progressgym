@@ -48,7 +48,7 @@ export default async function StudentProfilePage({ params }: PageProps) {
         getStudentRecentPRs(studentId),
         getStudentRisk(studentId),
         supabase.from('trainer_profiles').select('show_prs').eq('user_id', user.id).maybeSingle(),
-        supabase.from('student_routines').select('routine_id').eq('student_id', studentId).maybeSingle(),
+        supabase.from('student_routines').select('routine_id').eq('student_id', studentId).eq('status', 'active').maybeSingle(),
         supabase.from('profiles').select('id, email').eq('student_id', studentId).maybeSingle(),
     ])
 

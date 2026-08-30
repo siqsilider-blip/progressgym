@@ -47,41 +47,16 @@ async function assignRoutine(formData: FormData) {
         throw new Error('La rutina elegida no pertenece a este alumno.')
     }
 
-    const { data: existingAssignment, error: existingAssignmentError } =
-        await supabase
-            .from('student_routines')
-            .select('id')
-            .eq('student_id', studentId)
-            .maybeSingle()
+    // Fase 0B: asignación atómica (cierra la activa anterior, abre la
+    // nueva) vía RPC en vez de chequeo + insert/update manual. Ver
+    // assign_student_routine en fase0b_status_routine_kind.sql.
+    const { error: assignError } = await supabase.rpc('assign_student_routine', {
+        p_student_id: studentId,
+        p_routine_id: routineId,
+    })
 
-    if (existingAssignmentError) {
-        throw new Error(existingAssignmentError.message)
-    }
-
-    if (existingAssignment?.id) {
-        const { error: updateError } = await supabase
-            .from('student_routines')
-            .update({
-                routine_id: routineId,
-                assigned_at: new Date().toISOString(),
-            })
-            .eq('id', existingAssignment.id)
-
-        if (updateError) {
-            throw new Error(updateError.message)
-        }
-    } else {
-        const { error: insertError } = await supabase
-            .from('student_routines')
-            .insert({
-                student_id: studentId,
-                routine_id: routineId,
-                assigned_at: new Date().toISOString(),
-            })
-
-        if (insertError) {
-            throw new Error(insertError.message)
-        }
+    if (assignError) {
+        throw new Error(assignError.message)
     }
 
     redirect(`/dashboard/students/${studentId}`)

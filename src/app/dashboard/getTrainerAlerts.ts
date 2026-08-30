@@ -46,7 +46,8 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
         supabase
             .from('student_routines')
             .select('student_id')
-            .in('student_id', studentIds),
+            .in('student_id', studentIds)
+            .eq('status', 'active'),
     ])
 
     if (workoutsResult.error) {

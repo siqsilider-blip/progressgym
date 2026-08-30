@@ -58,6 +58,7 @@ export default async function AppTrainPage({ searchParams }: PageProps) {
         .from('student_routines')
         .select('routine_id')
         .eq('student_id', studentId)
+        .eq('status', 'active')
         .maybeSingle()
 
     if (!assignment?.routine_id) {

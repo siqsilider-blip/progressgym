@@ -3,6 +3,22 @@
 import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+
+// El role de un profile nuevo lo decide EXCLUSIVAMENTE este código server-side,
+// nunca el cliente. Por eso este insert corre con supabaseAdmin (bypassea RLS)
+// en vez del cliente autenticado normal -- la policy de INSERT en profiles para
+// "authenticated" fue eliminada a propósito (ver harden_rls_security.sql v4).
+const supabaseAdmin = createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+        auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+        },
+    }
+)
 
 // ─── Signup entrenador ───
 export async function signup(formData: FormData) {
@@ -19,7 +35,7 @@ export async function signup(formData: FormData) {
     }
 
     if (data.user) {
-        await supabase.from('profiles').insert({
+        await supabaseAdmin.from('profiles').insert({
             id: data.user.id,
             email,
             name: fullName,
@@ -47,7 +63,7 @@ export async function signupStudent(formData: FormData) {
 
     if (data.user) {
         console.log('[signupStudent] Usuario creado:', { id: data.user.id, email: data.user.email })
-        await supabase.from('profiles').insert({
+        await supabaseAdmin.from('profiles').insert({
             id: data.user.id,
             email,
             name: fullName,

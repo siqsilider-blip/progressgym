@@ -37,6 +37,7 @@ export default async function AppProfilePage() {
         .from('student_routines')
         .select('routine_id')
         .eq('student_id', studentId)
+        .eq('status', 'active')
         .maybeSingle() : { data: null }
 
     const { data: routine } = assignment?.routine_id ? await supabase

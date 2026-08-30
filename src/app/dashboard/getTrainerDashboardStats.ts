@@ -69,7 +69,8 @@ export async function getTrainerDashboardStats(): Promise<TrainerDashboardStats>
         supabase
             .from('student_routines')
             .select('student_id')
-            .in('student_id', studentIds),
+            .in('student_id', studentIds)
+            .eq('status', 'active'),
     ])
 
     if (recentLogsResult.error) {
