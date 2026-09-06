@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import Link from 'next/link'
 
 type Student = {
     id: string
@@ -96,12 +97,20 @@ export default function RoutinesClient({ students, routines, error }: Props) {
                                 {totalWithRoutine} con rutina · {totalWithoutRoutine} sin asignar
                             </p>
                         </div>
-                        <span className={`mt-1 shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${totalWithoutRoutine === 0
-                                ? 'bg-emerald-500/10 text-emerald-500 ring-1 ring-emerald-500/30'
-                                : 'bg-amber-500/10 text-amber-500 ring-1 ring-amber-500/30'
-                            }`}>
-                            {totalWithoutRoutine === 0 ? 'Todo al día' : `${totalWithoutRoutine} pendiente${totalWithoutRoutine !== 1 ? 's' : ''}`}
-                        </span>
+                        <div className="flex flex-col items-end gap-2">
+                            <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${totalWithoutRoutine === 0
+                                    ? 'bg-emerald-500/10 text-emerald-500 ring-1 ring-emerald-500/30'
+                                    : 'bg-amber-500/10 text-amber-500 ring-1 ring-amber-500/30'
+                                }`}>
+                                {totalWithoutRoutine === 0 ? 'Todo al día' : `${totalWithoutRoutine} pendiente${totalWithoutRoutine !== 1 ? 's' : ''}`}
+                            </span>
+                            <Link
+                                href="/dashboard/templates"
+                                className="text-sm font-medium text-indigo-500 hover:text-indigo-400"
+                            >
+                                Ver mis templates →
+                            </Link>
+                        </div>
                     </div>
                 </div>
 

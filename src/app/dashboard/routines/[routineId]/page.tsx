@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { addExerciseToRoutineDay, deleteExerciseFromRoutineDay, addRoutineWeek, duplicateRoutineWeek, updateRoutineName, deleteRoutineWeek, addRoutineMonth, renameRoutineMonth, deleteRoutineMonth, renameRoutineWeek } from './actions'
+import { addExerciseToRoutineDay, deleteExerciseFromRoutineDay, addRoutineWeek, duplicateRoutineWeek, updateRoutineName, deleteRoutineWeek, addRoutineMonth, renameRoutineMonth, deleteRoutineMonth, renameRoutineWeek, deleteTemplate } from './actions'
 import ExerciseProgressChart from '../../../../components/ExerciseProgressChart'
 import { getTrainerProfile } from '@/lib/getTrainerProfile'
 import { formatWeight, type WeightUnit } from '@/lib/weight'
@@ -9,6 +9,7 @@ import AddExerciseToRoutineDayForm from './AddExerciseToRoutineDayForm'
 import RoutineNameEditor from './RoutineNameEditor'
 import BackButton from './BackButton'
 import WeekMonthSelector from './WeekMonthSelector'
+import DeleteTemplateButton from './DeleteTemplateButton'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -97,7 +98,7 @@ export default async function RoutineDetailPage({
 
     const { data: routine, error: routineError } = await supabase
         .from('routines')
-        .select('id, name, trainer_id, student_id, days_per_week')
+        .select('id, name, trainer_id, student_id, days_per_week, routine_kind')
         .eq('id', params.routineId)
         .eq('trainer_id', user.id)
         .single()
@@ -255,7 +256,12 @@ export default async function RoutineDetailPage({
 
         const allExerciseIds = typedExercises.map((exercise) => exercise.id)
 
-        if (allExerciseIds.length > 0) {
+        // Para un template (routine.student_id = null) no se consulta
+        // exercise_logs en absoluto -- logsByExercise queda vacío para sus
+        // ejercicios, sin depender de ninguna suposición sobre cómo
+        // interpreta PostgREST un .eq() con valor null. Para un program, la
+        // consulta queda exactamente igual que antes.
+        if (allExerciseIds.length > 0 && routine.routine_kind !== 'template') {
             const { data: logs } = await supabase
                 .from('exercise_logs')
                 .select(
@@ -305,7 +311,13 @@ export default async function RoutineDetailPage({
                             updateAction={updateRoutineName}
                         />
                         <p className="mt-0.5 text-xs text-muted-foreground">
-                            {studentName}
+                            {routine.routine_kind === 'template' ? (
+                                <span className="rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[10px] font-medium text-indigo-700 dark:border-indigo-500/20 dark:bg-indigo-500/10 dark:text-indigo-300">
+                                    Template
+                                </span>
+                            ) : (
+                                studentName
+                            )}
                             <span className="mx-1.5 text-border">·</span>
                             {months.length} {months.length === 1 ? 'mesociclo' : 'mesociclos'}
                             <span className="mx-1.5 text-border">·</span>
@@ -313,12 +325,27 @@ export default async function RoutineDetailPage({
                         </p>
                     </div>
 
-                    <Link
-                        href={`/dashboard/students/${routine.student_id}/train?month=${selectedMonth?.id ?? ''}&week=${selectedWeek?.id ?? ''}&day=${selectedDay?.id ?? ''}&from=routine`}
-                        className="shrink-0 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-500 active:scale-[0.97]"
-                    >
-                        Entrenar
-                    </Link>
+                    {routine.routine_kind === 'template' ? (
+                        <div className="flex shrink-0 items-center gap-2">
+                            <Link
+                                href={`/dashboard/routines/${routine.id}/assign-to-student`}
+                                className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500 active:scale-[0.97]"
+                            >
+                                Asignar
+                            </Link>
+                            <DeleteTemplateButton
+                                routineId={routine.id}
+                                deleteAction={deleteTemplate}
+                            />
+                        </div>
+                    ) : (
+                        <Link
+                            href={`/dashboard/students/${routine.student_id}/train?month=${selectedMonth?.id ?? ''}&week=${selectedWeek?.id ?? ''}&day=${selectedDay?.id ?? ''}&from=routine`}
+                            className="shrink-0 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-500 active:scale-[0.97]"
+                        >
+                            Entrenar
+                        </Link>
+                    )}
                 </div>
 
                 {daysError ? (

@@ -89,6 +89,28 @@ export default function NewDashboardPage() {
 
                         <ChevronRight className="h-5 w-5 text-zinc-400 transition group-hover:text-amber-500" />
                     </Link>
+
+                    <Link
+                        href="/dashboard/templates/new"
+                        className="group flex items-center justify-between rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm transition hover:border-indigo-300 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/80 dark:hover:border-indigo-500/40 dark:hover:bg-zinc-900"
+                    >
+                        <div className="flex items-start gap-4">
+                            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400">
+                                <ClipboardList className="h-5 w-5" />
+                            </div>
+
+                            <div>
+                                <p className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                                    Nuevo template
+                                </p>
+                                <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+                                    Creá un programa reutilizable para asignar a varios alumnos.
+                                </p>
+                            </div>
+                        </div>
+
+                        <ChevronRight className="h-5 w-5 text-zinc-400 transition group-hover:text-purple-500" />
+                    </Link>
                 </div>
             </div>
         </div>

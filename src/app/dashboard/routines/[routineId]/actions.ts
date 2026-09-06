@@ -607,3 +607,50 @@ export async function deleteRoutineMonth(formData: FormData) {
     revalidatePath(`/dashboard/routines/${routineId}`)
     redirect(`/dashboard/routines/${routineId}`)
 }
+
+export async function deleteTemplate(formData: FormData) {
+    const supabase = await createClient()
+
+    const routineId = formData.get('routineId') as string
+
+    const {
+        data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) redirect('/login')
+
+    if (!routineId) {
+        redirect('/dashboard/templates')
+    }
+
+    // Doble chequeo intencional: la policy trainer_delete_own_templates ya
+    // exige routine_kind='template' a nivel de base de datos, pero
+    // confirmarlo también acá da un mensaje de error claro en vez de un
+    // error genérico de Postgres si alguien intenta borrar un program
+    // usando esta acción (por ejemplo, manipulando el formulario).
+    const { data: routine } = await supabase
+        .from('routines')
+        .select('id, routine_kind')
+        .eq('id', routineId)
+        .eq('trainer_id', user.id)
+        .single()
+
+    if (!routine || routine.routine_kind !== 'template') {
+        redirect('/dashboard/templates')
+    }
+
+    const { error: deleteError } = await supabase
+        .from('routines')
+        .delete()
+        .eq('id', routineId)
+        .eq('trainer_id', user.id)
+        .eq('routine_kind', 'template')
+
+    if (deleteError) {
+        redirect(`/dashboard/routines/${routineId}`)
+    }
+
+    revalidatePath('/dashboard/templates')
+    redirect('/dashboard/templates')
+}
+
