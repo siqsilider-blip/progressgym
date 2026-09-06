@@ -26,26 +26,16 @@ export async function createTemplate(formData: FormData) {
         throw new Error('La cantidad de días debe estar entre 1 y 6.')
     }
 
-    // A diferencia de createRoutine (programas), acá NO se inserta ningún
-    // routine_day de entrada -- el template nace vacío y el entrenador lo
-    // arma con el mismo editor de meses/semanas/días/ejercicios que ya
-    // existe para programas (addRoutineMonth / addRoutineWeek, que ya
-    // auto-genera los días de la primera semana usando days_per_week).
-    const { data: template, error } = await supabase
-        .from('routines')
-        .insert({
-            name: name.trim(),
-            trainer_id: user.id,
-            student_id: null,
-            days_per_week: daysCount,
-            routine_kind: 'template',
-        })
-        .select('id')
-        .single()
+    // La creación de la rutina, la Semana 1 y sus días iniciales es atómica
+    // a través de la RPC create_template en Postgres.
+    const { data: templateId, error } = await supabase.rpc('create_template', {
+        p_name: name.trim(),
+        p_days_per_week: daysCount,
+    })
 
-    if (error || !template) {
+    if (error || !templateId) {
         throw new Error(error?.message || 'No se pudo crear el template.')
     }
 
-    redirect(`/dashboard/routines/${template.id}`)
+    redirect(`/dashboard/routines/${templateId}`)
 }

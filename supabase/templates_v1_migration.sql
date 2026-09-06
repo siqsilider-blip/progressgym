@@ -30,6 +30,12 @@
 begin;
 
 -- ----------------------------------------------------------------------------
+-- DDL: routines.student_id debe permitir NULL para rutinas de tipo template.
+-- ----------------------------------------------------------------------------
+alter table public.routines
+  alter column student_id drop not null;
+
+-- ----------------------------------------------------------------------------
 -- RLS: el entrenador puede borrar SOLO sus propios templates, nunca un
 -- program.
 --
@@ -57,6 +63,59 @@ using (
   trainer_id = auth.uid()
   and routine_kind = 'template'
 );
+
+-- ----------------------------------------------------------------------------
+-- RPC: creación atómica de un template con su Semana 1 y sus N días iniciales.
+-- SECURITY INVOKER: hereda toda la autorización ya existente vía RLS.
+-- ----------------------------------------------------------------------------
+create or replace function public.create_template(
+  p_name text,
+  p_days_per_week integer
+)
+returns uuid
+language plpgsql
+security invoker
+set search_path = public
+as $$
+declare
+  v_routine_id uuid;
+  v_week_id uuid;
+  v_trainer_id uuid;
+  i integer;
+begin
+  v_trainer_id := auth.uid();
+
+  if v_trainer_id is null then
+    raise exception 'No autenticado.';
+  end if;
+
+  if p_name is null or trim(p_name) = '' then
+    raise exception 'Falta el nombre del template.';
+  end if;
+
+  if p_days_per_week is null or p_days_per_week < 1 or p_days_per_week > 6 then
+    raise exception 'La cantidad de días debe estar entre 1 y 6.';
+  end if;
+
+  -- 1) Crear la rutina de tipo template
+  v_routine_id := gen_random_uuid();
+  insert into public.routines (id, name, trainer_id, student_id, days_per_week, routine_kind)
+  values (v_routine_id, trim(p_name), v_trainer_id, null, p_days_per_week, 'template');
+
+  -- 2) Crear Semana 1
+  v_week_id := gen_random_uuid();
+  insert into public.routine_weeks (id, routine_id, week_number, routine_month_id)
+  values (v_week_id, v_routine_id, 1, null);
+
+  -- 3) Crear los días vinculados a la Semana 1
+  for i in 1..p_days_per_week loop
+    insert into public.routine_days (routine_id, routine_week_id, day_index, title)
+    values (v_routine_id, v_week_id, i, 'Día ' || i);
+  end loop;
+
+  return v_routine_id;
+end;
+$$;
 
 -- ----------------------------------------------------------------------------
 -- RPC: copia profunda completa de un template a un alumno, y lo asigna como
