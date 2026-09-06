@@ -36,6 +36,85 @@ alter table public.routines
   alter column student_id drop not null;
 
 -- ----------------------------------------------------------------------------
+-- DDL: eliminar la restricción única antigua de una rutina por alumno y entrenador,
+-- reemplazándola por un índice normal no único.
+-- ----------------------------------------------------------------------------
+alter table public.routines
+  drop constraint if exists routines_one_per_student_per_trainer;
+
+create index if not exists routines_trainer_student_idx
+  on public.routines (trainer_id, student_id);
+
+-- ----------------------------------------------------------------------------
+-- Helper function: validar ownership de rutina por parte del trainer
+-- (SECURITY DEFINER para evitar recursión RLS infinita entre routines y student_routines).
+-- ----------------------------------------------------------------------------
+create or replace function public.trainer_owns_routine(
+  p_routine_id uuid
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = pg_catalog, public
+as $function$
+  select exists (
+    select 1
+    from public.routines r
+    where r.id = p_routine_id
+      and r.trainer_id = auth.uid()
+  );
+$function$;
+
+revoke all on function public.trainer_owns_routine(uuid) from public;
+grant execute on function public.trainer_owns_routine(uuid) to authenticated;
+
+-- ----------------------------------------------------------------------------
+-- RLS: student_routines (evita recursión infinita usando trainer_owns_routine).
+-- ----------------------------------------------------------------------------
+drop policy if exists trainer_insert_student_routines
+on public.student_routines;
+
+create policy trainer_insert_student_routines
+on public.student_routines
+for insert
+to authenticated
+with check (
+  exists (
+    select 1
+    from public.students s
+    where s.id = student_routines.student_id
+      and s.trainer_id = auth.uid()
+  )
+  and public.trainer_owns_routine(student_routines.routine_id)
+);
+
+drop policy if exists trainer_update_student_routines
+on public.student_routines;
+
+create policy trainer_update_student_routines
+on public.student_routines
+for update
+to authenticated
+using (
+  exists (
+    select 1
+    from public.students s
+    where s.id = student_routines.student_id
+      and s.trainer_id = auth.uid()
+  )
+)
+with check (
+  exists (
+    select 1
+    from public.students s
+    where s.id = student_routines.student_id
+      and s.trainer_id = auth.uid()
+  )
+  and public.trainer_owns_routine(student_routines.routine_id)
+);
+
+-- ----------------------------------------------------------------------------
 -- RLS: el entrenador puede borrar SOLO sus propios templates, nunca un
 -- program.
 --
