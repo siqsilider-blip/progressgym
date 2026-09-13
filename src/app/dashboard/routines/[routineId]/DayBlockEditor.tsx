@@ -522,30 +522,37 @@ function AddExerciseForm({
             </div>
 
             <div ref={containerRef} className="relative">
-                <button
-                    type="button"
-                    onClick={() => setOpen((prev) => !prev)}
-                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-left text-xs font-medium text-foreground outline-none transition hover:border-indigo-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                >
-                    {selectedExerciseName || <span className="text-muted-foreground">Seleccionar ejercicio</span>}
-                </button>
+                {open ? (
+                    <input
+                        ref={searchInputRef}
+                        type="text"
+                        value={search}
+                        onChange={(event) => setSearch(event.target.value)}
+                        onKeyDown={(event) => {
+                            if (event.key === 'Escape') setOpen(false)
+                        }}
+                        placeholder="Buscar ejercicio..."
+                        aria-label="Buscar ejercicio"
+                        className="w-full rounded-lg border border-indigo-500 bg-background px-3 py-2 text-xs font-medium text-foreground outline-none ring-1 ring-indigo-500 placeholder:text-muted-foreground"
+                    />
+                ) : (
+                    <button
+                        type="button"
+                        onClick={() => setOpen(true)}
+                        className="w-full rounded-lg border border-border bg-background px-3 py-2 text-left text-xs font-medium text-foreground outline-none transition hover:border-indigo-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                    >
+                        {selectedExerciseName || <span className="text-muted-foreground">Seleccionar ejercicio</span>}
+                    </button>
+                )}
 
                 {open && (
                     <div className="absolute z-50 mt-1 w-full rounded-lg border border-border bg-background shadow-xl">
                         <div className="border-b border-border p-2">
-                            <input
-                                ref={searchInputRef}
-                                type="text"
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Buscar..."
-                                className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs text-foreground outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 placeholder:text-muted-foreground"
-                            />
                             {categories.length > 1 && (
                                 <select
                                     value={categoryFilter}
                                     onChange={(event) => setCategoryFilter(event.target.value)}
-                                    className="mt-2 h-8 w-full rounded-md border border-border bg-background px-2 text-xs text-foreground outline-none focus:border-indigo-500"
+                                    className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs text-foreground outline-none focus:border-indigo-500"
                                 >
                                     <option value="all">Todos los grupos</option>
                                     {categories.map((category) => (
