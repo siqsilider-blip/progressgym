@@ -216,6 +216,149 @@ export async function moveExerciseInRoutineDay(formData: FormData): Promise<{ ok
     return { ok: true }
 }
 
+export async function renameRoutineDay(input: {
+    routineId: string
+    dayId: string
+    title: string
+}): Promise<{ ok: boolean; error?: string }> {
+    const supabase = await createClient()
+    const title = input.title.trim()
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { ok: false, error: 'Tu sesión venció.' }
+
+    if (!input.routineId || !input.dayId || !title) {
+        return { ok: false, error: 'El nombre del día no puede estar vacío.' }
+    }
+
+    if (title.length > 60) {
+        return { ok: false, error: 'Usá un nombre de hasta 60 caracteres.' }
+    }
+
+    const { data: routine } = await supabase
+        .from('routines')
+        .select('id')
+        .eq('id', input.routineId)
+        .eq('trainer_id', user.id)
+        .single()
+
+    if (!routine) return { ok: false, error: 'Rutina no encontrada.' }
+
+    const { data: updatedDay, error } = await supabase
+        .from('routine_days')
+        .update({ title })
+        .eq('id', input.dayId)
+        .eq('routine_id', input.routineId)
+        .select('id')
+        .single()
+
+    if (error || !updatedDay) {
+        return { ok: false, error: 'No se pudo cambiar el nombre del día.' }
+    }
+
+    revalidatePath(`/dashboard/routines/${input.routineId}`)
+    return { ok: true }
+}
+
+export async function duplicateRoutineDay(input: {
+    routineId: string
+    dayId: string
+}): Promise<{ ok: boolean; newDayId?: string; error?: string }> {
+    const supabase = await createClient()
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { ok: false, error: 'Tu sesión venció.' }
+
+    if (!input.routineId || !input.dayId) {
+        return { ok: false, error: 'No se pudo identificar el día.' }
+    }
+
+    const { data: routine } = await supabase
+        .from('routines')
+        .select('id')
+        .eq('id', input.routineId)
+        .eq('trainer_id', user.id)
+        .single()
+
+    if (!routine) return { ok: false, error: 'Rutina no encontrada.' }
+
+    const { data: sourceDay, error: sourceError } = await supabase
+        .from('routine_days')
+        .select('id, routine_week_id, title')
+        .eq('id', input.dayId)
+        .eq('routine_id', input.routineId)
+        .single()
+
+    if (sourceError || !sourceDay?.routine_week_id) {
+        return { ok: false, error: 'No se encontró el día para copiar.' }
+    }
+
+    const { data: lastDay, error: lastDayError } = await supabase
+        .from('routine_days')
+        .select('day_index')
+        .eq('routine_week_id', sourceDay.routine_week_id)
+        .order('day_index', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+    if (lastDayError) {
+        return { ok: false, error: 'No se pudo calcular la posición del nuevo día.' }
+    }
+
+    const nextDayIndex = (lastDay?.day_index ?? 0) + 1
+    const sourceTitle = sourceDay.title?.trim() || 'Día'
+    const copyTitle = `${sourceTitle} copia`.slice(0, 60)
+
+    const { data: newDay, error: insertDayError } = await supabase
+        .from('routine_days')
+        .insert({
+            routine_id: input.routineId,
+            routine_week_id: sourceDay.routine_week_id,
+            day_index: nextDayIndex,
+            title: copyTitle,
+        })
+        .select('id')
+        .single()
+
+    if (insertDayError || !newDay) {
+        return { ok: false, error: 'No se pudo crear la copia del día.' }
+    }
+
+    const { data: sourceExercises, error: exercisesError } = await supabase
+        .from('routine_day_exercises')
+        .select('exercise_id, sets, reps, rest_seconds, position, block')
+        .eq('routine_day_id', sourceDay.id)
+        .order('position', { ascending: true })
+
+    if (exercisesError) {
+        await supabase.from('routine_days').delete().eq('id', newDay.id)
+        return { ok: false, error: 'No se pudieron leer los ejercicios del día.' }
+    }
+
+    if (sourceExercises && sourceExercises.length > 0) {
+        const { error: copyError } = await supabase
+            .from('routine_day_exercises')
+            .insert(sourceExercises.map((exercise) => ({
+                routine_day_id: newDay.id,
+                exercise_id: exercise.exercise_id,
+                sets: exercise.sets,
+                reps: exercise.reps,
+                rest_seconds: exercise.rest_seconds,
+                position: exercise.position,
+                block: exercise.block ?? 'main',
+            })))
+
+        if (copyError) {
+            await supabase.from('routine_day_exercises').delete().eq('routine_day_id', newDay.id)
+            await supabase.from('routine_days').delete().eq('id', newDay.id)
+            return { ok: false, error: 'No se pudieron copiar los ejercicios.' }
+        }
+    }
+
+    revalidatePath(`/dashboard/routines/${input.routineId}`)
+    return { ok: true, newDayId: newDay.id }
+}
+
 
 export async function updateRoutineName(input: {
     routineId: string

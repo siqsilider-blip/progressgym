@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { addExerciseToRoutineDay, deleteExerciseFromRoutineDay, addRoutineWeek, duplicateRoutineWeek, updateRoutineName, deleteRoutineWeek, addRoutineMonth, renameRoutineMonth, deleteRoutineMonth, renameRoutineWeek, deleteTemplate, updateExerciseInRoutineDay, moveExerciseInRoutineDay } from './actions'
+import { addExerciseToRoutineDay, deleteExerciseFromRoutineDay, addRoutineWeek, duplicateRoutineWeek, updateRoutineName, deleteRoutineWeek, addRoutineMonth, renameRoutineMonth, deleteRoutineMonth, renameRoutineWeek, deleteTemplate, updateExerciseInRoutineDay, moveExerciseInRoutineDay, renameRoutineDay, duplicateRoutineDay } from './actions'
 import ExerciseProgressChart from '../../../../components/ExerciseProgressChart'
 import { getTrainerProfile } from '@/lib/getTrainerProfile'
 import { formatWeight, type WeightUnit } from '@/lib/weight'
@@ -10,6 +10,7 @@ import RoutineNameEditor from './RoutineNameEditor'
 import BackButton from './BackButton'
 import WeekMonthSelector from './WeekMonthSelector'
 import DeleteTemplateButton from './DeleteTemplateButton'
+import DayControls from './DayControls'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -421,6 +422,15 @@ export default async function RoutineDetailPage({
                                             {totalSetsForDay} series
                                         </p>
                                     </div>
+                                    <DayControls
+                                        routineId={routine.id}
+                                        dayId={selectedDay.id}
+                                        initialTitle={selectedDay.title || `Día ${selectedDay.day_index}`}
+                                        weekId={selectedWeek!.id}
+                                        monthId={selectedMonth?.id ?? null}
+                                        renameAction={renameRoutineDay}
+                                        duplicateAction={duplicateRoutineDay}
+                                    />
                                 </div>
 
                                 {/* ── Exercises ── */}
