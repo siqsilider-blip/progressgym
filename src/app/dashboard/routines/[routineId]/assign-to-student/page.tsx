@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { assignTemplateAction } from './actions'
-import AssignTemplateButton from './AssignTemplateButton'
+import BulkAssignTemplate from './BulkAssignTemplate'
 
 type PageProps = {
     params: {
@@ -87,9 +87,9 @@ export default async function AssignTemplateToStudentPage({ params }: PageProps)
                 </h1>
 
                 <p className="text-sm text-muted-foreground">
-                    Elegí un alumno. Se va a crear una copia independiente de este
-                    template para esa persona — editar el template después no va
-                    a afectar esta copia.
+                    Elegí uno o varios alumnos. Cada persona recibirá una copia
+                    independiente; los cambios futuros del template no modificarán
+                    los programas ya asignados.
                 </p>
             </div>
 
@@ -98,41 +98,15 @@ export default async function AssignTemplateToStudentPage({ params }: PageProps)
                     Todavía no tenés alumnos cargados.
                 </p>
             ) : (
-                <div className="space-y-3">
-                    {studentList.map((student) => {
-                        const fullName =
-                            `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim() ||
-                            'Alumno sin nombre'
-
-                        const hasActiveProgram = activeStudentIds.has(student.id)
-
-                        return (
-                            <div
-                                key={student.id}
-                                className="flex items-center justify-between rounded-2xl border border-border bg-card p-4"
-                            >
-                                <div className="min-w-0">
-                                    <p className="text-base font-medium text-card-foreground">
-                                        {fullName}
-                                    </p>
-                                    {hasActiveProgram && (
-                                        <p className="mt-0.5 text-xs text-amber-600 dark:text-amber-400">
-                                            Ya tiene un programa activo
-                                        </p>
-                                    )}
-                                </div>
-
-                                <AssignTemplateButton
-                                    templateId={params.routineId}
-                                    studentId={student.id}
-                                    studentName={fullName}
-                                    hasActiveProgram={hasActiveProgram}
-                                    assignAction={assignTemplateAction}
-                                />
-                            </div>
-                        )
-                    })}
-                </div>
+                <BulkAssignTemplate
+                    templateId={params.routineId}
+                    students={studentList.map((student) => ({
+                        id: student.id,
+                        name: `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim() || 'Alumno sin nombre',
+                        hasActiveProgram: activeStudentIds.has(student.id),
+                    }))}
+                    assignAction={assignTemplateAction}
+                />
             )}
         </div>
     )
