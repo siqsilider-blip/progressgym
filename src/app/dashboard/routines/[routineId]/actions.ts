@@ -372,20 +372,37 @@ export async function duplicateRoutineWeek(formData: FormData) {
     }
 
     // Step 4: get which month the source week belongs to, then max week_number within that month
-    const { data: sourceWeekData } = await supabase
+    const { data: sourceWeekData, error: sourceWeekError } = await supabase
         .from('routine_weeks')
         .select('routine_month_id')
         .eq('id', sourceWeekId)
+        .eq('routine_id', routineId)
         .single()
+
+    if (sourceWeekError || !sourceWeekData) {
+        revalidatePath(`/dashboard/routines/${routineId}`)
+        redirect(`/dashboard/routines/${routineId}?error=source-week`)
+    }
 
     const targetMonthId = sourceWeekData?.routine_month_id ?? null
 
-    const { data: existing } = await supabase
+    let existingWeeksQuery = supabase
         .from('routine_weeks')
         .select('week_number')
-        .eq('routine_month_id', targetMonthId ?? '')
+        .eq('routine_id', routineId)
+
+    existingWeeksQuery = targetMonthId
+        ? existingWeeksQuery.eq('routine_month_id', targetMonthId)
+        : existingWeeksQuery.is('routine_month_id', null)
+
+    const { data: existing, error: existingWeeksError } = await existingWeeksQuery
         .order('week_number', { ascending: false })
         .limit(1)
+
+    if (existingWeeksError) {
+        revalidatePath(`/dashboard/routines/${routineId}`)
+        redirect(`/dashboard/routines/${routineId}?error=weeks-query`)
+    }
 
     const nextNumber = (existing?.[0]?.week_number ?? 0) + 1
 
@@ -479,8 +496,7 @@ export async function duplicateRoutineWeek(formData: FormData) {
 
     // Step 8: revalidate and redirect to new week
     revalidatePath(`/dashboard/routines/${routineId}`)
-    const monthParam = formData.get('monthId') as string | null
-    redirect(`/dashboard/routines/${routineId}?month=${monthParam ?? ''}&week=${newWeek.id}`)
+    redirect(`/dashboard/routines/${routineId}?week=${newWeek.id}${targetMonthId ? `&month=${targetMonthId}` : ''}`)
 }
 
 export async function deleteRoutineWeek(formData: FormData) {
