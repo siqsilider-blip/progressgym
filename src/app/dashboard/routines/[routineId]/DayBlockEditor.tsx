@@ -121,6 +121,7 @@ export default function DayBlockEditor({
                                 <ExerciseRow
                                     key={exercise.id}
                                     exercise={exercise}
+                                    exerciseOptions={exerciseOptions}
                                     index={index}
                                     isEditing={editingId === exercise.id}
                                     onEdit={() => setEditingId(exercise.id)}
@@ -181,6 +182,7 @@ export default function DayBlockEditor({
 
 function ExerciseRow({
     exercise,
+    exerciseOptions,
     index,
     isEditing,
     onEdit,
@@ -199,6 +201,7 @@ function ExerciseRow({
     startTransition
 }: {
     exercise: DayExercise
+    exerciseOptions: ExerciseOption[]
     index: number
     isEditing: boolean
     onEdit: () => void
@@ -222,6 +225,10 @@ function ExerciseRow({
     const searchParams = useSearchParams()
 
     const [errorMsg, setErrorMsg] = useState<string | null>(null)
+    const [replacementName, setReplacementName] = useState(relation?.name ?? '')
+    const replacementExercise = exerciseOptions.find(
+        (option) => option.name.toLocaleLowerCase() === replacementName.trim().toLocaleLowerCase()
+    )
 
     if (isEditing) {
         return (
@@ -246,6 +253,7 @@ function ExerciseRow({
                     <input type="hidden" name="dayId" value={dayId} />
                     <input type="hidden" name="weekId" value={weekId} />
                     <input type="hidden" name="exerciseRowId" value={exercise.id} />
+                    <input type="hidden" name="replacementExerciseId" value={replacementExercise?.id ?? ''} />
                     {searchParams.get('month') && <input type="hidden" name="monthId" value={searchParams.get('month')!} />}
 
                     <div className="flex items-center justify-between">
@@ -253,6 +261,25 @@ function ExerciseRow({
                         <button type="button" onClick={onCancelEdit} className="text-xs text-muted-foreground hover:text-foreground">
                             Cancelar
                         </button>
+                    </div>
+
+                    <div>
+                        <label className="mb-1 block text-[10px] font-medium text-muted-foreground">Ejercicio</label>
+                        <input
+                            list={`exercise-options-${exercise.id}`}
+                            value={replacementName}
+                            onChange={(event) => setReplacementName(event.target.value)}
+                            placeholder="Buscar por nombre..."
+                            className="h-9 w-full rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                        />
+                        <datalist id={`exercise-options-${exercise.id}`}>
+                            {exerciseOptions.map((option) => (
+                                <option key={option.id} value={option.name}>{option.muscle_group || option.category || ''}</option>
+                            ))}
+                        </datalist>
+                        {replacementName.trim() && !replacementExercise && (
+                            <p className="mt-1 text-[10px] text-amber-500">Elegí una opción exacta de la lista.</p>
+                        )}
                     </div>
 
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -283,7 +310,7 @@ function ExerciseRow({
                     )}
 
                     <div className="flex gap-2">
-                        <button type="submit" disabled={isPending} className="h-9 flex-1 rounded-lg bg-indigo-600 text-xs font-semibold text-white hover:bg-indigo-500 disabled:opacity-50">
+                        <button type="submit" disabled={isPending || !replacementExercise} className="h-9 flex-1 rounded-lg bg-indigo-600 text-xs font-semibold text-white hover:bg-indigo-500 disabled:opacity-50">
                             Guardar
                         </button>
                         <button formAction={(fd) => {
@@ -413,6 +440,7 @@ function AddExerciseForm({
     const [selectedExerciseName, setSelectedExerciseName] = useState('')
     const [open, setOpen] = useState(false)
     const [search, setSearch] = useState('')
+    const [categoryFilter, setCategoryFilter] = useState('all')
     const [sets, setSets] = useState(String(defaultSets))
     const [reps, setReps] = useState(String(defaultReps))
     const [restSeconds, setRestSeconds] = useState(String(defaultRest))
@@ -440,16 +468,23 @@ function AddExerciseForm({
         }
     }, [open])
 
+    const categories = useMemo(() => Array.from(new Set(
+        exerciseOptions
+            .map((exercise) => exercise.muscle_group || exercise.category)
+            .filter((value): value is string => Boolean(value))
+    )).sort((a, b) => a.localeCompare(b, 'es')), [exerciseOptions])
+
     const filteredExercises = useMemo(() => {
         const term = search.trim().toLowerCase()
-        if (!term) return exerciseOptions
         return exerciseOptions.filter((ex) => {
             const name = ex.name.toLowerCase()
             const cat = ex.category?.toLowerCase() ?? ''
             const mg = ex.muscle_group?.toLowerCase() ?? ''
-            return name.includes(term) || cat.includes(term) || mg.includes(term)
+            const matchesSearch = !term || name.includes(term) || cat.includes(term) || mg.includes(term)
+            const matchesCategory = categoryFilter === 'all' || ex.muscle_group === categoryFilter || ex.category === categoryFilter
+            return matchesSearch && matchesCategory
         })
-    }, [exerciseOptions, search])
+    }, [exerciseOptions, search, categoryFilter])
 
     const selectedExercise = useMemo(
         () => exerciseOptions.find((ex) => ex.name === selectedExerciseName) ?? null,
@@ -506,6 +541,18 @@ function AddExerciseForm({
                                 placeholder="Buscar..."
                                 className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs text-foreground outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 placeholder:text-muted-foreground"
                             />
+                            {categories.length > 1 && (
+                                <select
+                                    value={categoryFilter}
+                                    onChange={(event) => setCategoryFilter(event.target.value)}
+                                    className="mt-2 h-8 w-full rounded-md border border-border bg-background px-2 text-xs text-foreground outline-none focus:border-indigo-500"
+                                >
+                                    <option value="all">Todos los grupos</option>
+                                    {categories.map((category) => (
+                                        <option key={category} value={category}>{category}</option>
+                                    ))}
+                                </select>
+                            )}
                         </div>
                         <div className="max-h-48 overflow-y-auto p-1">
                             {filteredExercises.length > 0 ? (

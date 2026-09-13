@@ -145,6 +145,7 @@ export async function updateExerciseInRoutineDay(formData: FormData) {
     const reps = formData.get('reps') as string
     const restSecondsRaw = formData.get('rest_seconds') as string
     const rawBlock = formData.get('block') as string | null
+    const replacementExerciseId = formData.get('replacementExerciseId') as string | null
     const block: 'activation' | 'main' | 'closing' =
         rawBlock === 'activation' || rawBlock === 'closing' ? rawBlock : 'main'
 
@@ -160,6 +161,20 @@ export async function updateExerciseInRoutineDay(formData: FormData) {
         return { ok: false, error: 'Faltan campos obligatorios' }
     }
 
+    if (!replacementExerciseId) {
+        return { ok: false, error: 'Seleccioná un ejercicio válido de la lista' }
+    }
+
+    const { data: replacementExercise } = await supabase
+        .from('exercises')
+        .select('id')
+        .eq('id', replacementExerciseId)
+        .single()
+
+    if (!replacementExercise) {
+        return { ok: false, error: 'El ejercicio seleccionado no está disponible' }
+    }
+
     const setsNum = sets ? parseInt(sets, 10) : null
     const repsNum = reps ? parseInt(reps, 10) : null
     const restSecondsNum = restSecondsRaw ? parseInt(restSecondsRaw, 10) : null
@@ -167,6 +182,7 @@ export async function updateExerciseInRoutineDay(formData: FormData) {
     const { error: updateError } = await supabase
         .from('routine_day_exercises')
         .update({
+            exercise_id: replacementExercise.id,
             sets: setsNum,
             reps: repsNum,
             rest_seconds: restSecondsNum,
