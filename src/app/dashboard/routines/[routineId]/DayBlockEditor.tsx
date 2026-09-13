@@ -45,6 +45,7 @@ type Props = {
     defaultReps: number
     defaultRest: number
     addAction: (fd: FormData) => Promise<any>
+    createExerciseAction: (input: { routineId: string; name: string; category?: string; metricType?: 'reps' | 'time' }) => Promise<{ ok: boolean; exercise?: ExerciseOption; error?: string }>
     updateAction: (fd: FormData) => Promise<any>
     moveAction: (fd: FormData) => Promise<{ ok: boolean; error?: string }>
     deleteAction: (fd: FormData) => Promise<void>
@@ -68,6 +69,7 @@ export default function DayBlockEditor({
     defaultReps,
     defaultRest,
     addAction,
+    createExerciseAction,
     updateAction,
     moveAction,
     deleteAction,
@@ -167,6 +169,7 @@ export default function DayBlockEditor({
                                         defaultRest={defaultRest}
                                         onCancel={() => setOpenAddBlock(null)}
                                         addAction={addAction}
+                                        createExerciseAction={createExerciseAction}
                                         isPending={isPending}
                                         startTransition={startTransition}
                                     />
@@ -422,6 +425,7 @@ function AddExerciseForm({
     defaultRest,
     onCancel,
     addAction,
+    createExerciseAction,
     isPending,
     startTransition
 }: {
@@ -434,6 +438,7 @@ function AddExerciseForm({
     defaultRest: number
     onCancel: () => void
     addAction: (fd: FormData) => Promise<any>
+    createExerciseAction: (input: { routineId: string; name: string; category?: string; metricType?: 'reps' | 'time' }) => Promise<{ ok: boolean; exercise?: ExerciseOption; error?: string }>
     isPending: boolean
     startTransition: (cb: () => void) => void
 }) {
@@ -441,6 +446,10 @@ function AddExerciseForm({
     const [open, setOpen] = useState(false)
     const [search, setSearch] = useState('')
     const [categoryFilter, setCategoryFilter] = useState('all')
+    const [availableExercises, setAvailableExercises] = useState(exerciseOptions)
+    const [showQuickCreate, setShowQuickCreate] = useState(false)
+    const [newMetricType, setNewMetricType] = useState<'reps' | 'time'>('reps')
+    const [createError, setCreateError] = useState<string | null>(null)
     const [sets, setSets] = useState(String(defaultSets))
     const [reps, setReps] = useState(String(defaultReps))
     const [restSeconds, setRestSeconds] = useState(String(defaultRest))
@@ -465,18 +474,20 @@ function AddExerciseForm({
             setTimeout(() => searchInputRef.current?.focus(), 0)
         } else {
             setSearch('')
+            setShowQuickCreate(false)
+            setCreateError(null)
         }
     }, [open])
 
     const categories = useMemo(() => Array.from(new Set(
-        exerciseOptions
+        availableExercises
             .map((exercise) => exercise.muscle_group || exercise.category)
             .filter((value): value is string => Boolean(value))
-    )).sort((a, b) => a.localeCompare(b, 'es')), [exerciseOptions])
+    )).sort((a, b) => a.localeCompare(b, 'es')), [availableExercises])
 
     const filteredExercises = useMemo(() => {
         const term = search.trim().toLowerCase()
-        return exerciseOptions.filter((ex) => {
+        return availableExercises.filter((ex) => {
             const name = ex.name.toLowerCase()
             const cat = ex.category?.toLowerCase() ?? ''
             const mg = ex.muscle_group?.toLowerCase() ?? ''
@@ -484,11 +495,15 @@ function AddExerciseForm({
             const matchesCategory = categoryFilter === 'all' || ex.muscle_group === categoryFilter || ex.category === categoryFilter
             return matchesSearch && matchesCategory
         })
-    }, [exerciseOptions, search, categoryFilter])
+    }, [availableExercises, search, categoryFilter])
 
     const selectedExercise = useMemo(
-        () => exerciseOptions.find((ex) => ex.name === selectedExerciseName) ?? null,
-        [exerciseOptions, selectedExerciseName]
+        () => availableExercises.find((ex) => ex.name === selectedExerciseName) ?? null,
+        [availableExercises, selectedExerciseName]
+    )
+
+    const exactSearchMatch = availableExercises.some(
+        (exercise) => exercise.name.toLocaleLowerCase() === search.trim().toLocaleLowerCase()
     )
 
     const isTimeExercise = selectedExercise?.metric_type === 'time'
@@ -585,6 +600,74 @@ function AddExerciseForm({
                                 })
                             ) : (
                                 <p className="px-2 py-2 text-xs text-muted-foreground">No se encontraron ejercicios.</p>
+                            )}
+                            {search.trim() && !exactSearchMatch && !showQuickCreate && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowQuickCreate(true)
+                                        setCreateError(null)
+                                    }}
+                                    className="mt-1 w-full rounded-md border border-dashed border-indigo-500/50 px-2 py-2 text-left text-xs font-semibold text-indigo-500 hover:bg-indigo-500/10"
+                                >
+                                    + Crear &ldquo;{search.trim()}&rdquo;
+                                </button>
+                            )}
+                            {showQuickCreate && (
+                                <div className="mt-1 space-y-2 rounded-md border border-indigo-500/30 bg-indigo-500/5 p-2">
+                                    <p className="truncate text-xs font-semibold text-foreground">Nuevo: {search.trim()}</p>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <select
+                                            value={categoryFilter === 'all' ? '' : categoryFilter}
+                                            onChange={(event) => setCategoryFilter(event.target.value || 'all')}
+                                            className="h-8 rounded-md border border-border bg-background px-2 text-[11px] text-foreground"
+                                        >
+                                            <option value="">Sin grupo</option>
+                                            {categories.map((category) => <option key={category} value={category}>{category}</option>)}
+                                        </select>
+                                        <select
+                                            value={newMetricType}
+                                            onChange={(event) => setNewMetricType(event.target.value as 'reps' | 'time')}
+                                            className="h-8 rounded-md border border-border bg-background px-2 text-[11px] text-foreground"
+                                        >
+                                            <option value="reps">Repeticiones</option>
+                                            <option value="time">Tiempo</option>
+                                        </select>
+                                    </div>
+                                    {createError && <p className="text-[10px] font-medium text-red-500">{createError}</p>}
+                                    <div className="flex gap-2">
+                                        <button
+                                            type="button"
+                                            disabled={isPending || !search.trim()}
+                                            onClick={() => {
+                                                const name = search.trim()
+                                                setCreateError(null)
+                                                startTransition(async () => {
+                                                    const result = await createExerciseAction({
+                                                        routineId,
+                                                        name,
+                                                        category: categoryFilter === 'all' ? undefined : categoryFilter,
+                                                        metricType: newMetricType,
+                                                    })
+                                                    if (!result.ok || !result.exercise) {
+                                                        setCreateError(result.error || 'No se pudo crear.')
+                                                        return
+                                                    }
+                                                    setAvailableExercises((current) => current.some((item) => item.id === result.exercise!.id)
+                                                        ? current
+                                                        : [...current, result.exercise!].sort((a, b) => a.name.localeCompare(b.name, 'es')))
+                                                    setSelectedExerciseName(result.exercise.name)
+                                                    setShowQuickCreate(false)
+                                                    setOpen(false)
+                                                })
+                                            }}
+                                            className="h-8 flex-1 rounded-md bg-indigo-600 text-[11px] font-semibold text-white disabled:opacity-50"
+                                        >
+                                            {isPending ? 'Creando...' : 'Crear y seleccionar'}
+                                        </button>
+                                        <button type="button" onClick={() => setShowQuickCreate(false)} className="h-8 rounded-md px-2 text-[11px] text-muted-foreground">Cancelar</button>
+                                    </div>
+                                </div>
                             )}
                         </div>
                     </div>

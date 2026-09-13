@@ -201,6 +201,75 @@ export async function updateExerciseInRoutineDay(formData: FormData) {
     return { ok: true }
 }
 
+export async function createExerciseFromRoutine(input: {
+    routineId: string
+    name: string
+    category?: string
+    metricType?: 'reps' | 'time'
+}): Promise<{
+    ok: boolean
+    exercise?: {
+        id: string
+        name: string
+        muscle_group: string | null
+        category: string | null
+        metric_type: 'reps' | 'time' | null
+    }
+    error?: string
+}> {
+    const supabase = await createClient()
+    const name = input.name.trim()
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { ok: false, error: 'Tu sesión venció.' }
+
+    if (!name) return { ok: false, error: 'Escribí el nombre del ejercicio.' }
+    if (name.length > 80) return { ok: false, error: 'Usá un nombre de hasta 80 caracteres.' }
+
+    const { data: routine } = await supabase
+        .from('routines')
+        .select('id')
+        .eq('id', input.routineId)
+        .eq('trainer_id', user.id)
+        .single()
+
+    if (!routine) return { ok: false, error: 'Rutina no encontrada.' }
+
+    const { data: existing } = await supabase
+        .from('exercises')
+        .select('id, name, muscle_group, category, metric_type')
+        .ilike('name', name)
+        .limit(1)
+        .maybeSingle()
+
+    if (existing) {
+        return { ok: true, exercise: existing as NonNullable<Awaited<ReturnType<typeof createExerciseFromRoutine>>['exercise']> }
+    }
+
+    const metricType = input.metricType === 'time' ? 'time' : 'reps'
+    const category = input.category?.trim() || null
+
+    const { data: created, error } = await supabase
+        .from('exercises')
+        .insert({
+            trainer_id: user.id,
+            name,
+            category,
+            muscle_group: category,
+            metric_type: metricType,
+        })
+        .select('id, name, muscle_group, category, metric_type')
+        .single()
+
+    if (error || !created) {
+        return { ok: false, error: 'No se pudo crear el ejercicio.' }
+    }
+
+    revalidatePath('/dashboard/exercises')
+    revalidatePath(`/dashboard/routines/${input.routineId}`)
+    return { ok: true, exercise: created as NonNullable<Awaited<ReturnType<typeof createExerciseFromRoutine>>['exercise']> }
+}
+
 export async function moveExerciseInRoutineDay(formData: FormData): Promise<{ ok: boolean; error?: string }> {
     const supabase = await createClient()
     const routineId = formData.get('routineId') as string

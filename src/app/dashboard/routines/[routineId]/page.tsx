@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { addExerciseToRoutineDay, deleteExerciseFromRoutineDay, addRoutineWeek, duplicateRoutineWeek, updateRoutineName, deleteRoutineWeek, addRoutineMonth, renameRoutineMonth, deleteRoutineMonth, renameRoutineWeek, deleteTemplate, updateExerciseInRoutineDay, moveExerciseInRoutineDay, renameRoutineDay, duplicateRoutineDay } from './actions'
+import { addExerciseToRoutineDay, createExerciseFromRoutine, deleteExerciseFromRoutineDay, addRoutineWeek, duplicateRoutineWeek, updateRoutineName, deleteRoutineWeek, addRoutineMonth, renameRoutineMonth, deleteRoutineMonth, renameRoutineWeek, deleteTemplate, updateExerciseInRoutineDay, moveExerciseInRoutineDay, renameRoutineDay, duplicateRoutineDay } from './actions'
 import ExerciseProgressChart from '../../../../components/ExerciseProgressChart'
 import { getTrainerProfile } from '@/lib/getTrainerProfile'
 import { formatWeight, type WeightUnit } from '@/lib/weight'
@@ -443,6 +443,7 @@ export default async function RoutineDetailPage({
                                     defaultReps={trainerProfile?.default_reps ?? 10}
                                     defaultRest={trainerProfile?.default_rest ?? 60}
                                     addAction={addExerciseToRoutineDay as unknown as (fd: FormData) => Promise<any>}
+                                    createExerciseAction={createExerciseFromRoutine}
                                     updateAction={updateExerciseInRoutineDay as unknown as (fd: FormData) => Promise<any>}
                                     moveAction={moveExerciseInRoutineDay}
                                     deleteAction={deleteExerciseFromRoutineDay as unknown as (fd: FormData) => Promise<any>}
