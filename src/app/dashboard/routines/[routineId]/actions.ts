@@ -16,6 +16,10 @@ export async function addExerciseToRoutineDay(formData: FormData) {
     const reps = formData.get('reps') as string
     const restSecondsRaw = formData.get('rest_seconds') as string
 
+    const rawBlock = formData.get('block') as string | null
+    const block: 'activation' | 'main' | 'closing' =
+        rawBlock === 'activation' || rawBlock === 'closing' ? rawBlock : 'main'
+
     const {
         data: { user },
     } = await supabase.auth.getUser()
@@ -71,6 +75,7 @@ export async function addExerciseToRoutineDay(formData: FormData) {
             reps: repsNum,
             rest_seconds: restSecondsNum,
             position: nextPosition,
+            block,
         })
 
     if (insertError) {
@@ -125,6 +130,59 @@ export async function deleteExerciseFromRoutineDay(formData: FormData) {
     revalidatePath(`/dashboard/routines/${routineId}`)
     redirect(buildUrl())
 }
+
+export async function updateExerciseInRoutineDay(formData: FormData) {
+    const supabase = await createClient()
+
+    const exerciseRowId = formData.get('exerciseRowId') as string
+    const routineId = formData.get('routineId') as string
+    const dayId = formData.get('dayId') as string
+    const weekId = formData.get('weekId') as string | null
+
+    const sets = formData.get('sets') as string
+    const reps = formData.get('reps') as string
+    const restSecondsRaw = formData.get('rest_seconds') as string
+    const rawBlock = formData.get('block') as string | null
+    const block: 'activation' | 'main' | 'closing' =
+        rawBlock === 'activation' || rawBlock === 'closing' ? rawBlock : 'main'
+
+    const {
+        data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+        return { ok: false, error: 'No autenticado' }
+    }
+
+    if (!routineId || !exerciseRowId) {
+        return { ok: false, error: 'Faltan campos obligatorios' }
+    }
+
+    const setsNum = sets ? parseInt(sets, 10) : null
+    const repsNum = reps ? parseInt(reps, 10) : null
+    const restSecondsNum = restSecondsRaw ? parseInt(restSecondsRaw, 10) : null
+
+    const { error: updateError } = await supabase
+        .from('routine_day_exercises')
+        .update({
+            sets: setsNum,
+            reps: repsNum,
+            rest_seconds: restSecondsNum,
+            block,
+        })
+        .eq('id', exerciseRowId)
+
+    if (updateError) {
+        console.error('[updateExerciseInRoutineDay] error:', updateError.message)
+        return { ok: false, error: 'No se pudo actualizar el ejercicio' }
+    }
+
+    revalidatePath('/dashboard/routines')
+    revalidatePath(`/dashboard/routines/${routineId}`)
+
+    return { ok: true }
+}
+
 
 export async function updateRoutineName(input: {
     routineId: string
@@ -378,7 +436,7 @@ export async function duplicateRoutineWeek(formData: FormData) {
 
         const { data: exercises, error: exFetchError } = await supabase
             .from('routine_day_exercises')
-            .select('exercise_id, sets, reps, rest_seconds, position')
+            .select('exercise_id, sets, reps, rest_seconds, position, block')
             .eq('routine_day_id', sourceDay.id)
             .order('position', { ascending: true })
 
@@ -401,6 +459,7 @@ export async function duplicateRoutineWeek(formData: FormData) {
                     reps: ex.reps,
                     rest_seconds: ex.rest_seconds,
                     position: ex.position,
+                    block: ex.block ?? 'main',
                 }))
             )
 

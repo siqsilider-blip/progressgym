@@ -306,8 +306,8 @@ begin
 
   -- 7) Ejercicios de cada día -- no necesitan mapa propio, se insertan
   --    directo bajo el día nuevo correspondiente vía _tv1_days.
-  insert into public.routine_day_exercises (routine_day_id, exercise_id, sets, reps, rest_seconds, position)
-  select d.new_id, rde.exercise_id, rde.sets, rde.reps, rde.rest_seconds, rde.position
+  insert into public.routine_day_exercises (routine_day_id, exercise_id, sets, reps, rest_seconds, position, block)
+  select d.new_id, rde.exercise_id, rde.sets, rde.reps, rde.rest_seconds, rde.position, rde.block
   from public.routine_day_exercises rde
   join _tv1_days d on d.old_id = rde.routine_day_id;
 

@@ -189,12 +189,13 @@ export default async function StudentTrainPage({
         sets: number | null
         reps: number | null
         rest_seconds: number | null
+        block?: string
     }[] = []
 
     if (selectedDayId) {
         const { data: rde } = await supabase
             .from('routine_day_exercises')
-            .select('id, exercise_id, sets, reps, rest_seconds')
+            .select('id, exercise_id, sets, reps, rest_seconds, block')
             .eq('routine_day_id', selectedDayId)
             .order('position', { ascending: true, nullsFirst: false })
 
@@ -317,35 +318,43 @@ export default async function StudentTrainPage({
         sessionJustCompleted = sessionResult.justCompleted
     }
 
-    const focusedExercises = exercisesForDay.map((exercise) => {
-        const exerciseMeta = exercise.exercise_id
-            ? exerciseMap.get(exercise.exercise_id) ?? null
-            : null
+    const BLOCK_ORDER = ['activation', 'main', 'closing']
+    const focusedExercises = [...exercisesForDay]
+        .sort((a, b) => {
+            const ai = BLOCK_ORDER.indexOf(a.block ?? 'main')
+            const bi = BLOCK_ORDER.indexOf(b.block ?? 'main')
+            return ai - bi
+        })
+        .map((exercise) => {
+            const exerciseMeta = exercise.exercise_id
+                ? exerciseMap.get(exercise.exercise_id) ?? null
+                : null
 
-        const setsCount = Math.max(1, Number(exercise.sets ?? 1))
-        const previousSession = logsByExerciseId.get(exercise.id)
+            const setsCount = Math.max(1, Number(exercise.sets ?? 1))
+            const previousSession = logsByExerciseId.get(exercise.id)
 
-        const previousWeights: (number | null)[] = []
-        const previousReps: (number | null)[] = []
+            const previousWeights: (number | null)[] = []
+            const previousReps: (number | null)[] = []
 
-        for (let i = 0; i < setsCount; i++) {
-            previousWeights.push(previousSession?.weights[i] ?? null)
-            previousReps.push(previousSession?.reps[i] ?? null)
-        }
+            for (let i = 0; i < setsCount; i++) {
+                previousWeights.push(previousSession?.weights[i] ?? null)
+                previousReps.push(previousSession?.reps[i] ?? null)
+            }
 
-        return {
-            id: exercise.id,
-            exerciseId: exercise.exercise_id ?? null,
-            exerciseName: exerciseMeta?.name ?? 'Ejercicio',
-            isCardio: exerciseMeta?.metric_type === 'time',
-            setsCount,
-            targetReps: exercise.reps != null ? String(exercise.reps) : null,
-            restSeconds: exercise.rest_seconds ?? 60,
-            previousWeights,
-            previousReps,
-            lastPerformedAt: previousSession?.lastPerformedAt ?? null,
-        }
-    })
+            return {
+                id: exercise.id,
+                exerciseId: exercise.exercise_id ?? null,
+                exerciseName: exerciseMeta?.name ?? 'Ejercicio',
+                isCardio: exerciseMeta?.metric_type === 'time',
+                setsCount,
+                targetReps: exercise.reps != null ? String(exercise.reps) : null,
+                restSeconds: exercise.rest_seconds ?? 60,
+                previousWeights,
+                previousReps,
+                lastPerformedAt: previousSession?.lastPerformedAt ?? null,
+                block: exercise.block ?? 'main',
+            }
+        })
 
     const rdeIds = exercisesForDay.map((e) => e.id)
     const focusedMaxWeights = await getExerciseMaxWeights({

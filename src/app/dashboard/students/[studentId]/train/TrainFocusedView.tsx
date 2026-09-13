@@ -33,6 +33,7 @@ type ExerciseData = {
     previousReps: (number | null)[]
     lastPerformedAt?: string | null
     video_url?: string | null
+    block?: string
 }
 
 type Props = {
@@ -802,7 +803,7 @@ export default function TrainFocusedView({
             {/* ── Header ── */}
             <div className="min-w-0">
                 <p className="text-xs font-medium text-indigo-500">
-                    {dayLabel} · {currentExerciseIndex + 1}/{totalExercises}
+                    {dayLabel} · {exercise.block === 'activation' ? 'Activación' : exercise.block === 'closing' ? 'Cierre' : 'Principal'} · {currentExerciseIndex + 1}/{totalExercises}
                 </p>
                 <h2 className="mt-0.5 truncate text-xl font-bold text-card-foreground">
                     {exercise.exerciseName}
@@ -848,7 +849,7 @@ export default function TrainFocusedView({
             </div>
 
             {/* ── Exercise nav indicators ── */}
-            <div className="mt-3 flex gap-1.5 overflow-x-auto pb-1">
+            <div className="mt-3 flex gap-1.5 overflow-x-auto pb-2 items-center">
                 {exercises.map((ex, idx) => {
                     const exSets = sets[idx] ?? []
                     const allDone = exSets.length > 0 && exSets.every(
@@ -856,21 +857,30 @@ export default function TrainFocusedView({
                     )
                     const isCurrent = idx === currentExerciseIndex
 
+                    const showBlockHeader = idx === 0 || exercises[idx - 1].block !== ex.block
+                    const blockLabel = ex.block === 'activation' ? 'Activación' : ex.block === 'closing' ? 'Cierre' : 'Principal'
+
                     return (
-                        <button
-                            key={ex.id}
-                            type="button"
-                            onClick={() => goToExercise(idx)}
-                            className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-medium transition active:scale-90 ${
-                                isCurrent
-                                    ? 'bg-indigo-50 text-indigo-600 ring-1 ring-inset ring-indigo-500 dark:bg-indigo-500/15 dark:text-indigo-400 dark:ring-indigo-400'
-                                    : allDone
-                                        ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400'
-                                        : 'bg-muted text-muted-foreground'
-                            }`}
-                        >
-                            {allDone ? '✓' : idx + 1}
-                        </button>
+                        <React.Fragment key={ex.id}>
+                            {showBlockHeader && (
+                                <span className={`text-[9px] font-bold uppercase tracking-widest text-muted-foreground shrink-0 ${idx > 0 ? 'ml-2' : ''}`}>
+                                    {blockLabel}
+                                </span>
+                            )}
+                            <button
+                                type="button"
+                                onClick={() => goToExercise(idx)}
+                                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-medium transition active:scale-90 ${
+                                    isCurrent
+                                        ? 'bg-indigo-50 text-indigo-600 ring-1 ring-inset ring-indigo-500 dark:bg-indigo-500/15 dark:text-indigo-400 dark:ring-indigo-400'
+                                        : allDone
+                                            ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400'
+                                            : 'bg-muted text-muted-foreground'
+                                }`}
+                            >
+                                {allDone ? '✓' : idx + 1}
+                            </button>
+                        </React.Fragment>
                     )
                 })}
             </div>

@@ -1,11 +1,11 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { addExerciseToRoutineDay, deleteExerciseFromRoutineDay, addRoutineWeek, duplicateRoutineWeek, updateRoutineName, deleteRoutineWeek, addRoutineMonth, renameRoutineMonth, deleteRoutineMonth, renameRoutineWeek, deleteTemplate } from './actions'
+import { addExerciseToRoutineDay, deleteExerciseFromRoutineDay, addRoutineWeek, duplicateRoutineWeek, updateRoutineName, deleteRoutineWeek, addRoutineMonth, renameRoutineMonth, deleteRoutineMonth, renameRoutineWeek, deleteTemplate, updateExerciseInRoutineDay } from './actions'
 import ExerciseProgressChart from '../../../../components/ExerciseProgressChart'
 import { getTrainerProfile } from '@/lib/getTrainerProfile'
 import { formatWeight, type WeightUnit } from '@/lib/weight'
-import AddExerciseToRoutineDayForm from './AddExerciseToRoutineDayForm'
+import DayBlockEditor, { type DayExercise } from './DayBlockEditor'
 import RoutineNameEditor from './RoutineNameEditor'
 import BackButton from './BackButton'
 import WeekMonthSelector from './WeekMonthSelector'
@@ -66,6 +66,7 @@ type RoutineDayExercise = {
     reps: number | null
     rest_seconds: number | null
     position: number | null
+    block?: 'activation' | 'main' | 'closing'
     exercise: ExerciseRelation | ExerciseRelation[] | null
 }
 
@@ -230,6 +231,7 @@ export default async function RoutineDetailPage({
                 reps,
                 rest_seconds,
                 position,
+                block,
                 exercise:exercises!routine_day_exercises_exercise_id_fkey (
                     name,
                     muscle_group,
@@ -421,200 +423,22 @@ export default async function RoutineDetailPage({
                                     </div>
                                 </div>
 
-                                {/* ── Add exercise ── */}
-                                <div className="rounded-2xl border border-dashed border-indigo-500/20 bg-indigo-500/[0.03] p-4 dark:bg-indigo-500/[0.06]">
-                                    <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-indigo-500">
-                                        Agregar ejercicio
-                                    </p>
-
-                                    <AddExerciseToRoutineDayForm
-                                        serverAction={addExerciseToRoutineDay as unknown as (formData: FormData) => Promise<void>}
-                                        routineId={routine.id}
-                                        routineDayId={selectedDay.id}
-                                        exerciseOptions={
-                                            (exerciseOptions as ExerciseOption[] | null) ?? []
-                                        }
-                                        defaultSets={trainerProfile?.default_sets ?? 3}
-                                        defaultReps={trainerProfile?.default_reps ?? 10}
-                                        defaultRest={trainerProfile?.default_rest ?? 60}
-                                    />
-                                </div>
-
-                                {/* ── Exercises list ── */}
-                                <div className="space-y-2.5">
-                                    {currentDayExercises.length > 0 ? (
-                                        currentDayExercises.map((exercise, index) => {
-                                            const logs = logsByExercise[exercise.id] || []
-                                            const latestLog = logs[0]
-
-                                            const relation = Array.isArray(exercise.exercise)
-                                                ? exercise.exercise[0]
-                                                : exercise.exercise
-
-                                            const isTime = relation?.metric_type === 'time'
-
-                                            const bestWeight = Math.max(
-                                                ...logs.map((log) => log.weight || 0),
-                                                0
-                                            )
-
-                                            const isPR =
-                                                !isTime &&
-                                                latestLog?.weight !== null &&
-                                                latestLog?.weight === bestWeight &&
-                                                logs.length > 1
-
-                                            return (
-                                                <div
-                                                    key={exercise.id}
-                                                    className="group rounded-2xl border border-border bg-card p-4 shadow-sm transition hover:shadow-md"
-                                                >
-                                                    <div className="flex items-start justify-between gap-3">
-                                                        <div className="min-w-0 flex-1">
-                                                            <div className="flex items-center gap-2.5">
-                                                                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-indigo-500/10 text-xs font-bold text-indigo-500">
-                                                                    {index + 1}
-                                                                </div>
-
-                                                                <div className="min-w-0">
-                                                                    <h3 className="truncate text-sm font-bold text-card-foreground">
-                                                                        {relation?.name ?? 'Ejercicio'}
-                                                                    </h3>
-                                                                    {relation?.muscle_group && (
-                                                                        <span className="text-[10px] text-muted-foreground">
-                                                                            {relation.muscle_group}
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-
-                                                            <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                                                                <span className="rounded-md bg-secondary px-2 py-0.5 text-[10px] font-medium text-secondary-foreground">
-                                                                    {exercise.sets ?? '-'} × {isTime
-                                                                        ? exercise.reps != null ? `${exercise.reps} min` : '-'
-                                                                        : `${exercise.reps ?? '-'} reps`}
-                                                                </span>
-                                                                {exercise.rest_seconds && (
-                                                                    <span className="rounded-md bg-secondary px-2 py-0.5 text-[10px] font-medium text-secondary-foreground">
-                                                                        {exercise.rest_seconds}s
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                        </div>
-
-                                                        <form action={deleteExerciseFromRoutineDay}>
-                                                            <input type="hidden" name="routineId" value={routine.id} />
-                                                            <input type="hidden" name="exerciseId" value={exercise.id} />
-                                                            <input type="hidden" name="dayId" value={selectedDay.id} />
-                                                            <input type="hidden" name="weekId" value={selectedWeek!.id} />
-                                                            <button
-                                                                type="submit"
-                                                                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-muted-foreground opacity-0 transition hover:bg-red-50 hover:text-red-500 group-hover:opacity-100 dark:hover:bg-red-950/40"
-                                                                title="Eliminar ejercicio"
-                                                            >
-                                                                <svg
-                                                                    className="h-3.5 w-3.5"
-                                                                    fill="none"
-                                                                    viewBox="0 0 24 24"
-                                                                    stroke="currentColor"
-                                                                    strokeWidth={2}
-                                                                >
-                                                                    <path
-                                                                        strokeLinecap="round"
-                                                                        strokeLinejoin="round"
-                                                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                                                    />
-                                                                </svg>
-                                                            </button>
-                                                        </form>
-                                                    </div>
-
-                                                    {latestLog && (
-                                                        <div className="mt-3 flex items-center gap-2 rounded-xl bg-muted/40 px-3 py-2">
-                                                            <span className="text-[10px] text-muted-foreground">Última vez:</span>
-                                                            <span className="text-xs font-medium text-foreground">
-                                                                {isTime
-                                                                    ? latestLog.reps != null ? `${latestLog.reps} min` : '-'
-                                                                    : `${latestLog.weight != null ? formatWeight(latestLog.weight, weightUnit) : '-'} · ${latestLog.reps ?? '-'} reps`}
-                                                            </span>
-                                                            <span className="text-[10px] text-muted-foreground">
-                                                                · {latestLog.performed_at ?? '-'}
-                                                            </span>
-                                                            {isPR && (
-                                                                <span className="ml-auto rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-500">
-                                                                    🏆 PR
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    )}
-
-                                                    {(() => {
-                                                        const dailyLogs = Object.values(
-                                                            logs.reduce<Record<string, ExerciseLog>>((acc, log) => {
-                                                                const date = (log.performed_at ?? log.id).split('T')[0]
-                                                                if (!acc[date]) {
-                                                                    acc[date] = log
-                                                                } else {
-                                                                    const best = isTime ? (acc[date].reps ?? 0) : (acc[date].weight ?? 0)
-                                                                    const candidate = isTime ? (log.reps ?? 0) : (log.weight ?? 0)
-                                                                    if (candidate > best) acc[date] = log
-                                                                }
-                                                                return acc
-                                                            }, {})
-                                                        ).slice(0, 3)
-
-                                                        return dailyLogs.length > 1 ? (
-                                                            <details className="mt-3 overflow-hidden rounded-xl border border-border">
-                                                                <summary className="cursor-pointer list-none px-3 py-2.5 text-xs font-medium text-muted-foreground transition hover:text-card-foreground">
-                                                                    Historial ({dailyLogs.length} días)
-                                                                </summary>
-
-                                                                <div className="border-t border-border bg-muted/20 p-3">
-                                                                    <div className="space-y-1">
-                                                                        {dailyLogs.map((log) => (
-                                                                            <div
-                                                                                key={log.id}
-                                                                                className="flex items-center justify-between rounded-lg px-3 py-1.5 text-xs"
-                                                                            >
-                                                                                <span className="tabular-nums text-muted-foreground">
-                                                                                    {(log.performed_at ?? '-').split('T')[0]}
-                                                                                </span>
-                                                                                <span className="font-medium text-card-foreground">
-                                                                                    {isTime ? (
-                                                                                        <>{log.reps != null ? `${log.reps} min` : '-'}</>
-                                                                                    ) : (
-                                                                                        <>
-                                                                                            {log.weight != null
-                                                                                                ? formatWeight(log.weight, weightUnit)
-                                                                                                : '-'}{' '}
-                                                                                            · {log.reps ?? '-'} reps
-                                                                                        </>
-                                                                                    )}
-                                                                                </span>
-                                                                            </div>
-                                                                        ))}
-                                                                    </div>
-
-                                                                    {!isTime && (
-                                                                        <div className="mt-3">
-                                                                            <ExerciseProgressChart logs={logs} />
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            </details>
-                                                        ) : null
-                                                    })()}
-                                                </div>
-                                            )
-                                        })
-                                    ) : (
-                                        <div className="rounded-2xl border border-dashed border-border bg-card/50 p-8 text-center">
-                                            <p className="text-sm text-muted-foreground">
-                                                Todavía no hay ejercicios en este día.
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
+                                {/* ── Exercises ── */}
+                                <DayBlockEditor
+                                    routineId={routine.id}
+                                    routineDayId={selectedDay.id}
+                                    exercises={currentDayExercises.map(ex => ({ ...ex, block: ex.block || 'main' })) as DayExercise[]}
+                                    exerciseOptions={(exerciseOptions as ExerciseOption[]) ?? []}
+                                    defaultSets={trainerProfile?.default_sets ?? 3}
+                                    defaultReps={trainerProfile?.default_reps ?? 10}
+                                    defaultRest={trainerProfile?.default_rest ?? 60}
+                                    addAction={addExerciseToRoutineDay as unknown as (fd: FormData) => Promise<any>}
+                                    updateAction={updateExerciseInRoutineDay as unknown as (fd: FormData) => Promise<any>}
+                                    deleteAction={deleteExerciseFromRoutineDay as unknown as (fd: FormData) => Promise<any>}
+                                    weekId={selectedWeek!.id}
+                                    logsByExercise={logsByExercise}
+                                    weightUnit={weightUnit}
+                                />
                             </>
                         )}
                     </>
