@@ -46,6 +46,7 @@ type Props = {
     defaultRest: number
     addAction: (fd: FormData) => Promise<any>
     updateAction: (fd: FormData) => Promise<any>
+    moveAction: (fd: FormData) => Promise<{ ok: boolean; error?: string }>
     deleteAction: (fd: FormData) => Promise<void>
     weekId: string
     logsByExercise: Record<string, ExerciseLog[]>
@@ -68,6 +69,7 @@ export default function DayBlockEditor({
     defaultRest,
     addAction,
     updateAction,
+    moveAction,
     deleteAction,
     weekId,
     logsByExercise,
@@ -124,6 +126,7 @@ export default function DayBlockEditor({
                                     onEdit={() => setEditingId(exercise.id)}
                                     onCancelEdit={() => setEditingId(null)}
                                     updateAction={updateAction}
+                                    moveAction={moveAction}
                                     deleteAction={deleteAction}
                                     routineId={routineId}
                                     dayId={routineDayId}
@@ -131,6 +134,8 @@ export default function DayBlockEditor({
                                     logs={logsByExercise[exercise.id] || []}
                                     weightUnit={weightUnit}
                                     isPending={isPending}
+                                    canMoveUp={index > 0}
+                                    canMoveDown={index < blockExercises.length - 1}
                                     startTransition={startTransition}
                                 />
                             ))}
@@ -181,6 +186,7 @@ function ExerciseRow({
     onEdit,
     onCancelEdit,
     updateAction,
+    moveAction,
     deleteAction,
     routineId,
     dayId,
@@ -188,6 +194,8 @@ function ExerciseRow({
     logs,
     weightUnit,
     isPending,
+    canMoveUp,
+    canMoveDown,
     startTransition
 }: {
     exercise: DayExercise
@@ -196,6 +204,7 @@ function ExerciseRow({
     onEdit: () => void
     onCancelEdit: () => void
     updateAction: (fd: FormData) => Promise<any>
+    moveAction: (fd: FormData) => Promise<{ ok: boolean; error?: string }>
     deleteAction: (fd: FormData) => Promise<void>
     routineId: string
     dayId: string
@@ -203,6 +212,8 @@ function ExerciseRow({
     logs: ExerciseLog[]
     weightUnit: WeightUnit
     isPending: boolean
+    canMoveUp: boolean
+    canMoveDown: boolean
     startTransition: (cb: () => void) => void
 }) {
     const relation = Array.isArray(exercise.exercise) ? exercise.exercise[0] : exercise.exercise
@@ -297,11 +308,32 @@ function ExerciseRow({
         )
     }
 
+    const move = (direction: 'up' | 'down') => {
+        setErrorMsg(null)
+        const formData = new FormData()
+        formData.set('routineId', routineId)
+        formData.set('exerciseRowId', exercise.id)
+        formData.set('direction', direction)
+        startTransition(async () => {
+            try {
+                const result = await moveAction(formData)
+                if (!result.ok) {
+                    setErrorMsg(result.error || 'No se pudo cambiar el orden.')
+                    return
+                }
+                router.refresh()
+            } catch {
+                setErrorMsg('Ocurrió un error de conexión.')
+            }
+        })
+    }
+
     return (
-        <div
+        <div>
+          <div
             onClick={onEdit}
-            className="flex items-center gap-3 rounded-lg border border-transparent p-2 transition hover:bg-muted/50 hover:border-border cursor-pointer group"
-        >
+            className="flex items-center gap-2 rounded-lg border border-transparent p-2 transition hover:border-border hover:bg-muted/50 cursor-pointer group"
+          >
             <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-indigo-500/10 text-[10px] font-bold text-indigo-500">
                 {index + 1}
             </div>
@@ -320,11 +352,35 @@ function ExerciseRow({
                     )}
                 </div>
             </div>
-            <div className="shrink-0 opacity-0 transition group-hover:opacity-100">
+            <div className="flex shrink-0 items-center gap-0.5" onClick={(event) => event.stopPropagation()}>
+                <button
+                    type="button"
+                    aria-label={`Subir ${relation?.name ?? 'ejercicio'}`}
+                    title="Subir dentro del bloque"
+                    disabled={isPending || !canMoveUp}
+                    onClick={() => move('up')}
+                    className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-25"
+                >
+                    <span aria-hidden="true">↑</span>
+                </button>
+                <button
+                    type="button"
+                    aria-label={`Bajar ${relation?.name ?? 'ejercicio'}`}
+                    title="Bajar dentro del bloque"
+                    disabled={isPending || !canMoveDown}
+                    onClick={() => move('down')}
+                    className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-25"
+                >
+                    <span aria-hidden="true">↓</span>
+                </button>
+            </div>
+            <div className="hidden shrink-0 opacity-0 transition group-hover:opacity-100 sm:block">
                 <svg className="h-4 w-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                 </svg>
             </div>
+          </div>
+          {errorMsg && <p role="alert" className="px-2 pb-1 text-xs font-medium text-red-500">{errorMsg}</p>}
         </div>
     )
 }

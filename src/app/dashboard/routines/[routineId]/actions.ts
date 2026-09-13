@@ -185,6 +185,37 @@ export async function updateExerciseInRoutineDay(formData: FormData) {
     return { ok: true }
 }
 
+export async function moveExerciseInRoutineDay(formData: FormData): Promise<{ ok: boolean; error?: string }> {
+    const supabase = await createClient()
+    const routineId = formData.get('routineId') as string
+    const exerciseRowId = formData.get('exerciseRowId') as string
+    const direction = formData.get('direction') as string
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { ok: false, error: 'Tu sesión venció.' }
+
+    if (!routineId || !exerciseRowId || !['up', 'down'].includes(direction)) {
+        return { ok: false, error: 'No se pudo determinar el nuevo orden.' }
+    }
+
+    const { data: moved, error } = await supabase.rpc('move_routine_day_exercise', {
+        p_exercise_row_id: exerciseRowId,
+        p_direction: direction,
+    })
+
+    if (error) {
+        console.error('[moveExerciseInRoutineDay] error:', error.message)
+        return { ok: false, error: 'No se pudo cambiar el orden.' }
+    }
+
+    if (!moved) {
+        return { ok: false, error: 'El ejercicio ya está en ese extremo del bloque.' }
+    }
+
+    revalidatePath(`/dashboard/routines/${routineId}`)
+    return { ok: true }
+}
+
 
 export async function updateRoutineName(input: {
     routineId: string
