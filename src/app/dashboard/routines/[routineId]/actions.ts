@@ -99,6 +99,7 @@ export async function deleteExerciseFromRoutineDay(formData: FormData) {
     const exerciseId = formData.get('exerciseId') as string
     const dayId = formData.get('dayId') as string
     const weekId = formData.get('weekId') as string | null
+    const monthId = formData.get('monthId') as string | null
 
     const {
         data: { user },
@@ -112,6 +113,7 @@ export async function deleteExerciseFromRoutineDay(formData: FormData) {
 
     const buildUrl = () => {
         const p = new URLSearchParams()
+        if (monthId) p.set('month', monthId)
         if (weekId) p.set('week', weekId)
         if (dayId) p.set('day', dayId)
         const qs = p.toString()
@@ -225,8 +227,7 @@ export async function updateRoutineName(input: {
     return { ok: true }
 }
 
-export async function addRoutineWeek(formData: FormData) {
-    console.log('ACTION OK — addRoutineWeek called')
+export async function addRoutineWeek(formData: FormData): Promise<{ ok: boolean; newWeekId?: string; error?: string }> {
     const supabase = await createClient()
     const routineId = formData.get('routineId') as string
     const monthId = (formData.get('monthId') as string) || null
@@ -234,7 +235,7 @@ export async function addRoutineWeek(formData: FormData) {
     const {
         data: { user },
     } = await supabase.auth.getUser()
-    if (!user) redirect('/login')
+    if (!user) return { ok: false, error: 'No autenticado' }
 
     const { data: routine } = await supabase
         .from('routines')
@@ -243,21 +244,26 @@ export async function addRoutineWeek(formData: FormData) {
         .eq('trainer_id', user.id)
         .single()
 
-    if (!routine) redirect('/dashboard/routines')
+    if (!routine) return { ok: false, error: 'Rutina no encontrada' }
 
-    const { data: existingInMonth, error: existingError } = await supabase
+    let existingWeeksQuery = supabase
         .from('routine_weeks')
         .select('id, week_number')
-        .eq('routine_month_id', monthId ?? '')
+        .eq('routine_id', routineId)
+
+    existingWeeksQuery = monthId
+        ? existingWeeksQuery.eq('routine_month_id', monthId)
+        : existingWeeksQuery.is('routine_month_id', null)
+
+    const { data: existingInMonth, error: existingError } = await existingWeeksQuery
         .order('week_number', { ascending: false })
         .limit(1)
 
     if (existingError) {
-        console.error('[addRoutineWeek] select error:', existingError.message, existingError.code)
+        return { ok: false, error: 'No se pudieron consultar las semanas existentes' }
     }
 
     const nextNumber = (existingInMonth?.[0]?.week_number ?? 0) + 1
-    console.log('[addRoutineWeek] inserting week_number:', nextNumber)
 
     const { data: newWeek, error: insertError } = await supabase
         .from('routine_weeks')
@@ -266,9 +272,11 @@ export async function addRoutineWeek(formData: FormData) {
         .single()
 
     if (insertError) {
-        console.error('[addRoutineWeek] insert error:', insertError.message, insertError.code)
-    } else {
-        console.log('[addRoutineWeek] created week id:', newWeek?.id)
+        return { ok: false, error: 'No se pudo crear la semana' }
+    }
+
+    if (!newWeek) {
+        return { ok: false, error: 'No se pudo crear la semana' }
     }
 
     if (newWeek) {
@@ -296,7 +304,7 @@ export async function addRoutineWeek(formData: FormData) {
             }))
         }
 
-        await supabase.from('routine_days').insert(
+        const { error: daysError } = await supabase.from('routine_days').insert(
             daysToCopy.map((d) => ({
                 routine_id: routineId,
                 routine_week_id: newWeek.id,
@@ -305,14 +313,13 @@ export async function addRoutineWeek(formData: FormData) {
             }))
         )
 
+        if (daysError) {
+            return { ok: false, error: 'La semana se creó, pero no se pudieron crear sus días' }
+        }
     }
 
     revalidatePath(`/dashboard/routines/${routineId}`)
-    redirect(
-        !insertError && newWeek
-            ? `/dashboard/routines/${routineId}?${monthId ? `month=${monthId}&` : ''}week=${newWeek.id}`
-            : `/dashboard/routines/${routineId}`
-    )
+    return { ok: true, newWeekId: newWeek.id }
 }
 
 export async function duplicateRoutineWeek(formData: FormData) {
@@ -610,6 +617,8 @@ export async function renameRoutineMonth(formData: FormData) {
     const supabase = await createClient()
     const routineId = formData.get('routineId') as string
     const monthId = formData.get('monthId') as string
+    const weekId = formData.get('weekId') as string | null
+    const dayId = formData.get('dayId') as string | null
     const name = (formData.get('name') as string)?.trim() || null
 
     const {
@@ -623,7 +632,7 @@ export async function renameRoutineMonth(formData: FormData) {
         .eq('id', monthId)
 
     revalidatePath(`/dashboard/routines/${routineId}`)
-    redirect(`/dashboard/routines/${routineId}?month=${monthId}`)
+    redirect(`/dashboard/routines/${routineId}?month=${monthId}${weekId ? `&week=${weekId}` : ''}${dayId ? `&day=${dayId}` : ''}`)
 }
 
 export async function deleteRoutineMonth(formData: FormData) {

@@ -449,7 +449,7 @@ export default async function StudentTrainPage({
                                 return (
                                     <Link
                                         key={week.id}
-                                        href={`/dashboard/students/${params.studentId}/train?month=${selectedMonth?.id}&week=${week.id}`}
+                                        href={`/dashboard/students/${params.studentId}/train?week=${week.id}${selectedMonth?.id ? `&month=${selectedMonth.id}` : ''}`}
                                         className={`shrink-0 rounded-xl px-3 py-2 text-xs font-medium transition ${
                                             isActive
                                                 ? 'bg-indigo-500/20 text-indigo-400 ring-1 ring-indigo-500'
@@ -474,7 +474,7 @@ export default async function StudentTrainPage({
                                 return (
                                     <Link
                                         key={day.id}
-                                        href={`/dashboard/students/${params.studentId}/train?month=${selectedMonth?.id}&week=${selectedWeek?.id}&day=${day.id}`}
+                                        href={`/dashboard/students/${params.studentId}/train?day=${day.id}${selectedWeek?.id ? `&week=${selectedWeek.id}` : ''}${selectedMonth?.id ? `&month=${selectedMonth.id}` : ''}`}
                                         className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition ${
                                             isActive
                                                 ? 'bg-indigo-600 text-white'

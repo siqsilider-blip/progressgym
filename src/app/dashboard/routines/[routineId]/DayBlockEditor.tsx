@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, useRef, useEffect, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { formatWeight, type WeightUnit } from '@/lib/weight'
 import ExerciseProgressChart from '../../../../components/ExerciseProgressChart'
 
@@ -208,6 +208,7 @@ function ExerciseRow({
     const relation = Array.isArray(exercise.exercise) ? exercise.exercise[0] : exercise.exercise
     const isTime = relation?.metric_type === 'time'
     const router = useRouter()
+    const searchParams = useSearchParams()
 
     const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
@@ -234,6 +235,7 @@ function ExerciseRow({
                     <input type="hidden" name="dayId" value={dayId} />
                     <input type="hidden" name="weekId" value={weekId} />
                     <input type="hidden" name="exerciseRowId" value={exercise.id} />
+                    {searchParams.get('month') && <input type="hidden" name="monthId" value={searchParams.get('month')!} />}
 
                     <div className="flex items-center justify-between">
                         <h4 className="text-sm font-bold text-foreground">{relation?.name}</h4>

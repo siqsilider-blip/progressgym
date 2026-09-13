@@ -342,7 +342,7 @@ export default async function RoutineDetailPage({
                         </div>
                     ) : (
                         <Link
-                            href={`/dashboard/students/${routine.student_id}/train?month=${selectedMonth?.id ?? ''}&week=${selectedWeek?.id ?? ''}&day=${selectedDay?.id ?? ''}&from=routine`}
+                            href={`/dashboard/students/${routine.student_id}/train?from=routine${selectedMonth?.id ? `&month=${selectedMonth.id}` : ''}${selectedWeek?.id ? `&week=${selectedWeek.id}` : ''}${selectedDay?.id ? `&day=${selectedDay.id}` : ''}`}
                             className="shrink-0 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-500 active:scale-[0.97]"
                         >
                             Entrenar
@@ -394,7 +394,7 @@ export default async function RoutineDetailPage({
                                         return (
                                             <Link
                                                 key={day.id}
-                                                href={`/dashboard/routines/${routine.id}?month=${selectedMonth?.id}&week=${selectedWeek!.id}&day=${day.id}`}
+                                                href={`/dashboard/routines/${routine.id}?week=${selectedWeek!.id}&day=${day.id}${selectedMonth?.id ? `&month=${selectedMonth.id}` : ''}`}
                                                 className={`relative shrink-0 rounded-xl px-4 py-2 text-xs font-semibold transition active:scale-[0.96] ${isActive
                                                         ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/25'
                                                         : 'border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground'

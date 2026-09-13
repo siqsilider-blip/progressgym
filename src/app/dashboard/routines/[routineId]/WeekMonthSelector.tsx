@@ -3,6 +3,7 @@
 import * as React from 'react'
 import { useTransition } from 'react'
 import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 type Month = { id: string; month_number: number; name: string | null }
 type Week = { id: string; week_number: number; name: string | null; routine_month_id: string | null }
@@ -14,7 +15,7 @@ type Props = {
     selectedMonthId: string | null
     selectedWeekId: string | null
     addRoutineMonth: (formData: FormData) => Promise<void>
-    addRoutineWeek: (formData: FormData) => Promise<void>
+    addRoutineWeek: (formData: FormData) => Promise<{ok: boolean, newWeekId?: string, error?: string}>
     duplicateRoutineWeek: (formData: FormData) => Promise<void>
     deleteRoutineWeek: (formData: FormData) => Promise<void>
     deleteRoutineMonth: (formData: FormData) => Promise<void>
@@ -44,6 +45,10 @@ export default function WeekMonthSelector({
     const [monthName, setMonthName] = React.useState('')
     const [weekName, setWeekName] = React.useState('')
     const [showHint, setShowHint] = React.useState(false)
+    const [errorMsg, setErrorMsg] = React.useState<string | null>(null)
+    const router = useRouter()
+    const searchParams = useSearchParams()
+    const dayId = searchParams.get('day')
 
     const lastTap = React.useRef<Record<string, number>>({})
 
@@ -115,6 +120,8 @@ export default function WeekMonthSelector({
                             >
                                 <input type="hidden" name="routineId" value={routineId} />
                                 <input type="hidden" name="monthId" value={month.id} />
+                                {selectedWeekId && <input type="hidden" name="weekId" value={selectedWeekId} />}
+                                {dayId && <input type="hidden" name="dayId" value={dayId} />}
                                 <input
                                     autoFocus
                                     type="text"
@@ -211,7 +218,8 @@ export default function WeekMonthSelector({
                                 >
                                     <input type="hidden" name="routineId" value={routineId} />
                                     <input type="hidden" name="weekId" value={week.id} />
-                                    <input type="hidden" name="monthId" value={selectedMonthId ?? ''} />
+                                    {dayId && <input type="hidden" name="dayId" value={dayId} />}
+                                    {selectedMonthId && <input type="hidden" name="monthId" value={selectedMonthId} />}
                                     <input
                                         autoFocus
                                         type="text"
@@ -231,7 +239,7 @@ export default function WeekMonthSelector({
                         return (
                             <React.Fragment key={week.id}>
                                 <Link
-                                    href={`/dashboard/routines/${routineId}?month=${selectedMonthId}&week=${week.id}`}
+                                    href={`/dashboard/routines/${routineId}?week=${week.id}${selectedMonthId ? `&month=${selectedMonthId}` : ''}`}
                                     onClick={(e) => {
                                         handleDoubleTap(week.id, () => {
                                             e.preventDefault()
@@ -259,7 +267,7 @@ export default function WeekMonthSelector({
                                             <form action={deleteRoutineWeek}>
                                                 <input type="hidden" name="routineId" value={routineId} />
                                                 <input type="hidden" name="weekId" value={week.id} />
-                                                <input type="hidden" name="monthId" value={selectedMonthId ?? ''} />
+                                                {selectedMonthId && <input type="hidden" name="monthId" value={selectedMonthId} />}
                                                 <button
                                                     type="submit"
                                                     className="rounded-lg bg-red-600 px-2 py-1.5 text-[10px] font-medium text-white transition hover:bg-red-500"
@@ -283,18 +291,36 @@ export default function WeekMonthSelector({
                         )
                     })}
 
-                    <form action={addRoutineWeek}>
+                    <form action={(fd) => {
+                        setErrorMsg(null)
+                        startTransition(async () => {
+                            try {
+                                const res = await addRoutineWeek(fd)
+                                if (res?.ok === false) {
+                                    setErrorMsg(res.error || 'Error al agregar semana')
+                                } else if (res?.newWeekId) {
+                                    router.push(`/dashboard/routines/${routineId}?week=${res.newWeekId}${selectedMonthId ? `&month=${selectedMonthId}` : ''}`)
+                                }
+                            } catch(err: any) {
+                                setErrorMsg(err.message || 'Error inesperado')
+                            }
+                        })
+                    }}>
                         <input type="hidden" name="routineId" value={routineId} />
-                        <input type="hidden" name="monthId" value={selectedMonthId ?? ''} />
+                        {selectedMonthId && <input type="hidden" name="monthId" value={selectedMonthId} />}
                         <button
                             type="submit"
-                            className="shrink-0 rounded-xl border border-dashed border-border px-3 py-2 text-xs text-muted-foreground transition hover:border-foreground hover:text-foreground"
+                            disabled={isPending}
+                            className="shrink-0 rounded-xl border border-dashed border-border px-3 py-2 text-xs text-muted-foreground transition hover:border-foreground hover:text-foreground disabled:opacity-50"
                         >
                             +
                         </button>
                     </form>
                 </div>
             </div>
+            {errorMsg && (
+                <div className="mt-2 text-xs text-red-500 font-medium">{errorMsg}</div>
+            )}
 
             {selectedWeek && previousWeek && (
                 <div className="mt-2">
@@ -305,7 +331,7 @@ export default function WeekMonthSelector({
                             const formData = new FormData()
                             formData.append('routineId', routineId)
                             formData.append('sourceWeekId', previousWeek.id)
-                            formData.append('monthId', selectedMonthId ?? '')
+                            if (selectedMonthId) formData.append('monthId', selectedMonthId)
                             startTransition(async () => {
                                 await duplicateRoutineWeek(formData)
                             })
