@@ -10,6 +10,11 @@ type TemplateRow = {
     created_at: string | null
 }
 
+type TemplateStats = {
+    weeks: number
+    exercises: number
+}
+
 type PageProps = {
     searchParams?: {
         q?: string
@@ -48,6 +53,53 @@ export default async function TemplatesListPage({ searchParams }: PageProps) {
     const { data: templates, error } = await templatesQuery
 
     const templateList = (templates as TemplateRow[] | null) ?? []
+    const templateIds = templateList.map((template) => template.id)
+    const statsByTemplate = new Map<string, TemplateStats>(
+        templateIds.map((id) => [id, { weeks: 0, exercises: 0 }])
+    )
+
+    if (templateIds.length > 0) {
+        const [{ data: weeks }, { data: days }] = await Promise.all([
+            supabase
+                .from('routine_weeks')
+                .select('id, routine_id')
+                .in('routine_id', templateIds),
+            supabase
+                .from('routine_days')
+                .select('id, routine_id')
+                .in('routine_id', templateIds),
+        ])
+
+        for (const week of weeks ?? []) {
+            const stats = statsByTemplate.get(week.routine_id)
+            if (stats) stats.weeks += 1
+        }
+
+        const dayToTemplate = new Map((days ?? []).map((day) => [day.id, day.routine_id]))
+        const dayIds = Array.from(dayToTemplate.keys())
+
+        if (dayIds.length > 0) {
+            const batches: string[][] = []
+            for (let index = 0; index < dayIds.length; index += 200) {
+                batches.push(dayIds.slice(index, index + 200))
+            }
+
+            const exerciseResults = await Promise.all(batches.map((batch) =>
+                supabase
+                    .from('routine_day_exercises')
+                    .select('routine_day_id')
+                    .in('routine_day_id', batch)
+            ))
+
+            const exerciseRows = exerciseResults.flatMap((result) => result.data ?? [])
+
+            for (const row of exerciseRows) {
+                const templateId = dayToTemplate.get(row.routine_day_id)
+                const stats = templateId ? statsByTemplate.get(templateId) : null
+                if (stats) stats.exercises += 1
+            }
+        }
+    }
 
     return (
         <div className="px-4 pb-24 text-foreground md:p-8">
@@ -136,26 +188,35 @@ export default async function TemplatesListPage({ searchParams }: PageProps) {
                 </div>
             ) : (
                 <div className="space-y-3">
-                    {templateList.map((template) => (
-                        <Link
-                            key={template.id}
-                            href={`/dashboard/routines/${template.id}`}
-                            className="flex items-center justify-between rounded-2xl border border-border bg-card p-4 transition hover:border-indigo-300 hover:bg-muted/40"
-                        >
-                            <div className="min-w-0">
-                                <p className="truncate text-base font-semibold text-card-foreground">
-                                    {template.name ?? 'Sin nombre'}
-                                </p>
-                                <p className="mt-1 text-xs text-muted-foreground">
-                                    {template.days_per_week ?? '—'} días por semana
-                                </p>
-                            </div>
+                    {templateList.map((template) => {
+                        const stats = statsByTemplate.get(template.id) ?? { weeks: 0, exercises: 0 }
+                        return (
+                            <div
+                                key={template.id}
+                                className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 transition hover:border-indigo-300 hover:bg-muted/40"
+                            >
+                                <Link href={`/dashboard/routines/${template.id}`} className="min-w-0 flex-1">
+                                    <p className="truncate text-base font-semibold text-card-foreground">
+                                        {template.name ?? 'Sin nombre'}
+                                    </p>
+                                    <p className="mt-1 text-xs text-muted-foreground">
+                                        {template.days_per_week ?? '—'} días/semana
+                                        <span className="mx-1.5 text-border">·</span>
+                                        {stats.weeks} {stats.weeks === 1 ? 'semana' : 'semanas'}
+                                        <span className="mx-1.5 text-border">·</span>
+                                        {stats.exercises} {stats.exercises === 1 ? 'ejercicio' : 'ejercicios'}
+                                    </p>
+                                </Link>
 
-                            <span className="shrink-0 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700 dark:border-indigo-500/20 dark:bg-indigo-500/10 dark:text-indigo-300">
-                                Template
-                            </span>
-                        </Link>
-                    ))}
+                                <Link
+                                    href={`/dashboard/routines/${template.id}/assign-to-student`}
+                                    className="shrink-0 rounded-xl bg-indigo-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-indigo-500"
+                                >
+                                    Asignar
+                                </Link>
+                            </div>
+                        )
+                    })}
                 </div>
             )}
         </div>
