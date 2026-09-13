@@ -561,7 +561,7 @@ function AddExerciseForm({
                 )}
 
                 {open && (
-                    <div className="absolute z-50 mt-1 w-full rounded-lg border border-border bg-background shadow-xl">
+                    <div className="relative z-10 mt-1 w-full rounded-lg border border-border bg-background shadow-xl">
                         <div className="border-b border-border p-2">
                             {categories.length > 1 && (
                                 <select
@@ -576,7 +576,7 @@ function AddExerciseForm({
                                 </select>
                             )}
                         </div>
-                        <div className="max-h-48 overflow-y-auto p-1">
+                        <div className={showQuickCreate ? 'p-1' : 'max-h-40 overflow-y-auto p-1'}>
                             {filteredExercises.length > 0 ? (
                                 filteredExercises.map((ex) => {
                                     const isSelected = ex.name === selectedExerciseName
@@ -607,6 +607,7 @@ function AddExerciseForm({
                                     onClick={() => {
                                         setShowQuickCreate(true)
                                         setCreateError(null)
+                                        setTimeout(() => containerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 0)
                                     }}
                                     className="mt-1 w-full rounded-md border border-dashed border-indigo-500/50 px-2 py-2 text-left text-xs font-semibold text-indigo-500 hover:bg-indigo-500/10"
                                 >
