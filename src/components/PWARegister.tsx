@@ -17,23 +17,28 @@ export default function PWARegister() {
             return
         }
 
-        navigator.serviceWorker.register('/sw.js').then((registration) => {
-            registration.addEventListener('updatefound', () => {
-                const newWorker = registration.installing
-                if (!newWorker) return
+        navigator.serviceWorker
+            .register('/sw.js')
+            .then((registration) => {
+                registration.addEventListener('updatefound', () => {
+                    const newWorker = registration.installing
+                    if (!newWorker) return
 
-                newWorker.addEventListener('statechange', () => {
-                    if (
-                        newWorker.state === 'installed' &&
-                        navigator.serviceWorker.controller
-                    ) {
-                        // Hay una versión nueva del SW lista — recargamos
-                        // para que el usuario siempre tenga el código actual.
-                        window.location.reload()
-                    }
+                    newWorker.addEventListener('statechange', () => {
+                        if (
+                            newWorker.state === 'installed' &&
+                            navigator.serviceWorker.controller
+                        ) {
+                            // Hay una versión nueva del SW lista — recargamos
+                            // para que el usuario siempre tenga el código actual.
+                            window.location.reload()
+                        }
+                    })
                 })
             })
-        })
+            .catch((error) => {
+                console.error('[PWA] No se pudo registrar el service worker:', error)
+            })
     }, [])
 
     return null

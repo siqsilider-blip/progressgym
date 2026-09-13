@@ -342,7 +342,9 @@ export default function WeekMonthSelector({
                                 : 'border-border bg-secondary text-secondary-foreground hover:bg-muted'
                         }`}
                     >
-                        {isPending ? 'Copiando semana...' : 'Copiar semana anterior'}
+                        {isPending
+                            ? 'Creando semana...'
+                            : `Crear nueva copiando Sem. ${previousWeek.week_number}`}
                     </button>
                 </div>
             )}

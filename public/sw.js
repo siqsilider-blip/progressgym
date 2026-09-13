@@ -57,8 +57,8 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
-  // Todo lo demás (API, datos): siempre a la red, sin cache.
-  event.respondWith(fetch(request))
+  // Todo lo demás (API y datos) queda fuera del control del SW.
+  // Así el navegador maneja normalmente errores de red y autenticación.
 })
 
 // ── Push notifications (listener listo, el envío se conecta en la Fase 2) ──
