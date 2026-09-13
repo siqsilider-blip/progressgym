@@ -1,6 +1,8 @@
 'use client'
 
+import { useState } from 'react'
 import { useFormStatus } from 'react-dom'
+import { useRouter } from 'next/navigation'
 
 function SubmitButton() {
     const { pending } = useFormStatus()
@@ -21,7 +23,11 @@ type AssignTemplateButtonProps = {
     studentId: string
     studentName: string
     hasActiveProgram: boolean
-    assignAction: (formData: FormData) => Promise<void>
+    assignAction: (formData: FormData) => Promise<{
+        ok: boolean
+        studentId?: string
+        error?: string
+    }>
 }
 
 export default function AssignTemplateButton({
@@ -31,6 +37,9 @@ export default function AssignTemplateButton({
     hasActiveProgram,
     assignAction,
 }: AssignTemplateButtonProps) {
+    const router = useRouter()
+    const [error, setError] = useState<string | null>(null)
+
     // Mensaje distinto y más específico si ya hay un programa activo, para
     // que reemplazarlo sea una decisión consciente y no un clic de más --
     // no alcanza con deshabilitar el botón mientras está pendiente, hace
@@ -41,7 +50,20 @@ export default function AssignTemplateButton({
 
     return (
         <form
-            action={assignAction}
+            action={async (formData) => {
+                setError(null)
+                try {
+                    const result = await assignAction(formData)
+                    if (!result.ok || !result.studentId) {
+                        setError(result.error || 'No se pudo asignar el template.')
+                        return
+                    }
+                    router.push(`/dashboard/students/${result.studentId}`)
+                    router.refresh()
+                } catch {
+                    setError('Ocurrió un error de conexión. Intentá nuevamente.')
+                }
+            }}
             onSubmit={(event) => {
                 if (!confirm(confirmMessage)) {
                     event.preventDefault()
@@ -51,6 +73,11 @@ export default function AssignTemplateButton({
             <input type="hidden" name="templateId" value={templateId} />
             <input type="hidden" name="studentId" value={studentId} />
             <SubmitButton />
+            {error && (
+                <p role="alert" className="mt-2 max-w-48 text-right text-xs font-medium text-red-500">
+                    {error}
+                </p>
+            )}
         </form>
     )
 }

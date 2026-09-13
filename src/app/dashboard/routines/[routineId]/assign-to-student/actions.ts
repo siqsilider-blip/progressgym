@@ -1,9 +1,14 @@
 'use server'
 
-import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
-export async function assignTemplateAction(formData: FormData) {
+type AssignTemplateResult = {
+    ok: boolean
+    studentId?: string
+    error?: string
+}
+
+export async function assignTemplateAction(formData: FormData): Promise<AssignTemplateResult> {
     const supabase = await createClient()
 
     const templateId = formData.get('templateId') as string
@@ -14,11 +19,11 @@ export async function assignTemplateAction(formData: FormData) {
     } = await supabase.auth.getUser()
 
     if (!user) {
-        redirect('/login')
+        return { ok: false, error: 'Tu sesión venció. Volvé a iniciar sesión.' }
     }
 
     if (!templateId || !studentId) {
-        throw new Error('Faltan datos para asignar el template.')
+        return { ok: false, error: 'Faltan datos para asignar el template.' }
     }
 
     // Autorización explícita de ambos lados ANTES de llamar a la RPC --
@@ -43,11 +48,11 @@ export async function assignTemplateAction(formData: FormData) {
     ])
 
     if (!template) {
-        throw new Error('Template no encontrado.')
+        return { ok: false, error: 'Template no encontrado.' }
     }
 
     if (!student) {
-        throw new Error('Alumno no encontrado.')
+        return { ok: false, error: 'Alumno no encontrado.' }
     }
 
     const { error } = await supabase.rpc('assign_template_to_student', {
@@ -56,8 +61,11 @@ export async function assignTemplateAction(formData: FormData) {
     })
 
     if (error) {
-        throw new Error(error.message)
+        const message = error.message.includes('no tiene ejercicios')
+            ? 'Este template no tiene ejercicios. Agregá al menos uno antes de asignarlo.'
+            : 'No se pudo asignar el template. Intentá nuevamente.'
+        return { ok: false, error: message }
     }
 
-    redirect(`/dashboard/students/${studentId}`)
+    return { ok: true, studentId }
 }
