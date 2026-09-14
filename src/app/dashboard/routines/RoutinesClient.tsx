@@ -7,7 +7,7 @@ type Student = {
     id: string
     first_name: string | null
     last_name: string | null
-    active_plan?: string | null
+    active_plan?: string | boolean | null
 }
 
 type Routine = {
@@ -154,7 +154,7 @@ export default function RoutinesClient({ students, routines, error }: Props) {
                             {withRoutine.map((student) => {
                                 const routine = routineByStudentId.get(student.id)!
                                 const name = getStudentName(student)
-                                const isActive = student.active_plan === 'active' || student.active_plan === (true as any)
+                                const isActive = student.active_plan === 'active' || student.active_plan === true
 
                                 return (
                                     <div key={student.id} className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4 transition hover:bg-zinc-900/80">

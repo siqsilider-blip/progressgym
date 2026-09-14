@@ -1,22 +1,13 @@
-type Stagnation = {
-    exerciseName: string | null
-    daysWithoutImprovement: number
-    lastBestWeight: number | null
-    detected: boolean
-} | null
+import type { StudentStagnationItem } from './getStudentStagnation'
 
 type Props = {
-    stagnation: Stagnation
+    stagnation: StudentStagnationItem[]
 }
 
 export default function StudentStagnationCard({ stagnation }: Props) {
-    const hasData =
-        !!stagnation &&
-        stagnation.detected &&
-        !!stagnation.exerciseName &&
-        stagnation.daysWithoutImprovement > 0
+    const mostStagnant = stagnation[0]
 
-    if (!hasData || !stagnation) {
+    if (!mostStagnant) {
         return null
     }
 
@@ -27,14 +18,12 @@ export default function StudentStagnationCard({ stagnation }: Props) {
             </p>
 
             <p className="mt-2 font-semibold text-zinc-900 dark:text-zinc-100">
-                {stagnation.exerciseName}
+                {mostStagnant.exerciseName}
             </p>
 
             <p className="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">
-                {stagnation.daysWithoutImprovement} días sin mejorar
-                {stagnation.lastBestWeight !== null
-                    ? ` · Mejor: ${stagnation.lastBestWeight}`
-                    : ''}
+                {mostStagnant.sessionsWithoutImprovement} sesiones sin mejorar
+                {` · Mejor: ${mostStagnant.bestWeight}`}
             </p>
         </div>
     )

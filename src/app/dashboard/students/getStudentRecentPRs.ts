@@ -92,7 +92,7 @@ export async function getStudentRecentPRs(
 
     const result: StudentRecentPR[] = []
 
-    for (const log of logs as any[]) {
+    for (const log of logs) {
         const exerciseId = routineDayExerciseToExerciseId.get(
             log.routine_day_exercise_id
         )

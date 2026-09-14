@@ -236,8 +236,8 @@ export default async function StudentTrainPage(props: PageProps) {
 
     const selectedDayLabel = selectedDay?.name?.trim()
         ? selectedDay.name.trim()
-        : (selectedDay as any)?.day_index
-            ? `Día ${(selectedDay as any).day_index}`
+        : selectedDay?.day_index
+            ? `Día ${selectedDay.day_index}`
             : 'Día seleccionado'
 
     const routineDayExerciseIds = exercisesForDay.map((item) => item.id)
@@ -468,7 +468,7 @@ export default async function StudentTrainPage(props: PageProps) {
                     <div className="mb-4">
                         <div className="flex gap-1.5 overflow-x-auto pb-1">
                             {(routineDays ?? []).map((day, index) => {
-                                const label = day.name?.trim() || `Día ${(day as any).day_index ?? index + 1}`
+                                const label = day.name?.trim() || `Día ${day.day_index ?? index + 1}`
                                 const isActive = day.id === selectedDayId
                                 return (
                                     <Link

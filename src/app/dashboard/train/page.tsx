@@ -13,6 +13,18 @@ type TrainStudentItem = {
     riskLevel: 'low' | 'medium' | 'high'
 }
 
+type RoutineSummary = {
+    id: string
+    student_id: string
+    name: string | null
+    days_per_week: number | null
+}
+
+type WorkoutLogSummary = {
+    student_id: string
+    performed_at: string
+}
+
 export default async function TrainSelectorPage() {
     const supabase = await createClient()
 
@@ -36,31 +48,35 @@ export default async function TrainSelectorPage() {
     // -------------------------
     // 2. rutinas
     // -------------------------
-    const { data: routines } = studentIds.length
-        ? await supabase
+    let routines: RoutineSummary[] = []
+    if (studentIds.length) {
+        const { data } = await supabase
             .from('routines')
             .select('id, student_id, name, days_per_week')
             .in('student_id', studentIds)
-        : { data: [] as any[] }
+        routines = data ?? []
+    }
 
     const routineMap = new Map(
-        (routines ?? []).map((r) => [r.student_id, r])
+        routines.map((r) => [r.student_id, r])
     )
 
     // -------------------------
     // 3. último entrenamiento
     // -------------------------
-    const { data: logs } = studentIds.length
-        ? await supabase
+    let logs: WorkoutLogSummary[] = []
+    if (studentIds.length) {
+        const { data } = await supabase
             .from('exercise_logs')
             .select('student_id, performed_at')
             .in('student_id', studentIds)
             .order('performed_at', { ascending: false })
-        : { data: [] as any[] }
+        logs = data ?? []
+    }
 
     const lastWorkoutMap = new Map<string, string>()
 
-    for (const log of logs ?? []) {
+    for (const log of logs) {
         if (!lastWorkoutMap.has(log.student_id)) {
             lastWorkoutMap.set(log.student_id, log.performed_at)
         }

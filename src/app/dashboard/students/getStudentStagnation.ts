@@ -55,8 +55,14 @@ export async function getStudentStagnation(
         }
     >()
 
-    for (const log of safeLogs as any[]) {
-        const exercise = log?.routine_day_exercises?.exercises
+    for (const log of safeLogs) {
+        const routineDayExercise = Array.isArray(log.routine_day_exercises)
+            ? log.routine_day_exercises[0]
+            : log.routine_day_exercises
+        const relatedExercises = routineDayExercise?.exercises
+        const exercise = Array.isArray(relatedExercises)
+            ? relatedExercises[0]
+            : relatedExercises
         const exerciseId = String(exercise?.id ?? '')
         const exerciseName = String(exercise?.name ?? 'Ejercicio')
         const performedAt = String(log?.performed_at ?? '')

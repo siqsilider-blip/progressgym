@@ -43,7 +43,7 @@ export async function linkStudentToUser(payload: {
     // 1. Buscar en auth.users por email vía admin, trayendo todas las
     //    páginas. No logueamos listas de emails ni PII: solo si se
     //    encontró o no, y errores técnicos sin datos personales.
-    let foundUser: { id: string; email?: string; user_metadata?: any } | undefined
+    let foundUser: { id: string; email?: string; user_metadata?: { name?: string } } | undefined
     let page = 1
     const perPage = 200
 

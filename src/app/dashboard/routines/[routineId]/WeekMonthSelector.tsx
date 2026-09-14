@@ -301,8 +301,8 @@ export default function WeekMonthSelector({
                                 } else if (res?.newWeekId) {
                                     router.push(`/dashboard/routines/${routineId}?week=${res.newWeekId}${selectedMonthId ? `&month=${selectedMonthId}` : ''}`)
                                 }
-                            } catch(err: any) {
-                                setErrorMsg(err.message || 'Error inesperado')
+                            } catch (error: unknown) {
+                                setErrorMsg(error instanceof Error ? error.message : 'Error inesperado')
                             }
                         })
                     }}>

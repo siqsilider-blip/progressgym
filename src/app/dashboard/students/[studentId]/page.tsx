@@ -104,7 +104,7 @@ export default async function StudentProfilePage(props: PageProps) {
         ? `/dashboard/students/${params.studentId}/train?month=${lastTrainMonth}&week=${lastTrainWeek}`
         : `/dashboard/students/${params.studentId}/train`
 
-    const showPrs = (trainerProfile.data as any)?.show_prs ?? true
+    const showPrs = trainerProfile.data?.show_prs ?? true
 
     const fullName =
         `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim() || 'Alumno'
@@ -122,19 +122,19 @@ export default async function StudentProfilePage(props: PageProps) {
                 </div>
                 {risk && (
                     <span className={`mt-1 shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold ${
-                        (risk as any).level === 'critical' ? 'border-red-500/30 bg-red-500/10 text-red-400' :
-                        (risk as any).level === 'high' ? 'border-orange-500/30 bg-orange-500/10 text-orange-400' :
-                        (risk as any).level === 'medium' ? 'border-yellow-500/30 bg-yellow-500/10 text-yellow-300' :
+                        risk.level === 'critical' ? 'border-red-500/30 bg-red-500/10 text-red-400' :
+                        risk.level === 'high' ? 'border-orange-500/30 bg-orange-500/10 text-orange-400' :
+                        risk.level === 'medium' ? 'border-yellow-500/30 bg-yellow-500/10 text-yellow-300' :
                         'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
                     }`}>
-                        {(risk as any).level === 'critical' ? 'Crítico' :
-                         (risk as any).level === 'high' ? 'Alto' :
-                         (risk as any).level === 'medium' ? 'Medio' : 'Bajo'}
+                        {risk.level === 'critical' ? 'Crítico' :
+                         risk.level === 'high' ? 'Alto' :
+                         risk.level === 'medium' ? 'Medio' : 'Bajo'}
                     </span>
                 )}
             </div>
 
-            <StudentRiskCard risk={risk as any} />
+            <StudentRiskCard risk={risk} />
 
             <div className="grid gap-4 lg:grid-cols-2">
                 <StudentAdherenceCard
@@ -146,18 +146,18 @@ export default async function StudentProfilePage(props: PageProps) {
                 />
 
                 <StudentStagnationCard
-                    stagnation={(stagnation ?? null) as any}
+                    stagnation={stagnation}
                 />
             </div>
 
             <StudentBestProgressCard
-                bestProgress={(bestPR ?? null) as any}
+                bestProgress={bestPR}
                 weightUnit="kg"
                 showPrs={showPrs}
             />
 
             <StudentRecentPRsCard
-                prs={(recentPRs ?? []) as any}
+                prs={recentPRs}
                 weightUnit="kg"
                 showPrs={showPrs}
             />

@@ -95,7 +95,7 @@ export async function getStudentTopProgress(
         }
     >()
 
-    for (const log of logs as any[]) {
+    for (const log of logs) {
         const routineDayExerciseId = log.routine_day_exercise_id
         if (!routineDayExerciseId || log.weight == null) continue
 

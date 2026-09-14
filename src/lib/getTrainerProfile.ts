@@ -50,10 +50,10 @@ export async function getTrainerProfile(): Promise<TrainerProfile | null> {
         gym_name: trainerProfile?.gym_name ?? null,
         default_routine_days: trainerProfile?.default_routine_days ?? null,
         weight_unit: profile?.weight_unit ?? 'kg',
-        default_sets: (trainerProfile as any)?.default_sets ?? 3,
-        default_reps: (trainerProfile as any)?.default_reps ?? 10,
-        default_rest: (trainerProfile as any)?.default_rest ?? 60,
-        show_prs: (trainerProfile as any)?.show_prs ?? true,
-        show_charts: (trainerProfile as any)?.show_charts ?? true,
+        default_sets: trainerProfile?.default_sets ?? 3,
+        default_reps: trainerProfile?.default_reps ?? 10,
+        default_rest: trainerProfile?.default_rest ?? 60,
+        show_prs: trainerProfile?.show_prs ?? true,
+        show_charts: trainerProfile?.show_charts ?? true,
     }
 }

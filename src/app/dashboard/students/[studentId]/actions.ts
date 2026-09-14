@@ -33,7 +33,7 @@ export async function deleteStudent(formData: FormData) {
 
 export async function saveStudentNote(
     studentId: string,
-    prevState: any,
+    prevState: { error?: string; success?: boolean } | null,
     formData: FormData
 ) {
     const supabase = await createClient()

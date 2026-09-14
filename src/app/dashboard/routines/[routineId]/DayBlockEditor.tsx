@@ -15,6 +15,17 @@ export type ExerciseOption = {
     metric_type: 'reps' | 'time' | null
 }
 
+type ExerciseRelation = {
+    name: string
+    muscle_group: string | null
+    metric_type: 'reps' | 'time' | null
+}
+
+type RoutineActionResult = {
+    ok: boolean
+    error?: string
+}
+
 export type DayExercise = {
     id: string
     exercise_id: string
@@ -23,7 +34,7 @@ export type DayExercise = {
     rest_seconds: number | null
     position: number | null
     block: Block
-    exercise: { name: string; muscle_group: string | null; metric_type: 'reps' | 'time' | null } | { name: string; muscle_group: string | null; metric_type: 'reps' | 'time' | null }[] | null
+    exercise: ExerciseRelation | ExerciseRelation[] | null
 }
 
 export type ExerciseLog = {
@@ -44,9 +55,9 @@ type Props = {
     defaultSets: number
     defaultReps: number
     defaultRest: number
-    addAction: (fd: FormData) => Promise<any>
+    addAction: (fd: FormData) => Promise<RoutineActionResult>
     createExerciseAction: (input: { routineId: string; name: string; category?: string; metricType?: 'reps' | 'time' }) => Promise<{ ok: boolean; exercise?: ExerciseOption; error?: string }>
-    updateAction: (fd: FormData) => Promise<any>
+    updateAction: (fd: FormData) => Promise<RoutineActionResult>
     moveAction: (fd: FormData) => Promise<{ ok: boolean; error?: string }>
     deleteAction: (fd: FormData) => Promise<void>
     weekId: string
@@ -209,7 +220,7 @@ function ExerciseRow({
     isEditing: boolean
     onEdit: () => void
     onCancelEdit: () => void
-    updateAction: (fd: FormData) => Promise<any>
+    updateAction: (fd: FormData) => Promise<RoutineActionResult>
     moveAction: (fd: FormData) => Promise<{ ok: boolean; error?: string }>
     deleteAction: (fd: FormData) => Promise<void>
     routineId: string
@@ -247,8 +258,8 @@ function ExerciseRow({
                                 onCancelEdit()
                                 router.refresh()
                             }
-                        } catch (err: any) {
-                            setErrorMsg(err.message || 'Error inesperado')
+                        } catch (error: unknown) {
+                            setErrorMsg(error instanceof Error ? error.message : 'Error inesperado')
                         }
                     })
                 }} className="space-y-3">
@@ -437,7 +448,7 @@ function AddExerciseForm({
     defaultReps: number
     defaultRest: number
     onCancel: () => void
-    addAction: (fd: FormData) => Promise<any>
+    addAction: (fd: FormData) => Promise<RoutineActionResult>
     createExerciseAction: (input: { routineId: string; name: string; category?: string; metricType?: 'reps' | 'time' }) => Promise<{ ok: boolean; exercise?: ExerciseOption; error?: string }>
     isPending: boolean
     startTransition: (cb: () => void) => void
@@ -521,8 +532,8 @@ function AddExerciseForm({
                         onCancel()
                         router.refresh()
                     }
-                } catch (err: any) {
-                    setErrorMsg(err.message || 'Error inesperado')
+                } catch (error: unknown) {
+                    setErrorMsg(error instanceof Error ? error.message : 'Error inesperado')
                 }
             })
         }} className="space-y-3">
@@ -701,7 +712,7 @@ function AddExerciseForm({
     )
 }
 
-function ExerciseLogs({ logs, weightUnit, relation }: { logs: ExerciseLog[], weightUnit: WeightUnit, relation: any }) {
+function ExerciseLogs({ logs, weightUnit, relation }: { logs: ExerciseLog[], weightUnit: WeightUnit, relation: ExerciseRelation | null }) {
     if (!logs || logs.length === 0) return null
 
     const latestLog = logs[0]

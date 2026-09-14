@@ -440,11 +440,11 @@ export default async function RoutineDetailPage(props: PageProps) {
                                     defaultSets={trainerProfile?.default_sets ?? 3}
                                     defaultReps={trainerProfile?.default_reps ?? 10}
                                     defaultRest={trainerProfile?.default_rest ?? 60}
-                                    addAction={addExerciseToRoutineDay as unknown as (fd: FormData) => Promise<any>}
+                                    addAction={addExerciseToRoutineDay}
                                     createExerciseAction={createExerciseFromRoutine}
-                                    updateAction={updateExerciseInRoutineDay as unknown as (fd: FormData) => Promise<any>}
+                                    updateAction={updateExerciseInRoutineDay}
                                     moveAction={moveExerciseInRoutineDay}
-                                    deleteAction={deleteExerciseFromRoutineDay as unknown as (fd: FormData) => Promise<any>}
+                                    deleteAction={deleteExerciseFromRoutineDay}
                                     weekId={selectedWeek!.id}
                                     logsByExercise={logsByExercise}
                                     weightUnit={weightUnit}

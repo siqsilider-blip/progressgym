@@ -35,7 +35,7 @@ export async function getStudentWeeklyVolume(
         .from('exercises')
         .select('name, muscle_group')
 
-    const exerciseMap = new Map()
+    const exerciseMap = new Map<string, string | null>()
 
     for (const ex of exercises || []) {
         exerciseMap.set(ex.name, ex.muscle_group)
@@ -44,9 +44,11 @@ export async function getStudentWeeklyVolume(
     const volume = new Map<string, number>()
 
     // 3️⃣ Calcular volumen
-    for (const log of logs as any[]) {
-        const exerciseName =
-            log.routine_day_exercises?.exercise_name || ''
+    for (const log of logs) {
+        const routineDayExercise = Array.isArray(log.routine_day_exercises)
+            ? log.routine_day_exercises[0]
+            : log.routine_day_exercises
+        const exerciseName = routineDayExercise?.exercise_name || ''
 
         let muscle = exerciseMap.get(exerciseName) || 'otros'
 

@@ -101,7 +101,7 @@ export async function getStudentTopProgressCharts(
         }
     >()
 
-    for (const log of logs as any[]) {
+    for (const log of logs) {
         const routineDayExerciseId = log.routine_day_exercise_id
         if (!routineDayExerciseId || log.weight == null) continue
 
@@ -110,6 +110,8 @@ export async function getStudentTopProgressCharts(
 
         const exerciseName = exerciseIdToName.get(exerciseId) ?? 'Ejercicio'
         const weight = Number(log.weight)
+
+        if (!log.created_at) continue
 
         const point = {
             label: new Date(log.created_at).toISOString().slice(0, 10),
