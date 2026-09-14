@@ -29,52 +29,26 @@ export async function saveSet(payload: {
             return { ok: false, error: 'Completá al menos peso o reps', action: null }
         }
 
-        const { data: existingLog } = await supabase
-            .from('exercise_logs')
-            .select('id')
-            .eq('workout_session_id', payload.sessionId)
-            .eq('routine_day_exercise_id', payload.routineDayExerciseId)
-            .eq('set_index', payload.setIndex)
-            .maybeSingle()
+        const { data: action, error } = await supabase.rpc('save_workout_set_safe', {
+            p_session_id: payload.sessionId,
+            p_routine_day_exercise_id: payload.routineDayExerciseId,
+            p_set_index: payload.setIndex,
+            p_weight: payload.weight,
+            p_reps: payload.reps,
+            p_rpe: payload.rpe ?? null,
+            p_performed_at: payload.performedAt,
+        })
 
-        if (existingLog?.id) {
-            const { error: updateError } = await supabase
-                .from('exercise_logs')
-                .update({
-                    weight: payload.weight,
-                    reps: payload.reps,
-                    rpe: payload.rpe ?? null,
-                    performed_at: payload.performedAt,
-                })
-                .eq('id', existingLog.id)
-
-            if (updateError) {
-                console.error('Error actualizando set:', updateError)
-                return { ok: false, error: updateError.message, action: null }
-            }
-
-            return { ok: true, error: null, action: 'updated' }
+        if (error) {
+            console.error('Error guardando set:', error)
+            return { ok: false, error: error.message, action: null }
         }
 
-        const { error: insertError } = await supabase
-            .from('exercise_logs')
-            .insert({
-                student_id: payload.studentId,
-                routine_day_exercise_id: payload.routineDayExerciseId,
-                workout_session_id: payload.sessionId,
-                weight: payload.weight,
-                reps: payload.reps,
-                rpe: payload.rpe ?? null,
-                performed_at: payload.performedAt,
-                set_index: payload.setIndex,
-            })
-
-        if (insertError) {
-            console.error('Error guardando set:', insertError)
-            return { ok: false, error: insertError.message, action: null }
+        return {
+            ok: true,
+            error: null,
+            action: action === 'updated' ? 'updated' : 'inserted',
         }
-
-        return { ok: true, error: null, action: 'inserted' }
     } catch (err) {
         console.error('Error inesperado en saveSet:', err)
         return { ok: false, error: 'Error inesperado', action: null }

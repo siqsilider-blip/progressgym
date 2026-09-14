@@ -7,62 +7,26 @@ export async function startWorkoutSession(payload: {
     performedDate?: string
 }): Promise<{ sessionId: string | null; resumed: boolean; justCompleted: boolean }> {
     const supabase = await createClient()
-
-    const todayStart = new Date()
-    todayStart.setHours(0, 0, 0, 0)
-
-    // 1. Buscar sesión in_progress de hoy
-    const { data: existingSession } = await supabase
-        .from('workout_sessions')
-        .select('id')
-        .eq('student_id', payload.studentId)
-        .eq('trainer_id', payload.trainerId)
-        .eq('routine_day_id', payload.routineDayId)
-        .eq('status', 'in_progress')
-        .gte('started_at', todayStart.toISOString())
-        .maybeSingle()
-
-    if (existingSession?.id) {
-        return { sessionId: existingSession.id, resumed: true, justCompleted: false }
-    }
-
-    // 2. Buscar sesión completed en los últimos 10 minutos (evitar recrear)
-    const tenMinutesAgo = new Date(Date.now() - 600_000).toISOString()
-    const { data: recentCompleted } = await supabase
-        .from('workout_sessions')
-        .select('id')
-        .eq('student_id', payload.studentId)
-        .eq('trainer_id', payload.trainerId)
-        .eq('routine_day_id', payload.routineDayId)
-        .eq('status', 'completed')
-        .gte('finished_at', tenMinutesAgo)
-        .maybeSingle()
-
-    if (recentCompleted?.id) {
-        return { sessionId: recentCompleted.id, resumed: false, justCompleted: true }
-    }
-
-    // 3. Crear nueva sesión
-    const performedDate =
-        payload.performedDate ?? new Date().toISOString().slice(0, 10)
-
-    const { data: session, error: insertError } = await supabase
-        .from('workout_sessions')
-        .insert({
-            student_id: payload.studentId,
-            trainer_id: payload.trainerId,
-            routine_day_id: payload.routineDayId,
-            status: 'in_progress',
-            performed_date: performedDate,
-            started_at: new Date().toISOString(),
-        })
-        .select('id')
-        .single()
-
-    if (insertError || !session) {
-        console.error('Error creando workout_session:', insertError)
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
         return { sessionId: null, resumed: false, justCompleted: false }
     }
 
-    return { sessionId: session.id, resumed: false, justCompleted: false }
+    const { data, error } = await supabase.rpc('start_workout_session_safe', {
+        p_student_id: payload.studentId,
+        p_routine_day_id: payload.routineDayId,
+        p_performed_date: payload.performedDate ?? new Date().toISOString().slice(0, 10),
+    })
+
+    const session = data?.[0]
+    if (error || !session?.session_id) {
+        console.error('Error creando workout_session:', error)
+        return { sessionId: null, resumed: false, justCompleted: false }
+    }
+
+    return {
+        sessionId: session.session_id,
+        resumed: Boolean(session.resumed),
+        justCompleted: Boolean(session.just_completed),
+    }
 }

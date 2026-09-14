@@ -89,6 +89,7 @@ export default function TrainFocusedView({
     const [sets, setSets] = React.useState<SetState[][]>(() => initAllSets(exercises))
     const [phase, setPhase] = React.useState<Phase>(initialPhase ?? 'training')
     const [saving, setSaving] = React.useState(false)
+    const [saveError, setSaveError] = React.useState<string | null>(null)
     const [prsThisSession, setPrsThisSession] = React.useState(0)
     const [completedSetsTotal, setCompletedSetsTotal] = React.useState(0)
 
@@ -210,22 +211,31 @@ export default function TrainFocusedView({
         if (weightVal === null && repsVal === null) return
 
         setSaving(true)
+        setSaveError(null)
 
-        const result = await saveSet({
-            sessionId,
-            studentId,
-            routineDayExerciseId: exercise.id,
-            setIndex: targetSet.setIndex,
-            weight: weightVal,
-            reps: repsVal,
-            rpe: rpeVal,
-            performedAt,
-        })
+        let result: Awaited<ReturnType<typeof saveSet>>
+        try {
+            result = await saveSet({
+                sessionId,
+                studentId,
+                routineDayExerciseId: exercise.id,
+                setIndex: targetSet.setIndex,
+                weight: weightVal,
+                reps: repsVal,
+                rpe: rpeVal,
+                performedAt,
+            })
+        } catch {
+            setSaving(false)
+            setSaveError('No pudimos guardar. Revisá tu conexión y tocá nuevamente.')
+            return
+        }
 
         setSaving(false)
 
         if (!result.ok) {
             console.error('Error saving set:', result.error)
+            setSaveError(result.error || 'No pudimos guardar esta serie. Intentá nuevamente.')
             return
         }
 
@@ -1088,7 +1098,12 @@ export default function TrainFocusedView({
                     bottom: `calc(${APP_BOTTOM_NAV_HEIGHT_PX}px + env(safe-area-inset-bottom, 0px))`,
                 }}
             >
-                {(setFlash || (showPrs && prFlash)) && (
+                {saveError && (
+                    <div className="border-b border-red-500/20 bg-red-500/10 px-4 py-2 text-center">
+                        <p className="text-xs font-medium text-red-600 dark:text-red-400">{saveError}</p>
+                    </div>
+                )}
+                {(setFlash || (showPrs && prFlash)) && !saveError && (
                     <div className="border-b border-border px-4 py-1.5 text-center">
                         {showPrs && prFlash ? (
                             <p className="text-xs font-semibold text-amber-600 dark:text-amber-400">🏆 ¡Nuevo PR!</p>
