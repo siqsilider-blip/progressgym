@@ -9,10 +9,23 @@ export default function WorkoutRestTimer() {
     const [flashDone, setFlashDone] = React.useState(false)
 
     const endTimeRef = React.useRef<number | null>(null)
+    const timeLeftRef = React.useRef(0)
     const audioContextRef = React.useRef<AudioContext | null>(null)
     const audioSourceRef = React.useRef<AudioBufferSourceNode | null>(null)
 
-    function startSilentAudio() {
+    const stopSilentAudio = React.useCallback(() => {
+        try {
+            audioSourceRef.current?.stop()
+            audioContextRef.current?.close()
+            audioContextRef.current = null
+            audioSourceRef.current = null
+        } catch {
+            // El audio puede haberse detenido previamente al pausar o finalizar.
+        }
+    }, [])
+
+    const startSilentAudio = React.useCallback(() => {
+        stopSilentAudio()
         try {
             const ctx = new AudioContext()
             const buffer = ctx.createBuffer(1, ctx.sampleRate * 0.1, ctx.sampleRate)
@@ -23,37 +36,31 @@ export default function WorkoutRestTimer() {
             source.start()
             audioContextRef.current = ctx
             audioSourceRef.current = source
-        } catch (e) {
-            console.log('Audio context not available:', e)
+        } catch (error) {
+            console.log('Audio context not available:', error)
         }
-    }
+    }, [stopSilentAudio])
 
-    function stopSilentAudio() {
-        try {
-            audioSourceRef.current?.stop()
-            audioContextRef.current?.close()
-            audioContextRef.current = null
-            audioSourceRef.current = null
-        } catch (e) {}
-    }
-
-    function setupMediaSession(totalSeconds: number) {
+    const setupMediaSession = React.useCallback((totalSeconds: number) => {
         if (!('mediaSession' in navigator)) return
 
-        navigator.mediaSession.metadata = new MediaMetadata({
-            title: 'Descanso activo',
-            artist: 'ProgressGym',
-            album: `${Math.floor(totalSeconds / 60)}:${String(totalSeconds % 60).padStart(2, '0')} min`,
-        })
+        if ('MediaMetadata' in window) {
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: 'Descanso activo',
+                artist: 'ProgressGym',
+                album: `${Math.floor(totalSeconds / 60)}:${String(totalSeconds % 60).padStart(2, '0')} min`,
+            })
+        }
 
         navigator.mediaSession.setActionHandler('pause', () => {
             setIsRunning(false)
         })
 
         navigator.mediaSession.setActionHandler('play', () => {
+            startSilentAudio()
             setIsRunning(true)
         })
-    }
+    }, [startSilentAudio])
 
     React.useEffect(() => {
         const handleStart = (event: Event) => {
@@ -61,11 +68,12 @@ export default function WorkoutRestTimer() {
             const seconds = customEvent.detail?.seconds ?? 60
 
             endTimeRef.current = Date.now() + seconds * 1000
-            if (Notification.permission === 'default') {
-                Notification.requestPermission()
+            if ('Notification' in window && Notification.permission === 'default') {
+                void Notification.requestPermission()
             }
 
             setBaseSeconds(seconds)
+            timeLeftRef.current = seconds
             setTimeLeft(seconds)
             setIsRunning(true)
             setFlashDone(false)
@@ -85,13 +93,13 @@ export default function WorkoutRestTimer() {
             )
             stopSilentAudio()
         }
-    }, [])
+    }, [setupMediaSession, startSilentAudio, stopSilentAudio])
 
     React.useEffect(() => {
-        if (!isRunning || timeLeft <= 0) return
+        if (!isRunning || timeLeftRef.current <= 0) return
 
         // Re-anchor end time on every start/resume based on current timeLeft
-        endTimeRef.current = Date.now() + timeLeft * 1000
+        endTimeRef.current = Date.now() + timeLeftRef.current * 1000
 
         const interval = window.setInterval(() => {
             if (endTimeRef.current === null) return
@@ -99,13 +107,14 @@ export default function WorkoutRestTimer() {
             if (remaining <= 0) {
                 window.clearInterval(interval)
                 setIsRunning(false)
+                timeLeftRef.current = 0
                 setTimeLeft(0)
                 setFlashDone(true)
 
                 if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
                     navigator.vibrate(300)
                 }
-                if (Notification.permission === 'granted') {
+                if ('Notification' in window && Notification.permission === 'granted') {
                     new Notification('¡Descanso terminado!', {
                         body: 'Es hora de la próxima serie 💪',
                         icon: '/icon.png',
@@ -115,18 +124,19 @@ export default function WorkoutRestTimer() {
                 window.setTimeout(() => setFlashDone(false), 1200)
                 return
             }
+            timeLeftRef.current = remaining
             setTimeLeft(remaining)
         }, 250)
 
         return () => window.clearInterval(interval)
-    }, [isRunning])
+    }, [isRunning, stopSilentAudio])
 
     // Stop silent audio whenever the timer stops (end or pause)
     React.useEffect(() => {
         if (!isRunning) {
             stopSilentAudio()
         }
-    }, [isRunning])
+    }, [isRunning, stopSilentAudio])
 
     const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60)
@@ -165,7 +175,11 @@ export default function WorkoutRestTimer() {
                         type="button"
                         onClick={() => {
                             if (endTimeRef.current !== null) endTimeRef.current += 15000
-                            setTimeLeft((prev) => prev + 15)
+                            setTimeLeft((prev) => {
+                                const next = prev + 15
+                                timeLeftRef.current = next
+                                return next
+                            })
                         }}
                         className="rounded-lg border border-border bg-secondary px-3 py-2 text-xs font-medium text-secondary-foreground transition hover:bg-muted"
                     >
@@ -176,6 +190,7 @@ export default function WorkoutRestTimer() {
                         type="button"
                         onClick={() => {
                             endTimeRef.current = null
+                            timeLeftRef.current = baseSeconds
                             setTimeLeft(baseSeconds)
                             setIsRunning(false)
                             setFlashDone(false)
@@ -187,7 +202,11 @@ export default function WorkoutRestTimer() {
 
                     <button
                         type="button"
-                        onClick={() => setIsRunning((prev) => !prev)}
+                        onClick={() => setIsRunning((prev) => {
+                            const next = !prev
+                            if (next) startSilentAudio()
+                            return next
+                        })}
                         className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-indigo-500"
                     >
                         {isRunning ? 'Pausar' : 'Seguir'}

@@ -29,7 +29,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             setLoading(false)
         }
         check()
-    }, [])
+    }, [router])
 
     const navItems = [
         { href: '/app', icon: Home, label: 'Inicio', exact: true },

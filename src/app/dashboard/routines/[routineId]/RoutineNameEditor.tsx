@@ -62,10 +62,19 @@ export default function RoutineNameEditor({
             setSaveState('saving')
             setErrorMessage('')
 
-            const result = await updateAction({
-                routineId,
-                name: trimmed,
-            })
+            let result: { ok: boolean; error?: string }
+
+            try {
+                result = await updateAction({
+                    routineId,
+                    name: trimmed,
+                })
+            } catch {
+                if (currentRequestId !== requestIdRef.current) return
+                setSaveState('error')
+                setErrorMessage('No se pudo conectar. Intentá nuevamente.')
+                return
+            }
 
             if (currentRequestId !== requestIdRef.current) return
 
@@ -84,21 +93,18 @@ export default function RoutineNameEditor({
                 setSaveState('idle')
             }, 1400)
         },
-        [routineId]
+        [routineId, updateAction]
     )
 
     React.useEffect(() => {
         const trimmed = value.trim()
 
         if (!trimmed) {
-            if (saveState !== 'error') {
-                setSaveState('idle')
-            }
+            setSaveState((current) => current === 'error' ? current : 'idle')
             return
         }
 
         if (trimmed === lastSavedValueRef.current) {
-            if (saveState === 'saving') return
             return
         }
 
