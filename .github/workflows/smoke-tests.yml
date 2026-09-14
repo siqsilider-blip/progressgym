@@ -57,6 +57,18 @@ jobs:
           PLAYWRIGHT_BASE_URL: https://progressgym-sigma.vercel.app
         run: npm run test:e2e:prod
 
+      - name: Run authenticated journey when configured
+        env:
+          PLAYWRIGHT_BASE_URL: https://progressgym-sigma.vercel.app
+          E2E_SUPABASE_URL: ${{ secrets.E2E_SUPABASE_URL }}
+          E2E_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.E2E_SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          if [ -z "$E2E_SUPABASE_URL" ] || [ -z "$E2E_SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "::notice::Authenticated journey skipped until protected E2E secrets are configured."
+            exit 0
+          fi
+          npm run test:e2e:auth
+
       - name: Upload failure report
         if: failure()
         uses: actions/upload-artifact@v4

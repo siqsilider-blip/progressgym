@@ -3,6 +3,8 @@ import { expect, test } from '@playwright/test'
 const trainerEmail = process.env.E2E_TRAINER_EMAIL!
 const studentEmail = process.env.E2E_STUDENT_EMAIL!
 const password = process.env.E2E_AUTH_PASSWORD!
+const routineName = process.env.E2E_ROUTINE_NAME!
+const exerciseName = process.env.E2E_EXERCISE_NAME!
 
 async function logIn(page: import('@playwright/test').Page, role: 'trainer' | 'student', email: string) {
     await page.goto(`/login/${role}`)
@@ -22,7 +24,7 @@ test('el entrenador entra al panel y no al portal del alumno', async ({ page }) 
     await expect(page).toHaveURL(/\/dashboard(?:\?|$)/)
 })
 
-test('el alumno entra a su portal y no al panel del entrenador', async ({ page }) => {
+test('el alumno entra a su portal y no al panel del entrenador', async ({ page }, testInfo) => {
     await logIn(page, 'student', studentEmail)
 
     await expect(page).toHaveURL(/\/app(?:\?|$)/)
@@ -31,6 +33,29 @@ test('el alumno entra a su portal y no al panel del entrenador', async ({ page }
 
     await page.goto('/dashboard')
     await expect(page).toHaveURL(/\/app(?:\?|$)/)
+
+    if (testInfo.project.name === 'desktop-chromium') return
+
+    await page.goto('/app/rutina')
+    await expect(page.getByText(routineName, { exact: true })).toBeVisible()
+    await expect(page.getByText(exerciseName, { exact: true })).toBeVisible()
+    await page.getByRole('link', { name: /Entrenar/ }).click()
+
+    await expect(page).toHaveURL(/\/app\/train\?/)
+    await expect(page.getByText(/Día E2E · Activación · 1\/1/)).toBeVisible()
+    await expect(page.getByRole('heading', { name: exerciseName })).toBeVisible()
+
+    const numberInputs = page.locator('input[type="number"]')
+    await expect(numberInputs).toHaveCount(2)
+    await numberInputs.nth(0).fill('35')
+    await numberInputs.nth(1).fill('10')
+    await page.getByRole('button', { name: '7', exact: true }).click()
+    await page.getByRole('button', { name: 'Guardar set 1' }).click()
+
+    await expect(page.getByRole('heading', { name: 'Sesión completada' })).toBeVisible({ timeout: 15_000 })
+
+    await page.reload()
+    await expect(page.getByRole('heading', { name: 'Sesión completada' })).toBeVisible({ timeout: 15_000 })
 })
 
 test('cada tipo de cuenta es rechazado por el acceso equivocado', async ({ page }) => {

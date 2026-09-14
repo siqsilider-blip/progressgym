@@ -30,6 +30,18 @@ type ExerciseLog = {
     workout_session_id: string | null
 }
 
+type RoutineBlock = 'activation' | 'main' | 'closing'
+
+const BLOCK_ORDER: Record<RoutineBlock, number> = {
+    activation: 0,
+    main: 1,
+    closing: 2,
+}
+
+function normalizeBlock(block: string | null): RoutineBlock {
+    return block === 'activation' || block === 'closing' ? block : 'main'
+}
+
 export default async function AppTrainPage(props: PageProps) {
     const searchParams = await props.searchParams;
     const supabase = await createClient()
@@ -144,16 +156,22 @@ export default async function AppTrainPage(props: PageProps) {
         sets: number | null
         reps: number | null
         rest_seconds: number | null
+        position: number | null
+        block: string | null
     }[] = []
 
     if (selectedDayId) {
         const { data: rde } = await supabase
             .from('routine_day_exercises')
-            .select('id, exercise_id, sets, reps, rest_seconds')
+            .select('id, exercise_id, sets, reps, rest_seconds, position, block')
             .eq('routine_day_id', selectedDayId)
             .order('position', { ascending: true, nullsFirst: false })
 
-        exercisesForDay = rde ?? []
+        exercisesForDay = (rde ?? []).sort((a, b) => {
+            const blockDifference = BLOCK_ORDER[normalizeBlock(a.block)] - BLOCK_ORDER[normalizeBlock(b.block)]
+            if (blockDifference !== 0) return blockDifference
+            return (a.position ?? Number.MAX_SAFE_INTEGER) - (b.position ?? Number.MAX_SAFE_INTEGER)
+        })
     }
 
     const exerciseIds = [...new Set(exercisesForDay.map(e => e.exercise_id).filter((id): id is string => Boolean(id)))]
@@ -217,6 +235,7 @@ export default async function AppTrainPage(props: PageProps) {
 
     // Iniciar sesión
     let workoutSessionId: string | null = null
+    let sessionJustCompleted = false
     if (selectedDayId && exercisesForDay.length > 0) {
         const sessionResult = await startWorkoutSession({
             studentId,
@@ -224,6 +243,7 @@ export default async function AppTrainPage(props: PageProps) {
             routineDayId: selectedDayId,
         })
         workoutSessionId = sessionResult.sessionId
+        sessionJustCompleted = sessionResult.justCompleted
     }
 
     const focusedExercises = exercisesForDay.map((exercise) => {
@@ -246,6 +266,7 @@ export default async function AppTrainPage(props: PageProps) {
             previousReps,
             lastPerformedAt: previousSession?.lastPerformedAt ?? null,
             video_url: meta?.video_url ?? null,
+            block: normalizeBlock(exercise.block),
         }
     })
 
@@ -324,6 +345,7 @@ export default async function AppTrainPage(props: PageProps) {
                 returnHref="/app"
                 progressHref="/app/progress"
                 showPrs={true}
+                initialPhase={sessionJustCompleted ? 'summary' : 'training'}
             />
         </div>
     )

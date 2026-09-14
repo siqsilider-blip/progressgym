@@ -1,22 +1,25 @@
 import { randomBytes } from 'node:crypto'
 import { loadEnvConfig } from '@next/env'
 import { createClient } from '@supabase/supabase-js'
+import { removeAuthFixtureData } from './auth-fixture-cleanup'
 
 type CreatedFixture = {
     trainerUserId?: string
     studentUserId?: string
     studentId?: string
+    routineId?: string
+    exerciseId?: string
 }
 
 export default async function createAuthFixture() {
     loadEnvConfig(process.cwd())
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    const supabaseUrl = process.env.E2E_SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL
+    const serviceRoleKey = process.env.E2E_SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY
 
     if (!supabaseUrl || !serviceRoleKey) {
         throw new Error(
-            'Las pruebas autenticadas requieren NEXT_PUBLIC_SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY.'
+            'Las pruebas autenticadas requieren la URL de Supabase y una service role key.'
         )
     }
 
@@ -50,22 +53,12 @@ export default async function createAuthFixture() {
             .select('id')
             .like('email', 'e2e-%@example.com')
 
-        if (staleUserIds.length > 0) {
-            await admin.from('profiles').delete().in('id', staleUserIds)
-        }
-
         const staleStudentIds = (staleStudents ?? []).map((student) => student.id)
-        if (staleStudentIds.length > 0) {
-            await admin.from('students').delete().in('id', staleStudentIds)
-        }
-
-        if (staleUserIds.length > 0) {
-            await admin.from('trainers').delete().in('id', staleUserIds)
-        }
-
-        for (const userId of staleUserIds) {
-            await admin.auth.admin.deleteUser(userId)
-        }
+        await removeAuthFixtureData(admin, {
+            userIds: staleUserIds,
+            trainerIds: staleUserIds,
+            studentIds: staleStudentIds,
+        })
     }
 
     await removeStaleFixtures()
@@ -77,25 +70,16 @@ export default async function createAuthFixture() {
     const created: CreatedFixture = {}
 
     async function cleanup() {
-        const profileIds = [created.trainerUserId, created.studentUserId].filter(
+        const userIds = [created.trainerUserId, created.studentUserId].filter(
             (id): id is string => Boolean(id)
         )
-
-        if (profileIds.length > 0) {
-            await admin.from('profiles').delete().in('id', profileIds)
-        }
-
-        if (created.studentId) {
-            await admin.from('students').delete().eq('id', created.studentId)
-        }
-
-        if (profileIds.length > 0) {
-            await admin.from('trainers').delete().in('id', profileIds)
-        }
-
-        for (const userId of profileIds) {
-            await admin.auth.admin.deleteUser(userId)
-        }
+        await removeAuthFixtureData(admin, {
+            userIds,
+            trainerIds: userIds,
+            studentIds: created.studentId ? [created.studentId] : [],
+            routineIds: created.routineId ? [created.routineId] : [],
+            exerciseIds: created.exerciseId ? [created.exerciseId] : [],
+        })
     }
 
     try {
@@ -163,12 +147,110 @@ export default async function createAuthFixture() {
         })
         if (studentProfileError) throw studentProfileError
 
+        const { data: routine, error: routineError } = await admin
+            .from('routines')
+            .insert({
+                trainer_id: trainerAuth.user.id,
+                name: `Rutina E2E ${runId}`,
+                days_per_week: 1,
+            })
+            .select('id')
+            .single()
+        if (routineError || !routine) {
+            throw new Error(`No se pudo crear la rutina E2E: ${routineError?.message}`)
+        }
+        created.routineId = routine.id
+
+        const { data: month, error: monthError } = await admin
+            .from('routine_months')
+            .insert({ routine_id: routine.id, month_number: 1, name: 'Mesociclo E2E' })
+            .select('id')
+            .single()
+        if (monthError || !month) {
+            throw new Error(`No se pudo crear el mesociclo E2E: ${monthError?.message}`)
+        }
+
+        const { data: week, error: weekError } = await admin
+            .from('routine_weeks')
+            .insert({
+                routine_id: routine.id,
+                routine_month_id: month.id,
+                week_number: 1,
+                name: 'Semana E2E',
+            })
+            .select('id')
+            .single()
+        if (weekError || !week) {
+            throw new Error(`No se pudo crear la semana E2E: ${weekError?.message}`)
+        }
+
+        const { data: day, error: dayError } = await admin
+            .from('routine_days')
+            .insert({
+                routine_id: routine.id,
+                routine_week_id: week.id,
+                day_index: 1,
+                day_number: 1,
+                name: 'Día E2E',
+                title: 'Día E2E',
+            })
+            .select('id')
+            .single()
+        if (dayError || !day) {
+            throw new Error(`No se pudo crear el día E2E: ${dayError?.message}`)
+        }
+
+        const { data: exercise, error: exerciseError } = await admin
+            .from('exercises')
+            .insert({
+                trainer_id: trainerAuth.user.id,
+                name: `Ejercicio E2E ${runId}`,
+                metric_type: 'reps',
+                muscle_group: 'Prueba E2E',
+            })
+            .select('id')
+            .single()
+        if (exerciseError || !exercise) {
+            throw new Error(`No se pudo crear el ejercicio E2E: ${exerciseError?.message}`)
+        }
+        created.exerciseId = exercise.id
+
+        const { data: dayExercise, error: dayExerciseError } = await admin
+            .from('routine_day_exercises')
+            .insert({
+                routine_day_id: day.id,
+                exercise_id: exercise.id,
+                sets: 1,
+                reps: 10,
+                rest_seconds: 0,
+                position: 1,
+                block: 'activation',
+            })
+            .select('id')
+            .single()
+        if (dayExerciseError || !dayExercise) {
+            throw new Error(`No se pudo agregar el ejercicio E2E: ${dayExerciseError?.message}`)
+        }
+
+        const { error: assignmentError } = await admin.from('student_routines').insert({
+            student_id: student.id,
+            routine_id: routine.id,
+            status: 'active',
+        })
+        if (assignmentError) throw assignmentError
+
         process.env.E2E_TRAINER_EMAIL = trainerEmail
         process.env.E2E_STUDENT_EMAIL = studentEmail
         process.env.E2E_AUTH_PASSWORD = password
         process.env.E2E_TRAINER_USER_ID = trainerAuth.user.id
         process.env.E2E_STUDENT_USER_ID = studentAuth.user.id
         process.env.E2E_STUDENT_ID = student.id
+        process.env.E2E_ROUTINE_ID = routine.id
+        process.env.E2E_ROUTINE_DAY_ID = day.id
+        process.env.E2E_ROUTINE_DAY_EXERCISE_ID = dayExercise.id
+        process.env.E2E_EXERCISE_ID = exercise.id
+        process.env.E2E_ROUTINE_NAME = `Rutina E2E ${runId}`
+        process.env.E2E_EXERCISE_NAME = `Ejercicio E2E ${runId}`
     } catch (error) {
         await cleanup()
         throw error
