@@ -4,8 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
 
-function supabaseServer() {
-    const cookieStore = cookies()
+async function supabaseServer() {
+    const cookieStore = await cookies()
 
     return createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -33,7 +33,7 @@ export async function createExercise(payload: {
     metric_type?: 'reps' | 'time'
     video_url?: string
 }) {
-    const supabase = supabaseServer()
+    const supabase = await supabaseServer()
 
     const {
         data: { user },
@@ -65,7 +65,7 @@ export async function createExercise(payload: {
 }
 
 export async function listExercises() {
-    const supabase = supabaseServer()
+    const supabase = await supabaseServer()
 
     const {
         data: { user },
@@ -98,7 +98,7 @@ export async function updateExercise(id: string, payload: {
     muscle_group?: string
     video_url?: string
 }) {
-    const supabase = supabaseServer()
+    const supabase = await supabaseServer()
 
     const {
         data: { user },
@@ -126,7 +126,7 @@ export async function updateExercise(id: string, payload: {
 }
 
 export async function deleteExercise(id: string) {
-    const supabase = supabaseServer()
+    const supabase = await supabaseServer()
 
     const {
         data: { user },

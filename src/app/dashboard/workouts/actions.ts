@@ -4,8 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
-function supabaseServer() {
-    const cookieStore = cookies()
+async function supabaseServer() {
+    const cookieStore = await cookies()
 
     return createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -31,7 +31,7 @@ export async function createWorkout(payload: {
     name?: string | null
     notes?: string | null
 }) {
-    const supabase = supabaseServer()
+    const supabase = await supabaseServer()
 
     const { data: { user }, error: userErr } = await supabase.auth.getUser()
     if (userErr || !user) return { ok: false, message: 'No estás logueado.' }
@@ -51,7 +51,7 @@ export async function createWorkout(payload: {
 }
 
 export async function deleteWorkout(id: string) {
-    const supabase = supabaseServer()
+    const supabase = await supabaseServer()
 
     const { data: { user }, error: userErr } = await supabase.auth.getUser()
     if (userErr || !user) return { ok: false, message: 'No estás logueado.' }
@@ -79,7 +79,7 @@ export async function addWorkoutExercise(payload: {
     rest_seconds?: number | null
     notes?: string | null
 }) {
-    const supabase = supabaseServer()
+    const supabase = await supabaseServer()
 
     const { data: { user }, error: userErr } = await supabase.auth.getUser()
     if (userErr || !user) return { ok: false, message: 'No estás logueado.' }
@@ -104,7 +104,7 @@ export async function addWorkoutExercise(payload: {
 }
 
 export async function deleteWorkoutExercise(id: string) {
-    const supabase = supabaseServer()
+    const supabase = await supabaseServer()
 
     const { data: { user }, error: userErr } = await supabase.auth.getUser()
     if (userErr || !user) return { ok: false, message: 'No estás logueado.' }

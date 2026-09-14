@@ -2,9 +2,9 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
 type PageProps = {
-    params: {
+    params: Promise<{
         studentId: string
-    }
+    }>
 }
 
 async function assignRoutine(formData: FormData) {
@@ -62,7 +62,8 @@ async function assignRoutine(formData: FormData) {
     redirect(`/dashboard/students/${studentId}`)
 }
 
-export default async function AssignRoutinePage({ params }: PageProps) {
+export default async function AssignRoutinePage(props: PageProps) {
+    const params = await props.params;
     const supabase = await createClient()
 
     const {

@@ -4,8 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
-function supabaseServer() {
-    const cookieStore = cookies()
+async function supabaseServer() {
+    const cookieStore = await cookies()
 
     return createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -33,7 +33,7 @@ const DEFAULT_DAYS = [
 ]
 
 export async function getRoutineForStudent(studentId: string) {
-    const supabase = supabaseServer()
+    const supabase = await supabaseServer()
 
     const { data: auth, error: authErr } = await supabase.auth.getUser()
     if (authErr || !auth?.user) {
@@ -55,7 +55,7 @@ export async function getRoutineForStudent(studentId: string) {
 }
 
 export async function createRoutine4Days(studentId: string) {
-    const supabase = supabaseServer()
+    const supabase = await supabaseServer()
 
     const { data: auth, error: authErr } = await supabase.auth.getUser()
     if (authErr || !auth?.user) {
@@ -141,7 +141,7 @@ export async function createRoutine4Days(studentId: string) {
 }
 
 export async function getRoutineDays(routineId: string) {
-    const supabase = supabaseServer()
+    const supabase = await supabaseServer()
 
     const { data: auth, error: authErr } = await supabase.auth.getUser()
     if (authErr || !auth?.user) {
@@ -165,7 +165,7 @@ export async function renameRoutineDay(payload: {
     routineDayId: string
     title: string
 }) {
-    const supabase = supabaseServer()
+    const supabase = await supabaseServer()
 
     const { data: auth, error: authErr } = await supabase.auth.getUser()
     if (authErr || !auth?.user) {

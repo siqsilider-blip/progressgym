@@ -5,12 +5,13 @@ import { createRoutine } from './actions'
 import { getTrainerProfile } from '@/lib/getTrainerProfile'
 
 type PageProps = {
-    searchParams: {
+    searchParams: Promise<{
         studentId?: string
-    }
+    }>
 }
 
-export default async function NewRoutinePage({ searchParams }: PageProps) {
+export default async function NewRoutinePage(props: PageProps) {
+    const searchParams = await props.searchParams;
     const supabase = await createClient()
 
     const {

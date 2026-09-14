@@ -140,7 +140,7 @@ export default function RoutinesClient({ students, routines, error }: Props) {
                         <div>
                             <p className="text-sm font-semibold text-card-foreground">Sin resultados</p>
                             <p className="mt-0.5 text-xs text-muted-foreground">
-                                No hay alumnos que coincidan con "{search}"
+                                No hay alumnos que coincidan con &ldquo;{search}&rdquo;
                             </p>
                         </div>
                     </div>

@@ -4,12 +4,12 @@ import { createClient } from '@/lib/supabase/server'
 import { getStudentExerciseProgress } from '../../getStudentExerciseProgress'
 import { getTrainerProfile } from '@/lib/getTrainerProfile'
 import { type WeightUnit } from '@/lib/weight'
-import dynamic from 'next/dynamic'
-const ExerciseProgressCard = dynamic(() => import('../../ExerciseProgressCard'), { ssr: false })
+import ExerciseProgressCard from '../../ExerciseProgressCard'
 
-type PageProps = { params: { studentId: string } }
+type PageProps = { params: Promise<{ studentId: string }> }
 
-export default async function StudentProgressPage({ params }: PageProps) {
+export default async function StudentProgressPage(props: PageProps) {
+    const params = await props.params;
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) redirect('/login')

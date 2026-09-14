@@ -6,7 +6,7 @@ import { getTrainerProfile } from '@/lib/getTrainerProfile'
 import { formatWeight, type WeightUnit } from '@/lib/weight'
 
 type PageProps = {
-    params: { studentId: string }
+    params: Promise<{ studentId: string }>
 }
 
 function formatDate(dateStr: string) {
@@ -40,7 +40,8 @@ function groupByMonth(sessions: Awaited<ReturnType<typeof getStudentSessionHisto
     return groups
 }
 
-export default async function StudentHistoryPage({ params }: PageProps) {
+export default async function StudentHistoryPage(props: PageProps) {
+    const params = await props.params;
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) redirect('/login')

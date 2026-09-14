@@ -3,13 +3,14 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 
 type PageProps = {
-    searchParams?: {
+    searchParams?: Promise<{
         month?: string
         week?: string
-    }
+    }>
 }
 
-export default async function AppRutinePage({ searchParams }: PageProps) {
+export default async function AppRutinePage(props: PageProps) {
+    const searchParams = await props.searchParams;
     const supabase = await createClient()
 
     const { data: { user } } = await supabase.auth.getUser()

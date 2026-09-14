@@ -5,11 +5,11 @@ import { getExerciseMaxWeights } from '@/app/dashboard/students/[studentId]/trai
 import TrainFocusedView from '@/app/dashboard/students/[studentId]/train/TrainFocusedView'
 
 type PageProps = {
-    searchParams?: {
+    searchParams?: Promise<{
         day?: string
         week?: string
         month?: string
-    }
+    }>
 }
 
 type ExerciseMeta = {
@@ -30,7 +30,8 @@ type ExerciseLog = {
     workout_session_id: string | null
 }
 
-export default async function AppTrainPage({ searchParams }: PageProps) {
+export default async function AppTrainPage(props: PageProps) {
+    const searchParams = await props.searchParams;
     const supabase = await createClient()
 
     const { data: { user } } = await supabase.auth.getUser()

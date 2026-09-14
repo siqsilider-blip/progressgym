@@ -1,11 +1,12 @@
 import Link from 'next/link'
 import { signup } from '@/app/auth/actions'
 
-export default async function SignupTrainerPage({
-    searchParams,
-}: {
-    searchParams: { [key: string]: string | string[] | undefined }
-}) {
+export default async function SignupTrainerPage(
+    props: {
+        searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+    }
+) {
+    const searchParams = await props.searchParams;
     const message = searchParams?.message
 
     return (

@@ -16,14 +16,14 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 type PageProps = {
-    params: {
+    params: Promise<{
         routineId: string
-    }
-    searchParams?: {
+    }>
+    searchParams?: Promise<{
         day?: string
         week?: string
         month?: string
-    }
+    }>
 }
 
 type RoutineMonth = {
@@ -81,10 +81,9 @@ type ExerciseLog = {
     created_at?: string | null
 }
 
-export default async function RoutineDetailPage({
-    params,
-    searchParams,
-}: PageProps) {
+export default async function RoutineDetailPage(props: PageProps) {
+    const searchParams = await props.searchParams;
+    const params = await props.params;
     const supabase = await createClient()
     const trainerProfile = await getTrainerProfile()
     const weightUnit = (trainerProfile?.weight_unit ?? 'kg') as WeightUnit

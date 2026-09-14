@@ -16,12 +16,13 @@ type TemplateStats = {
 }
 
 type PageProps = {
-    searchParams?: {
+    searchParams?: Promise<{
         q?: string
-    }
+    }>
 }
 
-export default async function TemplatesListPage({ searchParams }: PageProps) {
+export default async function TemplatesListPage(props: PageProps) {
+    const searchParams = await props.searchParams;
     const supabase = await createClient()
 
     const {

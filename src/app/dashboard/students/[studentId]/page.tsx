@@ -15,12 +15,13 @@ import DeleteStudentButton from './DeleteStudentButton'
 import LinkStudentAccountForm from './LinkStudentAccountForm'
 
 type PageProps = {
-    params: {
+    params: Promise<{
         studentId: string
-    }
+    }>
 }
 
-export default async function StudentProfilePage({ params }: PageProps) {
+export default async function StudentProfilePage(props: PageProps) {
+    const params = await props.params;
     const supabase = await createClient()
 
     const {

@@ -5,9 +5,9 @@ import { assignTemplateAction } from './actions'
 import BulkAssignTemplate from './BulkAssignTemplate'
 
 type PageProps = {
-    params: {
+    params: Promise<{
         routineId: string
-    }
+    }>
 }
 
 type StudentRow = {
@@ -16,7 +16,8 @@ type StudentRow = {
     last_name: string | null
 }
 
-export default async function AssignTemplateToStudentPage({ params }: PageProps) {
+export default async function AssignTemplateToStudentPage(props: PageProps) {
+    const params = await props.params;
     const supabase = await createClient()
 
     const {

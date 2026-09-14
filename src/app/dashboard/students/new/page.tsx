@@ -1,4 +1,5 @@
-'use client'
+'use client';
+import { use } from "react";
 
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
@@ -22,11 +23,12 @@ function SubmitButton() {
     )
 }
 
-export default function NewStudentPage({
-    searchParams,
-}: {
-    searchParams: { [key: string]: string | string[] | undefined }
-}) {
+export default function NewStudentPage(
+    props: {
+        searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+    }
+) {
+    const searchParams = use(props.searchParams);
     const message = searchParams?.message
 
     return (
