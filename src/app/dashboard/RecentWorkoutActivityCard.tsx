@@ -27,11 +27,9 @@ function formatTimeAgo(dateString: string | null) {
 export default function RecentWorkoutActivityCard({
     activity,
     weightUnit,
-    theme,
 }: {
     activity: RecentWorkoutActivityItem[]
     weightUnit: WeightUnit
-    theme: 'light' | 'dark'
 }) {
     const [expanded, setExpanded] = useState(false)
 

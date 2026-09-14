@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import { cookies } from 'next/headers'
 import { ClipboardList, MessageSquare, Users, Zap } from 'lucide-react'
 import TrainerAlertsCard from './TrainerAlertsCard'
 import TrainerDashboardCards from './TrainerDashboardCards'
@@ -20,9 +19,6 @@ import { getTrainerProfile } from '@/lib/getTrainerProfile'
 import { formatWeight, type WeightUnit } from '@/lib/weight'
 
 export default async function DashboardPage() {
-    const cookieStore = await cookies()
-    const theme = cookieStore.get('theme')?.value === 'light' ? 'light' : 'dark'
-
     const [
         stats,
         alerts,
@@ -107,7 +103,6 @@ export default async function DashboardPage() {
                     <RecentWorkoutActivityCard
                         activity={recentActivity ?? []}
                         weightUnit={weightUnit}
-                        theme={theme}
                     />
                 </div>
 

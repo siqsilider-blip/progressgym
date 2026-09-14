@@ -1,8 +1,6 @@
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getStudentExerciseProgress } from '@/app/dashboard/students/getStudentExerciseProgress'
-import { getTrainerProfile } from '@/lib/getTrainerProfile'
 import { type WeightUnit } from '@/lib/weight'
 import ExerciseProgressCard from '@/app/dashboard/students/ExerciseProgressCard'
 

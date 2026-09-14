@@ -2,13 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import SidebarClient from './SidebarClient'
 
-type SidebarProps = {
-    theme?: 'dark' | 'light'
-}
-
-export default async function Sidebar({
-    theme = 'dark',
-}: SidebarProps) {
+export default async function Sidebar() {
     const supabase = await createClient()
 
     const {
@@ -26,5 +20,5 @@ export default async function Sidebar({
         redirect('/login')
     }
 
-    return <SidebarClient theme={theme} signOutAction={signOut} />
+    return <SidebarClient signOutAction={signOut} />
 }

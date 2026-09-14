@@ -195,7 +195,7 @@ export async function saveSessionNote(payload: {
 
         if (error) return { ok: false, error: error.message }
         return { ok: true, error: null }
-    } catch (err) {
+    } catch {
         return { ok: false, error: 'Error inesperado' }
     }
 }

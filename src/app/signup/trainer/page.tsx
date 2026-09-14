@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { signup } from '@/app/auth/actions'
 
 export default async function SignupTrainerPage(

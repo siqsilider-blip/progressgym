@@ -138,8 +138,6 @@ export async function updateExerciseInRoutineDay(formData: FormData) {
 
     const exerciseRowId = formData.get('exerciseRowId') as string
     const routineId = formData.get('routineId') as string
-    const dayId = formData.get('dayId') as string
-    const weekId = formData.get('weekId') as string | null
 
     const sets = formData.get('sets') as string
     const reps = formData.get('reps') as string

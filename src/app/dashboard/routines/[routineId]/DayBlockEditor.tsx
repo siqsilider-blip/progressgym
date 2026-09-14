@@ -323,7 +323,7 @@ function ExerciseRow({
                                     await deleteAction(fd)
                                     onCancelEdit()
                                     router.refresh()
-                                } catch (err) {
+                                } catch {
                                     // ignore
                                 }
                             })
@@ -333,7 +333,7 @@ function ExerciseRow({
                     </div>
                 </form>
 
-                <ExerciseLogs exercise={exercise} logs={logs} weightUnit={weightUnit} relation={relation} />
+                <ExerciseLogs logs={logs} weightUnit={weightUnit} relation={relation} />
             </div>
         )
     }
@@ -701,7 +701,7 @@ function AddExerciseForm({
     )
 }
 
-function ExerciseLogs({ exercise, logs, weightUnit, relation }: { exercise: DayExercise, logs: ExerciseLog[], weightUnit: WeightUnit, relation: any }) {
+function ExerciseLogs({ logs, weightUnit, relation }: { logs: ExerciseLog[], weightUnit: WeightUnit, relation: any }) {
     if (!logs || logs.length === 0) return null
 
     const latestLog = logs[0]

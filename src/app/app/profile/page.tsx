@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { logout } from '@/app/auth/actions'
 import { getStudentExerciseProgress } from '@/app/dashboard/students/getStudentExerciseProgress'
 import { getStudentSessionHistory } from '@/app/dashboard/students/getStudentSessionHistory'
-import { formatWeight, type WeightUnit } from '@/lib/weight'
+import { type WeightUnit } from '@/lib/weight'
 
 export default async function AppProfilePage() {
     const supabase = await createClient()

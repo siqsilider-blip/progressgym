@@ -13,12 +13,10 @@ import {
 } from 'lucide-react'
 
 type SidebarClientProps = {
-    theme?: 'dark' | 'light'
     signOutAction: () => Promise<void>
 }
 
 export default function SidebarClient({
-    theme = 'dark',
     signOutAction,
 }: SidebarClientProps) {
     const pathname = usePathname()

@@ -28,19 +28,7 @@ export async function getStudentBadges(studentId: string): Promise<Badge[]> {
     const exercisesWithProgress = progressData.length
 
     // Racha actual
-    const today = new Date()
-    let streak = 0
     const sessionDates = new Set(sessions.map(s => s.performedDate))
-    for (let i = 0; i < 60; i++) {
-        const d = new Date(today)
-        d.setDate(d.getDate() - i)
-        const dateStr = d.toISOString().slice(0, 10)
-        if (sessionDates.has(dateStr)) {
-            streak++
-        } else if (i > 0) {
-            break
-        }
-    }
 
     // Racha máxima histórica
     const sortedDates = [...sessionDates].sort()

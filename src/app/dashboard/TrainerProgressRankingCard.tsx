@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
-import { ArrowRight, TrendingUp } from 'lucide-react'
+import { TrendingUp } from 'lucide-react'
 import type { TrainerProgressRankingItem } from './getTrainerProgressRanking'
 import { formatWeight, type WeightUnit } from '@/lib/weight'
 
@@ -52,9 +52,7 @@ export default function TrainerProgressRankingCard({
                 </div>
             ) : (
                 <div className="space-y-3">
-                    {visibleRanking.map((item, index) => {
-                        const isTop = index === 0
-
+                    {visibleRanking.map((item) => {
                         return (
                             <div
                                 key={`${item.studentId}-${item.exerciseName}`}

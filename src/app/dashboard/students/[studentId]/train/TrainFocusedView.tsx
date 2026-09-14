@@ -71,7 +71,7 @@ export default function TrainFocusedView({
     studentId,
     studentName,
     dayLabel,
-    routineName: _routineName,
+    routineName,
     performedAt,
     exercises,
     maxWeights: initialMaxWeights,
@@ -788,6 +788,7 @@ export default function TrainFocusedView({
     return (
         <div
             className="mx-auto max-w-lg px-3 pt-2"
+            aria-label={`${routineName} · ${dayLabel}`}
             style={{
                 paddingBottom: `calc(${APP_BOTTOM_NAV_HEIGHT_PX}px + 7.5rem + env(safe-area-inset-bottom, 0px))`,
             }}

@@ -149,8 +149,6 @@ export default async function StudentsPage() {
                             {studentsWithRisk.map((student) => {
                                 const fullName = `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim() || 'Sin nombre'
                                 const initials = getInitials(student.first_name, student.last_name)
-                                const routineId = routinesByStudentId.get(student.id)
-                                const routineHref = routineId ? `/dashboard/routines/${routineId}` : `/dashboard/routines/new?studentId=${student.id}`
                                 const riskStyles = getRiskStyles(student.risk.level)
 
                                 return (

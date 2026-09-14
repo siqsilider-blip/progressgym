@@ -109,41 +109,6 @@ export default function TrainExerciseTable({
         })
     }, [])
 
-    const focusNextInput = React.useCallback(
-        (setIndex: number, field: 'weight' | 'reps') => {
-            if (field === 'weight') {
-                focusInput(setIndex, 'reps')
-                return
-            }
-
-            if (setIndex + 1 < setsCount) {
-                focusInput(setIndex + 1, 'weight')
-            }
-        },
-        [focusInput, setsCount]
-    )
-
-    const handleAutofillFromFirstSet = React.useCallback(
-        (field: 'weight' | 'reps', value: string) => {
-            if (!value.trim()) return
-
-            setRows((prev) =>
-                prev.map((row, index) => {
-                    if (index === 0) return row
-
-                    if (field === 'weight') {
-                        if (row.manualWeight) return row
-                        return { ...row, weight: value }
-                    }
-
-                    if (row.manualReps) return row
-                    return { ...row, reps: value }
-                })
-            )
-        },
-        []
-    )
-
     const updateField = React.useCallback(
         (setIndex: number, field: 'weight' | 'reps', value: string) => {
             setRows((prev) => {

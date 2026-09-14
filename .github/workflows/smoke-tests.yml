@@ -30,7 +30,7 @@ jobs:
         run: npm audit --omit=dev --audit-level=high
 
       - name: Check code quality
-        run: npm run lint
+        run: npm run lint:strict
 
       - name: Check TypeScript
         run: npm run typecheck
