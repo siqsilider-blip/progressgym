@@ -81,9 +81,9 @@ export default function WeekMonthSelector({
     }
 
     return (
-        <div className="rounded-2xl border border-border bg-card p-3 shadow-sm">
+        <div className="rounded-xl border border-border bg-card p-2.5">
             {/* Header con hint */}
-            <div className="flex items-center justify-between mb-2">
+            <div className="mb-1.5 flex items-center justify-between">
                 <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
                     Mesociclo
                 </p>
@@ -104,7 +104,7 @@ export default function WeekMonthSelector({
             </div>
 
             {/* Tabs de meses */}
-            <div className="flex gap-1.5 overflow-x-auto pb-2">
+            <div className="flex items-center gap-1 overflow-x-auto pb-1.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {months.map((month) => {
                     const isActive = month.id === selectedMonthId
                     const label = month.name || `Mes ${month.month_number}`
@@ -131,7 +131,7 @@ export default function WeekMonthSelector({
                                     onBlur={() => setEditingMonthId(null)}
                                     onKeyDown={e => e.key === 'Escape' && setEditingMonthId(null)}
                                     placeholder={`Mes ${month.month_number}`}
-                                    className="w-24 rounded-lg border border-indigo-500 bg-background px-2 py-1 text-xs text-foreground outline-none"
+                                    className="h-7 w-24 rounded-lg border border-indigo-500 bg-background px-2 text-xs text-foreground outline-none"
                                 />
                                 <button type="submit" className="rounded-lg bg-indigo-600 px-2 py-1 text-[10px] text-white">✓</button>
                             </form>
@@ -148,7 +148,8 @@ export default function WeekMonthSelector({
                                     startEditMonth(month)
                                 })
                             }}
-                            className={`shrink-0 rounded-xl px-3 py-2 text-xs font-medium transition select-none ${
+                            title={label}
+                            className={`max-w-[9rem] shrink-0 truncate rounded-lg px-2.5 py-1.5 text-xs font-medium transition select-none ${
                                 isActive
                                     ? 'bg-indigo-600 text-white shadow-sm'
                                     : 'border border-border bg-secondary text-secondary-foreground hover:bg-muted'
@@ -161,7 +162,7 @@ export default function WeekMonthSelector({
 
                 <form action={addRoutineMonth}>
                     <input type="hidden" name="routineId" value={routineId} />
-                    <button type="submit" className="shrink-0 rounded-xl border border-dashed border-border px-3 py-2 text-xs text-muted-foreground transition hover:border-foreground hover:text-foreground">
+                    <button type="submit" aria-label="Agregar mesociclo" title="Agregar mesociclo" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-dashed border-border text-xs text-muted-foreground transition hover:border-foreground hover:text-foreground">
                         +
                     </button>
                 </form>
@@ -191,7 +192,8 @@ export default function WeekMonthSelector({
                         <button
                             type="button"
                             onClick={() => setConfirmDeleteMonthId(selectedMonth.id)}
-                            className="flex h-[28px] w-[28px] shrink-0 items-center justify-center rounded-xl border border-red-200 text-red-400 transition hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950/40"
+                            aria-label="Eliminar mesociclo"
+                            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-red-500/20 text-[10px] text-red-400 transition hover:bg-red-50 dark:hover:bg-red-950/40"
                             title="Eliminar mesociclo"
                         >
                             ✕
@@ -201,8 +203,8 @@ export default function WeekMonthSelector({
             </div>
 
             {/* Tabs de semanas — mismo patrón que meses */}
-            <div className="border-t border-border pt-2">
-                <div className="flex gap-1.5 overflow-x-auto pb-1">
+            <div className="border-t border-border pt-1.5">
+                <div className="flex items-center gap-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                     {weeksForMonth.map((week) => {
                         const isActive = week.id === selectedWeekId
                         const label = week.name || `Sem. ${week.week_number}`
@@ -237,57 +239,24 @@ export default function WeekMonthSelector({
                         }
 
                         return (
-                            <React.Fragment key={week.id}>
-                                <Link
-                                    href={`/dashboard/routines/${routineId}?week=${week.id}${selectedMonthId ? `&month=${selectedMonthId}` : ''}`}
-                                    onClick={(e) => {
-                                        handleDoubleTap(week.id, () => {
-                                            e.preventDefault()
-                                            startEditWeek(week)
-                                        })
-                                    }}
-                                    className={`shrink-0 rounded-xl px-3 py-2 text-xs font-medium transition select-none ${
-                                        isActive
-                                            ? 'bg-secondary text-foreground ring-1 ring-inset ring-indigo-500'
-                                            : 'border border-border bg-secondary text-secondary-foreground hover:bg-muted'
-                                    }`}
-                                >
-                                    {label}
-                                </Link>
-                                {weeksForMonth.length > 1 && (
-                                    confirmDeleteWeekId === week.id ? (
-                                        <div className="flex shrink-0 items-center gap-1">
-                                            <button
-                                                type="button"
-                                                onClick={() => setConfirmDeleteWeekId(null)}
-                                                className="rounded-lg border border-border bg-secondary px-2 py-1.5 text-[10px] text-secondary-foreground transition hover:bg-muted"
-                                            >
-                                                No
-                                            </button>
-                                            <form action={deleteRoutineWeek}>
-                                                <input type="hidden" name="routineId" value={routineId} />
-                                                <input type="hidden" name="weekId" value={week.id} />
-                                                {selectedMonthId && <input type="hidden" name="monthId" value={selectedMonthId} />}
-                                                <button
-                                                    type="submit"
-                                                    className="rounded-lg bg-red-600 px-2 py-1.5 text-[10px] font-medium text-white transition hover:bg-red-500"
-                                                >
-                                                    Sí
-                                                </button>
-                                            </form>
-                                        </div>
-                                    ) : (
-                                        <button
-                                            type="button"
-                                            onClick={() => setConfirmDeleteWeekId(week.id)}
-                                            className="flex h-[24px] w-[24px] shrink-0 items-center justify-center rounded-xl border border-red-200 text-red-400 transition hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950/40 text-[10px]"
-                                            title="Eliminar semana"
-                                        >
-                                            ✕
-                                        </button>
-                                    )
-                                )}
-                            </React.Fragment>
+                            <Link
+                                key={week.id}
+                                title={label}
+                                href={`/dashboard/routines/${routineId}?week=${week.id}${selectedMonthId ? `&month=${selectedMonthId}` : ''}`}
+                                onClick={(e) => {
+                                    handleDoubleTap(week.id, () => {
+                                        e.preventDefault()
+                                        startEditWeek(week)
+                                    })
+                                }}
+                                className={`max-w-[8rem] shrink-0 truncate rounded-lg px-2.5 py-1.5 text-xs font-medium transition select-none ${
+                                    isActive
+                                        ? 'bg-secondary text-foreground ring-1 ring-inset ring-indigo-500'
+                                        : 'border border-border bg-secondary text-secondary-foreground hover:bg-muted'
+                                }`}
+                            >
+                                {label}
+                            </Link>
                         )
                     })}
 
@@ -311,11 +280,45 @@ export default function WeekMonthSelector({
                         <button
                             type="submit"
                             disabled={isPending}
-                            className="shrink-0 rounded-xl border border-dashed border-border px-3 py-2 text-xs text-muted-foreground transition hover:border-foreground hover:text-foreground disabled:opacity-50"
+                            aria-label="Agregar semana"
+                            title="Agregar semana"
+                            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-dashed border-border text-xs text-muted-foreground transition hover:border-foreground hover:text-foreground disabled:opacity-50"
                         >
                             +
                         </button>
                     </form>
+
+                    {weeksForMonth.length > 1 && selectedWeek && (
+                        confirmDeleteWeekId === selectedWeek.id ? (
+                            <div className="flex shrink-0 items-center gap-1">
+                                <button
+                                    type="button"
+                                    onClick={() => setConfirmDeleteWeekId(null)}
+                                    className="rounded-lg border border-border bg-secondary px-2 py-1.5 text-[10px] text-secondary-foreground transition hover:bg-muted"
+                                >
+                                    No
+                                </button>
+                                <form action={deleteRoutineWeek}>
+                                    <input type="hidden" name="routineId" value={routineId} />
+                                    <input type="hidden" name="weekId" value={selectedWeek.id} />
+                                    {selectedMonthId && <input type="hidden" name="monthId" value={selectedMonthId} />}
+                                    <button type="submit" className="rounded-lg bg-red-600 px-2 py-1.5 text-[10px] font-medium text-white transition hover:bg-red-500">
+                                        Sí
+                                    </button>
+                                </form>
+                            </div>
+                        ) : (
+                            <button
+                                type="button"
+                                aria-label="Eliminar semana seleccionada"
+                                title="Eliminar semana seleccionada"
+                                onClick={() => setConfirmDeleteWeekId(selectedWeek.id)}
+                                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-red-500/20 text-[10px] text-red-400 transition hover:bg-red-50 dark:hover:bg-red-950/40"
+                            >
+                                ✕
+                            </button>
+                        )
+                    )}
                 </div>
             </div>
             {errorMsg && (
@@ -323,7 +326,7 @@ export default function WeekMonthSelector({
             )}
 
             {selectedWeek && previousWeek && (
-                <div className="mt-2">
+                <div className="mt-1.5">
                     <button
                         type="button"
                         disabled={isPending}
@@ -336,7 +339,7 @@ export default function WeekMonthSelector({
                                 await duplicateRoutineWeek(formData)
                             })
                         }}
-                        className={`w-full rounded-xl border py-2 text-[11px] transition ${
+                        className={`w-full rounded-lg border py-1.5 text-[10px] transition ${
                             isPending
                                 ? 'border-indigo-300 bg-indigo-50 text-indigo-500 dark:border-indigo-500/30 dark:bg-indigo-500/10 cursor-not-allowed'
                                 : 'border-border bg-secondary text-secondary-foreground hover:bg-muted'

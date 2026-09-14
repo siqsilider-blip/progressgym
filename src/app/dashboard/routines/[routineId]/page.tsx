@@ -298,11 +298,11 @@ export default async function RoutineDetailPage(props: PageProps) {
     )
 
     return (
-        <div className="p-4 pb-24 text-foreground md:p-6">
-            <div className="mx-auto max-w-3xl space-y-5">
+        <div className="px-3 py-4 pb-24 text-foreground sm:px-4 md:p-6">
+            <div className="mx-auto max-w-3xl space-y-3.5">
 
                 {/* ── Header ── */}
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-start gap-2.5">
                     <BackButton />
 
                     <div className="min-w-0 flex-1">
@@ -327,10 +327,10 @@ export default async function RoutineDetailPage(props: PageProps) {
                     </div>
 
                     {routine.routine_kind === 'template' ? (
-                        <div className="flex shrink-0 items-center gap-2">
+                        <div className="ml-11 flex w-full items-center justify-end gap-1.5 sm:ml-0 sm:w-auto">
                             <Link
                                 href={`/dashboard/routines/${routine.id}/assign-to-student`}
-                                className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500 active:scale-[0.97]"
+                                className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-indigo-500 active:scale-[0.97]"
                             >
                                 Asignar
                             </Link>
@@ -342,7 +342,7 @@ export default async function RoutineDetailPage(props: PageProps) {
                     ) : (
                         <Link
                             href={`/dashboard/students/${routine.student_id}/train?from=routine${selectedMonth?.id ? `&month=${selectedMonth.id}` : ''}${selectedWeek?.id ? `&week=${selectedWeek.id}` : ''}${selectedDay?.id ? `&day=${selectedDay.id}` : ''}`}
-                            className="shrink-0 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-500 active:scale-[0.97]"
+                            className="ml-11 w-full rounded-lg bg-emerald-600 px-3 py-2 text-center text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-500 active:scale-[0.97] sm:ml-0 sm:w-auto"
                         >
                             Entrenar
                         </Link>
@@ -383,7 +383,7 @@ export default async function RoutineDetailPage(props: PageProps) {
                         ) : (
                             <>
                                 {/* ── Day tabs ── */}
-                                <div className="flex gap-1.5 overflow-x-auto pb-1">
+                                <div className="flex snap-x gap-1.5 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                                     {typedDays.map((day) => {
                                         const isActive = day.id === selectedDay.id
                                         const label = day.title || `Día ${day.day_index}`
@@ -393,8 +393,9 @@ export default async function RoutineDetailPage(props: PageProps) {
                                         return (
                                             <Link
                                                 key={day.id}
+                                                title={label}
                                                 href={`/dashboard/routines/${routine.id}?week=${selectedWeek!.id}&day=${day.id}${selectedMonth?.id ? `&month=${selectedMonth.id}` : ''}`}
-                                                className={`relative shrink-0 rounded-xl px-4 py-2 text-xs font-semibold transition active:scale-[0.96] ${isActive
+                                                className={`relative max-w-[8.5rem] shrink-0 snap-start truncate rounded-lg px-3 py-1.5 text-xs font-semibold transition active:scale-[0.96] ${isActive
                                                         ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/25'
                                                         : 'border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground'
                                                     }`}
@@ -409,9 +410,9 @@ export default async function RoutineDetailPage(props: PageProps) {
                                 </div>
 
                                 {/* ── Day header ── */}
-                                <div className="flex items-end justify-between gap-3">
-                                    <div>
-                                        <h2 className="text-lg font-bold text-foreground">
+                                <div className="flex items-center justify-between gap-2">
+                                    <div className="min-w-0 flex-1">
+                                        <h2 className="truncate text-base font-bold text-foreground">
                                             {selectedDay.title || `Día ${selectedDay.day_index}`}
                                         </h2>
                                         <p className="mt-0.5 text-xs text-muted-foreground">

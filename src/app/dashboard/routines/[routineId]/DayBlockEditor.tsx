@@ -99,7 +99,7 @@ export default function DayBlockEditor({
     })
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-2.5">
             {BLOCK_META.map((meta) => {
                 const blockExercises = exercises.filter(ex => ex.block === meta.id)
                 const isAdding = openAddBlock === meta.id
@@ -108,17 +108,17 @@ export default function DayBlockEditor({
                     <details
                         key={meta.id}
                         open={openBlocks[meta.id]}
-                        className="group rounded-2xl border border-border bg-card shadow-sm overflow-hidden"
+                        className="group overflow-hidden rounded-xl border border-border bg-card"
                     >
                         <summary
-                            className="cursor-pointer list-none flex items-center justify-between p-4 bg-muted/20 hover:bg-muted/40 transition"
+                            className="flex cursor-pointer list-none items-center justify-between bg-muted/20 px-3 py-2.5 transition hover:bg-muted/40"
                             onClick={(e) => {
                                 e.preventDefault()
                                 setOpenBlocks(prev => ({ ...prev, [meta.id]: !prev[meta.id] }))
                             }}
                         >
                             <div className="flex items-center gap-2">
-                                <span className="text-base">{meta.emoji}</span>
+                                <span className="text-sm">{meta.emoji}</span>
                                 <h3 className="text-sm font-bold text-card-foreground">{meta.label}</h3>
                                 <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
                                     {blockExercises.length}
@@ -129,7 +129,7 @@ export default function DayBlockEditor({
                             </svg>
                         </summary>
 
-                        <div className="p-4 pt-2 space-y-2 border-t border-border">
+                        <div className="space-y-1 border-t border-border p-2.5">
                             {blockExercises.map((exercise, index) => (
                                 <ExerciseRow
                                     key={exercise.id}
@@ -161,7 +161,7 @@ export default function DayBlockEditor({
                                         setOpenAddBlock(meta.id)
                                         setOpenBlocks(prev => ({ ...prev, [meta.id]: true }))
                                     }}
-                                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-indigo-300 py-2.5 text-sm font-medium text-indigo-600 transition hover:border-indigo-400 hover:bg-indigo-50/50 dark:border-indigo-500/40 dark:text-indigo-400 dark:hover:bg-indigo-500/10 mt-3"
+                                    className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-indigo-300 py-2 text-xs font-medium text-indigo-600 transition hover:border-indigo-400 hover:bg-indigo-50/50 dark:border-indigo-500/40 dark:text-indigo-400 dark:hover:bg-indigo-500/10"
                                 >
                                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -169,7 +169,7 @@ export default function DayBlockEditor({
                                     Agregar ejercicio
                                 </button>
                             ) : (
-                                <div className="mt-3 rounded-xl border border-border p-3 bg-muted/10">
+                                <div className="mt-2 rounded-lg border border-border bg-muted/10 p-2.5">
                                     <AddExerciseForm
                                         block={meta.id}
                                         routineId={routineId}

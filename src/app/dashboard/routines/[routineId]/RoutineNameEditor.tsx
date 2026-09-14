@@ -137,8 +137,8 @@ export default function RoutineNameEditor({
     }
 
     return (
-        <div className="mt-1">
-            <div className="flex items-center gap-3">
+        <div>
+            <div className="relative">
                 <input
                     type="text"
                     value={value}
@@ -146,10 +146,10 @@ export default function RoutineNameEditor({
                     onBlur={handleBlur}
                     onKeyDown={handleKeyDown}
                     placeholder="Nombre de la rutina"
-                    className="min-w-0 flex-1 border-b border-zinc-700 bg-transparent pb-1.5 text-2xl font-bold text-card-foreground outline-none transition focus:border-b-2 focus:border-indigo-500 md:text-3xl"
+                    className="w-full min-w-0 border-b border-zinc-700 bg-transparent pb-1 pr-20 text-xl font-bold text-card-foreground outline-none transition focus:border-indigo-500 md:text-2xl"
                 />
 
-                <div className="w-[96px] text-right">
+                <div className="absolute bottom-1.5 right-0 text-right">
                     {saveState === 'saving' && (
                         <span className="text-xs font-medium text-zinc-400">
                             Guardando...
