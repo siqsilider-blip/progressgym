@@ -4,11 +4,12 @@ const externalBaseUrl = process.env.PLAYWRIGHT_BASE_URL
 
 export default defineConfig({
     testDir: './tests/e2e',
-    testIgnore: 'authenticated.spec.ts',
-    fullyParallel: true,
-    forbidOnly: Boolean(process.env.CI),
+    testMatch: 'authenticated.spec.ts',
+    globalSetup: './tests/e2e/auth-fixture.ts',
+    globalTeardown: './tests/e2e/auth-teardown.ts',
+    fullyParallel: false,
     retries: process.env.CI ? 2 : 0,
-    workers: process.env.CI ? 1 : undefined,
+    workers: 1,
     reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : 'list',
     use: {
         baseURL: externalBaseUrl || 'http://127.0.0.1:3000',
