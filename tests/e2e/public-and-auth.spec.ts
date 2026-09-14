@@ -47,3 +47,17 @@ test('los recursos instalables son válidos', async ({ request }) => {
     expect(serviceWorkerResponse.ok()).toBe(true)
     expect(await serviceWorkerResponse.text()).toContain("self.addEventListener('fetch'")
 })
+
+test('la versión publicada informa su estado y commit', async ({ request }) => {
+    const response = await request.get('/api/health')
+    expect(response.ok()).toBe(true)
+    expect(response.headers()['cache-control']).toContain('no-store')
+
+    const health = await response.json()
+    expect(health.ok).toBe(true)
+    expect(health.commit).toMatch(/^(local|[0-9a-f]{40})$/)
+
+    if (process.env.GITHUB_SHA) {
+        expect(health.commit).toBe(process.env.GITHUB_SHA)
+    }
+})
