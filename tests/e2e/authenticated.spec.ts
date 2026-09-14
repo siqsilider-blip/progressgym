@@ -5,6 +5,7 @@ const studentEmail = process.env.E2E_STUDENT_EMAIL!
 const password = process.env.E2E_AUTH_PASSWORD!
 const routineName = process.env.E2E_ROUTINE_NAME!
 const exerciseName = process.env.E2E_EXERCISE_NAME!
+const templateId = process.env.E2E_TEMPLATE_ID!
 
 async function logIn(page: import('@playwright/test').Page, role: 'trainer' | 'student', email: string) {
     await page.goto(`/login/${role}`)
@@ -62,4 +63,30 @@ test('cada tipo de cuenta es rechazado por el acceso equivocado', async ({ page 
     await logIn(page, 'student', trainerEmail)
     await expect(page).toHaveURL(/\/login\/student\?message=/)
     await expect(page.getByText(/esta cuenta es de entrenador/i)).toBeVisible()
+})
+
+test('el entrenador reordena y elimina días de un template sin perder su estructura', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name === 'desktop-chromium', 'La mutación se prueba una sola vez por fixture.')
+
+    await logIn(page, 'trainer', trainerEmail)
+    await expect(page).toHaveURL(/\/dashboard(?:\?|$)/)
+    await page.goto(`/dashboard/routines/${templateId}`)
+
+    const dayTabs = page.locator('a[href*="day="]')
+    await expect(dayTabs).toHaveCount(3)
+    await expect(dayTabs.nth(0)).toContainText('Piernas E2E')
+    await expect(dayTabs.nth(1)).toContainText('Torso E2E')
+
+    await page.getByRole('button', { name: 'Mover día a la derecha' }).click()
+    await expect(dayTabs.nth(0)).toContainText('Torso E2E')
+    await expect(dayTabs.nth(1)).toContainText('Piernas E2E')
+    await expect(page.getByText(exerciseName, { exact: true })).toBeVisible()
+
+    await page.getByRole('button', { name: 'Eliminar día' }).click()
+    await page.getByRole('button', { name: 'Sí', exact: true }).click()
+
+    await expect(dayTabs).toHaveCount(2)
+    await expect(page.getByText('Piernas E2E', { exact: true })).toHaveCount(0)
+    await expect(dayTabs.nth(0)).toContainText('Torso E2E')
+    await expect(dayTabs.nth(1)).toContainText('Movilidad E2E')
 })

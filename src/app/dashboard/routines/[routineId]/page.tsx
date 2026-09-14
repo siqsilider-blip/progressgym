@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { addExerciseToRoutineDay, createExerciseFromRoutine, deleteExerciseFromRoutineDay, addRoutineWeek, duplicateRoutineWeek, updateRoutineName, deleteRoutineWeek, addRoutineMonth, renameRoutineMonth, deleteRoutineMonth, renameRoutineWeek, deleteTemplate, updateExerciseInRoutineDay, moveExerciseInRoutineDay, renameRoutineDay, duplicateRoutineDay } from './actions'
+import { addExerciseToRoutineDay, createExerciseFromRoutine, deleteExerciseFromRoutineDay, addRoutineWeek, duplicateRoutineWeek, updateRoutineName, deleteRoutineWeek, addRoutineMonth, renameRoutineMonth, deleteRoutineMonth, renameRoutineWeek, deleteTemplate, updateExerciseInRoutineDay, moveExerciseInRoutineDay, renameRoutineDay, duplicateRoutineDay, moveRoutineDay, deleteRoutineDay } from './actions'
 import { getTrainerProfile } from '@/lib/getTrainerProfile'
 import { type WeightUnit } from '@/lib/weight'
 import DayBlockEditor, { type DayExercise } from './DayBlockEditor'
@@ -426,8 +426,14 @@ export default async function RoutineDetailPage(props: PageProps) {
                                         initialTitle={selectedDay.title || `Día ${selectedDay.day_index}`}
                                         weekId={selectedWeek!.id}
                                         monthId={selectedMonth?.id ?? null}
+                                        canManageStructure={routine.routine_kind === 'template'}
+                                        canMoveLeft={typedDays.findIndex((day) => day.id === selectedDay.id) > 0}
+                                        canMoveRight={typedDays.findIndex((day) => day.id === selectedDay.id) < typedDays.length - 1}
+                                        canDelete={routine.routine_kind === 'template' && typedDays.length > 1}
                                         renameAction={renameRoutineDay}
                                         duplicateAction={duplicateRoutineDay}
+                                        moveAction={moveRoutineDay}
+                                        deleteAction={deleteRoutineDay}
                                     />
                                 </div>
 

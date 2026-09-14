@@ -442,6 +442,83 @@ export async function duplicateRoutineDay(input: {
     return { ok: true, newDayId: newDay.id }
 }
 
+export async function moveRoutineDay(input: {
+    routineId: string
+    dayId: string
+    direction: 'left' | 'right'
+}): Promise<{ ok: boolean; error?: string }> {
+    const supabase = await createClient()
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { ok: false, error: 'Tu sesión venció.' }
+
+    if (!input.routineId || !input.dayId || !['left', 'right'].includes(input.direction)) {
+        return { ok: false, error: 'No se pudo identificar el movimiento.' }
+    }
+
+    const { data: moved, error } = await supabase.rpc('move_template_routine_day', {
+        p_day_id: input.dayId,
+        p_direction: input.direction,
+    })
+
+    if (error) {
+        console.error('[moveRoutineDay] error:', error.message)
+        const migrationPending = error.code === 'PGRST202' || error.message.includes('move_template_routine_day')
+        return {
+            ok: false,
+            error: migrationPending
+                ? 'Falta aplicar la actualización de días en la base de datos.'
+                : 'No se pudo cambiar el orden del día.',
+        }
+    }
+
+    if (!moved) {
+        return { ok: false, error: 'El día ya está en ese extremo.' }
+    }
+
+    revalidatePath(`/dashboard/routines/${input.routineId}`)
+    return { ok: true }
+}
+
+export async function deleteRoutineDay(input: {
+    routineId: string
+    dayId: string
+}): Promise<{ ok: boolean; nextDayId?: string; error?: string }> {
+    const supabase = await createClient()
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { ok: false, error: 'Tu sesión venció.' }
+
+    if (!input.routineId || !input.dayId) {
+        return { ok: false, error: 'No se pudo identificar el día.' }
+    }
+
+    const { data: nextDayId, error } = await supabase.rpc('delete_template_routine_day', {
+        p_day_id: input.dayId,
+    })
+
+    if (error) {
+        console.error('[deleteRoutineDay] error:', error.message)
+        const migrationPending = error.code === 'PGRST202' || error.message.includes('delete_template_routine_day')
+        const isLastDay = error.message.includes('al menos un día')
+        return {
+            ok: false,
+            error: migrationPending
+                ? 'Falta aplicar la actualización de días en la base de datos.'
+                : isLastDay
+                    ? 'La semana debe conservar al menos un día.'
+                    : 'No se pudo eliminar el día.',
+        }
+    }
+
+    if (typeof nextDayId !== 'string' || !nextDayId) {
+        return { ok: false, error: 'No se pudo determinar el siguiente día.' }
+    }
+
+    revalidatePath(`/dashboard/routines/${input.routineId}`)
+    return { ok: true, nextDayId }
+}
+
 
 export async function updateRoutineName(input: {
     routineId: string

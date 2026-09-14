@@ -8,6 +8,7 @@ type CreatedFixture = {
     studentUserId?: string
     studentId?: string
     routineId?: string
+    templateId?: string
     exerciseId?: string
 }
 
@@ -215,6 +216,74 @@ export default async function createAuthFixture() {
         }
         created.exerciseId = exercise.id
 
+        const { data: template, error: templateError } = await admin
+            .from('routines')
+            .insert({
+                trainer_id: trainerAuth.user.id,
+                name: `Template E2E ${runId}`,
+                days_per_week: 3,
+                routine_kind: 'template',
+            })
+            .select('id')
+            .single()
+        if (templateError || !template) {
+            throw new Error(`No se pudo crear el template E2E: ${templateError?.message}`)
+        }
+        created.templateId = template.id
+
+        const { data: templateMonth, error: templateMonthError } = await admin
+            .from('routine_months')
+            .insert({ routine_id: template.id, month_number: 1, name: 'Mesociclo Template E2E' })
+            .select('id')
+            .single()
+        if (templateMonthError || !templateMonth) {
+            throw new Error(`No se pudo crear el mesociclo del template E2E: ${templateMonthError?.message}`)
+        }
+
+        const { data: templateWeek, error: templateWeekError } = await admin
+            .from('routine_weeks')
+            .insert({
+                routine_id: template.id,
+                routine_month_id: templateMonth.id,
+                week_number: 1,
+                name: 'Semana Template E2E',
+            })
+            .select('id')
+            .single()
+        if (templateWeekError || !templateWeek) {
+            throw new Error(`No se pudo crear la semana del template E2E: ${templateWeekError?.message}`)
+        }
+
+        const { data: templateDays, error: templateDaysError } = await admin
+            .from('routine_days')
+            .insert([
+                { routine_id: template.id, routine_week_id: templateWeek.id, day_index: 1, day_number: 1, title: 'Piernas E2E', name: 'Piernas E2E' },
+                { routine_id: template.id, routine_week_id: templateWeek.id, day_index: 2, day_number: 2, title: 'Torso E2E', name: 'Torso E2E' },
+                { routine_id: template.id, routine_week_id: templateWeek.id, day_index: 3, day_number: 3, title: 'Movilidad E2E', name: 'Movilidad E2E' },
+            ])
+            .select('id, day_index')
+        if (templateDaysError || !templateDays || templateDays.length !== 3) {
+            throw new Error(`No se pudieron crear los días del template E2E: ${templateDaysError?.message}`)
+        }
+
+        const firstTemplateDay = templateDays.find((templateDay) => templateDay.day_index === 1)
+        if (!firstTemplateDay) throw new Error('No se encontró el primer día del template E2E.')
+
+        const { error: templateExerciseError } = await admin
+            .from('routine_day_exercises')
+            .insert({
+                routine_day_id: firstTemplateDay.id,
+                exercise_id: exercise.id,
+                sets: 1,
+                reps: 10,
+                rest_seconds: 0,
+                position: 1,
+                block: 'main',
+            })
+        if (templateExerciseError) {
+            throw new Error(`No se pudo agregar el ejercicio al template E2E: ${templateExerciseError.message}`)
+        }
+
         const { data: dayExercise, error: dayExerciseError } = await admin
             .from('routine_day_exercises')
             .insert({
@@ -246,6 +315,7 @@ export default async function createAuthFixture() {
         process.env.E2E_STUDENT_USER_ID = studentAuth.user.id
         process.env.E2E_STUDENT_ID = student.id
         process.env.E2E_ROUTINE_ID = routine.id
+        process.env.E2E_TEMPLATE_ID = template.id
         process.env.E2E_ROUTINE_DAY_ID = day.id
         process.env.E2E_ROUTINE_DAY_EXERCISE_ID = dayExercise.id
         process.env.E2E_EXERCISE_ID = exercise.id
