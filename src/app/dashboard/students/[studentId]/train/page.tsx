@@ -7,6 +7,7 @@ import { startWorkoutSession } from './workout-session'
 import { getExerciseMaxWeights } from './train-focused-actions'
 import TrainFocusedView from './TrainFocusedView'
 import { getRoutineSchedule } from '@/lib/getRoutineSchedule'
+import { getBuenosAiresDateString } from '@/lib/buenosAiresDate'
 
 type PageProps = {
     params: Promise<{ studentId: string }>
@@ -229,7 +230,7 @@ export default async function StudentTrainPage(props: PageProps) {
         }
     }
 
-    const today = new Date().toISOString().slice(0, 10)
+    const today = getBuenosAiresDateString()
 
     const totalExercises = exercisesForDay.length
     const totalSets = exercisesForDay.reduce((acc, item) => {

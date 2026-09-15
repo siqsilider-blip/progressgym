@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getBuenosAiresDateString } from '@/lib/buenosAiresDate'
 
 export async function startWorkoutSession(payload: {
     studentId: string
@@ -15,7 +16,7 @@ export async function startWorkoutSession(payload: {
     const { data, error } = await supabase.rpc('start_workout_session_safe', {
         p_student_id: payload.studentId,
         p_routine_day_id: payload.routineDayId,
-        p_performed_date: payload.performedDate ?? new Date().toISOString().slice(0, 10),
+        p_performed_date: payload.performedDate ?? getBuenosAiresDateString(),
     })
 
     const session = data?.[0]

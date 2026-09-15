@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getRoutineSchedule } from '@/lib/getRoutineSchedule'
+import { getStudentRoutineWeekProgress } from '@/lib/studentRoutineWeekProgress'
 
 type PageProps = {
     searchParams?: Promise<{
@@ -105,6 +106,15 @@ export default async function AppRutinePage(props: PageProps) {
         }
     }
 
+    const trainingDayIds = dayIds.filter((dayId) => (exercisesByDay[dayId]?.length ?? 0) > 0)
+    const weekProgress = await getStudentRoutineWeekProgress(supabase, studentId, trainingDayIds)
+    const completedDays = trainingDayIds.filter(
+        (dayId) => weekProgress.statusByDayId.get(dayId) === 'completed'
+    ).length
+    const progressPercent = trainingDayIds.length > 0
+        ? Math.round((completedDays / trainingDayIds.length) * 100)
+        : 0
+
     return (
         <div className="p-4 pb-24">
             <div className="mx-auto max-w-lg space-y-4">
@@ -114,6 +124,32 @@ export default async function AppRutinePage(props: PageProps) {
                     <h1 className="text-2xl font-black text-foreground">Rutina</h1>
                     <p className="mt-0.5 text-sm text-muted-foreground">{routine?.name}</p>
                 </div>
+
+                {trainingDayIds.length > 0 && (
+                    <div className="rounded-2xl border border-border bg-card p-4">
+                        <div className="flex items-center justify-between gap-3">
+                            <div>
+                                <p className="text-sm font-bold text-card-foreground">
+                                    {completedDays === trainingDayIds.length
+                                        ? 'Semana completada ✓'
+                                        : 'Tu progreso esta semana'}
+                                </p>
+                                <p className="mt-0.5 text-xs text-muted-foreground">
+                                    {completedDays} de {trainingDayIds.length} entrenamientos completados
+                                </p>
+                            </div>
+                            <span className={`text-lg font-black ${progressPercent === 100 ? 'text-emerald-500' : 'text-indigo-500'}`}>
+                                {progressPercent}%
+                            </span>
+                        </div>
+                        <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
+                            <div
+                                className={`h-full rounded-full transition-all ${progressPercent === 100 ? 'bg-emerald-500' : 'bg-indigo-500'}`}
+                                style={{ width: `${progressPercent}%` }}
+                            />
+                        </div>
+                    </div>
+                )}
 
                 {/* Selector mesociclos */}
                 {months.length > 1 && (
@@ -178,12 +214,19 @@ export default async function AppRutinePage(props: PageProps) {
                             const dayExercises = exercisesByDay[day.id] ?? []
                             const hasExercises = dayExercises.length > 0
                             const label = day.name?.trim() || `Día ${day.day_index}`
+                            const status = weekProgress.statusByDayId.get(day.id) ?? 'pending'
+                            const isCompleted = status === 'completed'
+                            const isInProgress = status === 'in_progress'
 
                             return (
                                 <div
                                     key={day.id}
                                     className={`overflow-hidden rounded-2xl border ${hasExercises
-                                            ? 'border-border bg-card shadow-sm'
+                                            ? isCompleted
+                                                ? 'border-emerald-500/30 bg-emerald-500/[0.04] shadow-sm'
+                                                : isInProgress
+                                                    ? 'border-indigo-500/40 bg-indigo-500/[0.04] shadow-sm'
+                                                    : 'border-border bg-card shadow-sm'
                                             : 'border-dashed border-border bg-card/50 opacity-60'
                                         }`}
                                 >
@@ -198,14 +241,28 @@ export default async function AppRutinePage(props: PageProps) {
                                                         ? `${dayExercises.length} ejercicios · ${dayExercises.reduce((a, e) => a + e.sets, 0)} series`
                                                         : 'Sin ejercicios cargados'}
                                                 </p>
+                                                {isCompleted && (
+                                                    <p className="mt-1.5 text-xs font-bold text-emerald-500">✓ Completado esta semana</p>
+                                                )}
+                                                {isInProgress && (
+                                                    <p className="mt-1.5 text-xs font-bold text-indigo-500">Sesión en curso</p>
+                                                )}
                                             </div>
 
-                                            {hasExercises && (
+                                            {hasExercises && !isCompleted && (
                                                 <Link
                                                     href={`/app/train?${selectedMonth ? `month=${selectedMonth.id}&` : ''}week=${selectedWeek?.id}&day=${day.id}`}
                                                     className="shrink-0 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-indigo-500 active:scale-[0.97]"
                                                 >
-                                                    Entrenar →
+                                                    {isInProgress ? 'Continuar →' : 'Entrenar →'}
+                                                </Link>
+                                            )}
+                                            {hasExercises && isCompleted && (
+                                                <Link
+                                                    href="/app/history"
+                                                    className="shrink-0 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-xs font-bold text-emerald-500 transition active:scale-[0.97]"
+                                                >
+                                                    Ver registro
                                                 </Link>
                                             )}
                                         </div>

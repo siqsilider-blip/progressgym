@@ -4,6 +4,8 @@ import { startWorkoutSession } from '@/app/dashboard/students/[studentId]/train/
 import { getExerciseMaxWeights } from '@/app/dashboard/students/[studentId]/train/train-focused-actions'
 import TrainFocusedView from '@/app/dashboard/students/[studentId]/train/TrainFocusedView'
 import { getRoutineSchedule } from '@/lib/getRoutineSchedule'
+import { getStudentRoutineWeekProgress } from '@/lib/studentRoutineWeekProgress'
+import { getBuenosAiresDateString } from '@/lib/buenosAiresDate'
 
 type PageProps = {
     searchParams?: Promise<{
@@ -117,25 +119,44 @@ export default async function AppTrainPage(props: PageProps) {
         .order('day_index', { ascending: true })
         : { data: [] }
 
-    // Buscar el primer día con ejercicios si no hay searchParam
+    // Elegir automáticamente una sesión en curso o el próximo día pendiente.
     let selectedDayId: string | null = null
 
     if (searchParams?.day && (routineDays ?? []).some(d => d.id === searchParams.day)) {
         selectedDayId = searchParams.day
     } else {
-        // Tomar el primer día con ejercicios
-        for (const day of routineDays ?? []) {
-            const { count } = await supabase
+        const routineDayIds = (routineDays ?? []).map((day) => day.id)
+        const { data: routineExerciseRows } = routineDayIds.length > 0
+            ? await supabase
                 .from('routine_day_exercises')
-                .select('id', { count: 'exact', head: true })
-                .eq('routine_day_id', day.id)
+                .select('routine_day_id')
+                .in('routine_day_id', routineDayIds)
+            : { data: [] }
 
-            if ((count ?? 0) > 0) {
-                selectedDayId = day.id
-                break
+        const daysWithExercises = new Set(
+            (routineExerciseRows ?? []).map((exercise) => exercise.routine_day_id).filter(Boolean)
+        )
+        const trainingDays = (routineDays ?? []).filter((day) => daysWithExercises.has(day.id))
+
+        if (trainingDays.length > 0) {
+            const progress = await getStudentRoutineWeekProgress(
+                supabase,
+                studentId,
+                trainingDays.map((day) => day.id)
+            )
+            const nextDay = trainingDays.find(
+                (day) => progress.statusByDayId.get(day.id) === 'in_progress'
+            ) ?? trainingDays.find(
+                (day) => progress.statusByDayId.get(day.id) !== 'completed'
+            )
+
+            if (!nextDay) {
+                redirect(`/app/rutina?${selectedMonth ? `month=${selectedMonth.id}&` : ''}week=${selectedWeek?.id}`)
             }
+
+            selectedDayId = nextDay.id
         }
-        // Fallback al primer día
+
         if (!selectedDayId) selectedDayId = (routineDays ?? [])[0]?.id ?? null
     }
 
@@ -192,7 +213,7 @@ export default async function AppTrainPage(props: PageProps) {
         }
     }
 
-    const today = new Date().toISOString().slice(0, 10)
+    const today = getBuenosAiresDateString()
     const routineDayExerciseIds = exercisesForDay.map(e => e.id)
 
     const logsByExerciseId = new Map<string, {

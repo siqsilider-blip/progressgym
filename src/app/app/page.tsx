@@ -5,6 +5,8 @@ import { getStudentExerciseProgress } from '@/app/dashboard/students/getStudentE
 import { getStudentSessionHistory } from '@/app/dashboard/students/getStudentSessionHistory'
 import { type WeightUnit } from '@/lib/weight'
 import { getRoutineSchedule } from '@/lib/getRoutineSchedule'
+import { getStudentRoutineWeekProgress, type RoutineDayProgressStatus } from '@/lib/studentRoutineWeekProgress'
+import { getBuenosAiresHour } from '@/lib/buenosAiresDate'
 
 export default async function AppHomePage() {
     const supabase = await createClient()
@@ -50,6 +52,11 @@ export default async function AppHomePage() {
     let selectedMonthId: string | null = null
     let selectedWeekId: string | null = null
     let selectedDayId: string | null = null
+    let selectedDayLabel: string | null = null
+    let selectedDayStatus: RoutineDayProgressStatus = 'pending'
+    let completedDays = 0
+    let totalTrainingDays = 0
+    let weekCompleted = false
     let todayExercises: { name: string; sets: number; reps: string | null }[] = []
 
     if (assignment?.routine_id) {
@@ -69,28 +76,55 @@ export default async function AppHomePage() {
 
             if (selectedWeekId) {
 
-                // Buscar todos los días de la semana
                 const { data: days } = await supabase
                     .from('routine_days')
-                    .select('id, title, day_index')
+                    .select('id, name, title, day_index')
                     .eq('routine_week_id', selectedWeekId)
                     .order('day_index', { ascending: true })
 
                 if (days && days.length > 0) {
-                    // Buscar el primer día que tenga ejercicios
-                    for (const day of days) {
-                        const { count } = await supabase
-                            .from('routine_day_exercises')
-                            .select('id', { count: 'exact', head: true })
-                            .eq('routine_day_id', day.id)
+                    const dayIds = days.map((day) => day.id)
+                    const { data: weekExercises } = await supabase
+                        .from('routine_day_exercises')
+                        .select('routine_day_id')
+                        .in('routine_day_id', dayIds)
 
-                        if ((count ?? 0) > 0) {
-                            selectedDayId = day.id
-                            break
-                        }
+                    const daysWithExercises = new Set(
+                        (weekExercises ?? []).map((exercise) => exercise.routine_day_id).filter(Boolean)
+                    )
+                    const trainingDays = days.filter((day) => daysWithExercises.has(day.id))
+                    totalTrainingDays = trainingDays.length
+
+                    if (trainingDays.length > 0) {
+                        const progress = await getStudentRoutineWeekProgress(
+                            supabase,
+                            studentId,
+                            trainingDays.map((day) => day.id)
+                        )
+
+                        completedDays = trainingDays.filter(
+                            (day) => progress.statusByDayId.get(day.id) === 'completed'
+                        ).length
+
+                        const nextDay = trainingDays.find(
+                            (day) => progress.statusByDayId.get(day.id) === 'in_progress'
+                        ) ?? trainingDays.find(
+                            (day) => progress.statusByDayId.get(day.id) !== 'completed'
+                        )
+
+                        weekCompleted = !nextDay
+                        const selectedDay = nextDay ?? trainingDays[0]
+                        selectedDayId = selectedDay.id
+                        selectedDayLabel = selectedDay.name?.trim()
+                            || selectedDay.title?.trim()
+                            || `Día ${selectedDay.day_index}`
+                        selectedDayStatus = progress.statusByDayId.get(selectedDay.id) ?? 'pending'
+                    } else {
+                        selectedDayId = days[0].id
+                        selectedDayLabel = days[0].name?.trim()
+                            || days[0].title?.trim()
+                            || `Día ${days[0].day_index}`
                     }
-                    // Si ningún día tiene ejercicios, usar el primero igual
-                    if (!selectedDayId) selectedDayId = days[0].id
                 }
             }
 
@@ -155,9 +189,12 @@ export default async function AppHomePage() {
     const trainHref = assignedRoutineId && selectedWeekId && selectedDayId
         ? `/app/train?${selectedMonthId ? `month=${selectedMonthId}&` : ''}week=${selectedWeekId}&day=${selectedDayId}`
         : '/app/train'
+    const routineHref = selectedWeekId
+        ? `/app/rutina?${selectedMonthId ? `month=${selectedMonthId}&` : ''}week=${selectedWeekId}`
+        : '/app/rutina'
 
     // Hora del día para saludo
-    const hour = new Date().getHours()
+    const hour = getBuenosAiresHour()
     const greeting = hour < 12 ? 'Buenos días' : hour < 18 ? 'Buenas tardes' : 'Buenas noches'
 
     return (
@@ -196,17 +233,37 @@ export default async function AppHomePage() {
                 </div>
 
                 {/* ── CTA Entrenar ── */}
-                {assignedRoutineId ? (
+                {assignedRoutineId && weekCompleted ? (
+                    <Link
+                        href={routineHref}
+                        className="block overflow-hidden rounded-3xl border border-emerald-500/30 bg-emerald-500/[0.08] shadow-sm transition active:scale-[0.98]"
+                    >
+                        <div className="p-5">
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-500">
+                                Semana completada
+                            </p>
+                            <h2 className="mt-1.5 text-xl font-black text-foreground">
+                                ¡Excelente trabajo! ✓
+                            </h2>
+                            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                                Completaste tus {totalTrainingDays} entrenamientos. Podés revisar la rutina cuando quieras.
+                            </p>
+                        </div>
+                        <div className="border-t border-emerald-500/15 px-5 py-3">
+                            <p className="text-xs font-semibold text-emerald-500">Ver semana</p>
+                        </div>
+                    </Link>
+                ) : assignedRoutineId ? (
                     <Link
                         href={trainHref}
                         className="block overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 to-violet-600 shadow-lg shadow-indigo-500/20 transition active:scale-[0.98]"
                     >
                         <div className="p-5">
                             <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-200">
-                                Listo para entrenar
+                                {selectedDayStatus === 'in_progress' ? 'Sesión en curso' : 'Próximo entrenamiento'}
                             </p>
                             <h2 className="mt-1.5 text-xl font-black text-white">
-                                Empezar sesión →
+                                {selectedDayStatus === 'in_progress' ? 'Continuar sesión →' : `${selectedDayLabel ?? 'Entrenar'} →`}
                             </h2>
                             <p className="mt-0.5 text-xs text-indigo-200">
                                 {todayExercises.length > 0
@@ -217,11 +274,16 @@ export default async function AppHomePage() {
                                 <span className="rounded-full bg-white/15 px-3 py-1 text-[10px] font-medium text-white backdrop-blur">
                                     {routineName}
                                 </span>
+                                {totalTrainingDays > 0 && (
+                                    <span className="text-[10px] font-medium text-indigo-100">
+                                        {completedDays} de {totalTrainingDays} completados
+                                    </span>
+                                )}
                             </div>
                         </div>
                         <div className="border-t border-white/10 bg-white/5 px-5 py-3">
                             <p className="text-xs font-semibold text-white">
-                                Tocar para comenzar
+                                {selectedDayStatus === 'in_progress' ? 'Retomar donde lo dejaste' : 'Tocar para comenzar'}
                             </p>
                         </div>
                     </Link>
@@ -234,10 +296,10 @@ export default async function AppHomePage() {
                 )}
 
                 {/* ── Ejercicios de hoy ── */}
-                {todayExercises.length > 0 && (
+                {todayExercises.length > 0 && !weekCompleted && (
                     <div className="rounded-2xl border border-border bg-card p-4">
                         <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                            Rutina de hoy
+                            {selectedDayStatus === 'in_progress' ? 'Sesión pendiente' : 'Próxima sesión'}
                         </p>
                         <div className="mt-3 space-y-2">
                             {todayExercises.map((ex, idx) => (

@@ -61,6 +61,15 @@ test('el alumno entra a su portal y no al panel del entrenador', async ({ page }
 
     await page.reload()
     await expect(page.getByRole('heading', { name: 'Sesión completada' })).toBeVisible({ timeout: 15_000 })
+
+    await page.goto('/app/rutina')
+    await expect(page.getByText('Semana completada ✓')).toBeVisible()
+    await expect(page.getByText('1 de 1 entrenamientos completados')).toBeVisible()
+    await expect(page.getByText('✓ Completado esta semana')).toBeVisible()
+
+    await page.goto('/app')
+    await expect(page.getByText('Semana completada', { exact: true })).toBeVisible()
+    await expect(page.getByText('¡Excelente trabajo! ✓')).toBeVisible()
 })
 
 test('cada tipo de cuenta es rechazado por el acceso equivocado', async ({ page }) => {
