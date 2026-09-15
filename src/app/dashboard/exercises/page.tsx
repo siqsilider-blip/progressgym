@@ -7,6 +7,7 @@ import { createExercise, listExercises, deleteExercise, updateExercise } from '.
 type Exercise = {
     id: string
     name: string
+    description: string | null
     muscle_group: string | null
     video_url: string | null
     trainer_id: string | null
@@ -41,6 +42,7 @@ export default function ExercisesPage() {
 
     const [editingExercise, setEditingExercise] = useState<Exercise | null>(null)
     const [editName, setEditName] = useState('')
+    const [editDescription, setEditDescription] = useState('')
     const [editMuscleGroup, setEditMuscleGroup] = useState('')
     const [editVideoUrl, setEditVideoUrl] = useState('')
     const [editSaving, setEditSaving] = useState(false)
@@ -97,6 +99,7 @@ export default function ExercisesPage() {
     function openEdit(x: Exercise) {
         setEditingExercise(x)
         setEditName(x.name)
+        setEditDescription(x.description ?? '')
         setEditMuscleGroup(x.muscle_group ?? '')
         setEditVideoUrl(x.video_url ?? '')
         setEditError(null)
@@ -113,6 +116,7 @@ export default function ExercisesPage() {
         try {
             const res = await updateExercise(editingExercise.id, {
                 name: editName,
+                description: editDescription,
                 muscle_group: editMuscleGroup,
                 video_url: editVideoUrl,
             })
@@ -265,6 +269,16 @@ export default function ExercisesPage() {
                             </div>
 
                             <div className="space-y-1">
+                                <label className="text-xs font-medium text-muted-foreground">Indicaciones simples (opcional)</label>
+                                <textarea
+                                    className="min-h-20 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                                    placeholder="Ej.: apoyá toda la espalda y empujá sin despegar los talones."
+                                    value={editDescription}
+                                    onChange={(e) => setEditDescription(e.target.value)}
+                                />
+                            </div>
+
+                            <div className="space-y-1">
                                 <label className="text-xs font-medium text-muted-foreground">Grupo muscular</label>
                                 <select
                                     className={selectCls}
@@ -277,14 +291,17 @@ export default function ExercisesPage() {
                             </div>
 
                             <div className="space-y-1">
-                                <label className="text-xs font-medium text-muted-foreground">Video del ejercicio (opcional)</label>
+                                <label className="text-xs font-medium text-muted-foreground">Video demostrativo (opcional)</label>
                                 <input
                                     type="url"
-                                    placeholder="https://youtube.com/... o https://instagram.com/..."
+                                    placeholder="Pegá un enlace de YouTube"
                                     value={editVideoUrl}
                                     onChange={(e) => setEditVideoUrl(e.target.value)}
                                     className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-indigo-500 transition"
                                 />
+                                <p className="text-xs leading-5 text-muted-foreground">
+                                    Recomendado: video corto de YouTube como “no listado”. El alumno lo verá sin salir de la rutina.
+                                </p>
                             </div>
 
                             {editError && <p className="text-sm text-red-500">{editError}</p>}
@@ -335,7 +352,7 @@ export default function ExercisesPage() {
 
                             <textarea
                                 className="min-h-20 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                                placeholder="Descripción (opcional)"
+                                placeholder="Indicaciones simples (opcional). Ej.: mantené la espalda apoyada."
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
                             />
@@ -358,15 +375,18 @@ export default function ExercisesPage() {
 
                             <div className="space-y-1">
                                 <label className="text-xs font-medium text-muted-foreground">
-                                    Video del ejercicio (opcional)
+                                    Video demostrativo (opcional)
                                 </label>
                                 <input
                                     type="url"
-                                    placeholder="https://youtube.com/... o https://instagram.com/..."
+                                    placeholder="Pegá un enlace de YouTube"
                                     value={videoUrl}
                                     onChange={(e) => setVideoUrl(e.target.value)}
                                     className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-indigo-500 transition"
                                 />
+                                <p className="text-xs leading-5 text-muted-foreground">
+                                    Recomendado: video corto de YouTube como “no listado”. El alumno lo verá sin salir de la rutina.
+                                </p>
                             </div>
 
                             {error && <p className="text-sm text-red-500">{error}</p>}

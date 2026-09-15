@@ -199,6 +199,8 @@ export default async function createAuthFixture() {
                 name: `Ejercicio E2E ${runId}`,
                 metric_type: 'reps',
                 muscle_group: 'Prueba E2E',
+                description: 'Mantené la espalda apoyada y controlá el movimiento.',
+                video_url: 'https://www.youtube.com/watch?v=M7lc1UVf-VE',
             })
             .select('id')
             .single()

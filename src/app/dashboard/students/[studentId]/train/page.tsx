@@ -24,6 +24,8 @@ type ExerciseMeta = {
     id: string
     name: string | null
     metric_type: 'reps' | 'time' | null
+    video_url: string | null
+    description: string | null
 }
 
 type ExerciseLog = {
@@ -195,7 +197,7 @@ export default async function StudentTrainPage(props: PageProps) {
     if (exerciseIds.length > 0) {
         const { data: exercisesData } = await supabase
             .from('exercises')
-            .select('id, name, metric_type')
+            .select('id, name, metric_type, video_url, description')
             .in('id', exerciseIds)
 
         exercises = (exercisesData as ExerciseMeta[] | null) ?? []
@@ -332,6 +334,8 @@ export default async function StudentTrainPage(props: PageProps) {
                 previousWeights,
                 previousReps,
                 lastPerformedAt: previousSession?.lastPerformedAt ?? null,
+                video_url: exerciseMeta?.video_url ?? null,
+                instructions: exerciseMeta?.description ?? null,
                 block: exercise.block ?? 'main',
             }
         })

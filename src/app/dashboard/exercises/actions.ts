@@ -82,7 +82,7 @@ export async function listExercises() {
 
     const { data, error } = await supabase
         .from('exercises')
-        .select('id, name, muscle_group, video_url, trainer_id')
+        .select('id, name, description, muscle_group, video_url, trainer_id')
         .or(`trainer_id.eq.${user.id},trainer_id.is.null`)
         .order('name', { ascending: true })
 
@@ -95,6 +95,7 @@ export async function listExercises() {
 
 export async function updateExercise(id: string, payload: {
     name: string
+    description?: string
     muscle_group?: string
     video_url?: string
 }) {
@@ -113,6 +114,7 @@ export async function updateExercise(id: string, payload: {
         .from('exercises')
         .update({
             name: payload.name.trim(),
+            description: payload.description?.trim() || null,
             muscle_group: payload.muscle_group || null,
             video_url: payload.video_url?.trim() || null,
         })

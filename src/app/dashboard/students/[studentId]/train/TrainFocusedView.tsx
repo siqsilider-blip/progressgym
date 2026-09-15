@@ -2,8 +2,8 @@
 
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
-import { PlayCircle } from 'lucide-react'
 import { saveSet, completeSession, saveSessionNote } from './train-focused-actions'
+import ExerciseDemo from './ExerciseDemo'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -33,6 +33,7 @@ type ExerciseData = {
     previousReps: (number | null)[]
     lastPerformedAt?: string | null
     video_url?: string | null
+    instructions?: string | null
     block?: string
 }
 
@@ -825,15 +826,12 @@ export default function TrainFocusedView({
                         : ''}
                 </p>
                 {exercise.video_url && (
-                    <a
-                        href={exercise.video_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-3 py-1.5 text-xs font-medium text-indigo-400 transition hover:bg-indigo-500/20"
-                    >
-                        <PlayCircle className="h-3.5 w-3.5" />
-                        Ver ejercicio
-                    </a>
+                    <ExerciseDemo
+                        key={`${exercise.id}-${exercise.video_url}`}
+                        exerciseName={exercise.exerciseName}
+                        videoUrl={exercise.video_url}
+                        instructions={exercise.instructions}
+                    />
                 )}
                 {exercise.lastPerformedAt && (
                     <p className="mt-0.5 text-[10px] text-muted-foreground">
