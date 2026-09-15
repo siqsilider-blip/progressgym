@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import StudentsList from '@/components/StudentsList'
 import { getStudentsRiskBatch, fallbackRisk } from './[studentId]/getStudentRisk'
+import { getElapsedProgramWeekIndex } from '@/lib/buenosAiresDate'
 
 type StudentRisk = {
     score: number
@@ -20,7 +21,14 @@ type Student = {
 }
 
 type StudentRow = Omit<Student, 'risk'>
-type Routine = { id: string; student_id: string }
+type ActiveAssignment = {
+    student_id: string
+    routine_id: string
+    program_started_on: string
+}
+
+type RoutineSummary = { id: string; name: string | null }
+type RoutineWeekRow = { routine_id: string }
 
 function getRiskStyles(level: StudentRisk['level']) {
     switch (level) {
@@ -71,21 +79,97 @@ export default async function StudentsPage() {
     )
 
     const studentIds = studentsWithRisk.map((s) => s.id)
-    let routinesByStudentId = new Map<string, string>()
+    const operationsByStudentId: Record<string, {
+        routineId: string | null
+        routineName: string | null
+        programWeekNumber: number | null
+        totalProgramWeeks: number | null
+        hasActiveSession: boolean
+        isFinalWeek: boolean
+    }> = {}
 
     if (studentIds.length > 0) {
-        const { data: routinesData } = await supabase
-            .from('routines')
-            .select('id, student_id')
-            .eq('trainer_id', user.id)
-            .in('student_id', studentIds)
+        const [assignmentsResult, activeSessionsResult] = await Promise.all([
+            supabase
+                .from('student_routines')
+                .select('student_id, routine_id, program_started_on')
+                .in('student_id', studentIds)
+                .eq('status', 'active'),
+            supabase
+                .from('workout_sessions')
+                .select('student_id')
+                .in('student_id', studentIds)
+                .eq('status', 'in_progress'),
+        ])
 
-        routinesByStudentId = new Map(
-            ((routinesData ?? []) as Routine[]).map((r) => [r.student_id, r.id])
+        const assignments = (assignmentsResult.data as ActiveAssignment[] | null) ?? []
+        const routineIds = [...new Set(assignments.map((assignment) => assignment.routine_id))]
+        const activeSessionStudentIds = new Set(
+            (activeSessionsResult.data ?? []).map((session) => session.student_id)
         )
-    }
 
-    const routinesObject = Object.fromEntries(routinesByStudentId)
+        let routineNames = new Map<string, string>()
+        const weekCountByRoutine = new Map<string, number>()
+
+        if (routineIds.length > 0) {
+            const [routinesResult, weeksResult] = await Promise.all([
+                supabase
+                    .from('routines')
+                    .select('id, name')
+                    .in('id', routineIds),
+                supabase
+                    .from('routine_weeks')
+                    .select('routine_id')
+                    .in('routine_id', routineIds),
+            ])
+
+            routineNames = new Map(
+                ((routinesResult.data as RoutineSummary[] | null) ?? [])
+                    .map((routine) => [routine.id, routine.name ?? 'Programa'])
+            )
+
+            for (const week of (weeksResult.data as RoutineWeekRow[] | null) ?? []) {
+                weekCountByRoutine.set(
+                    week.routine_id,
+                    (weekCountByRoutine.get(week.routine_id) ?? 0) + 1
+                )
+            }
+        }
+
+        const assignmentByStudent = new Map(
+            assignments.map((assignment) => [assignment.student_id, assignment])
+        )
+
+        for (const student of studentsWithRisk) {
+            const assignment = assignmentByStudent.get(student.id)
+            if (!assignment) {
+                operationsByStudentId[student.id] = {
+                    routineId: null,
+                    routineName: null,
+                    programWeekNumber: null,
+                    totalProgramWeeks: null,
+                    hasActiveSession: false,
+                    isFinalWeek: false,
+                }
+                continue
+            }
+
+            const totalWeeks = Math.max(1, weekCountByRoutine.get(assignment.routine_id) ?? 1)
+            const weekNumber = Math.min(
+                getElapsedProgramWeekIndex(assignment.program_started_on) + 1,
+                totalWeeks
+            )
+
+            operationsByStudentId[student.id] = {
+                routineId: assignment.routine_id,
+                routineName: routineNames.get(assignment.routine_id) ?? 'Programa',
+                programWeekNumber: weekNumber,
+                totalProgramWeeks: totalWeeks,
+                hasActiveSession: activeSessionStudentIds.has(student.id),
+                isFinalWeek: totalWeeks > 1 && weekNumber === totalWeeks,
+            }
+        }
+    }
 
     return (
         <div className="p-4 pb-24 md:p-8">
@@ -131,7 +215,7 @@ export default async function StudentsPage() {
                 <>
                     {/* Mobile */}
                     <div className="md:hidden">
-                        <StudentsList students={studentsWithRisk} routinesByStudentId={routinesObject} />
+                        <StudentsList students={studentsWithRisk} operationsByStudentId={operationsByStudentId} />
                     </div>
 
                     {/* Desktop */}
@@ -141,7 +225,7 @@ export default async function StudentsPage() {
                             style={{ borderColor: 'rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)' }}>
                             <div className="col-span-4">Alumno</div>
                             <div className="col-span-2">Riesgo</div>
-                            <div className="col-span-3">Email</div>
+                            <div className="col-span-3">Programa</div>
                             <div className="col-span-3 text-right">Acciones</div>
                         </div>
 
@@ -150,6 +234,8 @@ export default async function StudentsPage() {
                                 const fullName = `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim() || 'Sin nombre'
                                 const initials = getInitials(student.first_name, student.last_name)
                                 const riskStyles = getRiskStyles(student.risk.level)
+                                const operation = operationsByStudentId[student.id]
+                                const hasProgram = Boolean(operation?.routineId)
 
                                 return (
                                     <div key={student.id} className="grid grid-cols-12 gap-4 px-5 py-3.5 text-sm transition hover:bg-white/[0.02]">
@@ -167,8 +253,19 @@ export default async function StudentsPage() {
                                             </span>
                                         </div>
 
-                                        <div className="col-span-3 flex items-center text-xs text-white/35 truncate">
-                                            {student.email || '—'}
+                                        <div className="col-span-3 flex items-center">
+                                            {operation?.hasActiveSession ? (
+                                                <span className="text-xs font-semibold text-indigo-400">Sesión en curso</span>
+                                            ) : hasProgram ? (
+                                                <div className="min-w-0">
+                                                    <p className="truncate text-xs font-medium text-white/60">{operation.routineName}</p>
+                                                    <p className={`text-[10px] ${operation.isFinalWeek ? 'font-semibold text-amber-400' : 'text-white/30'}`}>
+                                                        Semana {operation.programWeekNumber} de {operation.totalProgramWeeks}
+                                                    </p>
+                                                </div>
+                                            ) : (
+                                                <span className="text-xs font-semibold text-rose-400">Sin programa</span>
+                                            )}
                                         </div>
 
                                         <div className="col-span-3 flex items-center justify-end gap-2">
@@ -180,11 +277,13 @@ export default async function StudentsPage() {
                                                 Ver perfil
                                             </Link>
                                             <Link
-                                                href={`/dashboard/students/${student.id}/train`}
+                                                href={hasProgram
+                                                    ? `/dashboard/students/${student.id}/train`
+                                                    : `/dashboard/students/${student.id}/assign-routine`}
                                                 className="rounded-lg px-3 py-1.5 text-xs font-bold text-white transition hover:opacity-90"
                                                 style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)' }}
                                             >
-                                                Entrenar
+                                                {operation?.hasActiveSession ? 'Continuar' : hasProgram ? 'Entrenar' : 'Asignar'}
                                             </Link>
                                         </div>
                                     </div>

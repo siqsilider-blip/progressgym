@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import { ClipboardList, MessageSquare, Users, Zap } from 'lucide-react'
-import TrainerAlertsCard from './TrainerAlertsCard'
 import TrainerDashboardCards from './TrainerDashboardCards'
 import TrainerProgressRankingCard from './TrainerProgressRankingCard'
 import TrainerStudentLeaderboardCard from './TrainerStudentLeaderboardCard'
@@ -94,7 +93,7 @@ export default async function DashboardPage() {
             {/* ── Métricas ── */}
             <TrainerDashboardCards stats={stats} riskCount={alerts.length} />
 
-            {/* ── Alumnos en riesgo ── */}
+            {/* ── Prioridades operativas ── */}
             <AtRiskStudentsCard alerts={alerts} />
 
             {/* ── Actividad reciente + Mejor progreso ── */}
@@ -154,11 +153,6 @@ export default async function DashboardPage() {
                     </div>
                 </div>
             </section>
-
-            {/* ── xl only ── */}
-            <div className="hidden xl:block">
-                <TrainerAlertsCard alerts={alerts ?? []} />
-            </div>
 
             <section className="hidden gap-5 xl:grid xl:grid-cols-12">
                 <div className="xl:col-span-7">

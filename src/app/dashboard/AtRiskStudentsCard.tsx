@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers'
 import Link from 'next/link'
-import { AlertTriangle, ArrowRight, UserMinus, UserX } from 'lucide-react'
+import { AlertTriangle, ArrowRight, CircleStop, Flag, ListChecks, UserMinus, UserX } from 'lucide-react'
 import AppBadge from '@/components/ui/app-badge'
 import type { TrainerAlert } from './getTrainerAlerts'
 
@@ -45,6 +45,32 @@ function getRiskMeta(type: TrainerAlert['type'], isLight: boolean) {
                     ? 'border-sky-200 bg-sky-50'
                     : 'border-sky-500/20 bg-sky-500/5',
             }
+        case 'unfinished_session':
+            return {
+                label: 'Sesión abierta',
+                badgeClassName: isLight
+                    ? 'bg-violet-100 text-violet-700'
+                    : 'bg-violet-500/10 text-violet-300',
+                icon: CircleStop,
+                iconClassName: 'text-violet-500',
+                iconBgClassName: 'bg-violet-500/10',
+                cardClassName: isLight
+                    ? 'border-violet-200 bg-violet-50'
+                    : 'border-violet-500/20 bg-violet-500/5',
+            }
+        case 'program_ending':
+            return {
+                label: 'Programa por terminar',
+                badgeClassName: isLight
+                    ? 'bg-emerald-100 text-emerald-700'
+                    : 'bg-emerald-500/10 text-emerald-300',
+                icon: Flag,
+                iconClassName: 'text-emerald-500',
+                iconBgClassName: 'bg-emerald-500/10',
+                cardClassName: isLight
+                    ? 'border-emerald-200 bg-emerald-50'
+                    : 'border-emerald-500/20 bg-emerald-500/5',
+            }
         default:
             return {
                 label: 'Alerta',
@@ -74,16 +100,16 @@ export default async function AtRiskStudentsCard({
         <div className="rounded-2xl border p-6" style={{borderColor: 'rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)'}}>
             <div className="mb-6 flex items-center gap-3">
                 <div className="rounded-2xl bg-amber-500/10 p-3 text-amber-500">
-                    <AlertTriangle className="h-5 w-5" />
+                    <ListChecks className="h-5 w-5" />
                 </div>
 
                 <div>
                     <h2 className="text-lg font-semibold text-card-foreground">
-                        Alumnos en riesgo
+                        Prioridades de hoy
                     </h2>
 
                     <p className="text-sm text-muted-foreground">
-                        Casos que conviene revisar primero
+                        Una acción clara por alumno
                     </p>
                 </div>
             </div>
@@ -95,7 +121,7 @@ export default async function AtRiskStudentsCard({
                             : 'border-border bg-muted/30 text-muted-foreground'
                         }`}
                 >
-                    No hay alumnos en riesgo por ahora.
+                    No hay acciones pendientes por ahora.
                 </div>
             ) : (
                 <div className="space-y-3">
@@ -130,7 +156,7 @@ export default async function AtRiskStudentsCard({
                                     </div>
 
                                     <Link
-                                        href={`/dashboard/students/${alert.studentId}`}
+                                        href={alert.actionHref}
                                         className="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-indigo-500 transition hover:text-indigo-400"
                                     >
                                         Ver

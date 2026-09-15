@@ -17,13 +17,20 @@ type Student = {
     risk: StudentRisk
 }
 
-type RoutineMap = Record<string, string>
+export type StudentOperation = {
+    routineId: string | null
+    routineName: string | null
+    programWeekNumber: number | null
+    totalProgramWeeks: number | null
+    hasActiveSession: boolean
+    isFinalWeek: boolean
+}
 
-type Filter = 'all' | 'with_routine' | 'without_routine' | 'at_risk'
+type Filter = 'all' | 'attention' | 'in_progress' | 'without_program' | 'final_week'
 
 type Props = {
     students: Student[]
-    routinesByStudentId: RoutineMap
+    operationsByStudentId: Record<string, StudentOperation>
 }
 
 function getRiskBadge(level: StudentRisk['level']) {
@@ -43,12 +50,13 @@ function getRiskBadge(level: StudentRisk['level']) {
 
 const FILTER_OPTIONS: { value: Filter; label: string }[] = [
     { value: 'all', label: 'Todos' },
-    { value: 'with_routine', label: 'Con rutina' },
-    { value: 'without_routine', label: 'Sin rutina' },
-    { value: 'at_risk', label: 'En riesgo' },
+    { value: 'attention', label: 'Atención' },
+    { value: 'in_progress', label: 'Entrenando' },
+    { value: 'without_program', label: 'Sin programa' },
+    { value: 'final_week', label: 'Última semana' },
 ]
 
-export default function StudentsList({ students, routinesByStudentId }: Props) {
+export default function StudentsList({ students, operationsByStudentId }: Props) {
     const [search, setSearch] = useState('')
     const [filter, setFilter] = useState<Filter>('all')
 
@@ -56,21 +64,28 @@ export default function StudentsList({ students, routinesByStudentId }: Props) {
         const term = search.trim().toLowerCase()
         return students.filter((s) => {
             const fullName = `${s.first_name ?? ''} ${s.last_name ?? ''}`.trim()
+            const operation = operationsByStudentId[s.id]
+            const needsAttention =
+                !operation?.routineId ||
+                operation.isFinalWeek ||
+                s.risk.level === 'critical' ||
+                s.risk.level === 'high'
             const matchesSearch =
                 !term ||
                 fullName.toLowerCase().includes(term) ||
-                (s.email ?? '').toLowerCase().includes(term)
+                (s.email ?? '').toLowerCase().includes(term) ||
+                (operation?.routineName ?? '').toLowerCase().includes(term)
 
-            const hasRoutine = Boolean(routinesByStudentId[s.id])
             const matchesFilter =
                 filter === 'all' ||
-                (filter === 'with_routine' && hasRoutine) ||
-                (filter === 'without_routine' && !hasRoutine) ||
-                (filter === 'at_risk' && (s.risk.level === 'critical' || s.risk.level === 'high'))
+                (filter === 'attention' && needsAttention) ||
+                (filter === 'in_progress' && operation?.hasActiveSession) ||
+                (filter === 'without_program' && !operation?.routineId) ||
+                (filter === 'final_week' && operation?.isFinalWeek)
 
             return matchesSearch && matchesFilter
         })
-    }, [students, routinesByStudentId, search, filter])
+    }, [students, operationsByStudentId, search, filter])
 
     const hasActiveFilters = search.trim().length > 0 || filter !== 'all'
 
@@ -79,14 +94,14 @@ export default function StudentsList({ students, routinesByStudentId }: Props) {
             {/* Search */}
             <input
                 type="text"
-                placeholder="Buscar alumno..."
+                placeholder="Buscar alumno o programa..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full rounded-xl border border-border bg-input px-4 py-2.5 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
             />
 
             {/* Filter chips */}
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {FILTER_OPTIONS.map((opt) => {
                     const isActive = filter === opt.value
                     return (
@@ -94,7 +109,7 @@ export default function StudentsList({ students, routinesByStudentId }: Props) {
                             key={opt.value}
                             type="button"
                             onClick={() => setFilter(opt.value)}
-                            className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${isActive
+                            className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition ${isActive
                                     ? 'bg-indigo-600 text-white'
                                     : 'border border-border bg-secondary text-secondary-foreground hover:bg-muted'
                                 }`}
@@ -108,7 +123,7 @@ export default function StudentsList({ students, routinesByStudentId }: Props) {
                     <button
                         type="button"
                         onClick={() => { setSearch(''); setFilter('all') }}
-                        className="rounded-full px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:text-foreground"
+                        className="shrink-0 rounded-full px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:text-foreground"
                     >
                         Limpiar
                     </button>
@@ -134,41 +149,63 @@ export default function StudentsList({ students, routinesByStudentId }: Props) {
                             `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim() || 'Sin nombre'
                         const initials =
                             `${(student.first_name?.[0] ?? '').toUpperCase()}${(student.last_name?.[0] ?? '').toUpperCase()}` || '?'
+                        const operation = operationsByStudentId[student.id]
+                        const hasProgram = Boolean(operation?.routineId)
                         const { cls: riskBadgeClass, label: riskLabel } = getRiskBadge(student.risk.level)
+                        const status = !hasProgram
+                            ? { label: 'Sin programa', cls: 'border-rose-500/25 bg-rose-500/10 text-rose-300' }
+                            : operation?.hasActiveSession
+                                ? { label: 'Sesión en curso', cls: 'border-indigo-500/30 bg-indigo-500/10 text-indigo-300' }
+                                : operation?.isFinalWeek
+                                    ? { label: 'Última semana', cls: 'border-amber-500/30 bg-amber-500/10 text-amber-300' }
+                                    : {
+                                        label: `Semana ${operation?.programWeekNumber ?? 1} de ${operation?.totalProgramWeeks ?? 1}`,
+                                        cls: 'border-white/10 bg-white/[0.04] text-white/55',
+                                    }
+                        const primaryHref = hasProgram
+                            ? `/dashboard/students/${student.id}/train`
+                            : `/dashboard/students/${student.id}/assign-routine`
 
                         return (
                             <div key={student.id} className="rounded-2xl border border-zinc-800 bg-zinc-900/80 p-3 shadow-sm">
 
                                 {/* Header de la card */}
                                 <div className="flex items-start justify-between gap-3">
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-indigo-500/15 text-xs font-bold text-indigo-400">
+                                    <div className="flex min-w-0 items-center gap-3">
+                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-500/15 text-xs font-bold text-indigo-400">
                                             {initials}
                                         </div>
-                                        <div>
-                                            <p className="text-sm font-medium text-foreground">{fullName}</p>
-                                            <p className="text-[11px] text-muted-foreground">{student.email ?? 'Sin email'}</p>
+                                        <div className="min-w-0">
+                                            <p className="truncate text-sm font-semibold text-foreground">{fullName}</p>
+                                            <p className="truncate text-[11px] text-muted-foreground">
+                                                {operation?.routineName ?? student.email ?? 'Sin programa asignado'}
+                                            </p>
                                         </div>
                                     </div>
                                     <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${riskBadgeClass}`}>
-                                        {riskLabel}
+                                        Riesgo {riskLabel.toLowerCase()}
                                     </span>
                                 </div>
 
-                                {/* Botones */}
-                                <div className="mt-3 flex gap-2">
-                                    <a
-                                        href={`/dashboard/students/${student.id}`}
-                                        className="flex-1 rounded-xl bg-indigo-600 px-3 py-2 text-center text-xs font-semibold text-white transition hover:bg-indigo-500"
-                                    >
-                                        Ver perfil
-                                    </a>
-                                    <a
-                                        href={`/dashboard/routines?student=${student.id}`}
-                                        className="rounded-xl border border-zinc-700 bg-zinc-800 px-3 py-2 text-xs font-medium text-zinc-300 transition hover:bg-zinc-700"
-                                    >
-                                        Rutina
-                                    </a>
+                                <div className="mt-3 flex items-center justify-between gap-3">
+                                    <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold ${status.cls}`}>
+                                        {status.label}
+                                    </span>
+
+                                    <div className="flex gap-2">
+                                        <a
+                                            href={`/dashboard/students/${student.id}`}
+                                            className="rounded-xl border border-zinc-700 bg-zinc-800 px-3 py-2 text-xs font-medium text-zinc-300 transition hover:bg-zinc-700"
+                                        >
+                                            Perfil
+                                        </a>
+                                        <a
+                                            href={primaryHref}
+                                            className="rounded-xl bg-indigo-600 px-3.5 py-2 text-center text-xs font-semibold text-white transition hover:bg-indigo-500"
+                                        >
+                                            {operation?.hasActiveSession ? 'Continuar' : hasProgram ? 'Entrenar' : 'Asignar'}
+                                        </a>
+                                    </div>
                                 </div>
 
                             </div>

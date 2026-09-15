@@ -21,9 +21,9 @@ export default async function TrainerDashboardCards({
             border: 'rgba(255,255,255,0.07)',
         },
         {
-            label: 'En riesgo',
+            label: 'Pendientes',
             value: riskCount,
-            helper: 'Requieren atención',
+            helper: 'Acciones prioritarias',
             icon: Activity,
             valueColor: riskCount > 0 ? 'text-amber-400' : 'text-white',
             iconColor: riskCount > 0 ? 'text-amber-400' : 'text-white/40',
