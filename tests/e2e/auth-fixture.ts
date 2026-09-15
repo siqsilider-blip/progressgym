@@ -162,20 +162,11 @@ export default async function createAuthFixture() {
         }
         created.routineId = routine.id
 
-        const { data: month, error: monthError } = await admin
-            .from('routine_months')
-            .insert({ routine_id: routine.id, month_number: 1, name: 'Mesociclo E2E' })
-            .select('id')
-            .single()
-        if (monthError || !month) {
-            throw new Error(`No se pudo crear el mesociclo E2E: ${monthError?.message}`)
-        }
-
         const { data: week, error: weekError } = await admin
             .from('routine_weeks')
             .insert({
                 routine_id: routine.id,
-                routine_month_id: month.id,
+                routine_month_id: null,
                 week_number: 1,
                 name: 'Semana E2E',
             })

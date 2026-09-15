@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { getRoutineSchedule } from '@/lib/getRoutineSchedule'
 
 type PageProps = {
     searchParams?: Promise<{
@@ -55,28 +56,12 @@ export default async function AppRutinePage(props: PageProps) {
         .eq('id', assignment.routine_id)
         .single()
 
-    // Meses
-    const { data: months } = await supabase
-        .from('routine_months')
-        .select('id, month_number, name')
-        .eq('routine_id', assignment.routine_id)
-        .order('month_number', { ascending: true })
-
-    const selectedMonth = (months ?? []).find(m => m.id === searchParams?.month)
-        ?? (months ?? [])[0]
-        ?? null
-
-    // Semanas del mes seleccionado
-    const { data: weeks } = selectedMonth ? await supabase
-        .from('routine_weeks')
-        .select('id, week_number, name')
-        .eq('routine_month_id', selectedMonth.id)
-        .order('week_number', { ascending: true })
-        : { data: [] }
-
-    const selectedWeek = (weeks ?? []).find(w => w.id === searchParams?.week)
-        ?? (weeks ?? [])[0]
-        ?? null
+    const { months, weeks, selectedMonth, selectedWeek } = await getRoutineSchedule(
+        supabase,
+        assignment.routine_id,
+        searchParams?.month,
+        searchParams?.week
+    )
 
     // Días de la semana seleccionada
     const { data: days } = selectedWeek ? await supabase
@@ -131,13 +116,13 @@ export default async function AppRutinePage(props: PageProps) {
                 </div>
 
                 {/* Selector mesociclos */}
-                {(months ?? []).length > 1 && (
+                {months.length > 1 && (
                     <div>
                         <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                             Mesociclo
                         </p>
                         <div className="flex gap-2 overflow-x-auto pb-1">
-                            {(months ?? []).map((month) => {
+                            {months.map((month) => {
                                 const isActive = month.id === selectedMonth?.id
                                 return (
                                     <Link
@@ -157,18 +142,18 @@ export default async function AppRutinePage(props: PageProps) {
                 )}
 
                 {/* Selector semanas */}
-                {(weeks ?? []).length > 0 && (
+                {weeks.length > 0 && (
                     <div>
                         <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                             Semana
                         </p>
                         <div className="flex gap-2 overflow-x-auto pb-1">
-                            {(weeks ?? []).map((week) => {
+                            {weeks.map((week) => {
                                 const isActive = week.id === selectedWeek?.id
                                 return (
                                     <Link
                                         key={week.id}
-                                        href={`/app/rutina?month=${selectedMonth?.id}&week=${week.id}`}
+                                        href={`/app/rutina?${selectedMonth ? `month=${selectedMonth.id}&` : ''}week=${week.id}`}
                                         className={`shrink-0 rounded-xl px-4 py-2 text-xs font-semibold transition ${isActive
                                                 ? 'bg-indigo-500/20 text-indigo-400 ring-1 ring-indigo-500'
                                                 : 'border border-border bg-card text-muted-foreground hover:text-foreground'
@@ -217,7 +202,7 @@ export default async function AppRutinePage(props: PageProps) {
 
                                             {hasExercises && (
                                                 <Link
-                                                    href={`/app/train?month=${selectedMonth?.id}&week=${selectedWeek?.id}&day=${day.id}`}
+                                                    href={`/app/train?${selectedMonth ? `month=${selectedMonth.id}&` : ''}week=${selectedWeek?.id}&day=${day.id}`}
                                                     className="shrink-0 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-indigo-500 active:scale-[0.97]"
                                                 >
                                                     Entrenar →

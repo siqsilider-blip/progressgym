@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { startWorkoutSession } from '@/app/dashboard/students/[studentId]/train/workout-session'
 import { getExerciseMaxWeights } from '@/app/dashboard/students/[studentId]/train/train-focused-actions'
 import TrainFocusedView from '@/app/dashboard/students/[studentId]/train/TrainFocusedView'
+import { getRoutineSchedule } from '@/lib/getRoutineSchedule'
 
 type PageProps = {
     searchParams?: Promise<{
@@ -94,28 +95,12 @@ export default async function AppTrainPage(props: PageProps) {
         .eq('id', assignment.routine_id)
         .single()
 
-    // Meses
-    const { data: months } = await supabase
-        .from('routine_months')
-        .select('id, month_number, name')
-        .eq('routine_id', assignment.routine_id)
-        .order('month_number', { ascending: true })
-
-    const selectedMonth = (months ?? []).find(m => m.id === searchParams?.month)
-        ?? (months ?? [])[0]
-        ?? null
-
-    // Semanas
-    const { data: weeks } = selectedMonth ? await supabase
-        .from('routine_weeks')
-        .select('id, week_number, name')
-        .eq('routine_month_id', selectedMonth.id)
-        .order('week_number', { ascending: true })
-        : { data: [] }
-
-    const selectedWeek = (weeks ?? []).find(w => w.id === searchParams?.week)
-        ?? (weeks ?? [])[0]
-        ?? null
+    const { selectedMonth, selectedWeek } = await getRoutineSchedule(
+        supabase,
+        assignment.routine_id,
+        searchParams?.month,
+        searchParams?.week
+    )
 
     // Días de la semana activa
     const { data: routineDays } = selectedWeek ? await supabase
@@ -317,7 +302,7 @@ export default async function AppTrainPage(props: PageProps) {
                             return (
                                 <a
                                     key={day.id}
-                                    href={`/app/train?month=${selectedMonth?.id}&week=${selectedWeek?.id}&day=${day.id}`}
+                                    href={`/app/train?${selectedMonth ? `month=${selectedMonth.id}&` : ''}week=${selectedWeek?.id}&day=${day.id}`}
                                     className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition ${isActive
                                             ? 'bg-indigo-600 text-white'
                                             : 'border border-border bg-secondary text-secondary-foreground hover:bg-muted'

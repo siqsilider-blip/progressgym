@@ -6,6 +6,7 @@ import { type WeightUnit } from '@/lib/weight'
 import { startWorkoutSession } from './workout-session'
 import { getExerciseMaxWeights } from './train-focused-actions'
 import TrainFocusedView from './TrainFocusedView'
+import { getRoutineSchedule } from '@/lib/getRoutineSchedule'
 
 type PageProps = {
     params: Promise<{ studentId: string }>
@@ -138,34 +139,14 @@ export default async function StudentTrainPage(props: PageProps) {
         .eq('trainer_id', user.id)
         .maybeSingle()
 
-    // 1. Obtener meses de la rutina
-    const { data: routineMonths } = await supabase
-        .from('routine_months')
-        .select('id, month_number, name')
-        .eq('routine_id', assignedRoutineId)
-        .order('month_number', { ascending: true })
-
-    const months = routineMonths ?? []
-
-    // 2. Seleccionar mes activo
-    const selectedMonth = months.find(m => m.id === searchParams?.month)
-        ?? months[0]
-        ?? null
-
-    // 3. Obtener semanas del mes activo
-    const { data: monthWeeks } = selectedMonth ? await supabase
-        .from('routine_weeks')
-        .select('id, week_number, name')
-        .eq('routine_month_id', selectedMonth.id)
-        .order('week_number', { ascending: true })
-        : { data: [] }
-
-    const weeks = monthWeeks ?? []
-
-    // 4. Seleccionar semana activa
-    const selectedWeek = weeks.find(w => w.id === searchParams?.week)
-        ?? weeks[0]
-        ?? null
+    // La rutina puede tener semanas dentro de un mesociclo o directamente
+    // bajo la rutina. Ambos formatos son válidos y deben poder entrenarse.
+    const { months, weeks, selectedMonth, selectedWeek } = await getRoutineSchedule(
+        supabase,
+        assignedRoutineId,
+        searchParams?.month,
+        searchParams?.week
+    )
 
     // 5. Obtener días de la semana activa (NO de toda la rutina)
     const { data: routineDays } = selectedWeek ? await supabase
@@ -488,13 +469,11 @@ export default async function StudentTrainPage(props: PageProps) {
                     </div>
                 )}
 
-                {!selectedMonth ? (
+                {!selectedWeek ? (
                     <div className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">
-                        Esta rutina no tiene mesociclos creados todavía.
-                    </div>
-                ) : !selectedWeek ? (
-                    <div className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">
-                        Este mesociclo no tiene semanas todavía.
+                        {selectedMonth
+                            ? 'Este mesociclo no tiene semanas todavía.'
+                            : 'Esta rutina no tiene semanas creadas todavía.'}
                     </div>
                 ) : !selectedDay ? (
                     <div className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">

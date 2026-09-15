@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getStudentExerciseProgress } from '@/app/dashboard/students/getStudentExerciseProgress'
 import { getStudentSessionHistory } from '@/app/dashboard/students/getStudentSessionHistory'
 import { type WeightUnit } from '@/lib/weight'
+import { getRoutineSchedule } from '@/lib/getRoutineSchedule'
 
 export default async function AppHomePage() {
     const supabase = await createClient()
@@ -62,74 +63,59 @@ export default async function AppHomePage() {
             assignedRoutineId = routine.id
             routineName = routine.name
 
-            const { data: months } = await supabase
-                .from('routine_months')
-                .select('id, month_number')
-                .eq('routine_id', routine.id)
-                .order('month_number', { ascending: true })
-                .limit(1)
+            const schedule = await getRoutineSchedule(supabase, routine.id)
+            selectedMonthId = schedule.selectedMonth?.id ?? null
+            selectedWeekId = schedule.selectedWeek?.id ?? null
 
-            if (months?.[0]) {
-                selectedMonthId = months[0].id
+            if (selectedWeekId) {
 
-                const { data: weeks } = await supabase
-                    .from('routine_weeks')
-                    .select('id, week_number')
-                    .eq('routine_month_id', selectedMonthId)
-                    .order('week_number', { ascending: true })
-                    .limit(1)
+                // Buscar todos los días de la semana
+                const { data: days } = await supabase
+                    .from('routine_days')
+                    .select('id, title, day_index')
+                    .eq('routine_week_id', selectedWeekId)
+                    .order('day_index', { ascending: true })
 
-                if (weeks?.[0]) {
-                    selectedWeekId = weeks[0].id
+                if (days && days.length > 0) {
+                    // Buscar el primer día que tenga ejercicios
+                    for (const day of days) {
+                        const { count } = await supabase
+                            .from('routine_day_exercises')
+                            .select('id', { count: 'exact', head: true })
+                            .eq('routine_day_id', day.id)
 
-                    // Buscar todos los días de la semana
-                    const { data: days } = await supabase
-                        .from('routine_days')
-                        .select('id, title, day_index')
-                        .eq('routine_week_id', selectedWeekId)
-                        .order('day_index', { ascending: true })
-
-                    if (days && days.length > 0) {
-                        // Buscar el primer día que tenga ejercicios
-                        for (const day of days) {
-                            const { count } = await supabase
-                                .from('routine_day_exercises')
-                                .select('id', { count: 'exact', head: true })
-                                .eq('routine_day_id', day.id)
-
-                            if ((count ?? 0) > 0) {
-                                selectedDayId = day.id
-                                break
-                            }
+                        if ((count ?? 0) > 0) {
+                            selectedDayId = day.id
+                            break
                         }
-                        // Si ningún día tiene ejercicios, usar el primero igual
-                        if (!selectedDayId) selectedDayId = days[0].id
                     }
+                    // Si ningún día tiene ejercicios, usar el primero igual
+                    if (!selectedDayId) selectedDayId = days[0].id
                 }
+            }
 
-                // Ejercicios del día seleccionado
-                if (selectedDayId) {
-                    const { data: rdes } = await supabase
-                        .from('routine_day_exercises')
-                        .select('sets, reps, exercise_id')
-                        .eq('routine_day_id', selectedDayId)
-                        .order('position', { ascending: true })
+            // Ejercicios del día seleccionado
+            if (selectedDayId) {
+                const { data: rdes } = await supabase
+                    .from('routine_day_exercises')
+                    .select('sets, reps, exercise_id')
+                    .eq('routine_day_id', selectedDayId)
+                    .order('position', { ascending: true })
 
-                    if (rdes && rdes.length > 0) {
-                        const exerciseIds = [...new Set(rdes.map(r => r.exercise_id).filter(Boolean))]
-                        const { data: exercises } = await supabase
-                            .from('exercises')
-                            .select('id, name')
-                            .in('id', exerciseIds)
+                if (rdes && rdes.length > 0) {
+                    const exerciseIds = [...new Set(rdes.map(r => r.exercise_id).filter(Boolean))]
+                    const { data: exercises } = await supabase
+                        .from('exercises')
+                        .select('id, name')
+                        .in('id', exerciseIds)
 
-                        const exMap = new Map((exercises ?? []).map(e => [e.id, e.name]))
+                    const exMap = new Map((exercises ?? []).map(e => [e.id, e.name]))
 
-                        todayExercises = rdes.map(r => ({
-                            name: exMap.get(r.exercise_id) ?? 'Ejercicio',
-                            sets: r.sets ?? 3,
-                            reps: r.reps != null ? String(r.reps) : null,
-                        }))
-                    }
+                    todayExercises = rdes.map(r => ({
+                        name: exMap.get(r.exercise_id) ?? 'Ejercicio',
+                        sets: r.sets ?? 3,
+                        reps: r.reps != null ? String(r.reps) : null,
+                    }))
                 }
             }
         }
@@ -166,8 +152,8 @@ export default async function AppHomePage() {
         .filter(p => p.progressKg > 0)
         .slice(0, 3)
 
-    const trainHref = assignedRoutineId && selectedMonthId && selectedWeekId && selectedDayId
-        ? `/app/train?month=${selectedMonthId}&week=${selectedWeekId}&day=${selectedDayId}`
+    const trainHref = assignedRoutineId && selectedWeekId && selectedDayId
+        ? `/app/train?${selectedMonthId ? `month=${selectedMonthId}&` : ''}week=${selectedWeekId}&day=${selectedDayId}`
         : '/app/train'
 
     // Hora del día para saludo
