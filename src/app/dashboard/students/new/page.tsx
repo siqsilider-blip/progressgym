@@ -94,6 +94,23 @@ export default function NewStudentPage(
 
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                                WhatsApp
+                            </label>
+                            <input
+                                name="phone"
+                                type="tel"
+                                inputMode="tel"
+                                autoComplete="tel"
+                                className="h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+                                placeholder="Ej: +54 9 11 2345-6789"
+                            />
+                            <p className="text-xs text-zinc-500">
+                                Se usa para abrir mensajes de seguimiento ya preparados.
+                            </p>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
                                 Estado inicial del plan
                             </label>
                             <select

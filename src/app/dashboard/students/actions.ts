@@ -18,6 +18,7 @@ export async function createStudent(formData: FormData) {
     const firstName = String(formData.get('first_name') ?? '').trim()
     const lastName = String(formData.get('last_name') ?? '').trim()
     const email = String(formData.get('email') ?? '').trim()
+    const phone = String(formData.get('phone') ?? '').trim()
     const activePlan = String(formData.get('active_plan') ?? 'active').trim()
 
     if (!firstName || !lastName) {
@@ -31,6 +32,7 @@ export async function createStudent(formData: FormData) {
             first_name: firstName,
             last_name: lastName,
             email: email || null,
+            phone: phone || null,
             active_plan: activePlan || 'active',
         })
         .select('id')

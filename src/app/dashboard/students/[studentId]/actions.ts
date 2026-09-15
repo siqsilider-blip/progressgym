@@ -113,3 +113,34 @@ export async function updateProgramStartDate(formData: FormData): Promise<{
 
     return { ok: true }
 }
+
+export async function updateStudentContact(formData: FormData): Promise<{
+    ok: boolean
+    error?: string
+}> {
+    const supabase = await createClient()
+    const studentId = String(formData.get('studentId') ?? '').trim()
+    const phone = String(formData.get('phone') ?? '').trim()
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { ok: false, error: 'Tu sesión venció. Volvé a iniciar sesión.' }
+    if (!studentId) return { ok: false, error: 'Alumno no encontrado.' }
+
+    const { data: student, error } = await supabase
+        .from('students')
+        .update({ phone: phone || null })
+        .eq('id', studentId)
+        .eq('trainer_id', user.id)
+        .select('id')
+        .maybeSingle()
+
+    if (error || !student) {
+        return { ok: false, error: 'No se pudo guardar el teléfono.' }
+    }
+
+    revalidatePath(`/dashboard/students/${studentId}`)
+    revalidatePath('/dashboard/students')
+    revalidatePath('/dashboard')
+
+    return { ok: true }
+}

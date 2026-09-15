@@ -5,6 +5,7 @@ export type TrainerAlert = {
     type: 'inactive' | 'no_routine' | 'new_student' | 'unfinished_session' | 'program_ending'
     studentId: string
     studentName: string
+    studentPhone: string | null
     message: string
     actionHref: string
 }
@@ -32,7 +33,7 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
 
     const { data: students, error: studentsError } = await supabase
         .from('students')
-        .select('id, first_name, last_name')
+        .select('id, first_name, last_name, phone')
         .eq('trainer_id', user.id)
 
     if (studentsError || !students) {
@@ -140,6 +141,7 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
                 type: 'no_routine',
                 studentId: student.id,
                 studentName: fullName,
+                studentPhone: student.phone ?? null,
                 message: `${fullName} no tiene un programa activo.`,
                 actionHref: `/dashboard/students/${student.id}/assign-routine`,
             })
@@ -151,6 +153,7 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
                 type: 'unfinished_session',
                 studentId: student.id,
                 studentName: fullName,
+                studentPhone: student.phone ?? null,
                 message: `${fullName} dejó una sesión abierta hace más de 6 horas.`,
                 actionHref: `/dashboard/students/${student.id}/train`,
             })
@@ -162,6 +165,7 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
                 type: 'new_student',
                 studentId: student.id,
                 studentName: fullName,
+                studentPhone: student.phone ?? null,
                 message: `${fullName} todavía no registró entrenamientos.`,
                 actionHref: `/dashboard/students/${student.id}`,
             })
@@ -178,6 +182,7 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
                 type: 'inactive',
                 studentId: student.id,
                 studentName: fullName,
+                studentPhone: student.phone ?? null,
                 message: `${fullName} no entrena hace ${diffDays} días.`,
                 actionHref: `/dashboard/students/${student.id}`,
             })
@@ -195,6 +200,7 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
                 type: 'program_ending',
                 studentId: student.id,
                 studentName: fullName,
+                studentPhone: student.phone ?? null,
                 message: `${fullName} está en la última semana de su programa.`,
                 actionHref: `/dashboard/students/${student.id}`,
             })

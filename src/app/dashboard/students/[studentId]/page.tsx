@@ -14,6 +14,7 @@ import { getStudentRisk } from './getStudentRisk'
 import DeleteStudentButton from './DeleteStudentButton'
 import LinkStudentAccountForm from './LinkStudentAccountForm'
 import ProgramScheduleCard from './ProgramScheduleCard'
+import StudentContactCard from './StudentContactCard'
 import { getRoutineSchedule } from '@/lib/getRoutineSchedule'
 
 type PageProps = {
@@ -123,6 +124,11 @@ export default async function StudentProfilePage(props: PageProps) {
                     totalProgramWeeks={totalProgramWeeks}
                 />
             )}
+
+            <StudentContactCard
+                studentId={studentId}
+                phone={student.phone ?? null}
+            />
 
             <StudentRiskCard risk={risk} />
 

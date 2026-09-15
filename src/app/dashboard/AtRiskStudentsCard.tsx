@@ -1,8 +1,8 @@
 import { cookies } from 'next/headers'
-import Link from 'next/link'
-import { AlertTriangle, ArrowRight, CircleStop, Flag, ListChecks, UserMinus, UserX } from 'lucide-react'
+import { AlertTriangle, CircleStop, Flag, ListChecks, UserMinus, UserX } from 'lucide-react'
 import AppBadge from '@/components/ui/app-badge'
 import type { TrainerAlert } from './getTrainerAlerts'
+import FollowUpActions from './FollowUpActions'
 
 function getRiskMeta(type: TrainerAlert['type'], isLight: boolean) {
     switch (type) {
@@ -155,13 +155,7 @@ export default async function AtRiskStudentsCard({
                                         </div>
                                     </div>
 
-                                    <Link
-                                        href={alert.actionHref}
-                                        className="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-indigo-500 transition hover:text-indigo-400"
-                                    >
-                                        Ver
-                                        <ArrowRight className="h-3.5 w-3.5" />
-                                    </Link>
+                                    <FollowUpActions alert={alert} />
                                 </div>
                             </div>
                         )
