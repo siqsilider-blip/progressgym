@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getRoutineSchedule } from '@/lib/getRoutineSchedule'
 import { getStudentRoutineWeekProgress } from '@/lib/studentRoutineWeekProgress'
+import { getActiveStudentRoutine } from '@/lib/getActiveStudentRoutine'
 
 type PageProps = {
     searchParams?: Promise<{
@@ -27,14 +28,9 @@ export default async function AppRutinePage(props: PageProps) {
     const studentId = profile?.student_id
     if (!studentId) redirect('/app')
 
-    const { data: assignment } = await supabase
-        .from('student_routines')
-        .select('routine_id')
-        .eq('student_id', studentId)
-        .eq('status', 'active')
-        .maybeSingle()
+    const assignment = await getActiveStudentRoutine(supabase, studentId)
 
-    if (!assignment?.routine_id) {
+    if (!assignment?.routineId) {
         return (
             <div className="p-4 pb-24">
                 <div className="mx-auto max-w-lg">
@@ -54,14 +50,28 @@ export default async function AppRutinePage(props: PageProps) {
     const { data: routine } = await supabase
         .from('routines')
         .select('id, name')
-        .eq('id', assignment.routine_id)
+        .eq('id', assignment.routineId)
         .single()
 
-    const { months, weeks, selectedMonth, selectedWeek } = await getRoutineSchedule(
+    const {
+        months,
+        weeks,
+        selectedMonth,
+        selectedWeek,
+        currentWeek,
+        programWeekNumber,
+        totalProgramWeeks,
+        selectedProgramWeekNumber,
+        selectedWeekStart,
+        selectedWeekEnd,
+    } = await getRoutineSchedule(
         supabase,
-        assignment.routine_id,
-        searchParams?.month,
-        searchParams?.week
+        assignment.routineId,
+        {
+            requestedMonthId: searchParams?.month,
+            requestedWeekId: searchParams?.week,
+            programStartedOn: assignment.programStartedOn,
+        }
     )
 
     // Días de la semana seleccionada
@@ -107,7 +117,12 @@ export default async function AppRutinePage(props: PageProps) {
     }
 
     const trainingDayIds = dayIds.filter((dayId) => (exercisesByDay[dayId]?.length ?? 0) > 0)
-    const weekProgress = await getStudentRoutineWeekProgress(supabase, studentId, trainingDayIds)
+    const weekProgress = await getStudentRoutineWeekProgress(
+        supabase,
+        studentId,
+        trainingDayIds,
+        selectedWeekStart && selectedWeekEnd ? { weekStart: selectedWeekStart, weekEnd: selectedWeekEnd } : null
+    )
     const completedDays = trainingDayIds.filter(
         (dayId) => weekProgress.statusByDayId.get(dayId) === 'completed'
     ).length
@@ -123,6 +138,13 @@ export default async function AppRutinePage(props: PageProps) {
                 <div>
                     <h1 className="text-2xl font-black text-foreground">Rutina</h1>
                     <p className="mt-0.5 text-sm text-muted-foreground">{routine?.name}</p>
+                    {totalProgramWeeks > 1 && (
+                        <p className="mt-1 text-xs font-semibold text-indigo-500">
+                            {selectedWeek?.id === currentWeek?.id
+                                ? `Semana actual: ${programWeekNumber} de ${totalProgramWeeks}`
+                                : `Revisando semana ${selectedProgramWeekNumber} de ${totalProgramWeeks}`}
+                        </p>
+                    )}
                 </div>
 
                 {trainingDayIds.length > 0 && (
@@ -196,6 +218,7 @@ export default async function AppRutinePage(props: PageProps) {
                                             }`}
                                     >
                                         {week.name || `Sem. ${week.week_number}`}
+                                        {week.id === currentWeek?.id ? ' · Actual' : ''}
                                     </Link>
                                 )
                             })}

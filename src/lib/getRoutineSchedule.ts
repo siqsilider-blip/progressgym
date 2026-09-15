@@ -1,4 +1,5 @@
 import type { createClient } from '@/lib/supabase/server'
+import { getElapsedProgramWeekIndex, getProgramWeekDateRange } from '@/lib/buenosAiresDate'
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>
 
@@ -20,6 +21,18 @@ type ScheduleSelection = {
     weeks: RoutineScheduleWeek[]
     selectedMonth: RoutineScheduleMonth | null
     selectedWeek: RoutineScheduleWeek | null
+    currentWeek: RoutineScheduleWeek | null
+    programWeekNumber: number
+    totalProgramWeeks: number
+    selectedProgramWeekNumber: number
+    selectedWeekStart: string | null
+    selectedWeekEnd: string | null
+}
+
+type RoutineScheduleOptions = {
+    requestedMonthId?: string
+    requestedWeekId?: string
+    programStartedOn?: string | null
 }
 
 /**
@@ -30,8 +43,7 @@ type ScheduleSelection = {
 export async function getRoutineSchedule(
     supabase: SupabaseServerClient,
     routineId: string,
-    requestedMonthId?: string,
-    requestedWeekId?: string
+    options: RoutineScheduleOptions = {}
 ): Promise<ScheduleSelection> {
     const [monthsResult, weeksResult] = await Promise.all([
         supabase
@@ -48,14 +60,26 @@ export async function getRoutineSchedule(
 
     const months = (monthsResult.data ?? []) as RoutineScheduleMonth[]
     const allWeeks = (weeksResult.data ?? []) as RoutineScheduleWeek[]
-    const requestedWeek = allWeeks.find((week) => week.id === requestedWeekId) ?? null
+    const requestedWeek = allWeeks.find((week) => week.id === options.requestedWeekId) ?? null
+    const requestedMonth = months.find((month) => month.id === options.requestedMonthId) ?? null
+    const orderedWeeks = months.length > 0
+        ? months.flatMap((month) => allWeeks.filter((week) => week.routine_month_id === month.id))
+        : allWeeks
+    const elapsedWeekIndex = options.programStartedOn
+        ? getElapsedProgramWeekIndex(options.programStartedOn)
+        : 0
+    const currentWeek = orderedWeeks.length > 0
+        ? orderedWeeks[Math.min(elapsedWeekIndex, orderedWeeks.length - 1)]
+        : null
 
-    const selectedMonth = months.find((month) => month.id === requestedMonthId)
-        ?? (requestedWeek?.routine_month_id
-            ? months.find((month) => month.id === requestedWeek.routine_month_id)
-            : null)
-        ?? months[0]
-        ?? null
+    const selectedMonth = requestedWeek?.routine_month_id
+        ? months.find((month) => month.id === requestedWeek.routine_month_id) ?? null
+        : requestedMonth
+            ?? (currentWeek?.routine_month_id
+                ? months.find((month) => month.id === currentWeek.routine_month_id) ?? null
+                : null)
+            ?? months[0]
+            ?? null
 
     const weeks = selectedMonth
         ? allWeeks.filter((week) => week.routine_month_id === selectedMonth.id)
@@ -63,9 +87,29 @@ export async function getRoutineSchedule(
             ? allWeeks
             : allWeeks.filter((week) => week.routine_month_id === null)
 
-    const selectedWeek = weeks.find((week) => week.id === requestedWeekId)
+    const selectedWeek = weeks.find((week) => week.id === requestedWeek?.id)
+        ?? (!requestedMonth ? weeks.find((week) => week.id === currentWeek?.id) : null)
         ?? weeks[0]
         ?? null
+    const selectedWeekIndex = selectedWeek
+        ? orderedWeeks.findIndex((week) => week.id === selectedWeek.id)
+        : -1
+    const selectedWeekRange = options.programStartedOn && selectedWeekIndex >= 0
+        ? getProgramWeekDateRange(options.programStartedOn, selectedWeekIndex)
+        : null
 
-    return { months, weeks, selectedMonth, selectedWeek }
+    return {
+        months,
+        weeks,
+        selectedMonth,
+        selectedWeek,
+        currentWeek,
+        programWeekNumber: orderedWeeks.length > 0
+            ? Math.min(elapsedWeekIndex + 1, orderedWeeks.length)
+            : 0,
+        totalProgramWeeks: orderedWeeks.length,
+        selectedProgramWeekNumber: selectedWeekIndex >= 0 ? selectedWeekIndex + 1 : 0,
+        selectedWeekStart: selectedWeekRange?.weekStart ?? null,
+        selectedWeekEnd: selectedWeekRange?.weekEnd ?? null,
+    }
 }

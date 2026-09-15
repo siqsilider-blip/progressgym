@@ -6,6 +6,7 @@ import TrainFocusedView from '@/app/dashboard/students/[studentId]/train/TrainFo
 import { getRoutineSchedule } from '@/lib/getRoutineSchedule'
 import { getStudentRoutineWeekProgress } from '@/lib/studentRoutineWeekProgress'
 import { getBuenosAiresDateString } from '@/lib/buenosAiresDate'
+import { getActiveStudentRoutine } from '@/lib/getActiveStudentRoutine'
 
 type PageProps = {
     searchParams?: Promise<{
@@ -77,14 +78,9 @@ export default async function AppTrainPage(props: PageProps) {
     if (!student) redirect('/app')
 
     // Traer rutina asignada
-    const { data: assignment } = await supabase
-        .from('student_routines')
-        .select('routine_id')
-        .eq('student_id', studentId)
-        .eq('status', 'active')
-        .maybeSingle()
+    const assignment = await getActiveStudentRoutine(supabase, studentId)
 
-    if (!assignment?.routine_id) {
+    if (!assignment?.routineId) {
         return (
             <div className="p-6 pb-24 text-center">
                 <p className="text-4xl">📋</p>
@@ -101,14 +97,17 @@ export default async function AppTrainPage(props: PageProps) {
     const { data: routine } = await supabase
         .from('routines')
         .select('id, name')
-        .eq('id', assignment.routine_id)
+        .eq('id', assignment.routineId)
         .single()
 
-    const { selectedMonth, selectedWeek } = await getRoutineSchedule(
+    const { selectedMonth, selectedWeek, selectedWeekStart, selectedWeekEnd } = await getRoutineSchedule(
         supabase,
-        assignment.routine_id,
-        searchParams?.month,
-        searchParams?.week
+        assignment.routineId,
+        {
+            requestedMonthId: searchParams?.month,
+            requestedWeekId: searchParams?.week,
+            programStartedOn: assignment.programStartedOn,
+        }
     )
 
     // Días de la semana activa
@@ -142,7 +141,10 @@ export default async function AppTrainPage(props: PageProps) {
             const progress = await getStudentRoutineWeekProgress(
                 supabase,
                 studentId,
-                trainingDays.map((day) => day.id)
+                trainingDays.map((day) => day.id),
+                selectedWeekStart && selectedWeekEnd
+                    ? { weekStart: selectedWeekStart, weekEnd: selectedWeekEnd }
+                    : null
             )
             const nextDay = trainingDays.find(
                 (day) => progress.statusByDayId.get(day.id) === 'in_progress'

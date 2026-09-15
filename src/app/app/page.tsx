@@ -7,6 +7,7 @@ import { type WeightUnit } from '@/lib/weight'
 import { getRoutineSchedule } from '@/lib/getRoutineSchedule'
 import { getStudentRoutineWeekProgress, type RoutineDayProgressStatus } from '@/lib/studentRoutineWeekProgress'
 import { getBuenosAiresHour } from '@/lib/buenosAiresDate'
+import { getActiveStudentRoutine } from '@/lib/getActiveStudentRoutine'
 
 export default async function AppHomePage() {
     const supabase = await createClient()
@@ -40,12 +41,7 @@ export default async function AppHomePage() {
     const weightUnit = (trainerProfile?.weight_unit ?? 'kg') as WeightUnit
 
     // Rutina asignada
-    const { data: assignment } = await supabase
-        .from('student_routines')
-        .select('routine_id')
-        .eq('student_id', studentId)
-        .eq('status', 'active')
-        .maybeSingle()
+    const assignment = await getActiveStudentRoutine(supabase, studentId)
 
     let routineName: string | null = null
     let assignedRoutineId: string | null = null
@@ -57,22 +53,28 @@ export default async function AppHomePage() {
     let completedDays = 0
     let totalTrainingDays = 0
     let weekCompleted = false
+    let programWeekNumber = 0
+    let totalProgramWeeks = 0
     let todayExercises: { name: string; sets: number; reps: string | null }[] = []
 
-    if (assignment?.routine_id) {
+    if (assignment?.routineId) {
         const { data: routine } = await supabase
             .from('routines')
             .select('id, name')
-            .eq('id', assignment.routine_id)
+            .eq('id', assignment.routineId)
             .single()
 
         if (routine) {
             assignedRoutineId = routine.id
             routineName = routine.name
 
-            const schedule = await getRoutineSchedule(supabase, routine.id)
+            const schedule = await getRoutineSchedule(supabase, routine.id, {
+                programStartedOn: assignment.programStartedOn,
+            })
             selectedMonthId = schedule.selectedMonth?.id ?? null
             selectedWeekId = schedule.selectedWeek?.id ?? null
+            programWeekNumber = schedule.programWeekNumber
+            totalProgramWeeks = schedule.totalProgramWeeks
 
             if (selectedWeekId) {
 
@@ -99,7 +101,13 @@ export default async function AppHomePage() {
                         const progress = await getStudentRoutineWeekProgress(
                             supabase,
                             studentId,
-                            trainingDays.map((day) => day.id)
+                            trainingDays.map((day) => day.id),
+                            schedule.selectedWeekStart && schedule.selectedWeekEnd
+                                ? {
+                                    weekStart: schedule.selectedWeekStart,
+                                    weekEnd: schedule.selectedWeekEnd,
+                                }
+                                : null
                         )
 
                         completedDays = trainingDays.filter(
@@ -277,6 +285,11 @@ export default async function AppHomePage() {
                                 {totalTrainingDays > 0 && (
                                     <span className="text-[10px] font-medium text-indigo-100">
                                         {completedDays} de {totalTrainingDays} completados
+                                    </span>
+                                )}
+                                {totalProgramWeeks > 1 && (
+                                    <span className="text-[10px] font-medium text-indigo-100">
+                                        Semana {programWeekNumber} de {totalProgramWeeks}
                                     </span>
                                 )}
                             </div>

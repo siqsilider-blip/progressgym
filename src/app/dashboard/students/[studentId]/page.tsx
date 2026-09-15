@@ -55,54 +55,7 @@ export default async function StudentProfilePage(props: PageProps) {
 
     const assignedRoutineId = routineAssignment.data?.routine_id ?? null
 
-    // Buscar el último log del alumno para saber en qué semana está
-    let lastTrainMonth: string | null = null
-    let lastTrainWeek: string | null = null
-
-    if (assignedRoutineId) {
-        const { data: lastLog } = await supabase
-            .from('exercise_logs')
-            .select('routine_day_exercise_id, performed_at')
-            .eq('student_id', params.studentId)
-            .not('routine_day_exercise_id', 'is', null)
-            .order('performed_at', { ascending: false })
-            .limit(1)
-            .maybeSingle()
-
-        if (lastLog?.routine_day_exercise_id) {
-            const { data: rde } = await supabase
-                .from('routine_day_exercises')
-                .select('routine_day_id')
-                .eq('id', lastLog.routine_day_exercise_id)
-                .maybeSingle()
-
-            if (rde?.routine_day_id) {
-                const { data: day } = await supabase
-                    .from('routine_days')
-                    .select('routine_week_id')
-                    .eq('id', rde.routine_day_id)
-                    .maybeSingle()
-
-                if (day?.routine_week_id) {
-                    lastTrainWeek = day.routine_week_id
-
-                    const { data: week } = await supabase
-                        .from('routine_weeks')
-                        .select('routine_month_id')
-                        .eq('id', day.routine_week_id)
-                        .maybeSingle()
-
-                    if (week?.routine_month_id) {
-                        lastTrainMonth = week.routine_month_id
-                    }
-                }
-            }
-        }
-    }
-
-    const trainHref = lastTrainMonth && lastTrainWeek
-        ? `/dashboard/students/${params.studentId}/train?month=${lastTrainMonth}&week=${lastTrainWeek}`
-        : `/dashboard/students/${params.studentId}/train`
+    const trainHref = `/dashboard/students/${params.studentId}/train`
 
     const showPrs = trainerProfile.data?.show_prs ?? true
 

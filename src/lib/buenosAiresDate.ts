@@ -35,6 +35,37 @@ export function getBuenosAiresHour(now = new Date()) {
     return datePartsInBuenosAires(now).hour
 }
 
+export function getElapsedProgramWeekIndex(programStartedOn: string, now = new Date()) {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(programStartedOn)
+    if (!match) return 0
+
+    const start = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])))
+    if (Number.isNaN(start.getTime())) return 0
+
+    const local = datePartsInBuenosAires(now)
+    const current = new Date(Date.UTC(local.year, local.month - 1, local.day))
+    const elapsedDays = Math.floor((current.getTime() - start.getTime()) / 86_400_000)
+
+    return Math.max(0, Math.floor(elapsedDays / 7))
+}
+
+export function getProgramWeekDateRange(programStartedOn: string, weekIndex: number) {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(programStartedOn)
+    if (!match) return null
+
+    const start = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])))
+    if (Number.isNaN(start.getTime())) return null
+
+    start.setUTCDate(start.getUTCDate() + Math.max(0, weekIndex) * 7)
+    const end = new Date(start)
+    end.setUTCDate(end.getUTCDate() + 6)
+
+    return {
+        weekStart: formatUtcDate(start),
+        weekEnd: formatUtcDate(end),
+    }
+}
+
 /** Returns the Monday-to-Sunday range for the current week in Buenos Aires. */
 export function getCurrentBuenosAiresWeek(now = new Date()) {
     const local = datePartsInBuenosAires(now)

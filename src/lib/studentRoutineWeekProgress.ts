@@ -25,9 +25,10 @@ export type RoutineWeekProgress = {
 export async function getStudentRoutineWeekProgress(
     supabase: SupabaseServerClient,
     studentId: string,
-    routineDayIds: string[]
+    routineDayIds: string[],
+    programWeekRange?: { weekStart: string; weekEnd: string } | null
 ): Promise<RoutineWeekProgress> {
-    const { weekStart, weekEnd } = getCurrentBuenosAiresWeek()
+    const { weekStart, weekEnd } = programWeekRange ?? getCurrentBuenosAiresWeek()
     const statusByDayId = new Map<string, RoutineDayProgressStatus>()
     const completedDayIds = new Set<string>()
     const inProgressDayIds = new Set<string>()

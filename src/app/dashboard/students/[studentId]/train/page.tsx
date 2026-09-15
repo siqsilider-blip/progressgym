@@ -8,6 +8,7 @@ import { getExerciseMaxWeights } from './train-focused-actions'
 import TrainFocusedView from './TrainFocusedView'
 import { getRoutineSchedule } from '@/lib/getRoutineSchedule'
 import { getBuenosAiresDateString } from '@/lib/buenosAiresDate'
+import { getActiveStudentRoutine } from '@/lib/getActiveStudentRoutine'
 
 type PageProps = {
     params: Promise<{ studentId: string }>
@@ -87,18 +88,13 @@ export default async function StudentTrainPage(props: PageProps) {
     let assignedRoutineId: string | null = null
     let routineName = 'Rutina asignada'
 
-    const { data: assignment } = await supabase
-        .from('student_routines')
-        .select('routine_id')
-        .eq('student_id', params.studentId)
-        .eq('status', 'active')
-        .maybeSingle()
+    const assignment = await getActiveStudentRoutine(supabase, params.studentId)
 
-    if (assignment?.routine_id) {
+    if (assignment?.routineId) {
         const { data: assignedRoutine } = await supabase
             .from('routines')
             .select('id, name')
-            .eq('id', assignment.routine_id)
+            .eq('id', assignment.routineId)
             .eq('trainer_id', user.id)
             .maybeSingle()
 
@@ -150,11 +146,14 @@ export default async function StudentTrainPage(props: PageProps) {
 
     // La rutina puede tener semanas dentro de un mesociclo o directamente
     // bajo la rutina. Ambos formatos son válidos y deben poder entrenarse.
-    const { months, weeks, selectedMonth, selectedWeek } = await getRoutineSchedule(
+    const { months, weeks, selectedMonth, selectedWeek, currentWeek } = await getRoutineSchedule(
         supabase,
         assignedRoutineId,
-        searchParams?.month,
-        searchParams?.week
+        {
+            requestedMonthId: searchParams?.month,
+            requestedWeekId: searchParams?.week,
+            programStartedOn: assignment?.programStartedOn,
+        }
     )
 
     // 5. Obtener días de la semana activa (NO de toda la rutina)
@@ -464,6 +463,7 @@ export default async function StudentTrainPage(props: PageProps) {
                                         }`}
                                     >
                                         {week.name || `Sem. ${week.week_number}`}
+                                        {week.id === currentWeek?.id ? ' · Actual' : ''}
                                     </Link>
                                 )
                             })}
