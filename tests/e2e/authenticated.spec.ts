@@ -69,6 +69,20 @@ test('cada tipo de cuenta es rechazado por el acceso equivocado', async ({ page 
     await expect(page.getByText(/esta cuenta es de entrenador/i)).toBeVisible()
 })
 
+test('la biblioteca muestra la cobertura de videos', async ({ page }) => {
+    await logIn(page, 'trainer', trainerEmail)
+    await expect(page).toHaveURL(/\/dashboard(?:\?|$)/)
+    await page.goto('/dashboard/exercises')
+
+    await expect(page.getByRole('button', { name: /Todos \d+/ })).toBeVisible()
+    await expect(page.getByRole('button', { name: /Sin video \d+/ })).toBeVisible()
+    await expect(page.getByRole('button', { name: /Con video \d+/ })).toBeVisible()
+
+    await page.getByPlaceholder('Buscar ejercicio...').fill(exerciseName)
+    await expect(page.getByText(exerciseName, { exact: true })).toBeVisible()
+    await expect(page.getByText('Video listo', { exact: true })).toBeVisible()
+})
+
 test('el entrenador reordena y elimina días de un template sin perder su estructura', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name === 'desktop-chromium', 'La mutación se prueba una sola vez por fixture.')
 

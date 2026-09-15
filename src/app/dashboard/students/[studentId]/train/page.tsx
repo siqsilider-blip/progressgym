@@ -28,6 +28,12 @@ type ExerciseMeta = {
     description: string | null
 }
 
+type ExerciseOverride = {
+    exercise_id: string
+    video_url: string | null
+    instructions: string | null
+}
+
 type ExerciseLog = {
     id: string
     routine_day_exercise_id: string
@@ -210,6 +216,19 @@ export default async function StudentTrainPage(props: PageProps) {
         }
     }
 
+    const exerciseOverrideMap = new Map<string, ExerciseOverride>()
+    if (exerciseIds.length > 0) {
+        const { data: exerciseOverrides } = await supabase
+            .from('trainer_exercise_overrides')
+            .select('exercise_id, video_url, instructions')
+            .eq('trainer_id', user.id)
+            .in('exercise_id', exerciseIds)
+
+        for (const override of (exerciseOverrides as ExerciseOverride[] | null) ?? []) {
+            exerciseOverrideMap.set(override.exercise_id, override)
+        }
+    }
+
     const today = new Date().toISOString().slice(0, 10)
 
     const totalExercises = exercisesForDay.length
@@ -311,6 +330,9 @@ export default async function StudentTrainPage(props: PageProps) {
             const exerciseMeta = exercise.exercise_id
                 ? exerciseMap.get(exercise.exercise_id) ?? null
                 : null
+            const exerciseOverride = exercise.exercise_id
+                ? exerciseOverrideMap.get(exercise.exercise_id) ?? null
+                : null
 
             const setsCount = Math.max(1, Number(exercise.sets ?? 1))
             const previousSession = logsByExerciseId.get(exercise.id)
@@ -334,8 +356,8 @@ export default async function StudentTrainPage(props: PageProps) {
                 previousWeights,
                 previousReps,
                 lastPerformedAt: previousSession?.lastPerformedAt ?? null,
-                video_url: exerciseMeta?.video_url ?? null,
-                instructions: exerciseMeta?.description ?? null,
+                video_url: exerciseOverride?.video_url ?? exerciseMeta?.video_url ?? null,
+                instructions: exerciseOverride?.instructions ?? exerciseMeta?.description ?? null,
                 block: exercise.block ?? 'main',
             }
         })

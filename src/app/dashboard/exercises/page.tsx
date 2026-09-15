@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { Pencil } from 'lucide-react'
+import { CirclePlay, Pencil } from 'lucide-react'
 import { createExercise, listExercises, deleteExercise, updateExercise } from './actions'
 
 type Exercise = {
@@ -11,7 +11,10 @@ type Exercise = {
     muscle_group: string | null
     video_url: string | null
     trainer_id: string | null
+    is_personalized?: boolean
 }
+
+type VideoFilter = 'all' | 'missing' | 'ready'
 
 const CATEGORIES = [
     'Pecho', 'Espalda', 'Piernas', 'Glúteos', 'Hombros',
@@ -39,6 +42,7 @@ export default function ExercisesPage() {
     const [loading, setLoading] = useState(true)
     const [showForm, setShowForm] = useState(false)
     const [search, setSearch] = useState('')
+    const [videoFilter, setVideoFilter] = useState<VideoFilter>('all')
 
     const [editingExercise, setEditingExercise] = useState<Exercise | null>(null)
     const [editName, setEditName] = useState('')
@@ -108,7 +112,7 @@ export default function ExercisesPage() {
     async function handleEditSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault()
         if (!editingExercise) return
-        if (!editName.trim()) {
+        if (editingExercise.trainer_id !== null && !editName.trim()) {
             setEditError('El nombre no puede estar vacío.')
             return
         }
@@ -121,7 +125,7 @@ export default function ExercisesPage() {
                 video_url: editVideoUrl,
             })
             if (!res.ok) {
-                setEditError('No se pudo guardar.')
+                setEditError(res.message || 'No se pudo guardar.')
                 return
             }
             setEditingExercise(null)
@@ -142,13 +146,21 @@ export default function ExercisesPage() {
     }
 
     const filtered = useMemo(() => {
-        if (!search.trim()) return items
         const q = search.toLowerCase()
-        return items.filter((x) =>
-            x.name.toLowerCase().includes(q) ||
-            (x.muscle_group ?? '').toLowerCase().includes(q)
-        )
-    }, [items, search])
+        return items.filter((x) => {
+            const matchesSearch = !q.trim()
+                || x.name.toLowerCase().includes(q)
+                || (x.muscle_group ?? '').toLowerCase().includes(q)
+            const matchesVideo = videoFilter === 'all'
+                || (videoFilter === 'ready' && Boolean(x.video_url))
+                || (videoFilter === 'missing' && !x.video_url)
+
+            return matchesSearch && matchesVideo
+        })
+    }, [items, search, videoFilter])
+
+    const videosReady = useMemo(() => items.filter((item) => Boolean(item.video_url)).length, [items])
+    const videosMissing = items.length - videosReady
 
     const inputCls = 'h-10 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500'
     const selectCls = 'h-10 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none'
@@ -180,6 +192,26 @@ export default function ExercisesPage() {
                 className="w-full rounded-xl border border-border bg-input px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-indigo-500 transition"
             />
 
+            <div className="flex gap-2 overflow-x-auto pb-1" aria-label="Filtrar por demostración">
+                {([
+                    { value: 'all', label: `Todos ${items.length}` },
+                    { value: 'missing', label: `Sin video ${videosMissing}` },
+                    { value: 'ready', label: `Con video ${videosReady}` },
+                ] as const).map((filter) => (
+                    <button
+                        key={filter.value}
+                        type="button"
+                        onClick={() => setVideoFilter(filter.value)}
+                        className={`min-h-10 shrink-0 rounded-xl px-3 text-xs font-semibold transition ${videoFilter === filter.value
+                            ? 'bg-indigo-600 text-white'
+                            : 'border border-border bg-secondary text-muted-foreground hover:bg-muted'
+                            }`}
+                    >
+                        {filter.label}
+                    </button>
+                ))}
+            </div>
+
             {/* List */}
             {loading ? (
                 <p className="text-sm text-muted-foreground">Cargando...</p>
@@ -199,21 +231,27 @@ export default function ExercisesPage() {
                                     </div>
                                     <div className="min-w-0">
                                         <p className="truncate text-sm font-semibold text-zinc-100">{x.name}</p>
-                                        <p className="text-xs text-zinc-500">{x.muscle_group ?? 'Sin categoría'}</p>
+                                        <div className="mt-0.5 flex items-center gap-2">
+                                            <p className="truncate text-xs text-zinc-500">{x.muscle_group ?? 'Sin categoría'}</p>
+                                            <span className={`inline-flex items-center gap-1 text-[11px] font-medium ${x.video_url ? 'text-emerald-400' : 'text-amber-400'}`}>
+                                                <CirclePlay className="h-3 w-3" aria-hidden="true" />
+                                                {x.video_url ? 'Video listo' : 'Sin video'}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
 
                                 <div className="flex shrink-0 items-center gap-2">
-                                    {x.trainer_id !== null && (
-                                        <button
-                                            type="button"
-                                            onClick={() => openEdit(x)}
-                                            aria-label={`Editar ${x.name}`}
-                                            className="rounded-lg p-1.5 text-zinc-400 transition hover:bg-indigo-500/10 hover:text-indigo-400"
-                                        >
-                                            <Pencil className="h-4 w-4" />
-                                        </button>
-                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={() => openEdit(x)}
+                                        aria-label={`${x.trainer_id === null ? 'Agregar demostración a' : 'Editar'} ${x.name}`}
+                                        className="flex h-10 w-10 items-center justify-center rounded-xl text-zinc-400 transition hover:bg-indigo-500/10 hover:text-indigo-400"
+                                    >
+                                        {x.trainer_id === null
+                                            ? <CirclePlay className="h-5 w-5" aria-hidden="true" />
+                                            : <Pencil className="h-4 w-4" aria-hidden="true" />}
+                                    </button>
                                     {x.trainer_id !== null && (
                                         <button
                                             type="button"
@@ -245,7 +283,14 @@ export default function ExercisesPage() {
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="mb-4 flex items-center justify-between">
-                            <h2 className="text-base font-bold text-card-foreground">Editar ejercicio</h2>
+                            <div>
+                                <p className="text-xs font-medium text-indigo-400">
+                                    {editingExercise.trainer_id === null ? 'Ejercicio del catálogo' : 'Ejercicio propio'}
+                                </p>
+                                <h2 className="text-base font-bold text-card-foreground">
+                                    {editingExercise.trainer_id === null ? editingExercise.name : 'Editar ejercicio'}
+                                </h2>
+                            </div>
                             <button
                                 type="button"
                                 onClick={() => setEditingExercise(null)}
@@ -258,15 +303,17 @@ export default function ExercisesPage() {
                         </div>
 
                         <form onSubmit={handleEditSubmit} className="space-y-3">
-                            <div className="space-y-1">
-                                <label className="text-xs font-medium text-muted-foreground">Nombre del ejercicio</label>
-                                <input
-                                    className={inputCls}
-                                    placeholder="Nombre"
-                                    value={editName}
-                                    onChange={(e) => setEditName(e.target.value)}
-                                />
-                            </div>
+                            {editingExercise.trainer_id !== null && (
+                                <div className="space-y-1">
+                                    <label className="text-xs font-medium text-muted-foreground">Nombre del ejercicio</label>
+                                    <input
+                                        className={inputCls}
+                                        placeholder="Nombre"
+                                        value={editName}
+                                        onChange={(e) => setEditName(e.target.value)}
+                                    />
+                                </div>
+                            )}
 
                             <div className="space-y-1">
                                 <label className="text-xs font-medium text-muted-foreground">Indicaciones simples (opcional)</label>
@@ -278,17 +325,23 @@ export default function ExercisesPage() {
                                 />
                             </div>
 
-                            <div className="space-y-1">
-                                <label className="text-xs font-medium text-muted-foreground">Grupo muscular</label>
-                                <select
-                                    className={selectCls}
-                                    value={editMuscleGroup}
-                                    onChange={(e) => setEditMuscleGroup(e.target.value)}
-                                >
-                                    <option value="">Sin categoría</option>
-                                    {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-                                </select>
-                            </div>
+                            {editingExercise.trainer_id !== null ? (
+                                <div className="space-y-1">
+                                    <label className="text-xs font-medium text-muted-foreground">Grupo muscular</label>
+                                    <select
+                                        className={selectCls}
+                                        value={editMuscleGroup}
+                                        onChange={(e) => setEditMuscleGroup(e.target.value)}
+                                    >
+                                        <option value="">Sin categoría</option>
+                                        {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                                    </select>
+                                </div>
+                            ) : (
+                                <p className="rounded-xl border border-border bg-card px-3 py-2.5 text-xs leading-5 text-muted-foreground">
+                                    Esta personalización será sólo tuya. El ejercicio original seguirá intacto para los demás entrenadores.
+                                </p>
+                            )}
 
                             <div className="space-y-1">
                                 <label className="text-xs font-medium text-muted-foreground">Video demostrativo (opcional)</label>
@@ -311,7 +364,11 @@ export default function ExercisesPage() {
                                 disabled={editSaving}
                                 className="h-11 w-full rounded-xl bg-indigo-600 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:opacity-50"
                             >
-                                {editSaving ? 'Guardando...' : 'Guardar cambios'}
+                                {editSaving
+                                    ? 'Guardando...'
+                                    : editingExercise.trainer_id === null
+                                        ? 'Guardar demostración'
+                                        : 'Guardar cambios'}
                             </button>
                         </form>
                     </div>
