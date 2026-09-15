@@ -86,6 +86,7 @@ export default function TrainFocusedView({
     // ── Core state ──
     const [currentExerciseIndex, setCurrentExerciseIndex] = React.useState(0)
     const [showRpeInfo, setShowRpeInfo] = React.useState(false)
+    const [editingCompletedSetIndex, setEditingCompletedSetIndex] = React.useState<number | null>(null)
     const [sets, setSets] = React.useState<SetState[][]>(() => initAllSets(exercises))
     const [phase, setPhase] = React.useState<Phase>(initialPhase ?? 'training')
     const [saving, setSaving] = React.useState(false)
@@ -122,7 +123,6 @@ export default function TrainFocusedView({
     const repsInputRef = React.useRef<HTMLInputElement>(null)
 
     const exercise = exercises[currentExerciseIndex]
-    console.log('exercise isCardio:', exercise?.exerciseName, exercise?.isCardio)
     const exerciseSets = sets[currentExerciseIndex] ?? []
     const activeSetIndex = exerciseSets.findIndex((s) => s.status === 'active')
     const activeSet = activeSetIndex >= 0 ? exerciseSets[activeSetIndex] : null
@@ -151,13 +151,9 @@ export default function TrainFocusedView({
     }, [phase, restTimeLeft])
 
     React.useEffect(() => {
-        if (phase === 'training' && activeSetIndex >= 0) {
-            const timer = setTimeout(() => {
-                weightInputRef.current?.focus()
-            }, 50)
-            return () => clearTimeout(timer)
-        }
-    }, [phase, activeSetIndex, currentExerciseIndex])
+        setEditingCompletedSetIndex(null)
+        setShowRpeInfo(false)
+    }, [currentExerciseIndex])
 
     function initAllSets(exs: ExerciseData[]): SetState[][] {
         return exs.map((ex) => {
@@ -208,7 +204,12 @@ export default function TrainFocusedView({
         const repsVal = targetSet.reps.trim() !== '' ? Number(targetSet.reps) : null
         const rpeVal = targetSet.rpe.trim() !== '' ? Number(targetSet.rpe) : null
 
-        if (weightVal === null && repsVal === null) return
+        if (weightVal === null && repsVal === null) {
+            setSaveError(exercise.isCardio
+                ? 'Ingresá el tiempo realizado antes de guardar.'
+                : 'Ingresá el peso o las repeticiones antes de guardar.')
+            return
+        }
 
         setSaving(true)
         setSaveError(null)
@@ -259,6 +260,7 @@ export default function TrainFocusedView({
                 copy[currentExerciseIndex][setIdx].isPR = isPR
                 return copy
             })
+            setEditingCompletedSetIndex(null)
             return
         }
 
@@ -282,8 +284,6 @@ export default function TrainFocusedView({
                 (s, i) => i > setIdx && (s.status === 'pending' || s.status === 'active')
             )
 
-            console.log('[confirmSet] setIdx:', setIdx, '| totalSets:', exerciseSets.length, '| restSeconds:', capturedRestSeconds, '| hasMoreSets:', hasMoreSets)
-
             if (hasMoreSets) {
                 decision = { next: 'rest', restSeconds: capturedRestSeconds }
             } else {
@@ -298,7 +298,6 @@ export default function TrainFocusedView({
                 decision = allDoneAfterThis ? { next: 'finish' } : { next: 'transition' }
             }
 
-            console.log('[confirmSet] decision:', decision?.next, '| capturedRestSeconds:', capturedRestSeconds)
         }
 
         setSets((prev) => {
@@ -329,8 +328,6 @@ export default function TrainFocusedView({
         if (!decision) return
 
         await new Promise((resolve) => setTimeout(resolve, 0))
-
-        console.log('[confirmSet] executing decision:', decision.next)
 
         switch (decision.next) {
             case 'rest':
@@ -585,7 +582,7 @@ export default function TrainFocusedView({
                             <textarea
                                 value={sessionNote}
                                 onChange={(e) => { setSessionNote(e.target.value); setNoteSaved(false) }}
-                                placeholder="Ej: Subí el peso en press, me costó el último set..."
+                                placeholder="Ej: Subí el peso en press, me costó la última serie..."
                                 rows={2}
                                 className="mt-1.5 w-full resize-none rounded-2xl border border-border bg-input px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 placeholder:text-muted-foreground"
                             />
@@ -668,7 +665,7 @@ export default function TrainFocusedView({
                         {restTimeLeft <= 5 ? '¡Listo!' : 'Descansando'}
                     </p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
-                        Siguiente: Set {nextActiveIdx >= 0 ? nextActiveIdx + 1 : '?'} de{' '}
+                        Siguiente: serie {nextActiveIdx >= 0 ? nextActiveIdx + 1 : '?'} de{' '}
                         {exercise.setsCount} — {exercise.exerciseName}
                     </p>
 
@@ -797,7 +794,7 @@ export default function TrainFocusedView({
             <div className="mb-3">
                 <div className="mb-1 flex items-center justify-between">
                     <p className="text-[10px] text-muted-foreground">
-                        {completedSetsTotal} / {totalSetsSession} sets
+                        {completedSetsTotal} / {totalSetsSession} series
                     </p>
                     <p className="text-[10px] text-muted-foreground">
                         {totalSetsSession > 0 ? Math.round((completedSetsTotal / totalSetsSession) * 100) : 0}%
@@ -821,10 +818,10 @@ export default function TrainFocusedView({
                 </h2>
                 <p className="mt-0.5 text-sm text-muted-foreground">
                     {activeSet
-                        ? `Set ${activeSetIndex + 1} de ${exercise.setsCount}`
-                        : `${completedSetsCount} de ${exercise.setsCount} sets completados`}
+                        ? `Serie ${activeSetIndex + 1} de ${exercise.setsCount}`
+                        : `${completedSetsCount} de ${exercise.setsCount} series completadas`}
                     {exercise.targetReps
-                        ? ` · ${exercise.targetReps} ${exercise.isCardio ? 'min' : 'reps'}`
+                        ? ` · ${exercise.targetReps} ${exercise.isCardio ? 'minutos' : 'repeticiones'}`
                         : ''}
                 </p>
                 {exercise.video_url && (
@@ -860,7 +857,7 @@ export default function TrainFocusedView({
             </div>
 
             {/* ── Exercise nav indicators ── */}
-            <div className="mt-3 flex gap-1.5 overflow-x-auto pb-2 items-center">
+            {totalExercises > 1 && <div className="mt-3 flex gap-1.5 overflow-x-auto pb-2 items-center">
                 {exercises.map((ex, idx) => {
                     const exSets = sets[idx] ?? []
                     const allDone = exSets.length > 0 && exSets.every(
@@ -894,187 +891,158 @@ export default function TrainFocusedView({
                         </React.Fragment>
                     )
                 })}
-            </div>
+            </div>}
 
 
-            {/* ── Sets list ── */}
-            <div className="mt-4 space-y-2">
+            {/* ── Series ── */}
+            <div className="mt-3 space-y-2">
                 {exerciseSets.map((set, idx) => {
                     const isActive = set.status === 'active'
                     const isCompleted = set.status === 'completed'
                     const isSkipped = set.status === 'skipped'
-                    const isPending = set.status === 'pending'
+                    const isEditingCompleted = isCompleted && editingCompletedSetIndex === idx
 
-                    const isEditable = isActive || isCompleted || isPending
-
-                    return (
-                        <div
-                            key={idx}
-                            className={`rounded-2xl border transition-all duration-300 ${isActive
-                                ? 'border-indigo-300 border-t-2 border-t-indigo-600 bg-indigo-50/60 p-5 ring-2 ring-indigo-500/50 shadow-md dark:border-indigo-500/40 dark:border-t-indigo-500 dark:bg-indigo-500/8 dark:ring-indigo-500/40'
-                                : isCompleted
-                                    ? 'border-emerald-200 bg-emerald-50/50 px-3 py-2 dark:border-emerald-500/20 dark:bg-emerald-500/5'
-                                    : isSkipped
-                                        ? 'border-zinc-200 bg-zinc-50/50 px-3 py-2 opacity-40 dark:border-zinc-700 dark:bg-zinc-800/50'
-                                        : 'border-dashed border-border bg-card/50 px-3 py-2 opacity-60'
-                                }`}
-                        >
-                            <div className="flex items-center gap-3">
-                                <div
-                                    className={`flex shrink-0 items-center justify-center rounded-lg font-bold ${isActive
-                                        ? 'h-9 w-9 bg-indigo-600 text-sm text-white'
-                                        : 'h-7 w-7 text-xs ' + (isCompleted
-                                            ? 'bg-emerald-500 text-white'
-                                            : isSkipped
-                                                ? 'bg-zinc-300 text-zinc-500 dark:bg-zinc-600 dark:text-zinc-400'
-                                                : 'bg-zinc-200 text-zinc-400 dark:bg-zinc-700 dark:text-zinc-500')
-                                        }`}
-                                >
-                                    {isCompleted ? '✓' : isSkipped ? '—' : idx + 1}
-                                </div>
-
-                                {isEditable && (
-                                    <div className="flex flex-1 items-center gap-2">
-                                        {!exercise.isCardio && (
-                                        <div className="flex-1">
-                                            <label className="text-[9px] font-medium uppercase tracking-wider text-muted-foreground">
-                                                {weightUnit}
-                                            </label>
+                    if (isActive) {
+                        return (
+                            <section key={idx} className="rounded-xl border border-indigo-500/40 bg-indigo-500/[0.06] p-3">
+                                <div className={`grid gap-2 ${exercise.isCardio ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                                    {!exercise.isCardio && (
+                                        <label className="min-w-0">
+                                            <span className="mb-1 block text-xs font-semibold text-foreground">Peso ({weightUnit})</span>
                                             <input
-                                                ref={isActive ? weightInputRef : undefined}
+                                                ref={weightInputRef}
+                                                aria-label={`Peso de la serie ${idx + 1} en ${weightUnit}`}
                                                 type="number"
                                                 inputMode="decimal"
                                                 step="0.5"
-                                                placeholder={
-                                                    exercise.previousWeights[idx] != null
-                                                        ? String(exercise.previousWeights[idx])
-                                                        : '0'
-                                                }
+                                                placeholder="—"
                                                 value={set.weight}
-                                                onChange={(e) =>
-                                                    updateSetField(idx, 'weight', e.target.value)
-                                                }
+                                                onChange={(e) => updateSetField(idx, 'weight', e.target.value)}
                                                 onKeyDown={(e) => handleWeightKeyDown(e, idx)}
-                                                className={`mt-0.5 w-full rounded-xl border bg-background px-3 text-center font-bold text-foreground outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 ${isActive
-                                                    ? 'border-indigo-300 py-2.5 text-xl dark:border-indigo-500/40'
-                                                    : isCompleted
-                                                        ? 'border-emerald-200 py-1.5 text-sm dark:border-emerald-500/30'
-                                                        : 'border-border py-1.5 text-sm'
-                                                    }`}
+                                                className="h-11 w-full rounded-lg border border-indigo-500/35 bg-background px-3 text-center text-lg font-bold text-foreground outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/25"
                                             />
-                                        </div>
-                                        )}
-
-                                        <div className="flex-1">
-                                            <label className="text-[9px] font-medium uppercase tracking-wider text-muted-foreground">
-                                                {exercise.isCardio ? 'Min' : 'Reps'}
-                                            </label>
-                                            <input
-                                                ref={isActive ? repsInputRef : undefined}
-                                                type="number"
-                                                inputMode="numeric"
-                                                placeholder={
-                                                    exercise.previousReps[idx] != null
-                                                        ? String(exercise.previousReps[idx])
-                                                        : exercise.targetReps ?? '0'
-                                                }
-                                                value={set.reps}
-                                                onChange={(e) =>
-                                                    updateSetField(idx, 'reps', e.target.value)
-                                                }
-                                                onKeyDown={(e) => handleRepsKeyDown(e, idx)}
-                                                className={`mt-0.5 w-full rounded-xl border bg-background px-3 text-center font-bold text-foreground outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 ${isActive
-                                                    ? 'border-indigo-300 py-2.5 text-xl dark:border-indigo-500/40'
-                                                    : isCompleted
-                                                        ? 'border-emerald-200 py-1.5 text-sm dark:border-emerald-500/30'
-                                                        : 'border-border py-1.5 text-sm'
-                                                    }`}
-                                            />
-                                        </div>
-
-                                        {showPrs && isCompleted && set.isPR && (
-                                            <span className="shrink-0 text-sm">🏆</span>
-                                        )}
-
-                                        {isCompleted && set.rpe !== '' && (
-                                            <span className="shrink-0 rounded-md bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium text-zinc-500 dark:bg-zinc-700 dark:text-zinc-400">
-                                                RPE {set.rpe}
+                                            <span className="mt-1 block text-[10px] text-muted-foreground">
+                                                {exercise.previousWeights[idx] != null ? `Anterior: ${exercise.previousWeights[idx]} ${weightUnit}` : 'Ingresá el peso usado'}
                                             </span>
-                                        )}
+                                        </label>
+                                    )}
 
-                                        {isPending && (
-                                            <button
-                                                type="button"
-                                                onClick={() => confirmSet(idx)}
-                                                disabled={saving}
-                                                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600 transition hover:bg-indigo-200 active:scale-90 dark:bg-indigo-500/15 dark:text-indigo-400 dark:hover:bg-indigo-500/25"
-                                            >
-                                                <svg
-                                                    className="h-4 w-4"
-                                                    fill="none"
-                                                    viewBox="0 0 24 24"
-                                                    stroke="currentColor"
-                                                    strokeWidth={2.5}
-                                                >
-                                                    <path
-                                                        strokeLinecap="round"
-                                                        strokeLinejoin="round"
-                                                        d="M5 13l4 4L19 7"
-                                                    />
-                                                </svg>
-                                            </button>
-                                        )}
-                                    </div>
-                                )}
-
-                                {isSkipped && (
-                                    <p className="flex-1 text-center text-xs text-zinc-400">
-                                        Salteada
-                                    </p>
-                                )}
-                            </div>
-
-                            {isActive && (
-                                <div className="mt-3 border-t border-indigo-200 pt-3 dark:border-indigo-500/30">
-                                    <div className="flex items-center gap-1.5 mb-1">
-                                        <span className="text-[9px] font-medium uppercase tracking-wider text-muted-foreground">
-                                            RPE
+                                    <label className="min-w-0">
+                                        <span className="mb-1 block text-xs font-semibold text-foreground">
+                                            {exercise.isCardio ? 'Tiempo (minutos)' : 'Repeticiones'}
                                         </span>
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowRpeInfo(!showRpeInfo)}
-                                            className="flex h-3.5 w-3.5 items-center justify-center rounded-full border border-border text-[8px] text-muted-foreground transition hover:text-foreground"
-                                        >
-                                            ?
-                                        </button>
-                                    </div>
+                                        <input
+                                            ref={repsInputRef}
+                                            aria-label={`${exercise.isCardio ? 'Minutos' : 'Repeticiones'} de la serie ${idx + 1}`}
+                                            type="number"
+                                            inputMode="numeric"
+                                            placeholder="—"
+                                            value={set.reps}
+                                            onChange={(e) => updateSetField(idx, 'reps', e.target.value)}
+                                            onKeyDown={(e) => handleRepsKeyDown(e, idx)}
+                                            className="h-11 w-full rounded-lg border border-indigo-500/35 bg-background px-3 text-center text-lg font-bold text-foreground outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/25"
+                                        />
+                                        <span className="mt-1 block text-[10px] text-muted-foreground">
+                                            {exercise.previousReps[idx] != null
+                                                ? `Anterior: ${exercise.previousReps[idx]} ${exercise.isCardio ? 'min' : 'reps'}`
+                                                : exercise.targetReps
+                                                    ? `Objetivo: ${exercise.targetReps} ${exercise.isCardio ? 'minutos' : 'repeticiones'}`
+                                                    : exercise.isCardio ? 'Ingresá el tiempo realizado' : 'Ingresá las repeticiones'}
+                                        </span>
+                                    </label>
+                                </div>
+
+                                <div className="mt-2.5 border-t border-indigo-500/20 pt-2">
+                                    <button
+                                        type="button"
+                                        aria-expanded={showRpeInfo}
+                                        onClick={() => setShowRpeInfo(!showRpeInfo)}
+                                        className="flex min-h-8 w-full items-center justify-between rounded-lg px-1 text-left text-xs font-medium text-muted-foreground transition hover:text-foreground"
+                                    >
+                                        <span>{set.rpe ? `Esfuerzo: ${set.rpe}/10` : 'Agregar esfuerzo percibido (opcional)'}</span>
+                                        <span aria-hidden="true">{showRpeInfo ? '−' : '+'}</span>
+                                    </button>
                                     {showRpeInfo && (
-                                        <div className="mb-2 rounded-xl border border-border bg-secondary/60 px-3 py-2 text-[10px] text-muted-foreground leading-relaxed">
-                                            <p className="font-medium text-foreground mb-0.5">
-                                                RPE — Esfuerzo percibido (1-10)
+                                        <div className="mt-1.5">
+                                            <p className="mb-2 text-[11px] leading-relaxed text-muted-foreground">
+                                                1–6 fácil · 7–8 difícil y controlado · 9–10 al límite
                                             </p>
-                                            <p>1-4: Muy fácil · 5-6: Moderado</p>
-                                            <p>7-8: Difícil, podés más · 9: Casi al límite</p>
-                                            <p>10: Máximo esfuerzo, no podés más</p>
+                                            <div className="flex justify-between gap-1">
+                                                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+                                                    <button
+                                                        key={n}
+                                                        type="button"
+                                                        aria-label={`Esfuerzo ${n} de 10`}
+                                                        onClick={() => updateSetRpe(idx, set.rpe === String(n) ? '' : String(n))}
+                                                        className={`h-7 min-w-0 flex-1 rounded-md text-[11px] font-medium transition active:scale-90 ${
+                                                            set.rpe === String(n)
+                                                                ? 'bg-indigo-600 text-white'
+                                                                : 'border border-border bg-secondary text-secondary-foreground hover:bg-muted'
+                                                        }`}
+                                                    >
+                                                        {n}
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </div>
                                     )}
-                                    <div className="flex gap-1">
-                                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
-                                            <button
-                                                key={n}
-                                                type="button"
-                                                onClick={() => updateSetRpe(idx, set.rpe === String(n) ? '' : String(n))}
-                                                className={`h-7 w-7 rounded-lg text-[11px] font-medium transition active:scale-90 ${
-                                                    set.rpe === String(n)
-                                                        ? 'bg-indigo-600 text-white'
-                                                        : 'border border-border bg-secondary text-secondary-foreground hover:bg-muted'
-                                                }`}
-                                            >
-                                                {n}
-                                            </button>
-                                        ))}
-                                    </div>
                                 </div>
+                            </section>
+                        )
+                    }
+
+                    if (isEditingCompleted) {
+                        return (
+                            <div key={idx} className="rounded-xl border border-emerald-500/30 bg-emerald-500/[0.04] p-3">
+                                <div className="mb-2 flex items-center justify-between">
+                                    <p className="text-xs font-semibold text-foreground">Corregir serie {idx + 1}</p>
+                                    <button type="button" onClick={() => setEditingCompletedSetIndex(null)} className="text-xs text-muted-foreground">Cancelar</button>
+                                </div>
+                                <div className={`grid gap-2 ${exercise.isCardio ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                                    {!exercise.isCardio && (
+                                        <label>
+                                            <span className="mb-1 block text-[11px] text-muted-foreground">Peso ({weightUnit})</span>
+                                            <input type="number" inputMode="decimal" step="0.5" value={set.weight} onChange={(e) => updateSetField(idx, 'weight', e.target.value)} className="h-10 w-full rounded-lg border border-border bg-background px-2 text-center text-sm font-semibold text-foreground outline-none focus:border-indigo-500" />
+                                        </label>
+                                    )}
+                                    <label>
+                                        <span className="mb-1 block text-[11px] text-muted-foreground">{exercise.isCardio ? 'Tiempo (min)' : 'Repeticiones'}</span>
+                                        <input type="number" inputMode="numeric" value={set.reps} onChange={(e) => updateSetField(idx, 'reps', e.target.value)} className="h-10 w-full rounded-lg border border-border bg-background px-2 text-center text-sm font-semibold text-foreground outline-none focus:border-indigo-500" />
+                                    </label>
+                                </div>
+                                <button type="button" onClick={() => confirmSet(idx)} disabled={saving} className="mt-2 h-10 w-full rounded-lg bg-emerald-600 text-xs font-semibold text-white disabled:opacity-50">
+                                    {saving ? 'Guardando…' : 'Guardar corrección'}
+                                </button>
+                            </div>
+                        )
+                    }
+
+                    return (
+                        <div key={idx} className={`flex min-h-11 items-center gap-3 rounded-xl border px-3 py-2 ${
+                            isCompleted
+                                ? 'border-emerald-500/20 bg-emerald-500/[0.04]'
+                                : isSkipped
+                                    ? 'border-border bg-card/40 opacity-50'
+                                    : 'border-border bg-card/60'
+                        }`}>
+                            <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
+                                isCompleted ? 'bg-emerald-500 text-white' : 'bg-muted text-muted-foreground'
+                            }`}>
+                                {isCompleted ? '✓' : isSkipped ? '—' : idx + 1}
+                            </span>
+                            <div className="min-w-0 flex-1">
+                                <p className="text-xs font-semibold text-foreground">Serie {idx + 1}</p>
+                                <p className="truncate text-[11px] text-muted-foreground">
+                                    {isCompleted
+                                        ? `${exercise.isCardio ? '' : `${set.weight || '0'} ${weightUnit} · `}${set.reps || '0'} ${exercise.isCardio ? 'min' : 'reps'}${set.rpe ? ` · Esfuerzo ${set.rpe}/10` : ''}`
+                                        : isSkipped ? 'Salteada' : 'Pendiente'}
+                                </p>
+                            </div>
+                            {showPrs && isCompleted && set.isPR && <span aria-label="Récord personal">🏆</span>}
+                            {isCompleted && (
+                                <button type="button" onClick={() => setEditingCompletedSetIndex(idx)} className="rounded-lg px-2 py-1.5 text-xs font-medium text-indigo-400 hover:bg-indigo-500/10">
+                                    Editar
+                                </button>
                             )}
                         </div>
                     )
@@ -1121,7 +1089,7 @@ export default function TrainFocusedView({
                                 onClick={skipSet}
                                 className="min-h-[48px] rounded-xl border border-border bg-secondary px-4 py-3.5 text-sm font-medium text-secondary-foreground transition hover:bg-muted active:scale-[0.97]"
                             >
-                                Saltar
+                                Saltar serie
                             </button>
 
                             <button
@@ -1130,7 +1098,7 @@ export default function TrainFocusedView({
                                 disabled={saving}
                                 className="flex-1 min-h-[48px] rounded-xl bg-indigo-600 px-4 py-3.5 text-center text-sm font-semibold text-white shadow transition hover:bg-indigo-500 disabled:opacity-50 active:scale-[0.97]"
                             >
-                                {saving ? 'Guardando...' : `Guardar set ${activeSetIndex + 1}`}
+                                {saving ? 'Guardando...' : `Guardar serie ${activeSetIndex + 1}`}
                             </button>
                         </>
                     ) : (

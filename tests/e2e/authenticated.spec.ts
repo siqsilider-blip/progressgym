@@ -45,13 +45,13 @@ test('el alumno entra a su portal y no al panel del entrenador', async ({ page }
     await expect(page).toHaveURL(/\/app\/train\?/)
     await expect(page.getByText(/Día E2E · Activación · 1\/1/)).toBeVisible()
     await expect(page.getByRole('heading', { name: exerciseName })).toBeVisible()
-
     const numberInputs = page.locator('input[type="number"]')
     await expect(numberInputs).toHaveCount(2)
     await numberInputs.nth(0).fill('35')
     await numberInputs.nth(1).fill('10')
-    await page.getByRole('button', { name: '7', exact: true }).click()
-    await page.getByRole('button', { name: 'Guardar set 1' }).click()
+    await page.getByRole('button', { name: 'Agregar esfuerzo percibido (opcional)' }).click()
+    await page.getByRole('button', { name: 'Esfuerzo 7 de 10' }).click()
+    await page.getByRole('button', { name: 'Guardar serie 1' }).click()
 
     await expect(page.getByRole('heading', { name: 'Sesión completada' })).toBeVisible({ timeout: 15_000 })
 
