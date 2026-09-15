@@ -69,3 +69,47 @@ export async function saveStudentNote(
 
     return { success: true }
 }
+
+export async function updateProgramStartDate(formData: FormData): Promise<{
+    ok: boolean
+    error?: string
+}> {
+    const supabase = await createClient()
+    const studentId = String(formData.get('studentId') ?? '')
+    const programStartedOn = String(formData.get('programStartedOn') ?? '')
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { ok: false, error: 'Tu sesión venció. Volvé a iniciar sesión.' }
+
+    if (!studentId || !/^\d{4}-\d{2}-\d{2}$/.test(programStartedOn)) {
+        return { ok: false, error: 'Elegí una fecha válida.' }
+    }
+
+    const { data: student } = await supabase
+        .from('students')
+        .select('id')
+        .eq('id', studentId)
+        .eq('trainer_id', user.id)
+        .maybeSingle()
+
+    if (!student) return { ok: false, error: 'Alumno no encontrado.' }
+
+    const { data: assignment, error } = await supabase
+        .from('student_routines')
+        .update({ program_started_on: programStartedOn })
+        .eq('student_id', studentId)
+        .eq('status', 'active')
+        .select('id')
+        .maybeSingle()
+
+    if (error || !assignment) {
+        return { ok: false, error: 'No se pudo actualizar el inicio del programa.' }
+    }
+
+    revalidatePath(`/dashboard/students/${studentId}`)
+    revalidatePath(`/dashboard/students/${studentId}/train`)
+    revalidatePath('/app')
+    revalidatePath('/app/rutina')
+
+    return { ok: true }
+}

@@ -13,6 +13,8 @@ import StudentRiskCard from './StudentRiskCard'
 import { getStudentRisk } from './getStudentRisk'
 import DeleteStudentButton from './DeleteStudentButton'
 import LinkStudentAccountForm from './LinkStudentAccountForm'
+import ProgramScheduleCard from './ProgramScheduleCard'
+import { getRoutineSchedule } from '@/lib/getRoutineSchedule'
 
 type PageProps = {
     params: Promise<{
@@ -49,11 +51,35 @@ export default async function StudentProfilePage(props: PageProps) {
         getStudentRecentPRs(studentId),
         getStudentRisk(studentId),
         supabase.from('trainer_profiles').select('show_prs').eq('user_id', user.id).maybeSingle(),
-        supabase.from('student_routines').select('routine_id').eq('student_id', studentId).eq('status', 'active').maybeSingle(),
+        supabase.from('student_routines').select('routine_id, program_started_on').eq('student_id', studentId).eq('status', 'active').maybeSingle(),
         supabase.from('profiles').select('id, email').eq('student_id', studentId).maybeSingle(),
     ])
 
     const assignedRoutineId = routineAssignment.data?.routine_id ?? null
+    const programStartedOn = routineAssignment.data?.program_started_on ?? null
+
+    let activeRoutineName: string | null = null
+    let currentWeekLabel = 'Semana 1'
+    let programWeekNumber = 1
+    let totalProgramWeeks = 1
+
+    if (assignedRoutineId && programStartedOn) {
+        const [routineResult, schedule] = await Promise.all([
+            supabase
+                .from('routines')
+                .select('name')
+                .eq('id', assignedRoutineId)
+                .eq('trainer_id', user.id)
+                .maybeSingle(),
+            getRoutineSchedule(supabase, assignedRoutineId, { programStartedOn }),
+        ])
+
+        activeRoutineName = routineResult.data?.name ?? 'Rutina asignada'
+        currentWeekLabel = schedule.currentWeek?.name
+            || (schedule.currentWeek ? `Semana ${schedule.currentWeek.week_number}` : 'Semana actual')
+        programWeekNumber = schedule.programWeekNumber || 1
+        totalProgramWeeks = schedule.totalProgramWeeks || 1
+    }
 
     const trainHref = `/dashboard/students/${params.studentId}/train`
 
@@ -86,6 +112,17 @@ export default async function StudentProfilePage(props: PageProps) {
                     </span>
                 )}
             </div>
+
+            {assignedRoutineId && programStartedOn && activeRoutineName && (
+                <ProgramScheduleCard
+                    studentId={studentId}
+                    routineName={activeRoutineName}
+                    programStartedOn={programStartedOn}
+                    currentWeekLabel={currentWeekLabel}
+                    programWeekNumber={programWeekNumber}
+                    totalProgramWeeks={totalProgramWeeks}
+                />
+            )}
 
             <StudentRiskCard risk={risk} />
 
