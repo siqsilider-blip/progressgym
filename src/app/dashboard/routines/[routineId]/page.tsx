@@ -298,11 +298,11 @@ export default async function RoutineDetailPage(props: PageProps) {
     )
 
     return (
-        <div className="px-3 py-4 pb-24 text-foreground sm:px-4 md:p-6">
+        <div className="px-3 pb-24 pt-2 text-foreground sm:px-4 sm:pt-3 md:p-6">
             <div className="mx-auto max-w-3xl space-y-3.5">
 
                 {/* ── Header ── */}
-                <div className="flex flex-wrap items-start gap-2.5">
+                <div className="grid grid-cols-[2rem_minmax(0,1fr)] items-start gap-2.5">
                     <BackButton />
 
                     <div className="min-w-0 flex-1">
@@ -311,42 +311,44 @@ export default async function RoutineDetailPage(props: PageProps) {
                             initialName={routine.name ?? ''}
                             updateAction={updateRoutineName}
                         />
-                        <p className="mt-0.5 text-xs text-muted-foreground">
-                            {routine.routine_kind === 'template' ? (
-                                <span className="rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[10px] font-medium text-indigo-700 dark:border-indigo-500/20 dark:bg-indigo-500/10 dark:text-indigo-300">
-                                    Template
-                                </span>
-                            ) : (
-                                studentName
-                            )}
-                            <span className="mx-1.5 text-border">·</span>
-                            {months.length} {months.length === 1 ? 'mesociclo' : 'mesociclos'}
-                            <span className="mx-1.5 text-border">·</span>
-                            {weeksForMonth.length} {weeksForMonth.length === 1 ? 'semana' : 'semanas'}
-                        </p>
-                    </div>
+                        <div className="mt-1 flex min-w-0 items-center gap-2">
+                            <p className="min-w-0 flex-1 truncate whitespace-nowrap text-xs text-muted-foreground">
+                                {routine.routine_kind === 'template' ? (
+                                    <span className="rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[10px] font-medium text-indigo-700 dark:border-indigo-500/20 dark:bg-indigo-500/10 dark:text-indigo-300">
+                                        Template
+                                    </span>
+                                ) : (
+                                    studentName
+                                )}
+                                <span className="mx-1.5 text-border">·</span>
+                                {months.length} {months.length === 1 ? 'mesociclo' : 'mesociclos'}
+                                <span className="mx-1.5 text-border">·</span>
+                                {weeksForMonth.length} {weeksForMonth.length === 1 ? 'semana' : 'semanas'}
+                            </p>
 
-                    {routine.routine_kind === 'template' ? (
-                        <div className="ml-11 flex w-full items-center justify-end gap-1.5 sm:ml-0 sm:w-auto">
-                            <Link
-                                href={`/dashboard/routines/${routine.id}/assign-to-student`}
-                                className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-indigo-500 active:scale-[0.97]"
-                            >
-                                Asignar
-                            </Link>
-                            <DeleteTemplateButton
-                                routineId={routine.id}
-                                deleteAction={deleteTemplate}
-                            />
+                            {routine.routine_kind === 'template' ? (
+                                <div className="flex shrink-0 items-center gap-1.5">
+                                    <Link
+                                        href={`/dashboard/routines/${routine.id}/assign-to-student`}
+                                        className="rounded-lg bg-indigo-600 px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-sm transition hover:bg-indigo-500 active:scale-[0.97]"
+                                    >
+                                        Asignar
+                                    </Link>
+                                    <DeleteTemplateButton
+                                        routineId={routine.id}
+                                        deleteAction={deleteTemplate}
+                                    />
+                                </div>
+                            ) : (
+                                <Link
+                                    href={`/dashboard/students/${routine.student_id}/train?from=routine${selectedMonth?.id ? `&month=${selectedMonth.id}` : ''}${selectedWeek?.id ? `&week=${selectedWeek.id}` : ''}${selectedDay?.id ? `&day=${selectedDay.id}` : ''}`}
+                                    className="shrink-0 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-sm transition hover:bg-emerald-500 active:scale-[0.97]"
+                                >
+                                    Entrenar
+                                </Link>
+                            )}
                         </div>
-                    ) : (
-                        <Link
-                            href={`/dashboard/students/${routine.student_id}/train?from=routine${selectedMonth?.id ? `&month=${selectedMonth.id}` : ''}${selectedWeek?.id ? `&week=${selectedWeek.id}` : ''}${selectedDay?.id ? `&day=${selectedDay.id}` : ''}`}
-                            className="ml-11 w-full rounded-lg bg-emerald-600 px-3 py-2 text-center text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-500 active:scale-[0.97] sm:ml-0 sm:w-auto"
-                        >
-                            Entrenar
-                        </Link>
-                    )}
+                    </div>
                 </div>
 
                 {daysError ? (
