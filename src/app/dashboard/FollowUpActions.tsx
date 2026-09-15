@@ -1,9 +1,12 @@
 'use client'
 
+import { useState, useTransition } from 'react'
 import Link from 'next/link'
-import { ArrowRight, MessageCircle } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { ArrowRight, Clock3, MessageCircle } from 'lucide-react'
 import { buildWhatsAppUrl } from '@/lib/whatsapp'
 import type { TrainerAlert } from './getTrainerAlerts'
+import { recordStudentFollowUp } from './followUpServerActions'
 
 function getFollowUpMessage(alert: TrainerAlert) {
     const firstName = alert.studentName.split(' ')[0] || '¿cómo estás?'
@@ -23,9 +26,29 @@ function getFollowUpMessage(alert: TrainerAlert) {
 }
 
 export default function FollowUpActions({ alert }: { alert: TrainerAlert }) {
+    const router = useRouter()
+    const [isPending, startTransition] = useTransition()
+    const [error, setError] = useState('')
     const whatsappUrl = alert.studentPhone
         ? buildWhatsAppUrl(alert.studentPhone, getFollowUpMessage(alert))
         : null
+
+    function recordAction(action: 'whatsapp_opened' | 'snoozed') {
+        if (isPending) return
+        setError('')
+        startTransition(async () => {
+            const result = await recordStudentFollowUp({
+                studentId: alert.studentId,
+                alertType: alert.type,
+                action,
+            })
+            if (!result.ok) {
+                setError(result.error ?? 'No se pudo registrar.')
+                return
+            }
+            router.refresh()
+        })
+    }
 
     return (
         <div className="flex shrink-0 flex-col items-end gap-2">
@@ -42,6 +65,7 @@ export default function FollowUpActions({ alert }: { alert: TrainerAlert }) {
                     href={whatsappUrl}
                     target="_blank"
                     rel="noopener noreferrer"
+                    onClick={() => recordAction('whatsapp_opened')}
                     className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-500 transition hover:text-emerald-400"
                 >
                     <MessageCircle className="h-3.5 w-3.5" />
@@ -55,6 +79,18 @@ export default function FollowUpActions({ alert }: { alert: TrainerAlert }) {
                     Agregar teléfono
                 </Link>
             )}
+
+            <button
+                type="button"
+                disabled={isPending}
+                onClick={() => recordAction('snoozed')}
+                className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground transition hover:text-foreground disabled:opacity-50"
+            >
+                <Clock3 className="h-3.5 w-3.5" />
+                {isPending ? 'Guardando...' : 'Posponer 3 días'}
+            </button>
+
+            {error && <span className="max-w-32 text-right text-[10px] text-red-400">{error}</span>}
         </div>
     )
 }

@@ -18,6 +18,7 @@ type AssignmentRow = {
 
 type WeekRow = { routine_id: string }
 type SessionRow = { student_id: string; started_at: string }
+type FollowUpRow = { student_id: string }
 
 export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
     const supabase = await createClient()
@@ -46,8 +47,9 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
     }
 
     const studentIds = students.map((student) => student.id)
+    const now = new Date()
 
-    const [workoutsResult, routinesResult, activeSessionsResult] = await Promise.all([
+    const [workoutsResult, routinesResult, activeSessionsResult, followUpsResult] = await Promise.all([
         supabase
             .from('exercise_logs')
             .select('student_id, performed_at')
@@ -66,6 +68,12 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
             .select('student_id, started_at')
             .in('student_id', studentIds)
             .eq('status', 'in_progress'),
+
+        supabase
+            .from('student_follow_ups')
+            .select('student_id')
+            .in('student_id', studentIds)
+            .gt('snoozed_until', now.toISOString()),
     ])
 
     if (workoutsResult.error) {
@@ -80,9 +88,16 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
         console.error('Error fetching active sessions for alerts:', activeSessionsResult.error)
     }
 
+    if (followUpsResult.error) {
+        console.error('Error fetching follow-ups for alerts:', followUpsResult.error)
+    }
+
     const workouts = workoutsResult.data ?? []
     const routines = (routinesResult.data as AssignmentRow[] | null) ?? []
     const activeSessions = (activeSessionsResult.data as SessionRow[] | null) ?? []
+    const suppressedStudentIds = new Set(
+        ((followUpsResult.data as FollowUpRow[] | null) ?? []).map((row) => row.student_id)
+    )
 
     const routineIds = [...new Set(routines.map((routine) => routine.routine_id))]
     const weekCountByRoutine = new Map<string, number>()
@@ -116,7 +131,6 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
         routines.map((assignment) => [assignment.student_id, assignment])
     )
     const staleSessionByStudent = new Map<string, SessionRow>()
-    const now = new Date()
 
     for (const session of activeSessions) {
         const startedAt = new Date(session.started_at)
@@ -129,6 +143,8 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
     const alerts: TrainerAlert[] = []
 
     for (const student of students) {
+        if (suppressedStudentIds.has(student.id)) continue
+
         const fullName =
             `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim() || 'Alumno'
 
