@@ -1,20 +1,15 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { logout } from '@/app/auth/actions'
-import { getStudentExerciseProgress } from '@/app/dashboard/students/getStudentExerciseProgress'
-import { getStudentSessionHistory } from '@/app/dashboard/students/getStudentSessionHistory'
-import { type WeightUnit } from '@/lib/weight'
+import Link from 'next/link'
+import StudentPageHeader from '@/components/student/StudentPageHeader'
+import { getStudentAppContext } from '@/lib/auth/student'
 
 export default async function AppProfilePage() {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) redirect('/login')
-
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('name, email, student_id, created_at')
-        .eq('id', user.id)
-        .single()
+    const context = await getStudentAppContext()
+    if (!context) redirect('/login')
+    const { user, profile } = context
 
     const studentId = profile?.student_id
     const { data: student } = studentId ? await supabase
@@ -26,11 +21,9 @@ export default async function AppProfilePage() {
     // Trainer info
     const { data: trainer } = student?.trainer_id ? await supabase
         .from('profiles')
-        .select('name, weight_unit')
+        .select('name')
         .eq('id', student.trainer_id)
         .single() : { data: null }
-
-    const weightUnit = (trainer?.weight_unit ?? 'kg') as WeightUnit
 
     // Rutina
     const { data: assignment } = studentId ? await supabase
@@ -46,27 +39,9 @@ export default async function AppProfilePage() {
         .eq('id', assignment.routine_id)
         .single() : { data: null }
 
-    // Stats
-    const [progressData, sessions] = await Promise.all([
-        studentId ? getStudentExerciseProgress(studentId) : [],
-        studentId ? getStudentSessionHistory(studentId, 50) : [],
-    ])
-
     const fullName = student
         ? `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim()
         : profile?.name ?? 'Alumno'
-
-    const totalProgress = progressData.reduce((acc, e) => acc + e.progressKg, 0)
-    const totalSessions = sessions.length
-    const totalSets = sessions.reduce((acc, s) => acc + s.totalSets, 0)
-
-    const avgDuration = sessions.filter(s => s.durationSeconds).length > 0
-        ? Math.round(
-            sessions.filter(s => s.durationSeconds)
-                .reduce((acc, s) => acc + (s.durationSeconds ?? 0), 0) /
-            sessions.filter(s => s.durationSeconds).length / 60
-        )
-        : null
 
     const memberSince = profile?.created_at
         ? new Date(profile.created_at).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })
@@ -83,19 +58,19 @@ export default async function AppProfilePage() {
         <div className="p-4 pb-24 md:p-6">
             <div className="mx-auto max-w-lg space-y-4">
 
-                <h1 className="text-2xl font-black text-foreground">Perfil</h1>
+                <StudentPageHeader title="Perfil" subtitle="Cuenta y programa" />
 
                 {/* ── Card principal ── */}
-                <div className="overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-indigo-600 to-violet-600 p-5 text-white shadow-lg shadow-indigo-500/10">
-                    <div className="flex items-center gap-4">
-                        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/15 text-2xl font-black backdrop-blur">
+                <div className="rounded-xl border border-border bg-card p-3.5">
+                    <div className="flex items-center gap-3">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-500/15 text-sm font-black text-indigo-400">
                             {initials}
                         </div>
                         <div>
-                            <p className="text-lg font-bold">{fullName}</p>
-                            <p className="text-sm text-indigo-200">{profile?.email ?? user.email}</p>
+                            <p className="text-sm font-bold text-foreground">{fullName}</p>
+                            <p className="text-xs text-muted-foreground">{profile?.email ?? user.email}</p>
                             {memberSince && (
-                                <p className="mt-0.5 text-[10px] text-indigo-300">
+                                <p className="mt-0.5 text-[10px] text-muted-foreground">
                                     Miembro desde {memberSince}
                                 </p>
                             )}
@@ -103,33 +78,9 @@ export default async function AppProfilePage() {
                     </div>
                 </div>
 
-                {/* ── Stats globales ── */}
-                <div className="grid grid-cols-2 gap-2">
-                    <div className="rounded-2xl border border-border bg-card p-4 text-center">
-                        <p className="text-3xl font-black text-indigo-400">{totalSessions}</p>
-                        <p className="text-[10px] text-muted-foreground">Sesiones totales</p>
-                    </div>
-                    <div className="rounded-2xl border border-border bg-card p-4 text-center">
-                        <p className="text-3xl font-black text-emerald-400">{totalSets}</p>
-                        <p className="text-[10px] text-muted-foreground">Series totales</p>
-                    </div>
-                    <div className="rounded-2xl border border-border bg-card p-4 text-center">
-                        <p className="text-3xl font-black text-amber-400">
-                            +{totalProgress > 0 ? totalProgress.toFixed(0) : '0'}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground">Progreso ({weightUnit})</p>
-                    </div>
-                    <div className="rounded-2xl border border-border bg-card p-4 text-center">
-                        <p className="text-3xl font-black text-violet-400">
-                            {avgDuration ? `${avgDuration}m` : '—'}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground">Duración media</p>
-                    </div>
-                </div>
-
                 {/* ── Info del entrenador ── */}
                 {trainer?.name && (
-                    <div className="rounded-2xl border border-border bg-card p-4">
+                    <div className="rounded-xl border border-border bg-card p-3.5">
                         <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                             Mi entrenador
                         </p>
@@ -139,9 +90,7 @@ export default async function AppProfilePage() {
                             </div>
                             <div>
                                 <p className="text-sm font-bold text-card-foreground">{trainer.name}</p>
-                                <p className="text-[10px] text-muted-foreground">
-                                    Unidad de peso: {weightUnit.toUpperCase()}
-                                </p>
+                                <p className="text-[10px] text-muted-foreground">Tu entrenador asignado</p>
                             </div>
                         </div>
                     </div>
@@ -149,46 +98,19 @@ export default async function AppProfilePage() {
 
                 {/* ── Rutina actual ── */}
                 {routine?.name && (
-                    <div className="rounded-2xl border border-border bg-card p-4">
+                    <div className="rounded-xl border border-border bg-card p-3.5">
                         <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                             Rutina actual
                         </p>
                         <p className="mt-1.5 text-sm font-bold text-card-foreground">{routine.name}</p>
-                        <p className="mt-0.5 text-[10px] text-muted-foreground">
-                            {progressData.length} ejercicios con progreso registrado
-                        </p>
+                        <p className="mt-0.5 text-[10px] text-muted-foreground">Programa activo</p>
                     </div>
                 )}
 
-                {/* ── Ejercicios destacados ── */}
-                {progressData.length > 0 && (
-                    <div className="rounded-2xl border border-border bg-card p-4">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                            Top ejercicios
-                        </p>
-                        <div className="mt-3 space-y-2">
-                            {progressData.slice(0, 3).map((ex, idx) => (
-                                <div
-                                    key={idx}
-                                    className="flex items-center justify-between rounded-xl bg-muted/40 px-3 py-2.5"
-                                >
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-sm">
-                                            {idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}
-                                        </span>
-                                        <div>
-                                            <p className="text-xs font-medium text-card-foreground">{ex.exerciseName}</p>
-                                            <p className="text-[10px] text-muted-foreground">
-                                                {ex.firstWeight}{weightUnit} → {ex.bestWeight}{weightUnit}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <p className="text-sm font-bold text-emerald-500">+{ex.progressKg}{weightUnit}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
+                <Link href="/app/logros" prefetch={true} className="flex items-center justify-between rounded-xl border border-border bg-card px-3.5 py-3 text-sm font-semibold text-foreground">
+                    <span>Ver mis logros</span>
+                    <span className="text-indigo-400">→</span>
+                </Link>
 
                 {/* ── Logout ── */}
                 <form action={logout}>

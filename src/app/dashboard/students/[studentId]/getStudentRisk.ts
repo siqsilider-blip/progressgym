@@ -10,17 +10,6 @@ type RiskMetricsRow = {
     progress_count: number | null
 }
 
-export function fallbackRisk(): StudentRiskResult {
-    return calculateStudentRisk({
-        lastWorkoutAt: null,
-        adherenceRate: null,
-        stagnantDays: null,
-        progressCount30d: null,
-        totalSessions: null,
-        activeStatus: true,
-    })
-}
-
 export async function getStudentsRiskBatch(
     studentIds: string[]
 ): Promise<Map<string, StudentRiskResult>> {
@@ -55,7 +44,7 @@ export async function getStudentsRiskBatch(
     return result
 }
 
-export async function getStudentRisk(studentId: string): Promise<StudentRiskResult> {
+export async function getStudentRisk(studentId: string): Promise<StudentRiskResult | null> {
     const batch = await getStudentsRiskBatch([studentId])
-    return batch.get(studentId) ?? fallbackRisk()
+    return batch.get(studentId) ?? null
 }

@@ -1,27 +1,18 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { getStudentExerciseProgress } from '@/app/dashboard/students/getStudentExerciseProgress'
-import { getStudentSessionHistory } from '@/app/dashboard/students/getStudentSessionHistory'
-import { type WeightUnit } from '@/lib/weight'
 import { getRoutineSchedule } from '@/lib/getRoutineSchedule'
 import { getStudentRoutineWeekProgress, type RoutineDayProgressStatus } from '@/lib/studentRoutineWeekProgress'
 import { getBuenosAiresHour } from '@/lib/buenosAiresDate'
 import { getActiveStudentRoutine } from '@/lib/getActiveStudentRoutine'
+import { getStudentAppContext } from '@/lib/auth/student'
 
 export default async function AppHomePage() {
     const supabase = await createClient()
-
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) redirect('/login')
-
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('name, student_id')
-        .eq('id', user.id)
-        .single()
-
-    const studentId = profile?.student_id
+    const context = await getStudentAppContext()
+    if (!context) redirect('/login')
+    const { profile } = context
+    const studentId = profile.student_id
     if (!studentId) redirect('/app')
 
     const { data: student } = await supabase
@@ -29,16 +20,6 @@ export default async function AppHomePage() {
         .select('first_name, last_name, trainer_id')
         .eq('id', studentId)
         .single()
-
-    // Trainer profile for weight unit
-    const trainerProfile = student?.trainer_id ? await supabase
-        .from('profiles')
-        .select('weight_unit')
-        .eq('id', student.trainer_id)
-        .single()
-        .then(r => r.data) : null
-
-    const weightUnit = (trainerProfile?.weight_unit ?? 'kg') as WeightUnit
 
     // Rutina asignada
     const assignment = await getActiveStudentRoutine(supabase, studentId)
@@ -163,36 +144,7 @@ export default async function AppHomePage() {
         }
     }
 
-    // Datos de progreso y sesiones
-    const [progressData, sessions] = await Promise.all([
-        getStudentExerciseProgress(studentId),
-        getStudentSessionHistory(studentId, 10),
-    ])
-
     const firstName = student?.first_name ?? profile?.name ?? 'Atleta'
-    const totalProgress = progressData.reduce((acc, e) => acc + e.progressKg, 0)
-    const totalSessions = sessions.length
-    const bestExercise = progressData[0] ?? null
-
-    // Racha: días consecutivos con sesión (contando hacia atrás desde hoy)
-    const today = new Date()
-    let streak = 0
-    const sessionDates = new Set(sessions.map(s => s.performedDate))
-    for (let i = 0; i < 30; i++) {
-        const d = new Date(today)
-        d.setDate(d.getDate() - i)
-        const dateStr = d.toISOString().slice(0, 10)
-        if (sessionDates.has(dateStr)) {
-            streak++
-        } else if (i > 0) {
-            break
-        }
-    }
-
-    // PRs recientes (ejercicios con progreso > 0, ordenados por último registro)
-    const recentPRs = progressData
-        .filter(p => p.progressKg > 0)
-        .slice(0, 3)
 
     const trainHref = assignedRoutineId && selectedWeekId && selectedDayId
         ? `/app/train?${selectedMonthId ? `month=${selectedMonthId}&` : ''}week=${selectedWeekId}&day=${selectedDayId}`
@@ -218,26 +170,6 @@ export default async function AppHomePage() {
                     {routineName && (
                         <p className="mt-0.5 text-sm text-muted-foreground">{routineName}</p>
                     )}
-                </div>
-
-                {/* ── Stats rápidas ── */}
-                <div className="grid grid-cols-3 gap-2">
-                    <div className="rounded-2xl border border-border bg-card p-3 text-center">
-                        <p className="text-2xl font-black text-indigo-400">{totalSessions}</p>
-                        <p className="text-[10px] text-muted-foreground">Sesiones</p>
-                    </div>
-                    <div className="rounded-2xl border border-border bg-card p-3 text-center">
-                        <p className="text-2xl font-black text-emerald-400">
-                            +{totalProgress > 0 ? totalProgress.toFixed(0) : '0'}{weightUnit}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground">Progreso total</p>
-                    </div>
-                    <div className="rounded-2xl border border-border bg-card p-3 text-center">
-                        <p className="text-2xl font-black text-amber-400">
-                            {streak > 0 ? `${streak}🔥` : '0'}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground">Racha</p>
-                    </div>
                 </div>
 
                 {/* ── CTA Entrenar ── */}
@@ -335,102 +267,17 @@ export default async function AppHomePage() {
                     </div>
                 )}
 
-                {/* ── Mejor ejercicio ── */}
-                {bestExercise && (
-                    <Link
-                        href="/app/progress"
-                        className="block rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.04] p-4 transition active:scale-[0.98]"
-                    >
-                        <div className="flex items-start justify-between gap-3">
-                            <div>
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-500">
-                                    Mejor progreso
-                                </p>
-                                <p className="mt-1 text-sm font-bold text-card-foreground">
-                                    {bestExercise.exerciseName}
-                                </p>
-                                <p className="mt-0.5 text-xs text-muted-foreground">
-                                    {bestExercise.firstWeight}{weightUnit} → {bestExercise.bestWeight}{weightUnit}
-                                </p>
-                            </div>
-                            <div className="text-right">
-                                <p className="text-2xl font-black text-emerald-500">
-                                    +{bestExercise.progressKg}{weightUnit}
-                                </p>
-                                <p className="text-[10px] text-emerald-500/70">
-                                    +{bestExercise.progressPercent}%
-                                </p>
-                            </div>
-                        </div>
-                    </Link>
-                )}
-
-                {/* ── PRs recientes ── */}
-                {recentPRs.length > 1 && (
-                    <div className="rounded-2xl border border-border bg-card p-4">
-                        <div className="flex items-center justify-between">
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                                Ejercicios con progreso
-                            </p>
-                            <Link href="/app/progress" className="text-[10px] font-medium text-indigo-500">
-                                Ver todo →
-                            </Link>
-                        </div>
-                        <div className="mt-3 space-y-2">
-                            {recentPRs.map((pr, idx) => (
-                                <div
-                                    key={idx}
-                                    className="flex items-center justify-between rounded-xl bg-muted/40 px-3 py-2"
-                                >
-                                    <p className="text-xs font-medium text-card-foreground">{pr.exerciseName}</p>
-                                    <p className="text-xs font-bold text-emerald-500">+{pr.progressKg}{weightUnit}</p>
-                                </div>
-                            ))}
-                        </div>
+                <Link
+                    href="/app/logros"
+                    prefetch={true}
+                    className="flex items-center justify-between rounded-xl border border-amber-500/20 bg-amber-500/[0.04] px-3.5 py-3 transition active:scale-[0.98]"
+                >
+                    <div>
+                        <p className="text-sm font-bold text-card-foreground">🏆 Mis logros</p>
+                        <p className="text-[10px] text-muted-foreground">Constancia y objetivos alcanzados</p>
                     </div>
-                )}
-
-                {/* ── Accesos rápidos ── */}
-                <div className="grid grid-cols-2 gap-3">
-                    <Link
-                        href="/app/progress"
-                        className="rounded-2xl border border-border bg-card p-4 transition hover:bg-muted/40 active:scale-[0.97]"
-                    >
-                        <p className="text-xl">📈</p>
-                        <p className="mt-2 text-sm font-bold text-card-foreground">Mi progreso</p>
-                        <p className="mt-0.5 text-[10px] text-muted-foreground">
-                            {progressData.length} ejercicios tracked
-                        </p>
-                    </Link>
-
-                    <Link
-                        href="/app/history"
-                        className="rounded-2xl border border-border bg-card p-4 transition hover:bg-muted/40 active:scale-[0.97]"
-                    >
-                        <p className="text-xl">🗓</p>
-                        <p className="mt-2 text-sm font-bold text-card-foreground">Historial</p>
-                        <p className="mt-0.5 text-[10px] text-muted-foreground">
-                            {sessions.length > 0
-                                ? `${sessions.length} sesiones`
-                                : 'Sin sesiones aún'}
-                        </p>
-                    </Link>
-
-                    <Link
-                        href="/app/logros"
-                        className="col-span-2 rounded-2xl border border-amber-500/20 bg-amber-500/[0.04] p-4 transition hover:bg-amber-500/[0.07] active:scale-[0.97]"
-                    >
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm font-bold text-card-foreground">🏆 Mis logros</p>
-                                <p className="mt-0.5 text-[10px] text-muted-foreground">
-                                    Hitos y badges desbloqueados
-                                </p>
-                            </div>
-                            <span className="text-xl">→</span>
-                        </div>
-                    </Link>
-                </div>
+                    <span className="text-amber-400">→</span>
+                </Link>
             </div>
         </div>
     )

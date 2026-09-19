@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { startWorkoutSession } from '@/app/dashboard/students/[studentId]/train/workout-session'
 import { getExerciseMaxWeights } from '@/app/dashboard/students/[studentId]/train/train-focused-actions'
@@ -7,6 +8,7 @@ import { getRoutineSchedule } from '@/lib/getRoutineSchedule'
 import { getStudentRoutineWeekProgress } from '@/lib/studentRoutineWeekProgress'
 import { getBuenosAiresDateString } from '@/lib/buenosAiresDate'
 import { getActiveStudentRoutine } from '@/lib/getActiveStudentRoutine'
+import { getStudentAppContext } from '@/lib/auth/student'
 
 type PageProps = {
     searchParams?: Promise<{
@@ -56,17 +58,9 @@ function normalizeBlock(block: string | null): RoutineBlock {
 export default async function AppTrainPage(props: PageProps) {
     const searchParams = await props.searchParams;
     const supabase = await createClient()
-
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) redirect('/login')
-
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('name, student_id')
-        .eq('id', user.id)
-        .single()
-
-    const studentId = profile?.student_id
+    const context = await getStudentAppContext()
+    if (!context) redirect('/login')
+    const studentId = context.profile.student_id
     if (!studentId) redirect('/app')
 
     const { data: student } = await supabase
@@ -345,16 +339,17 @@ export default async function AppTrainPage(props: PageProps) {
                             const label = day.name?.trim() || `Día ${day.day_index ?? idx + 1}`
                             const isActive = day.id === selectedDayId
                             return (
-                                <a
+                                <Link
                                     key={day.id}
                                     href={`/app/train?${selectedMonth ? `month=${selectedMonth.id}&` : ''}week=${selectedWeek?.id}&day=${day.id}`}
+                                    prefetch={true}
                                     className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition ${isActive
                                             ? 'bg-indigo-600 text-white'
                                             : 'border border-border bg-secondary text-secondary-foreground hover:bg-muted'
                                         }`}
                                 >
                                     {label}
-                                </a>
+                                </Link>
                             )
                         })}
                     </div>
@@ -372,7 +367,9 @@ export default async function AppTrainPage(props: PageProps) {
                 exercises={focusedExercises}
                 maxWeights={maxWeights}
                 weightUnit="kg"
-                returnHref="/app"
+                returnHref={`/app/rutina?${selectedMonth ? `month=${selectedMonth.id}&` : ''}week=${selectedWeek?.id}`}
+                returnLabel="Volver a la rutina"
+                routineHref={`/app/rutina?${selectedMonth ? `month=${selectedMonth.id}&` : ''}week=${selectedWeek?.id}`}
                 progressHref="/app/progress"
                 showPrs={true}
                 initialPhase={sessionJustCompleted ? 'summary' : 'training'}

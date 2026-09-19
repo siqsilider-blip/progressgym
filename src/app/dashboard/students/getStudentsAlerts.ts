@@ -28,7 +28,7 @@ export async function getStudentsAlerts(): Promise<StudentAlert[]> {
 
     for (const { student, risk } of results) {
         if (!risk) continue
-        if (risk.level === 'critical' || risk.level === 'high') {
+        if (risk && (risk.level === 'critical' || risk.level === 'high')) {
             alerts.push({
                 id: student.id,
                 name: student.first_name ?? 'Alumno',

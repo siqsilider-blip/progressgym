@@ -1,14 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { getStudentAdherence } from '../getStudentAdherence'
-import { getStudentStagnation } from '../getStudentStagnation'
-import { getStudentBestProgress } from '../getStudentBestProgress'
-import { getStudentRecentPRs } from '../getStudentRecentPRs'
-import StudentAdherenceCard from '../StudentAdherenceCard'
-import StudentStagnationCard from '../StudentStagnationCard'
-import StudentBestProgressCard from '../StudentBestProgressCard'
-import StudentRecentPRsCard from '../StudentRecentPRsCard'
 import StudentRiskCard from './StudentRiskCard'
 import { getStudentRisk } from './getStudentRisk'
 import DeleteStudentButton from './DeleteStudentButton'
@@ -46,13 +38,8 @@ export default async function StudentProfilePage(props: PageProps) {
         return <div className="p-6">No se encontró el alumno.</div>
     }
 
-    const [adherence, stagnation, bestPR, recentPRs, risk, trainerProfile, routineAssignment, linkedProfile] = await Promise.all([
-        getStudentAdherence(studentId),
-        getStudentStagnation(studentId),
-        getStudentBestProgress(studentId),
-        getStudentRecentPRs(studentId),
+    const [risk, routineAssignment, linkedProfile] = await Promise.all([
         getStudentRisk(studentId),
-        supabase.from('trainer_profiles').select('show_prs').eq('user_id', user.id).maybeSingle(),
         supabase.from('student_routines').select('routine_id, program_started_on').eq('student_id', studentId).eq('status', 'active').maybeSingle(),
         supabase.from('profiles').select('id, email').eq('student_id', studentId).maybeSingle(),
     ])
@@ -85,8 +72,6 @@ export default async function StudentProfilePage(props: PageProps) {
 
     const trainHref = `/dashboard/students/${params.studentId}/train`
 
-    const showPrs = trainerProfile.data?.show_prs ?? true
-
     const fullName =
         `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim() || 'Alumno'
 
@@ -96,18 +81,6 @@ export default async function StudentProfilePage(props: PageProps) {
                 title={fullName}
                 subtitle="Perfil del alumno"
                 backHref="/dashboard/students"
-                action={risk && (
-                    <span className={`mt-1 shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold ${
-                        risk.level === 'critical' ? 'border-red-500/30 bg-red-500/10 text-red-400' :
-                        risk.level === 'high' ? 'border-orange-500/30 bg-orange-500/10 text-orange-400' :
-                        risk.level === 'medium' ? 'border-yellow-500/30 bg-yellow-500/10 text-yellow-300' :
-                        'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
-                    }`}>
-                        {risk.level === 'critical' ? 'Crítico' :
-                         risk.level === 'high' ? 'Alto' :
-                         risk.level === 'medium' ? 'Medio' : 'Bajo'}
-                    </span>
-                )}
             />
 
             {assignedRoutineId && programStartedOn && activeRoutineName && (
@@ -128,39 +101,26 @@ export default async function StudentProfilePage(props: PageProps) {
 
             <StudentRiskCard risk={risk} />
 
-            <div className="grid gap-3 lg:grid-cols-2">
-                <StudentAdherenceCard
-                    adherence={{
-                        completedSessions: adherence?.completedSessions ?? 0,
-                        plannedSessions: adherence?.plannedSessions ?? 0,
-                        percentage: adherence?.percentage ?? 0,
-                    }}
+            {!linkedProfile.data?.id && (
+                <LinkStudentAccountForm
+                    studentId={params.studentId}
+                    isLinked={false}
                 />
+            )}
 
-                <StudentStagnationCard
-                    stagnation={stagnation}
-                />
-            </div>
-
-            <StudentBestProgressCard
-                bestProgress={bestPR}
-                weightUnit="kg"
-                showPrs={showPrs}
-            />
-
-            <StudentRecentPRsCard
-                prs={recentPRs}
-                weightUnit="kg"
-                showPrs={showPrs}
-            />
-
-            <LinkStudentAccountForm
-                studentId={params.studentId}
-                isLinked={!!linkedProfile.data?.id}
-                linkedEmail={linkedProfile.data?.email}
-            />
-
-            <DeleteStudentButton studentId={params.studentId} />
+            <details className="rounded-xl border border-border bg-card px-3.5 py-3 text-sm">
+                <summary className="cursor-pointer font-semibold text-muted-foreground">Más opciones</summary>
+                <div className="mt-3 space-y-3 border-t border-border pt-3">
+                    {linkedProfile.data?.id && (
+                        <LinkStudentAccountForm
+                            studentId={params.studentId}
+                            isLinked
+                            linkedEmail={linkedProfile.data.email}
+                        />
+                    )}
+                    <DeleteStudentButton studentId={params.studentId} />
+                </div>
+            </details>
 
             <div className="fixed bottom-16 left-0 right-0 z-30 border-t border-border bg-background/95 backdrop-blur md:bottom-0">
                 <div className="mx-auto grid max-w-xl grid-cols-2 gap-2 px-4 py-3">

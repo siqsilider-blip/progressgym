@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getStudentSessionHistory } from '@/app/dashboard/students/getStudentSessionHistory'
 import { formatWeight, type WeightUnit } from '@/lib/weight'
+import StudentPageHeader from '@/components/student/StudentPageHeader'
+import { getStudentAppContext } from '@/lib/auth/student'
 
 function formatDate(dateStr: string) {
     const d = new Date(dateStr + 'T00:00:00')
@@ -29,16 +31,9 @@ function groupByMonth(sessions: Awaited<ReturnType<typeof getStudentSessionHisto
 
 export default async function AppHistoryPage() {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) redirect('/login')
-
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('student_id')
-        .eq('id', user.id)
-        .single()
-
-    const studentId = profile?.student_id
+    const context = await getStudentAppContext()
+    if (!context) redirect('/login')
+    const studentId = context.profile.student_id
     if (!studentId) redirect('/app')
 
     const { data: student } = await supabase
@@ -65,31 +60,26 @@ export default async function AppHistoryPage() {
     return (
         <div className="p-4 pb-24 md:p-6">
             <div className="mx-auto max-w-2xl">
-                <div className="mb-5 flex items-start justify-between gap-3">
-                    <div>
-                        <h1 className="text-2xl font-black text-foreground">Historial</h1>
-                        <p className="mt-0.5 text-sm text-muted-foreground">Sesiones completadas</p>
-                    </div>
-                    {sessions.length > 0 && (
-                        <div className="text-right">
-                            <p className="text-3xl font-black text-indigo-500">{sessions.length}</p>
-                            <p className="text-xs text-muted-foreground">sesiones</p>
-                        </div>
-                    )}
+                <div className="mb-4">
+                    <StudentPageHeader
+                        title="Historial"
+                        subtitle="Sesiones completadas"
+                        action={sessions.length > 0 ? <span className="text-sm font-bold text-indigo-400">{sessions.length} sesiones</span> : null}
+                    />
                 </div>
 
                 {sessions.length > 0 && (
-                    <div className="mb-5 grid grid-cols-3 gap-2">
-                        <div className="rounded-2xl border border-border bg-card p-3 text-center">
-                            <p className="text-xl font-black text-indigo-400">{sessions.length}</p>
+                    <div className="mb-4 grid grid-cols-3 gap-2">
+                        <div className="rounded-xl border border-border bg-card p-2.5 text-center">
+                            <p className="text-base font-black text-indigo-400">{sessions.length}</p>
                             <p className="text-[10px] text-muted-foreground">Sesiones</p>
                         </div>
-                        <div className="rounded-2xl border border-border bg-card p-3 text-center">
-                            <p className="text-xl font-black text-emerald-400">{totalSets}</p>
+                        <div className="rounded-xl border border-border bg-card p-2.5 text-center">
+                            <p className="text-base font-black text-emerald-400">{totalSets}</p>
                             <p className="text-[10px] text-muted-foreground">Series totales</p>
                         </div>
-                        <div className="rounded-2xl border border-border bg-card p-3 text-center">
-                            <p className="text-xl font-black text-amber-400">{avgDuration ? `${avgDuration}m` : '—'}</p>
+                        <div className="rounded-xl border border-border bg-card p-2.5 text-center">
+                            <p className="text-base font-black text-amber-400">{avgDuration ? `${avgDuration}m` : '—'}</p>
                             <p className="text-[10px] text-muted-foreground">Duración media</p>
                         </div>
                     </div>
@@ -108,7 +98,7 @@ export default async function AppHistoryPage() {
                                 <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">{monthLabel}</p>
                                 <div className="space-y-2.5">
                                     {monthSessions.map((session) => (
-                                        <div key={session.sessionId} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+                                        <div key={session.sessionId} className="rounded-xl border border-border bg-card p-3.5">
                                             <div className="flex items-start justify-between gap-3">
                                                 <div>
                                                     <p className="text-sm font-bold text-card-foreground">{session.dayLabel}</p>

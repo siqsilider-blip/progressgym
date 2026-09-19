@@ -1,24 +1,22 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { Suspense } from 'react'
 import StudentAppShell from './StudentAppShell'
+import StudentNavigationTracker from '@/components/student/StudentNavigationTracker'
+import { getStudentAppContext } from '@/lib/auth/student'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) redirect('/login')
-
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('role, student_id')
-        .eq('id', user.id)
-        .maybeSingle()
+    const context = await getStudentAppContext()
+    if (!context) redirect('/login')
+    const { profile } = context
 
     if (profile?.role === 'trainer') redirect('/dashboard')
     if (profile?.role !== 'student') redirect('/login')
 
     return (
         <StudentAppShell studentId={profile.student_id}>
+            <Suspense fallback={null}>
+                <StudentNavigationTracker />
+            </Suspense>
             {children}
         </StudentAppShell>
     )

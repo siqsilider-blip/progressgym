@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import StudentsList from '@/components/StudentsList'
-import { getStudentsRiskBatch, fallbackRisk } from './[studentId]/getStudentRisk'
+import { getStudentsRiskBatch } from './[studentId]/getStudentRisk'
 import { getElapsedProgramWeekIndex } from '@/lib/buenosAiresDate'
 import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
 import { getServerUser } from '@/lib/auth/server'
@@ -19,7 +19,7 @@ type Student = {
     email: string | null
     active_plan: string | null
     created_at: string | null
-    risk: StudentRisk
+    risk: StudentRisk | null
 }
 
 type StudentRow = Omit<Student, 'risk'>
@@ -70,13 +70,17 @@ export default async function StudentsPage() {
     const riskMap = await getStudentsRiskBatch(students.map((s) => s.id))
     const studentsWithRisk = students.map((student) => ({
         ...student,
-        risk: riskMap.get(student.id) ?? fallbackRisk(),
+        risk: riskMap.get(student.id) ?? null,
     }))
 
-    studentsWithRisk.sort((a, b) => b.risk.score - a.risk.score)
+    studentsWithRisk.sort((a, b) => (b.risk?.score ?? -1) - (a.risk?.score ?? -1))
 
     const summary = studentsWithRisk.reduce(
-        (acc, s) => { acc.total++; acc[s.risk.level]++; return acc },
+        (acc, s) => {
+            acc.total++
+            if (s.risk) acc[s.risk.level]++
+            return acc
+        },
         { total: 0, low: 0, medium: 0, high: 0, critical: 0 }
     )
 
@@ -229,7 +233,7 @@ export default async function StudentsPage() {
                             {studentsWithRisk.map((student) => {
                                 const fullName = `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim() || 'Sin nombre'
                                 const initials = getInitials(student.first_name, student.last_name)
-                                const riskStyles = getRiskStyles(student.risk.level)
+                                const riskStyles = student.risk ? getRiskStyles(student.risk.level) : null
                                 const operation = operationsByStudentId[student.id]
                                 const hasProgram = Boolean(operation?.routineId)
 
@@ -244,9 +248,13 @@ export default async function StudentsPage() {
                                         </div>
 
                                         <div className="col-span-2 flex items-center">
-                                            <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold ${riskStyles.badge}`}>
-                                                {riskStyles.label}
-                                            </span>
+                                            {riskStyles ? (
+                                                <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold ${riskStyles.badge}`}>
+                                                    {riskStyles.label}
+                                                </span>
+                                            ) : (
+                                                <span className="text-xs text-white/30">Sin datos</span>
+                                            )}
                                         </div>
 
                                         <div className="col-span-3 flex items-center">

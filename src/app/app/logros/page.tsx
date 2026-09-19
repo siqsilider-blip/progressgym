@@ -1,20 +1,12 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
 import { getStudentBadges } from '@/app/dashboard/students/getStudentBadges'
+import StudentPageHeader from '@/components/student/StudentPageHeader'
+import { getStudentAppContext } from '@/lib/auth/student'
 
 export default async function AppLogrosPage() {
-    const supabase = await createClient()
-
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) redirect('/login')
-
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('student_id')
-        .eq('id', user.id)
-        .single()
-
-    const studentId = profile?.student_id
+    const context = await getStudentAppContext()
+    if (!context) redirect('/login')
+    const studentId = context.profile.student_id
     if (!studentId) redirect('/app')
 
     const badges = await getStudentBadges(studentId)
@@ -26,25 +18,17 @@ export default async function AppLogrosPage() {
             <div className="mx-auto max-w-lg">
 
                 {/* Header */}
-                <div className="mb-5 flex items-start justify-between gap-3">
-                    <div>
-                        <h1 className="text-2xl font-black text-foreground">Logros</h1>
-                        <p className="mt-0.5 text-sm text-muted-foreground">
-                            Tu historial de hitos
-                        </p>
-                    </div>
-                    <div className="text-right">
-                        <p className="text-3xl font-black text-amber-400">
-                            {unlocked.length}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                            de {badges.length}
-                        </p>
-                    </div>
+                <div className="mb-4">
+                    <StudentPageHeader
+                        title="Logros"
+                        subtitle="Tu constancia y avances"
+                        back
+                        action={<span className="text-sm font-bold text-amber-400">{unlocked.length} de {badges.length}</span>}
+                    />
                 </div>
 
                 {/* Barra de progreso global */}
-                <div className="mb-5 rounded-2xl border border-border bg-card p-4">
+                <div className="mb-4 rounded-xl border border-border bg-card p-3.5">
                     <div className="mb-2 flex items-center justify-between">
                         <p className="text-xs font-semibold text-card-foreground">
                             Progreso general
@@ -74,9 +58,9 @@ export default async function AppLogrosPage() {
                             {unlocked.map((badge) => (
                                 <div
                                     key={badge.id}
-                                    className="flex items-center gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/[0.04] p-4"
+                                    className="flex items-center gap-3 rounded-xl border border-amber-500/20 bg-amber-500/[0.04] p-3"
                                 >
-                                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-500/10 text-2xl">
+                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-xl">
                                         {badge.emoji}
                                     </div>
                                     <div className="min-w-0 flex-1">
@@ -106,10 +90,10 @@ export default async function AppLogrosPage() {
                             {locked.map((badge) => (
                                 <div
                                     key={badge.id}
-                                    className="rounded-2xl border border-border bg-card p-4"
+                                    className="rounded-xl border border-border bg-card p-3"
                                 >
                                     <div className="flex items-center gap-3">
-                                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-muted text-2xl opacity-40 grayscale">
+                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-xl opacity-40 grayscale">
                                             {badge.emoji}
                                         </div>
                                         <div className="min-w-0 flex-1">

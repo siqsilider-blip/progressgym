@@ -15,7 +15,7 @@ type Student = {
     email: string | null
     active_plan: string | null
     created_at: string | null
-    risk: StudentRisk
+    risk: StudentRisk | null
 }
 
 export type StudentOperation = {
@@ -69,8 +69,8 @@ export default function StudentsList({ students, operationsByStudentId }: Props)
             const needsAttention =
                 !operation?.routineId ||
                 operation.isFinalWeek ||
-                s.risk.level === 'critical' ||
-                s.risk.level === 'high'
+                s.risk?.level === 'critical' ||
+                s.risk?.level === 'high'
             const matchesSearch =
                 !term ||
                 fullName.toLowerCase().includes(term) ||
@@ -152,7 +152,7 @@ export default function StudentsList({ students, operationsByStudentId }: Props)
                             `${(student.first_name?.[0] ?? '').toUpperCase()}${(student.last_name?.[0] ?? '').toUpperCase()}` || '?'
                         const operation = operationsByStudentId[student.id]
                         const hasProgram = Boolean(operation?.routineId)
-                        const { cls: riskBadgeClass, label: riskLabel } = getRiskBadge(student.risk.level)
+                        const riskBadge = student.risk ? getRiskBadge(student.risk.level) : null
                         const status = !hasProgram
                             ? { label: 'Sin programa', cls: 'border-rose-500/25 bg-rose-500/10 text-rose-300' }
                             : operation?.hasActiveSession
@@ -183,9 +183,11 @@ export default function StudentsList({ students, operationsByStudentId }: Props)
                                             </p>
                                         </div>
                                     </div>
-                                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${riskBadgeClass}`}>
-                                        Riesgo {riskLabel.toLowerCase()}
-                                    </span>
+                                    {riskBadge && (
+                                        <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${riskBadge.cls}`}>
+                                            {riskBadge.label === 'Bajo' ? 'Al día' : `Atención ${riskBadge.label.toLowerCase()}`}
+                                        </span>
+                                    )}
                                 </div>
 
                                 <div className="mt-2.5 flex items-center justify-between gap-2">

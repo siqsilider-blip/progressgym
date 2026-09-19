@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { BarChart2, CalendarDays, Clock, Home, Trophy, User } from 'lucide-react'
+import { BarChart2, CalendarDays, Clock, Home, User } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 
 const navItems = [
@@ -10,7 +10,6 @@ const navItems = [
     { href: '/app/rutina', icon: CalendarDays, label: 'Rutina', exact: false },
     { href: '/app/progress', icon: BarChart2, label: 'Progreso', exact: false },
     { href: '/app/history', icon: Clock, label: 'Historial', exact: false },
-    { href: '/app/logros', icon: Trophy, label: 'Logros', exact: false },
     { href: '/app/profile', icon: User, label: 'Perfil', exact: false },
 ]
 
@@ -59,6 +58,7 @@ export default function StudentAppShell({
                             <Link
                                 key={href}
                                 href={href}
+                                prefetch={true}
                                 className={`flex flex-col items-center gap-0.5 rounded-xl px-3 py-2 transition ${
                                     isActive
                                         ? 'text-indigo-500'

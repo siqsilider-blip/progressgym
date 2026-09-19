@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server'
 import { getRoutineSchedule } from '@/lib/getRoutineSchedule'
 import { getStudentRoutineWeekProgress } from '@/lib/studentRoutineWeekProgress'
 import { getActiveStudentRoutine } from '@/lib/getActiveStudentRoutine'
+import StudentPageHeader from '@/components/student/StudentPageHeader'
+import { getStudentAppContext } from '@/lib/auth/student'
 
 type PageProps = {
     searchParams?: Promise<{
@@ -15,17 +17,9 @@ type PageProps = {
 export default async function AppRutinePage(props: PageProps) {
     const searchParams = await props.searchParams;
     const supabase = await createClient()
-
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) redirect('/login')
-
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('student_id')
-        .eq('id', user.id)
-        .single()
-
-    const studentId = profile?.student_id
+    const context = await getStudentAppContext()
+    if (!context) redirect('/login')
+    const studentId = context.profile.student_id
     if (!studentId) redirect('/app')
 
     const assignment = await getActiveStudentRoutine(supabase, studentId)
@@ -34,7 +28,7 @@ export default async function AppRutinePage(props: PageProps) {
         return (
             <div className="p-4 pb-24">
                 <div className="mx-auto max-w-lg">
-                    <h1 className="mb-5 text-2xl font-black text-foreground">Rutina</h1>
+                    <div className="mb-4"><StudentPageHeader title="Rutina" subtitle="Tu programa actual" /></div>
                     <div className="rounded-2xl border border-dashed border-border bg-card p-8 text-center">
                         <p className="text-3xl">📋</p>
                         <p className="mt-3 text-sm font-semibold text-card-foreground">Sin rutina asignada</p>
@@ -135,20 +129,17 @@ export default async function AppRutinePage(props: PageProps) {
             <div className="mx-auto max-w-lg space-y-4">
 
                 {/* Header */}
-                <div>
-                    <h1 className="text-2xl font-black text-foreground">Rutina</h1>
-                    <p className="mt-0.5 text-sm text-muted-foreground">{routine?.name}</p>
-                    {totalProgramWeeks > 1 && (
-                        <p className="mt-1 text-xs font-semibold text-indigo-500">
-                            {selectedWeek?.id === currentWeek?.id
-                                ? `Semana actual: ${programWeekNumber} de ${totalProgramWeeks}`
-                                : `Revisando semana ${selectedProgramWeekNumber} de ${totalProgramWeeks}`}
-                        </p>
-                    )}
-                </div>
+                <StudentPageHeader
+                    title="Rutina"
+                    subtitle={`${routine?.name ?? 'Programa'}${totalProgramWeeks > 1
+                        ? selectedWeek?.id === currentWeek?.id
+                            ? ` · Semana ${programWeekNumber} de ${totalProgramWeeks}`
+                            : ` · Viendo semana ${selectedProgramWeekNumber}`
+                        : ''}`}
+                />
 
                 {trainingDayIds.length > 0 && (
-                    <div className="rounded-2xl border border-border bg-card p-4">
+                    <div className="rounded-xl border border-border bg-card p-3.5">
                         <div className="flex items-center justify-between gap-3">
                             <div>
                                 <p className="text-sm font-bold text-card-foreground">
@@ -244,7 +235,7 @@ export default async function AppRutinePage(props: PageProps) {
                             return (
                                 <div
                                     key={day.id}
-                                    className={`overflow-hidden rounded-2xl border ${hasExercises
+                                    className={`overflow-hidden rounded-xl border ${hasExercises
                                             ? isCompleted
                                                 ? 'border-emerald-500/30 bg-emerald-500/[0.04] shadow-sm'
                                                 : isInProgress
@@ -253,7 +244,7 @@ export default async function AppRutinePage(props: PageProps) {
                                             : 'border-dashed border-border bg-card/50 opacity-60'
                                         }`}
                                 >
-                                    <div className="p-4">
+                                    <div className="p-3.5">
                                         <div className="flex items-start justify-between gap-3">
                                             <div>
                                                 <p className="text-sm font-bold text-card-foreground">
@@ -292,10 +283,10 @@ export default async function AppRutinePage(props: PageProps) {
 
                                         {hasExercises && (
                                             <div className="mt-3 space-y-1.5">
-                                                {dayExercises.map((ex, idx) => (
+                                                {dayExercises.slice(0, 3).map((ex, idx) => (
                                                     <div
                                                         key={idx}
-                                                        className="flex items-center justify-between rounded-xl bg-muted/40 px-3 py-2"
+                                                        className="flex items-center justify-between rounded-lg bg-muted/40 px-2.5 py-1.5"
                                                     >
                                                         <div className="flex items-center gap-2">
                                                             <span className="flex h-5 w-5 items-center justify-center rounded-md bg-indigo-500/10 text-[9px] font-bold text-indigo-500">
@@ -310,6 +301,11 @@ export default async function AppRutinePage(props: PageProps) {
                                                         </p>
                                                     </div>
                                                 ))}
+                                                {dayExercises.length > 3 && (
+                                                    <p className="px-2.5 pt-1 text-[10px] font-medium text-muted-foreground">
+                                                        + {dayExercises.length - 3} ejercicios más
+                                                    </p>
+                                                )}
                                             </div>
                                         )}
                                     </div>

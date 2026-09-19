@@ -48,6 +48,8 @@ type Props = {
     maxWeights: Record<string, number>
     weightUnit: string
     returnHref: string
+    returnLabel?: string
+    routineHref?: string
     progressHref: string
     showPrs?: boolean
     initialPhase?: Phase
@@ -78,6 +80,8 @@ export default function TrainFocusedView({
     maxWeights: initialMaxWeights,
     weightUnit,
     returnHref,
+    returnLabel = 'Ir al perfil',
+    routineHref,
     progressHref,
     showPrs = true,
     initialPhase,
@@ -603,7 +607,7 @@ export default function TrainFocusedView({
                             onClick={() => router.push(returnHref)}
                             className="w-full rounded-2xl bg-emerald-600 px-4 py-3.5 text-center text-sm font-semibold text-white transition hover:bg-emerald-500 active:scale-[0.97]"
                         >
-                            Ir al perfil
+                            {returnLabel}
                         </button>
                         <div className="grid grid-cols-2 gap-2">
                             <button
@@ -615,7 +619,7 @@ export default function TrainFocusedView({
                             </button>
                             <button
                                 type="button"
-                                onClick={() => router.push(returnHref.replace('/train', ''))}
+                                onClick={() => router.push(routineHref ?? returnHref.replace('/train', ''))}
                                 className="rounded-2xl border border-border bg-secondary px-4 py-3 text-center text-sm font-medium text-secondary-foreground transition hover:bg-muted active:scale-[0.97]"
                             >
                                 Ver rutina
