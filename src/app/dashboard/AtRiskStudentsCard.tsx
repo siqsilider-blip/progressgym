@@ -1,5 +1,4 @@
 import { cookies } from 'next/headers'
-import Link from 'next/link'
 import { AlertTriangle, CircleStop, Flag, ListChecks, UserMinus, UserX } from 'lucide-react'
 import AppBadge from '@/components/ui/app-badge'
 import type { TrainerAlert } from './getTrainerAlerts'
@@ -96,6 +95,37 @@ export default async function AtRiskStudentsCard({
     const isLight = theme === 'light'
 
     const atRiskAlerts = alerts.slice(0, 3)
+    const remainingAlerts = alerts.slice(3)
+
+    function renderAlert(alert: TrainerAlert) {
+        const meta = getRiskMeta(alert.type, isLight)
+        const Icon = meta.icon
+
+        return (
+            <div
+                key={`${alert.type}-${alert.studentId}`}
+                className={`rounded-xl border p-3 transition ${meta.cardClassName}`}
+            >
+                <div className="flex min-w-0 items-start gap-2.5">
+                    <div className={`mt-0.5 rounded-lg p-1.5 ${meta.iconBgClassName}`}>
+                        <Icon className={`h-3.5 w-3.5 ${meta.iconClassName}`} />
+                    </div>
+
+                    <div className="min-w-0">
+                        <AppBadge className={meta.badgeClassName}>
+                            {meta.label}
+                        </AppBadge>
+
+                        <p className="mt-1.5 text-xs leading-5 text-card-foreground">
+                            {alert.message}
+                        </p>
+
+                        <FollowUpActions alert={alert} />
+                    </div>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <section className="rounded-2xl border p-4" style={{ borderColor: 'rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)' }}>
@@ -126,49 +156,23 @@ export default async function AtRiskStudentsCard({
                 </div>
             ) : (
                 <div className="space-y-2">
-                    {atRiskAlerts.map((alert) => {
-                        const meta = getRiskMeta(alert.type, isLight)
-                        const Icon = meta.icon
-
-                        return (
-                            <div
-                                key={`${alert.type}-${alert.studentId}`}
-                                className={`rounded-xl border p-3 transition ${meta.cardClassName}`}
-                            >
-                                <div className="flex min-w-0 items-start gap-2.5">
-                                        <div
-                                            className={`mt-0.5 rounded-lg p-1.5 ${meta.iconBgClassName}`}
-                                        >
-                                            <Icon
-                                                className={`h-3.5 w-3.5 ${meta.iconClassName}`}
-                                            />
-                                        </div>
-
-                                        <div className="min-w-0">
-                                            <AppBadge className={meta.badgeClassName}>
-                                                {meta.label}
-                                            </AppBadge>
-
-                                            <p className="mt-1.5 text-xs leading-5 text-card-foreground">
-                                                {alert.message}
-                                            </p>
-
-                                            <FollowUpActions alert={alert} />
-                                        </div>
-                                    </div>
-                            </div>
-                        )
-                    })}
+                    {atRiskAlerts.map(renderAlert)}
                 </div>
             )}
 
-            {alerts.length > atRiskAlerts.length && (
-                <Link
-                    href="/dashboard/students"
-                    className="mt-3 block text-center text-[11px] font-medium text-white/35 transition hover:text-white/70"
-                >
-                    Ver las {alerts.length} prioridades
-                </Link>
+            {remainingAlerts.length > 0 && (
+                <details className="group mt-2">
+                    <summary className="cursor-pointer list-none rounded-lg py-2 text-center text-[11px] font-medium text-white/40 transition hover:bg-white/[0.03] hover:text-white/70 [&::-webkit-details-marker]:hidden">
+                        <span className="group-open:hidden">
+                            Ver las {alerts.length} prioridades
+                        </span>
+                        <span className="hidden group-open:inline">Ver menos</span>
+                    </summary>
+
+                    <div className="mt-2 space-y-2">
+                        {remainingAlerts.map(renderAlert)}
+                    </div>
+                </details>
             )}
         </section>
     )
