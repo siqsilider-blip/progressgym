@@ -46,7 +46,7 @@ export default function ProgramScheduleCard({
     }
 
     return (
-        <section className="rounded-2xl border border-border bg-card p-4">
+        <section className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-3">
             <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                     <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-500">

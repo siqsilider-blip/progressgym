@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { ClipboardList, Plus, Search, X } from 'lucide-react'
+import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
 
 type TemplateRow = {
     id: string
@@ -103,32 +104,23 @@ export default async function TemplatesListPage(props: PageProps) {
     }
 
     return (
-        <div className="px-4 pb-24 text-foreground md:p-8">
-            <div className="mb-6 flex flex-col gap-4 md:mb-8 md:flex-row md:items-start md:justify-between">
-                <div>
-                    <p className="text-xs font-medium uppercase tracking-wide text-indigo-400">
-                        Templates
-                    </p>
-                    <h1 className="mt-1 text-2xl font-bold md:text-3xl">
-                        Tus templates
-                    </h1>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                        Programas reutilizables, sin alumno asignado todavía.
-                        Asignalos cuando quieras para crear una copia
-                        independiente.
-                    </p>
-                </div>
+        <div className="mx-auto max-w-3xl space-y-4 px-4 pb-24 text-foreground md:p-6">
+            <DashboardPageHeader
+                title="Templates"
+                subtitle={`${templateList.length} programas reutilizables`}
+                backHref="/dashboard/routines"
+                action={
+                    <Link
+                        href="/dashboard/templates/new"
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-indigo-500"
+                    >
+                        <Plus className="h-3.5 w-3.5" />
+                        Nuevo
+                    </Link>
+                }
+            />
 
-                <Link
-                    href="/dashboard/templates/new"
-                    className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500"
-                >
-                    <Plus className="h-4 w-4" />
-                    Nuevo template
-                </Link>
-            </div>
-
-            <form method="get" className="mb-5 flex gap-2" role="search">
+            <form method="get" className="flex gap-2" role="search">
                 <label className="relative min-w-0 flex-1">
                     <span className="sr-only">Buscar templates</span>
                     <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -188,13 +180,13 @@ export default async function TemplatesListPage(props: PageProps) {
                     </Link>
                 </div>
             ) : (
-                <div className="space-y-3">
+                <div className="space-y-2">
                     {templateList.map((template) => {
                         const stats = statsByTemplate.get(template.id) ?? { weeks: 0, exercises: 0 }
                         return (
                             <div
                                 key={template.id}
-                                className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 transition hover:border-indigo-300 hover:bg-muted/40"
+                                className="flex items-center gap-3 rounded-xl border border-white/[0.07] bg-white/[0.025] p-3 transition hover:border-indigo-500/30 hover:bg-white/[0.04]"
                             >
                                 <Link href={`/dashboard/routines/${template.id}`} className="min-w-0 flex-1">
                                     <p className="truncate text-base font-semibold text-card-foreground">

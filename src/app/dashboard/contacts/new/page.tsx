@@ -1,10 +1,10 @@
 'use client';
 import { use } from "react";
 
-import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
 import { createContact } from '@/app/dashboard/contacts/actions'
 import { useFormStatus } from 'react-dom'
+import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
+import DashboardBackButton from '@/components/dashboard/DashboardBackButton'
 
 function SubmitButton() {
     const { pending } = useFormStatus()
@@ -32,28 +32,16 @@ export default function NewContactPage(
     const message = searchParams?.message
 
     return (
-        <div className="p-4 md:p-8">
-            <div className="mx-auto max-w-2xl pt-4">
-                <div className="mb-8 text-left">
-                    <Link
-                        href="/dashboard/contacts"
-                        className="inline-flex items-center text-sm font-medium text-zinc-500 transition-colors hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
-                    >
-                        <ArrowLeft className="mr-2 h-4 w-4" />
-                        Volver a contactos
-                    </Link>
+        <div className="p-4 pb-24 md:p-6">
+            <div className="mx-auto max-w-2xl space-y-4">
+                <DashboardPageHeader
+                    title="Nuevo contacto"
+                    subtitle="Potencial cliente para seguimiento"
+                    backHref="/dashboard/contacts"
+                />
 
-                    <h1 className="mt-4 text-3xl font-bold tracking-tight text-zinc-900 dark:text-white md:text-4xl">
-                        Nuevo contacto
-                    </h1>
-
-                    <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-                        Registrá un potencial cliente o alumno para hacer seguimiento.
-                    </p>
-                </div>
-
-                <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80 md:p-7">
-                    <form className="space-y-5" action={createContact}>
+                <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-4">
+                    <form className="space-y-4" action={createContact}>
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
                                 Nombre completo
@@ -153,12 +141,7 @@ export default function NewContactPage(
                         )}
 
                         <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
-                            <Link
-                                href="/dashboard/contacts"
-                                className="flex h-11 items-center justify-center rounded-xl border border-zinc-200 px-5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
-                            >
-                                Cancelar
-                            </Link>
+                            <DashboardBackButton fallbackHref="/dashboard/contacts" label="Cancelar" />
 
                             <SubmitButton />
                         </div>

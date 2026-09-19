@@ -9,7 +9,7 @@ export type RecentWorkoutActivityItem = {
     performedAt: string | null
 }
 
-export async function getRecentWorkoutActivity(): Promise<
+export async function getRecentWorkoutActivity(limit = 10): Promise<
     RecentWorkoutActivityItem[]
 > {
     const supabase = await createClient()
@@ -41,7 +41,7 @@ export async function getRecentWorkoutActivity(): Promise<
         .in('student_id', studentIds)
         .not('weight', 'is', null)
         .order('performed_at', { ascending: false })
-        .limit(10)
+        .limit(limit)
 
     if (!logs || logs.length === 0) return []
 

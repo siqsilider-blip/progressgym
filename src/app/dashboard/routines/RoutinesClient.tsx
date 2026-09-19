@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
+import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
 
 type Student = {
     id: string
@@ -80,39 +81,22 @@ export default function RoutinesClient({ students, routines, error }: Props) {
     }
 
     return (
-        <div className="bg-background p-4 pb-24 md:p-8">
-            <div className="mx-auto max-w-xl space-y-6">
+        <div className="bg-background p-4 pb-24 md:p-6">
+            <div className="mx-auto max-w-2xl space-y-4">
 
                 {/* Header */}
-                <div className="space-y-3">
-                    <div className="flex items-start justify-between gap-3">
-                        <div>
-                            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-indigo-500">
-                                Progrezzia
-                            </p>
-                            <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-foreground">
-                                Rutinas
-                            </h1>
-                            <p className="mt-1.5 text-sm text-muted-foreground">
-                                {totalWithRoutine} con rutina · {totalWithoutRoutine} sin asignar
-                            </p>
-                        </div>
-                        <div className="flex flex-col items-end gap-2">
-                            <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${totalWithoutRoutine === 0
-                                    ? 'bg-emerald-500/10 text-emerald-500 ring-1 ring-emerald-500/30'
-                                    : 'bg-amber-500/10 text-amber-500 ring-1 ring-amber-500/30'
-                                }`}>
-                                {totalWithoutRoutine === 0 ? 'Todo al día' : `${totalWithoutRoutine} pendiente${totalWithoutRoutine !== 1 ? 's' : ''}`}
-                            </span>
-                            <Link
-                                href="/dashboard/templates"
-                                className="text-sm font-medium text-indigo-500 hover:text-indigo-400"
-                            >
-                                Ver mis templates →
-                            </Link>
-                        </div>
-                    </div>
-                </div>
+                <DashboardPageHeader
+                    title="Rutinas"
+                    subtitle={`${totalWithRoutine} asignadas · ${totalWithoutRoutine} pendientes`}
+                    action={
+                        <Link
+                            href="/dashboard/templates"
+                            className="rounded-xl border border-indigo-500/20 bg-indigo-500/10 px-3 py-2 text-xs font-semibold text-indigo-400 transition hover:bg-indigo-500/15"
+                        >
+                            Templates
+                        </Link>
+                    }
+                />
 
                 {/* Buscador */}
                 <div className="relative">
@@ -127,7 +111,7 @@ export default function RoutinesClient({ students, routines, error }: Props) {
                         placeholder="Buscar por nombre..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="w-full rounded-2xl border border-border bg-muted/40 py-3.5 pl-11 pr-4 text-sm text-foreground placeholder:text-muted-foreground/60 outline-none transition focus:border-indigo-500 focus:bg-card focus:ring-2 focus:ring-indigo-500/20"
+                        className="h-10 w-full rounded-xl border border-border bg-muted/30 pl-10 pr-3 text-sm text-foreground placeholder:text-muted-foreground/60 outline-none transition focus:border-indigo-500 focus:bg-card focus:ring-1 focus:ring-indigo-500/20"
                     />
                 </div>
 
@@ -157,7 +141,7 @@ export default function RoutinesClient({ students, routines, error }: Props) {
                                 const isActive = student.active_plan === 'active' || student.active_plan === true
 
                                 return (
-                                    <div key={student.id} className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4 transition hover:bg-zinc-900/80">
+                                    <div key={student.id} className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-3 transition hover:bg-white/[0.04]">
                                         <div className="flex items-center justify-between gap-3">
                                             <div className="flex items-center gap-3">
                                                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-500/15 text-xs font-bold text-indigo-400">
@@ -172,13 +156,13 @@ export default function RoutinesClient({ students, routines, error }: Props) {
                                                 {isActive ? 'Activo' : 'Inactivo'}
                                             </span>
                                         </div>
-                                        <div className="mt-3 flex gap-2">
-                                            <a href={`/dashboard/students/${student.id}/train`} className="flex-1 rounded-xl bg-indigo-600 px-3 py-2 text-center text-xs font-semibold text-white transition hover:bg-indigo-500">
+                                        <div className="mt-2.5 flex gap-2">
+                                            <Link href={`/dashboard/students/${student.id}/train`} className="flex-1 rounded-lg bg-indigo-600 px-3 py-1.5 text-center text-[11px] font-semibold text-white transition hover:bg-indigo-500">
                                                 Entrenar
-                                            </a>
-                                            <a href={`/dashboard/routines/${routine.id}`} className="rounded-xl border border-zinc-700 bg-zinc-800/80 px-3 py-2 text-xs font-medium text-zinc-400 transition hover:bg-zinc-700">
+                                            </Link>
+                                            <Link href={`/dashboard/routines/${routine.id}`} className="rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-1.5 text-[11px] font-medium text-white/55 transition hover:bg-white/[0.07] hover:text-white">
                                                 Ver
-                                            </a>
+                                            </Link>
                                         </div>
                                     </div>
                                 )
@@ -196,7 +180,7 @@ export default function RoutinesClient({ students, routines, error }: Props) {
                                 const name = getStudentName(student)
 
                                 return (
-                                    <div key={student.id} className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4 transition hover:bg-zinc-900/80">
+                                    <div key={student.id} className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-3 transition hover:bg-white/[0.04]">
                                         <div className="flex items-center justify-between gap-3">
                                             <div className="flex items-center gap-3">
                                                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-500/15 text-xs font-bold text-indigo-400">
@@ -211,10 +195,10 @@ export default function RoutinesClient({ students, routines, error }: Props) {
                                                 Sin rutina
                                             </span>
                                         </div>
-                                        <div className="mt-3 flex gap-2">
-                                            <a href={`/dashboard/routines/new?studentId=${student.id}`} className="flex-1 rounded-xl bg-indigo-600 px-3 py-2 text-center text-xs font-semibold text-white transition hover:bg-indigo-500">
+                                        <div className="mt-2.5 flex gap-2">
+                                            <Link href={`/dashboard/routines/new?studentId=${student.id}`} className="flex-1 rounded-lg bg-indigo-600 px-3 py-1.5 text-center text-[11px] font-semibold text-white transition hover:bg-indigo-500">
                                                 Crear rutina
-                                            </a>
+                                            </Link>
                                         </div>
                                     </div>
                                 )

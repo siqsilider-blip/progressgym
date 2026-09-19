@@ -1,8 +1,8 @@
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { createRoutine } from './actions'
 import { getTrainerProfile } from '@/lib/getTrainerProfile'
+import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
 
 type PageProps = {
     searchParams: Promise<{
@@ -53,37 +53,20 @@ export default async function NewRoutinePage(props: PageProps) {
     const studentName = `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim()
 
     return (
-        <div className="px-4 pb-6 text-white md:p-8">
-            <div className="mb-6 flex flex-col gap-4 md:mb-8 md:flex-row md:items-start md:justify-between">
-                <div>
-                    <p className="text-xs font-medium uppercase tracking-wide text-indigo-400">
-                        Rutinas
-                    </p>
-
-                    <h1 className="mt-1 text-2xl font-bold md:text-3xl">
-                        Nueva rutina
-                    </h1>
-
-                    <p className="mt-2 text-sm text-zinc-400">
-                        Crear rutina para {studentName}
-                    </p>
-                </div>
-
-                <Link
-                    href="/dashboard/routines"
-                    className="inline-flex w-full items-center justify-center rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-zinc-200 transition hover:bg-zinc-800 md:w-auto"
-                >
-                    ← Volver
-                </Link>
-            </div>
+        <div className="mx-auto max-w-2xl space-y-4 px-4 pb-24 text-white md:p-6">
+            <DashboardPageHeader
+                title="Nueva rutina"
+                subtitle={`Para ${studentName}`}
+                backHref="/dashboard/routines"
+            />
 
             <form
                 action={createRoutine}
-                className="max-w-xl space-y-5 rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5 md:p-6"
+                className="max-w-xl space-y-4 rounded-xl border border-white/[0.07] bg-white/[0.025] p-4"
             >
                 <input type="hidden" name="studentId" value={studentId} />
 
-                <div className="rounded-2xl border border-zinc-800 bg-zinc-950/50 p-4">
+                <div className="rounded-xl border border-white/[0.07] bg-black/20 p-3">
                     <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
                         Alumno
                     </p>
@@ -120,7 +103,7 @@ export default async function NewRoutinePage(props: PageProps) {
                     </select>
                 </div>
 
-                <div className="rounded-2xl border border-indigo-500/20 bg-indigo-500/10 p-4">
+                <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/10 p-3">
                     <p className="text-sm font-medium text-white">
                         Se van a crear automáticamente los días de la rutina.
                     </p>

@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { ClipboardList, Play, Search, X, Zap } from 'lucide-react'
+import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
 
 type TrainStudentItem = {
     id: string
@@ -192,15 +193,14 @@ export default function TrainSelectorClient({
     ]
 
     return (
-        <div className="space-y-4 p-4 pb-24 md:p-6">
-            <div className="space-y-1 pt-1">
-                <h1 className="text-2xl font-bold leading-tight tracking-tight text-foreground">
-                    Elegir alumno
-                </h1>
-                <p className="text-sm text-muted-foreground">Quién entrenás ahora.</p>
-            </div>
+        <div className="mx-auto max-w-2xl space-y-4 p-4 pb-24 md:p-6">
+            <DashboardPageHeader
+                title="Entrenar"
+                subtitle="Elegí quién entrena ahora"
+                backHref="/dashboard"
+            />
 
-            <div className="rounded-2xl border border-border bg-card p-3">
+            <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-2">
                 <div className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2.5">
                     <Search className="h-4 w-4 text-muted-foreground" />
                     <input

@@ -10,6 +10,7 @@ import {
     Plus,
     Dumbbell,
     Settings,
+    MessageSquare,
 } from 'lucide-react'
 
 type SidebarClientProps = {
@@ -24,7 +25,7 @@ export default function SidebarClient({
     const navItems = [
         {
             href: '/dashboard',
-            label: 'Dashboard',
+            label: 'Inicio',
             mobileLabel: 'Inicio',
             icon: Home,
             match: (path: string) => path === '/dashboard',
@@ -59,6 +60,15 @@ export default function SidebarClient({
             icon: Dumbbell,
             match: (path: string) =>
                 path === '/dashboard/exercises' || path.startsWith('/dashboard/exercises/'),
+        },
+        {
+            href: '/dashboard/contacts',
+            label: 'Contactos',
+            mobileLabel: 'Contactos',
+            icon: MessageSquare,
+            mobile: false,
+            match: (path: string) =>
+                path === '/dashboard/contacts' || path.startsWith('/dashboard/contacts/'),
         },
     ]
 
@@ -158,7 +168,7 @@ export default function SidebarClient({
             {/* ── Nav mobile bottom ── */}
             <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-white/[0.06] md:hidden bg-[#07070a]/95 backdrop-blur">
                 <div className="grid grid-cols-5">
-                    {navItems.map((item) => {
+                    {navItems.filter((item) => item.mobile !== false).map((item) => {
                         const Icon = item.icon
                         const isActive = item.match(pathname)
 

@@ -27,7 +27,7 @@ export default function LinkStudentAccountForm({ studentId, isLinked, linkedEmai
     }
 
     return (
-        <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+        <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-3">
             <div className="flex items-center justify-between gap-3">
                 <div>
                     <p className="text-sm font-semibold text-card-foreground">
@@ -49,7 +49,7 @@ export default function LinkStudentAccountForm({ studentId, isLinked, linkedEmai
             </div>
 
             {!isLinked && (
-                <form onSubmit={handleSubmit} className="mt-4 flex gap-2">
+                <form onSubmit={handleSubmit} className="mt-3 flex gap-2">
                     <input
                         type="email"
                         value={email}

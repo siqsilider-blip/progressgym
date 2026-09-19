@@ -28,9 +28,9 @@ export default function ExerciseProgressCard({ exercise, weightUnit, rank }: Pro
         exercise.logs[lastIndex].weight >= exercise.logs[lastIndex - 1].weight
 
     return (
-        <div className={`overflow-hidden rounded-2xl border ${style.border} bg-card shadow-lg ${style.glow}`}>
+        <div className={`overflow-hidden rounded-xl border ${style.border} bg-white/[0.025] ${style.glow}`}>
             {/* Header */}
-            <div className="flex items-start justify-between gap-3 p-4 pb-2">
+            <div className="flex items-start justify-between gap-3 p-3 pb-1">
                 <div className="min-w-0">
                     <div className="flex items-center gap-2">
                         <span className="text-base">{style.icon}</span>
@@ -43,7 +43,7 @@ export default function ExerciseProgressCard({ exercise, weightUnit, rank }: Pro
                     </p>
                 </div>
                 <div className="shrink-0 text-right">
-                    <p className="text-2xl font-black text-emerald-500">
+                    <p className="text-xl font-black text-emerald-500">
                         +{exercise.progressKg}{weightUnit}
                     </p>
                     <p className={`text-[10px] font-semibold ${trendUp ? 'text-emerald-500' : 'text-zinc-400'}`}>

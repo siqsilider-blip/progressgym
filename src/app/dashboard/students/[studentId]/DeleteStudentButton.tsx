@@ -18,7 +18,11 @@ export default function DeleteStudentButton({ studentId }: { studentId: string }
     }
 
     return (
-        <div className="mt-6 rounded-2xl border border-red-200 bg-card p-4 dark:border-red-900/40">
+        <details className="rounded-xl border border-red-500/15 bg-red-500/[0.03] p-3">
+            <summary className="cursor-pointer list-none text-xs font-medium text-red-400/80 [&::-webkit-details-marker]:hidden">
+                Eliminar alumno
+            </summary>
+            <div className="mt-3">
             <p className="text-sm font-medium text-card-foreground">
                 Zona de peligro
             </p>
@@ -34,6 +38,7 @@ export default function DeleteStudentButton({ studentId }: { studentId: string }
             >
                 {isPending ? 'Eliminando...' : 'Eliminar alumno'}
             </button>
-        </div>
+            </div>
+        </details>
     )
 }

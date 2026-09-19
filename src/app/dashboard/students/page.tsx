@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import StudentsList from '@/components/StudentsList'
 import { getStudentsRiskBatch, fallbackRisk } from './[studentId]/getStudentRisk'
 import { getElapsedProgramWeekIndex } from '@/lib/buenosAiresDate'
+import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
 
 type StudentRisk = {
     score: number
@@ -172,31 +173,25 @@ export default async function StudentsPage() {
     }
 
     return (
-        <div className="p-4 pb-24 md:p-8">
+        <div className="mx-auto max-w-6xl space-y-4 p-4 pb-24 md:p-6">
 
             {/* Header */}
-            <div className="mb-5 flex items-start justify-between gap-4">
-                <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-500">Progrezzia</p>
-                    <h1 className="mt-0.5 text-2xl font-black tracking-tight text-white md:text-3xl">
-                        {summary.total} {summary.total === 1 ? 'alumno' : 'alumnos'}
-                    </h1>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                        {summary.critical > 0
+            <DashboardPageHeader
+                title="Alumnos"
+                subtitle={summary.critical > 0
                             ? `${summary.critical} crítico${summary.critical === 1 ? '' : 's'} · ordenados por riesgo`
                             : summary.high > 0
                                 ? `${summary.high} en riesgo alto · ordenados por riesgo`
-                                : 'Ordenados por nivel de riesgo'}
-                    </p>
-                </div>
-                <Link
-                    href="/dashboard/students/new"
-                    className="shrink-0 rounded-xl px-4 py-2.5 text-sm font-bold text-white transition hover:scale-[1.02]"
-                    style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)', boxShadow: '0 4px 16px rgba(124,58,237,0.3)' }}
-                >
-                    + Alumno
-                </Link>
-            </div>
+                                : `${summary.total} ${summary.total === 1 ? 'alumno' : 'alumnos'}`}
+                action={
+                    <Link
+                        href="/dashboard/students/new"
+                        className="rounded-xl bg-indigo-600 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-indigo-500"
+                    >
+                        + Alumno
+                    </Link>
+                }
+            />
 
             {studentsWithRisk.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-white/10 p-10 text-center">
@@ -219,7 +214,7 @@ export default async function StudentsPage() {
                     </div>
 
                     {/* Desktop */}
-                    <div className="hidden md:block overflow-hidden rounded-2xl border" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+                    <div className="hidden overflow-hidden rounded-2xl border border-white/[0.07] md:block">
                         {/* Header tabla */}
                         <div className="grid grid-cols-12 gap-4 border-b px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-white/25"
                             style={{ borderColor: 'rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)' }}>

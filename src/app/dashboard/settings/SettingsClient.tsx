@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import { User, Mail, Shield, Moon, Scale, Dumbbell, BarChart2, Bell, Building2, LogOut, Lock, Trash2 } from 'lucide-react'
 import { saveSettings, signOutAction } from './actions'
 import { type SettingsData } from './types'
+import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
 
 type Props = {
     email: string
@@ -49,18 +50,18 @@ export default function SettingsClient({ email, theme, initialSettings }: Props)
     const selectCls = `h-11 w-full rounded-xl border px-4 text-sm outline-none transition ${isLight
         ? 'border-zinc-200 bg-white text-zinc-900 focus:border-zinc-400'
         : 'border-zinc-800 bg-zinc-950 text-white focus:border-zinc-600'}`
-    const iconBox = `flex h-11 w-11 items-center justify-center rounded-xl ${isLight ? 'bg-zinc-100 text-zinc-600' : 'bg-zinc-800 text-zinc-300'}`
-    const sectionTitle = `text-base font-semibold ${isLight ? 'text-zinc-900' : 'text-white'}`
-    const sectionDesc = `mt-0.5 text-sm ${isLight ? 'text-zinc-500' : 'text-zinc-400'}`
+    const iconBox = `flex h-9 w-9 items-center justify-center rounded-lg ${isLight ? 'bg-zinc-100 text-zinc-600' : 'bg-zinc-800 text-zinc-300'}`
+    const sectionTitle = `text-sm font-semibold ${isLight ? 'text-zinc-900' : 'text-white'}`
+    const sectionDesc = `mt-0.5 text-xs ${isLight ? 'text-zinc-500' : 'text-zinc-400'}`
 
     return (
         <div className={`min-h-screen ${isLight ? 'bg-zinc-100' : 'bg-zinc-950'}`} style={{ paddingBottom: 'calc(72px + 4rem + env(safe-area-inset-bottom, 0px))' }}>
-            <div className="mx-auto w-full max-w-2xl px-4 py-6 md:px-6 md:py-8">
-                <div className="mb-6">
-                    <h1 className={`text-2xl font-bold tracking-tight ${isLight ? 'text-zinc-900' : 'text-white'}`}>
-                        Configuración
-                    </h1>
-                </div>
+            <div className="mx-auto w-full max-w-2xl space-y-4 px-4 py-4 md:px-6 md:py-6">
+                <DashboardPageHeader
+                    title="Configuración"
+                    subtitle="Preferencias de tu cuenta"
+                    backHref="/dashboard"
+                />
 
                 <div className="space-y-4">
 
@@ -175,7 +176,7 @@ export default function SettingsClient({ email, theme, initialSettings }: Props)
                     </Section>
 
                     {/* ── Cuenta ── */}
-                    <div className={`rounded-2xl border p-5 ${isLight ? 'border-zinc-200 bg-white' : 'border-zinc-800 bg-zinc-900/40'}`}>
+                    <div className={`rounded-xl border p-4 ${isLight ? 'border-zinc-200 bg-white' : 'border-zinc-800 bg-zinc-900/40'}`}>
                         <div className="flex items-start justify-between gap-4">
                             <div>
                                 <h2 className={sectionTitle}>Cuenta</h2>
@@ -273,7 +274,7 @@ function Section({
     children: React.ReactNode
 }) {
     return (
-        <div className={`rounded-2xl border p-5 shadow-sm ${card}`}>
+        <div className={`rounded-xl border p-4 ${card}`}>
             <div className="flex items-start justify-between gap-4">
                 <div>
                     <h2 className={sectionTitle}>{title}</h2>

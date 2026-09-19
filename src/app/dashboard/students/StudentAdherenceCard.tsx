@@ -11,7 +11,7 @@ export default function StudentAdherenceCard({
             : 0
 
     return (
-        <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/60">
+        <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-3">
             <div className="flex items-center justify-between">
                 <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                     Adherencia

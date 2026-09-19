@@ -1,5 +1,7 @@
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
 
 type PageProps = {
     params: Promise<{
@@ -103,15 +105,14 @@ export default async function AssignRoutinePage(props: PageProps) {
     }
 
     return (
-        <div className="p-8 text-white">
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold tracking-tight">Asignar rutina</h1>
-                <p className="mt-2 text-sm text-zinc-400">
-                    Asignar rutina a {student.first_name} {student.last_name}
-                </p>
-            </div>
+        <div className="mx-auto max-w-2xl space-y-4 p-4 pb-24 text-white md:p-6">
+            <DashboardPageHeader
+                title="Asignar rutina"
+                subtitle={`${student.first_name ?? ''} ${student.last_name ?? ''}`.trim()}
+                backHref={`/dashboard/students/${student.id}`}
+            />
 
-            <div className="max-w-xl rounded-2xl border border-zinc-800 bg-zinc-900/60 p-6">
+            <div className="max-w-xl rounded-xl border border-white/[0.07] bg-white/[0.025] p-4">
                 {routines && routines.length > 0 ? (
                     <form action={assignRoutine} className="space-y-5">
                         <input type="hidden" name="studentId" value={student.id} />
@@ -151,12 +152,12 @@ export default async function AssignRoutinePage(props: PageProps) {
                         <p className="text-zinc-300">
                             Este alumno no tiene rutinas propias creadas todavía.
                         </p>
-                        <a
+                        <Link
                             href={`/dashboard/routines/new?studentId=${student.id}`}
                             className="inline-flex rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500"
                         >
                             Crear rutina para este alumno
-                        </a>
+                        </Link>
                     </div>
                 )}
             </div>

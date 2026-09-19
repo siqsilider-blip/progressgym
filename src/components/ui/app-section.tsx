@@ -6,7 +6,7 @@ export default function AppSection({
     className?: string
 }) {
     return (
-        <div className={`rounded-2xl border border-border bg-muted/40 ${className}`}>
+        <div className={`rounded-xl border border-border bg-muted/30 ${className}`}>
             {children}
         </div>
     )

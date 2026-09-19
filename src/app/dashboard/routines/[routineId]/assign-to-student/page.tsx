@@ -1,8 +1,8 @@
-import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { assignTemplateAction } from './actions'
 import BulkAssignTemplate from './BulkAssignTemplate'
+import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
 
 type PageProps = {
     params: Promise<{
@@ -70,29 +70,12 @@ export default async function AssignTemplateToStudentPage(props: PageProps) {
     }
 
     return (
-        <div className="px-4 pb-24 text-foreground md:p-8">
-            <div className="mb-6 flex flex-col gap-2 md:mb-8">
-                <Link
-                    href={`/dashboard/routines/${params.routineId}`}
-                    className="text-sm text-muted-foreground hover:text-foreground"
-                >
-                    ← Volver al template
-                </Link>
-
-                <p className="text-xs font-medium uppercase tracking-wide text-indigo-400">
-                    Asignar template
-                </p>
-
-                <h1 className="text-2xl font-bold md:text-3xl">
-                    {template.name ?? 'Template'}
-                </h1>
-
-                <p className="text-sm text-muted-foreground">
-                    Elegí uno o varios alumnos. Cada persona recibirá una copia
-                    independiente; los cambios futuros del template no modificarán
-                    los programas ya asignados.
-                </p>
-            </div>
+        <div className="mx-auto max-w-2xl space-y-4 px-4 pb-24 text-foreground md:p-6">
+            <DashboardPageHeader
+                title="Asignar template"
+                subtitle={template.name ?? 'Template'}
+                backHref={`/dashboard/routines/${params.routineId}`}
+            />
 
             {studentList.length === 0 ? (
                 <p className="text-sm text-muted-foreground">

@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getStudentSessionHistory } from '../getStudentSessionHistory'
 import { getTrainerProfile } from '@/lib/getTrainerProfile'
 import { formatWeight, type WeightUnit } from '@/lib/weight'
+import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
 
 type PageProps = {
     params: Promise<{ studentId: string }>
@@ -76,49 +77,27 @@ export default async function StudentHistoryPage(props: PageProps) {
 
     return (
         <div className="p-4 pb-24 md:p-6">
-            <div className="mx-auto max-w-2xl">
+            <div className="mx-auto max-w-2xl space-y-4">
 
                 {/* ── Header ── */}
-                <div className="mb-5 flex items-start justify-between gap-3">
-                    <div>
-                        <Link
-                            href={`/dashboard/students/${params.studentId}`}
-                            className="text-xs text-muted-foreground transition hover:text-foreground"
-                        >
-                            ← {fullName}
-                        </Link>
-                        <h1 className="mt-1 text-2xl font-black text-foreground">
-                            Historial
-                        </h1>
-                        <p className="mt-0.5 text-sm text-muted-foreground">
-                            Sesiones completadas
-                        </p>
-                    </div>
-
-                    {totalSessions > 0 && (
-                        <div className="text-right">
-                            <p className="text-3xl font-black text-indigo-500">
-                                {totalSessions}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                                {totalSessions === 1 ? 'sesión' : 'sesiones'}
-                            </p>
-                        </div>
-                    )}
-                </div>
+                <DashboardPageHeader
+                    title="Historial"
+                    subtitle={`${fullName} · ${totalSessions} ${totalSessions === 1 ? 'sesión' : 'sesiones'}`}
+                    backHref={`/dashboard/students/${params.studentId}`}
+                />
 
                 {/* ── Stats row ── */}
                 {totalSessions > 0 && (
-                    <div className="mb-5 grid grid-cols-3 gap-2">
-                        <div className="rounded-2xl border border-border bg-card p-3 text-center">
+                    <div className="grid grid-cols-3 gap-2">
+                        <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-2.5 text-center">
                             <p className="text-xl font-black text-indigo-400">{totalSessions}</p>
                             <p className="text-[10px] text-muted-foreground">Sesiones</p>
                         </div>
-                        <div className="rounded-2xl border border-border bg-card p-3 text-center">
+                        <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-2.5 text-center">
                             <p className="text-xl font-black text-emerald-400">{totalSets}</p>
                             <p className="text-[10px] text-muted-foreground">Series totales</p>
                         </div>
-                        <div className="rounded-2xl border border-border bg-card p-3 text-center">
+                        <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-2.5 text-center">
                             <p className="text-xl font-black text-amber-400">
                                 {avgDuration ? `${avgDuration}m` : '—'}
                             </p>
@@ -156,7 +135,7 @@ export default async function StudentHistoryPage(props: PageProps) {
                                     {monthSessions.map((session) => (
                                         <div
                                             key={session.sessionId}
-                                            className="rounded-2xl border border-border bg-card p-4 shadow-sm"
+                                            className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-3"
                                         >
                                             <div className="flex items-start justify-between gap-3">
                                                 <div>

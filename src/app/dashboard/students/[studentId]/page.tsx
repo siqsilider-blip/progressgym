@@ -16,6 +16,7 @@ import LinkStudentAccountForm from './LinkStudentAccountForm'
 import ProgramScheduleCard from './ProgramScheduleCard'
 import StudentContactCard from './StudentContactCard'
 import { getRoutineSchedule } from '@/lib/getRoutineSchedule'
+import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
 
 type PageProps = {
     params: Promise<{
@@ -90,17 +91,12 @@ export default async function StudentProfilePage(props: PageProps) {
         `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim() || 'Alumno'
 
     return (
-        <div className="space-y-4 p-4 pb-36 md:p-6">
-            <div className="flex items-start justify-between gap-3">
-                <div>
-                    <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
-                        {fullName}
-                    </h1>
-                    <p className="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">
-                        Perfil del alumno
-                    </p>
-                </div>
-                {risk && (
+        <div className="mx-auto max-w-3xl space-y-3 p-4 pb-44 md:p-6">
+            <DashboardPageHeader
+                title={fullName}
+                subtitle="Perfil del alumno"
+                backHref="/dashboard/students"
+                action={risk && (
                     <span className={`mt-1 shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold ${
                         risk.level === 'critical' ? 'border-red-500/30 bg-red-500/10 text-red-400' :
                         risk.level === 'high' ? 'border-orange-500/30 bg-orange-500/10 text-orange-400' :
@@ -112,7 +108,7 @@ export default async function StudentProfilePage(props: PageProps) {
                          risk.level === 'medium' ? 'Medio' : 'Bajo'}
                     </span>
                 )}
-            </div>
+            />
 
             {assignedRoutineId && programStartedOn && activeRoutineName && (
                 <ProgramScheduleCard
@@ -132,7 +128,7 @@ export default async function StudentProfilePage(props: PageProps) {
 
             <StudentRiskCard risk={risk} />
 
-            <div className="grid gap-4 lg:grid-cols-2">
+            <div className="grid gap-3 lg:grid-cols-2">
                 <StudentAdherenceCard
                     adherence={{
                         completedSessions: adherence?.completedSessions ?? 0,
@@ -167,37 +163,37 @@ export default async function StudentProfilePage(props: PageProps) {
             <DeleteStudentButton studentId={params.studentId} />
 
             <div className="fixed bottom-16 left-0 right-0 z-30 border-t border-border bg-background/95 backdrop-blur md:bottom-0">
-                <div className="mx-auto grid max-w-xl grid-cols-3 gap-3 px-4 py-3">
+                <div className="mx-auto grid max-w-xl grid-cols-2 gap-2 px-4 py-3">
                     {assignedRoutineId ? (
                         <Link
                             href={`/dashboard/routines/${assignedRoutineId}`}
-                            className="flex-1 rounded-xl border border-border bg-secondary px-4 py-3 text-center text-sm font-medium text-secondary-foreground transition hover:bg-muted"
+                            className="rounded-xl border border-border bg-secondary px-3 py-2.5 text-center text-xs font-medium text-secondary-foreground transition hover:bg-muted"
                         >
                             Ver rutina
                         </Link>
                     ) : (
                         <Link
                             href={`/dashboard/students/${params.studentId}/assign-routine`}
-                            className="flex-1 rounded-xl border border-border bg-secondary px-4 py-3 text-center text-sm font-medium text-secondary-foreground transition hover:bg-muted"
+                            className="rounded-xl border border-border bg-secondary px-3 py-2.5 text-center text-xs font-medium text-secondary-foreground transition hover:bg-muted"
                         >
                             Asignar rutina
                         </Link>
                     )}
                     <Link
                         href={`/dashboard/students/${params.studentId}/progress`}
-                        className="flex-1 rounded-xl border border-indigo-300/40 bg-indigo-500/10 px-4 py-3 text-center text-sm font-semibold text-indigo-400 transition hover:bg-indigo-500/20"
+                        className="rounded-xl border border-indigo-300/40 bg-indigo-500/10 px-3 py-2.5 text-center text-xs font-semibold text-indigo-400 transition hover:bg-indigo-500/20"
                     >
                         📊 Progreso
                     </Link>
                     <Link
                         href={trainHref}
-                        className="flex-1 rounded-xl bg-indigo-600 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-indigo-500"
+                        className="rounded-xl bg-indigo-600 px-3 py-2.5 text-center text-xs font-semibold text-white transition hover:bg-indigo-500"
                     >
                         Entrenar
                     </Link>
                     <Link
                         href={`/dashboard/students/${params.studentId}/history`}
-                        className="col-span-2 rounded-2xl border border-border bg-secondary px-4 py-3 text-center text-sm font-medium text-secondary-foreground transition hover:bg-muted"
+                        className="rounded-xl border border-border bg-secondary px-3 py-2.5 text-center text-xs font-medium text-secondary-foreground transition hover:bg-muted"
                     >
                         Ver historial de sesiones
                     </Link>

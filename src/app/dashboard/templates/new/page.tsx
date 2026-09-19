@@ -1,7 +1,7 @@
-import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createTemplate } from './actions'
+import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
 
 export default async function NewTemplatePage() {
     const supabase = await createClient()
@@ -15,32 +15,16 @@ export default async function NewTemplatePage() {
     }
 
     return (
-        <div className="px-4 pb-6 text-foreground md:p-8">
-            <div className="mb-6 flex flex-col gap-2 md:mb-8">
-                <Link
-                    href="/dashboard/templates"
-                    className="text-sm text-muted-foreground hover:text-foreground"
-                >
-                    ← Volver a templates
-                </Link>
-
-                <p className="text-xs font-medium uppercase tracking-wide text-indigo-400">
-                    Templates
-                </p>
-
-                <h1 className="text-2xl font-bold md:text-3xl">Nuevo template</h1>
-
-                <p className="text-sm text-muted-foreground">
-                    Un template no pertenece a ningún alumno todavía. Lo armás una
-                    sola vez (meses, semanas, días, ejercicios) y después lo
-                    asignás a los alumnos que quieras, cada uno con su copia
-                    independiente.
-                </p>
-            </div>
+        <div className="mx-auto max-w-2xl space-y-4 px-4 pb-24 text-foreground md:p-6">
+            <DashboardPageHeader
+                title="Nuevo template"
+                subtitle="Programa reutilizable para varios alumnos"
+                backHref="/dashboard/templates"
+            />
 
             <form
                 action={createTemplate}
-                className="max-w-md space-y-5 rounded-2xl border border-border bg-card p-5"
+                className="max-w-md space-y-4 rounded-xl border border-white/[0.07] bg-white/[0.025] p-4"
             >
                 <div>
                     <label className="mb-2 block text-sm font-medium text-foreground">

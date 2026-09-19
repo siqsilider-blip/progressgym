@@ -94,7 +94,7 @@ export default function BulkAssignTemplate({ templateId, students, assignAction 
 
     return (
         <div className="space-y-3">
-            <div className="sticky top-0 z-10 space-y-2 rounded-2xl border border-border bg-background/95 p-3 shadow-lg backdrop-blur">
+            <div className="sticky top-0 z-10 space-y-2 rounded-xl border border-border bg-background/95 p-3 shadow-lg backdrop-blur">
                 <input
                     type="search"
                     value={search}
@@ -136,14 +136,14 @@ export default function BulkAssignTemplate({ templateId, students, assignAction 
             </div>
 
             {filtered.length === 0 ? (
-                <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">No se encontraron alumnos.</p>
+                <p className="rounded-xl border border-dashed border-border p-5 text-center text-sm text-muted-foreground">No se encontraron alumnos.</p>
             ) : filtered.map((student) => {
                 const isSelected = selected.has(student.id)
                 const result = results[student.id]
                 return (
                     <label
                         key={student.id}
-                        className={`flex cursor-pointer items-center gap-3 rounded-2xl border p-4 transition ${isSelected ? 'border-indigo-500 bg-indigo-500/5' : 'border-border bg-card hover:bg-muted/40'}`}
+                        className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition ${isSelected ? 'border-indigo-500 bg-indigo-500/5' : 'border-white/[0.07] bg-white/[0.025] hover:bg-white/[0.04]'}`}
                     >
                         <input
                             type="checkbox"

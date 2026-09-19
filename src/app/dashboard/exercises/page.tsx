@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { CirclePlay, Pencil } from 'lucide-react'
 import { createExercise, listExercises, deleteExercise, updateExercise } from './actions'
+import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
 
 type Exercise = {
     id: string
@@ -166,22 +167,21 @@ export default function ExercisesPage() {
     const selectCls = 'h-10 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none'
 
     return (
-        <div className="mx-auto max-w-xl space-y-4 p-4 pb-24 md:p-6">
+        <div className="mx-auto max-w-2xl space-y-4 p-4 pb-24 md:p-6">
             {/* Header */}
-            <div className="flex items-start justify-between gap-3">
-                <div>
-                    <p className="text-xs font-medium uppercase tracking-wide text-indigo-500">Progrezzia</p>
-                    <h1 className="mt-1 text-2xl font-bold text-foreground">Ejercicios</h1>
-                    <p className="mt-1 text-sm text-muted-foreground">Gestioná tu biblioteca de ejercicios</p>
-                </div>
-                <button
-                    type="button"
-                    onClick={() => { setShowForm(true); setError(null) }}
-                    className="mt-1 shrink-0 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500"
-                >
-                    + Nuevo
-                </button>
-            </div>
+            <DashboardPageHeader
+                title="Ejercicios"
+                subtitle={`${items.length} en tu biblioteca · ${videosMissing} sin video`}
+                action={
+                    <button
+                        type="button"
+                        onClick={() => { setShowForm(true); setError(null) }}
+                        className="rounded-xl bg-indigo-600 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-indigo-500"
+                    >
+                        + Nuevo
+                    </button>
+                }
+            />
 
             {/* Search */}
             <input
@@ -224,7 +224,7 @@ export default function ExercisesPage() {
                     {filtered.map((x) => {
                         const initials = x.name.slice(0, 2).toUpperCase()
                         return (
-                            <div key={x.id} className="flex items-center justify-between gap-3 rounded-2xl border border-zinc-800 bg-zinc-900/60 px-4 py-3 transition hover:bg-zinc-900">
+                            <div key={x.id} className="flex items-center justify-between gap-3 rounded-xl border border-white/[0.07] bg-white/[0.025] px-3 py-2.5 transition hover:bg-white/[0.04]">
                                 <div className="flex min-w-0 items-center gap-3">
                                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-500/15 text-xs font-bold text-indigo-400">
                                         {initials}
@@ -246,7 +246,7 @@ export default function ExercisesPage() {
                                         type="button"
                                         onClick={() => openEdit(x)}
                                         aria-label={`${x.trainer_id === null ? 'Agregar demostración a' : 'Editar'} ${x.name}`}
-                                        className="flex h-10 w-10 items-center justify-center rounded-xl text-zinc-400 transition hover:bg-indigo-500/10 hover:text-indigo-400"
+                                        className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-indigo-500/10 hover:text-indigo-400"
                                     >
                                         {x.trainer_id === null
                                             ? <CirclePlay className="h-5 w-5" aria-hidden="true" />

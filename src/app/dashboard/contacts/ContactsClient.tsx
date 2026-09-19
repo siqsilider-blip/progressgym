@@ -241,22 +241,22 @@ export default function ContactsClient({
     return (
         <>
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-3">
-                <div className="rounded-2xl border border-border bg-card p-4">
+            <div className="grid grid-cols-3 gap-2">
+                <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-3">
                     <p className="text-xs text-muted-foreground">Hoy</p>
-                    <p className="mt-1.5 text-2xl font-semibold text-foreground">
+                    <p className="mt-1 text-xl font-black text-foreground">
                         {stats?.pendingToday ?? 0}
                     </p>
                 </div>
-                <div className="rounded-2xl border border-border bg-card p-4">
+                <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-3">
                     <p className="text-xs text-muted-foreground">Atrasados</p>
-                    <p className={`mt-1.5 text-2xl font-semibold ${(stats?.overdue ?? 0) > 0 ? 'text-red-500' : 'text-foreground'}`}>
+                    <p className={`mt-1 text-xl font-black ${(stats?.overdue ?? 0) > 0 ? 'text-red-500' : 'text-foreground'}`}>
                         {stats?.overdue ?? 0}
                     </p>
                 </div>
-                <div className="rounded-2xl border border-border bg-card p-4">
+                <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-3">
                     <p className="text-xs text-muted-foreground">Convertidos</p>
-                    <p className="mt-1.5 text-2xl font-semibold text-emerald-500">
+                    <p className="mt-1 text-xl font-black text-emerald-500">
                         {stats?.converted ?? 0}
                     </p>
                 </div>
@@ -276,7 +276,7 @@ export default function ContactsClient({
                     const tempLabel = TEMP_LABELS[c.temperature ?? ''] ?? 'Interés medio'
 
                     return (
-                        <div key={c.id} className="rounded-xl border border-border bg-card p-4">
+                        <div key={c.id} className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-3">
                             <div className="flex items-start justify-between gap-3">
                                 <div className="min-w-0">
                                     <p className="truncate text-sm font-semibold text-foreground">

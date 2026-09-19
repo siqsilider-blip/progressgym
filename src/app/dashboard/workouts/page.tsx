@@ -1,198 +1,76 @@
-'use client'
+import Link from 'next/link'
+import { ArrowRight, Clock } from 'lucide-react'
+import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
+import { getRecentWorkoutActivity } from '../getRecentWorkoutActivity'
+import { getTrainerProfile } from '@/lib/getTrainerProfile'
+import { formatWeight, type WeightUnit } from '@/lib/weight'
 
-import { useEffect, useMemo, useState } from 'react'
-import { supabase } from '@/lib/supabase/client'
-import { createWorkout, deleteWorkout } from './actions'
-
-type Student = { id: string; full_name: string | null }
-type Workout = {
-    id: string
-    student_id: string
-    date: string
-    name: string | null
-    notes: string | null
+function formatDate(value: string | null) {
+    if (!value) return 'Sin fecha'
+    return new Date(value).toLocaleDateString('es-AR', {
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+    })
 }
 
-export default function WorkoutsPage() {
-    const [students, setStudents] = useState<Student[]>([])
-    const [workouts, setWorkouts] = useState<Workout[]>([])
-
-    const [studentId, setStudentId] = useState('')
-    const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10))
-    const [name, setName] = useState('')
-    const [notes, setNotes] = useState('')
-
-    const [error, setError] = useState<string | null>(null)
-    const [saving, setSaving] = useState(false)
-
-    async function load() {
-        setError(null)
-
-        const { data: st, error: stErr } = await supabase
-            .from('students')
-            .select('id, full_name')
-            .order('created_at', { ascending: false })
-
-        if (stErr) {
-            setError(stErr.message)
-            return
-        }
-        setStudents(st ?? [])
-
-        const { data: wo, error: woErr } = await supabase
-            .from('workouts')
-            .select('id, student_id, date, name, notes')
-            .order('date', { ascending: false })
-
-        if (woErr) {
-            setError(woErr.message)
-            return
-        }
-        setWorkouts(wo ?? [])
-    }
-
-    useEffect(() => {
-        load()
-    }, [])
-
-    const studentMap = useMemo(() => {
-        const m = new Map<string, string>()
-        students.forEach(s => m.set(s.id, s.full_name ?? 'Sin nombre'))
-        return m
-    }, [students])
-
-    async function onCreate() {
-        setError(null)
-        if (!studentId) {
-            setError('Elegí un alumno.')
-            return
-        }
-
-        setSaving(true)
-        try {
-            const res = await createWorkout({
-                student_id: studentId,
-                date,
-                name: name.trim() || null,
-                notes: notes.trim() || null,
-            })
-            if (!res.ok) {
-                setError(res.message ?? 'Error creando rutina.')
-                return
-            }
-            setName('')
-            setNotes('')
-            await load()
-        } finally {
-            setSaving(false)
-        }
-    }
-
-    async function onDelete(id: string) {
-        if (!confirm('¿Eliminar esta rutina?')) return
-        setError(null)
-        const res = await deleteWorkout(id)
-        if (!res.ok) {
-            setError(res.message ?? 'Error eliminando rutina.')
-            return
-        }
-        await load()
-    }
+export default async function WorkoutsPage() {
+    const [activity, trainerProfile] = await Promise.all([
+        getRecentWorkoutActivity(50),
+        getTrainerProfile(),
+    ])
+    const weightUnit = (trainerProfile?.weight_unit ?? 'kg') as WeightUnit
 
     return (
-        <div className="p-6 space-y-6">
-            <div>
-                <h1 className="text-2xl font-semibold">Rutinas</h1>
-                <p className="text-sm text-zinc-400">Creá sesiones por alumno y después les agregamos ejercicios.</p>
-            </div>
+        <div className="mx-auto max-w-3xl space-y-4 p-4 pb-24 md:p-6">
+            <DashboardPageHeader
+                title="Actividad"
+                subtitle={`${activity.length} registros recientes`}
+                backHref="/dashboard"
+            />
 
-            {error && (
-                <div className="rounded-lg bg-red-500/10 p-3 text-sm text-red-500 border border-red-500/20">
-                    {error}
+            {activity.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-border p-5 text-center">
+                    <Clock className="mx-auto h-6 w-6 text-muted-foreground" />
+                    <p className="mt-2 text-sm font-semibold text-card-foreground">
+                        Todavía no hay actividad
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                        Los ejercicios registrados aparecerán acá.
+                    </p>
+                </div>
+            ) : (
+                <div className="divide-y divide-border/70 overflow-hidden rounded-xl border border-white/[0.07] bg-white/[0.025]">
+                    {activity.map((item, index) => (
+                        <Link
+                            key={`${item.studentId}-${item.exerciseName}-${item.performedAt}-${index}`}
+                            href={`/dashboard/students/${item.studentId}`}
+                            className="flex items-center justify-between gap-3 px-3 py-2.5 transition hover:bg-white/[0.04]"
+                        >
+                            <div className="min-w-0">
+                                <p className="truncate text-xs font-semibold text-card-foreground">
+                                    {item.studentName}
+                                </p>
+                                <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                                    {item.exerciseName} · {formatDate(item.performedAt)}
+                                </p>
+                            </div>
+                            <div className="flex shrink-0 items-center gap-2 text-right">
+                                <div>
+                                    <p className="text-xs font-semibold text-indigo-400">
+                                        {formatWeight(item.weight, weightUnit)}
+                                    </p>
+                                    <p className="text-[10px] text-muted-foreground">
+                                        {item.reps ?? 0} reps
+                                    </p>
+                                </div>
+                                <ArrowRight className="h-3.5 w-3.5 text-white/20" />
+                            </div>
+                        </Link>
+                    ))}
                 </div>
             )}
-
-            <div className="grid gap-6 md:grid-cols-2">
-                <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
-                    <h2 className="font-semibold mb-4">Nueva rutina</h2>
-
-                    <div className="space-y-3">
-                        <select
-                            className="w-full h-10 rounded-lg border border-zinc-800 bg-zinc-900 px-3 text-sm"
-                            value={studentId}
-                            onChange={(e) => setStudentId(e.target.value)}
-                        >
-                            <option value="">Elegí alumno...</option>
-                            {students.map(s => (
-                                <option key={s.id} value={s.id}>
-                                    {s.full_name ?? 'Sin nombre'}
-                                </option>
-                            ))}
-                        </select>
-
-                        <input
-                            className="w-full h-10 rounded-lg border border-zinc-800 bg-zinc-900 px-3 text-sm"
-                            type="date"
-                            value={date}
-                            onChange={(e) => setDate(e.target.value)}
-                        />
-
-                        <input
-                            className="w-full h-10 rounded-lg border border-zinc-800 bg-zinc-900 px-3 text-sm"
-                            placeholder="Nombre (opcional) ej: Piernas A"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                        />
-
-                        <textarea
-                            className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm"
-                            placeholder="Notas (opcional)"
-                            value={notes}
-                            onChange={(e) => setNotes(e.target.value)}
-                            rows={4}
-                        />
-
-                        <button
-                            className="inline-flex h-10 w-full items-center justify-center rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-600 disabled:opacity-50"
-                            disabled={saving}
-                            onClick={onCreate}
-                        >
-                            {saving ? 'Guardando...' : 'Crear rutina'}
-                        </button>
-                    </div>
-                </div>
-
-                <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
-                    <h2 className="font-semibold mb-4">Rutinas creadas</h2>
-
-                    {workouts.length === 0 ? (
-                        <p className="text-sm text-zinc-400">Todavía no hay rutinas.</p>
-                    ) : (
-                        <div className="space-y-3">
-                            {workouts.map(w => (
-                                <div key={w.id} className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-4 flex items-start justify-between gap-4">
-                                    <div>
-                                        <div className="font-medium">
-                                            {studentMap.get(w.student_id) ?? 'Alumno'}
-                                        </div>
-                                        <div className="text-xs text-zinc-400">
-                                            {w.date} {w.name ? `• ${w.name}` : ''}
-                                        </div>
-                                        {w.notes && <div className="text-sm text-zinc-300 mt-2">{w.notes}</div>}
-                                    </div>
-
-                                    <button
-                                        className="text-sm text-red-400 hover:text-red-300"
-                                        onClick={() => onDelete(w.id)}
-                                    >
-                                        Eliminar
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            </div>
         </div>
     )
 }

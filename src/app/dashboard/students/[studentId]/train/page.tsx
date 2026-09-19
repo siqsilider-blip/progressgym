@@ -9,6 +9,7 @@ import TrainFocusedView from './TrainFocusedView'
 import { getRoutineSchedule } from '@/lib/getRoutineSchedule'
 import { getBuenosAiresDateString } from '@/lib/buenosAiresDate'
 import { getActiveStudentRoutine } from '@/lib/getActiveStudentRoutine'
+import DashboardBackButton from '@/components/dashboard/DashboardBackButton'
 
 type PageProps = {
     params: Promise<{ studentId: string }>
@@ -124,12 +125,10 @@ export default async function StudentTrainPage(props: PageProps) {
                             Asignar rutina
                         </Link>
 
-                        <Link
-                            href={`/dashboard/students/${params.studentId}`}
+                        <DashboardBackButton
+                            fallbackHref={`/dashboard/students/${params.studentId}`}
                             className="rounded-lg border border-border bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground transition hover:bg-muted"
-                        >
-                            Volver al perfil
-                        </Link>
+                        />
                     </div>
                 </div>
             </div>
@@ -387,16 +386,15 @@ export default async function StudentTrainPage(props: PageProps) {
                             </p>
                         </div>
 
-                        <Link
-                            href={
+                        <DashboardBackButton
+                            fallbackHref={
                                 searchParams?.from === 'routine' && assignedRoutineId
                                     ? `/dashboard/routines/${assignedRoutineId}`
                                     : `/dashboard/students/${params.studentId}`
                             }
-                            className="shrink-0 text-xs text-muted-foreground transition hover:text-foreground"
-                        >
-                            Volver
-                        </Link>
+                            label="Volver"
+                            className="shrink-0 border-0 bg-transparent p-0 text-xs text-muted-foreground transition hover:bg-transparent hover:text-foreground"
+                        />
                     </div>
 
                     <p className="mt-1.5 text-[11px] text-muted-foreground/70">
