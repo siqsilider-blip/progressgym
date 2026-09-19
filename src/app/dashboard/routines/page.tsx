@@ -2,16 +2,14 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import RoutinesClient from './RoutinesClient'
+import { getServerUser } from '@/lib/auth/server'
 
 export default async function RoutinesPage() {
     const supabase = await createClient()
 
-    const {
-        data: { user },
-        error: authError,
-    } = await supabase.auth.getUser()
+    const user = await getServerUser()
 
-    if (authError || !user) {
+    if (!user) {
         redirect('/login')
     }
 
@@ -52,30 +50,27 @@ export default async function RoutinesPage() {
 
     const studentIds = students.map((s) => s.id)
 
-    const { data: assignments } = await supabase
-        .from('student_routines')
-        .select('student_id, routine_id')
-        .in('student_id', studentIds)
-        .eq('status', 'active')
+    const [{ data: assignments }, { data: routinesData }] = await Promise.all([
+        supabase
+            .from('student_routines')
+            .select('student_id, routine_id')
+            .in('student_id', studentIds)
+            .eq('status', 'active'),
+        supabase
+            .from('routines')
+            .select('id, name')
+            .eq('trainer_id', user.id),
+    ])
 
     const assignmentMap = new Map<string, string>()
     for (const a of assignments ?? []) {
         if (a.routine_id) assignmentMap.set(a.student_id, a.routine_id)
     }
 
-    const routineIds = Array.from(new Set(Array.from(assignmentMap.values())))
     const routineMap = new Map<string, { id: string; name: string | null }>()
 
-    if (routineIds.length > 0) {
-        const { data: routinesData } = await supabase
-            .from('routines')
-            .select('id, name')
-            .in('id', routineIds)
-            .eq('trainer_id', user.id)
-
-        for (const r of routinesData ?? []) {
-            if (r.id) routineMap.set(r.id, { id: r.id, name: r.name ?? null })
-        }
+    for (const r of routinesData ?? []) {
+        if (r.id) routineMap.set(r.id, { id: r.id, name: r.name ?? null })
     }
 
     const routines = Array.from(assignmentMap.entries())

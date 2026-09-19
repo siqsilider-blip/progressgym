@@ -3,16 +3,18 @@ import { Suspense } from 'react'
 import Sidebar from '@/components/Sidebar'
 import DashboardNavigationTracker from '@/components/dashboard/DashboardNavigationTracker'
 import { createClient } from '@/lib/supabase/server'
+import { getServerUser } from '@/lib/auth/server'
 
 export default async function DashboardLayout({
     children,
 }: {
     children: React.ReactNode
 }) {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getServerUser()
 
     if (!user) redirect('/login')
+
+    const supabase = await createClient()
 
     const { data: profile } = await supabase
         .from('profiles')

@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getServerUser } from '@/lib/auth/server'
 
 export type TrainerProfile = {
     display_name: string | null
@@ -15,9 +16,7 @@ export type TrainerProfile = {
 export async function getTrainerProfile(): Promise<TrainerProfile | null> {
     const supabase = await createClient()
 
-    const {
-        data: { user },
-    } = await supabase.auth.getUser()
+    const user = await getServerUser()
 
     if (!user) {
         return null

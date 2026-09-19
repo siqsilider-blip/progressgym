@@ -1,13 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import SidebarClient from './SidebarClient'
+import { getServerUser } from '@/lib/auth/server'
 
 export default async function Sidebar() {
-    const supabase = await createClient()
-
-    const {
-        data: { user },
-    } = await supabase.auth.getUser()
+    const user = await getServerUser()
 
     if (!user) {
         redirect('/login')

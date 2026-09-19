@@ -5,6 +5,7 @@ import StudentsList from '@/components/StudentsList'
 import { getStudentsRiskBatch, fallbackRisk } from './[studentId]/getStudentRisk'
 import { getElapsedProgramWeekIndex } from '@/lib/buenosAiresDate'
 import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
+import { getServerUser } from '@/lib/auth/server'
 
 type StudentRisk = {
     score: number
@@ -46,8 +47,8 @@ function getInitials(first: string | null, last: string | null) {
 
 export default async function StudentsPage() {
     const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) redirect('/login')
+    const user = await getServerUser()
+    if (!user) redirect('/login')
 
     const { data: studentsData, error: studentsError } = await supabase
         .from('students')

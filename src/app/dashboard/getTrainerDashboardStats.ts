@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getServerUser } from '@/lib/auth/server'
 
 export type TrainerDashboardStats = {
     totalStudents: number
@@ -11,12 +12,9 @@ export type TrainerDashboardStats = {
 export async function getTrainerDashboardStats(): Promise<TrainerDashboardStats> {
     const supabase = await createClient()
 
-    const {
-        data: { user },
-        error: authError,
-    } = await supabase.auth.getUser()
+    const user = await getServerUser()
 
-    if (authError || !user) {
+    if (!user) {
         return {
             totalStudents: 0,
             activeStudents: 0,

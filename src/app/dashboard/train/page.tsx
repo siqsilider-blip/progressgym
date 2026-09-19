@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import TrainSelectorClient from './TrainSelectorClient'
-import { getStudentRisk } from '../students/[studentId]/getStudentRisk'
+import { getStudentsRiskBatch } from '../students/[studentId]/getStudentRisk'
+import { getServerUser } from '@/lib/auth/server'
 
 type TrainStudentItem = {
     id: string
@@ -28,9 +29,7 @@ type WorkoutLogSummary = {
 export default async function TrainSelectorPage() {
     const supabase = await createClient()
 
-    const {
-        data: { user },
-    } = await supabase.auth.getUser()
+    const user = await getServerUser()
 
     if (!user) return null
 
@@ -45,34 +44,30 @@ export default async function TrainSelectorPage() {
 
     const studentIds = students?.map((s) => s.id) ?? []
 
-    // -------------------------
-    // 2. rutinas
-    // -------------------------
-    let routines: RoutineSummary[] = []
-    if (studentIds.length) {
-        const { data } = await supabase
-            .from('routines')
-            .select('id, student_id, name, days_per_week')
-            .in('student_id', studentIds)
-        routines = data ?? []
-    }
+    // Rutinas, actividad y riesgo se resuelven en paralelo. Antes el riesgo
+    // disparaba una consulta por cada alumno.
+    const [routinesResult, logsResult, riskMap] = studentIds.length
+        ? await Promise.all([
+            supabase
+                .from('routines')
+                .select('id, student_id, name, days_per_week')
+                .in('student_id', studentIds),
+            supabase
+                .from('exercise_logs')
+                .select('student_id, performed_at')
+                .in('student_id', studentIds)
+                .order('performed_at', { ascending: false }),
+            getStudentsRiskBatch(studentIds),
+        ])
+        : [{ data: [] }, { data: [] }, new Map()]
+
+    const routines = (routinesResult.data ?? []) as RoutineSummary[]
 
     const routineMap = new Map(
         routines.map((r) => [r.student_id, r])
     )
 
-    // -------------------------
-    // 3. último entrenamiento
-    // -------------------------
-    let logs: WorkoutLogSummary[] = []
-    if (studentIds.length) {
-        const { data } = await supabase
-            .from('exercise_logs')
-            .select('student_id, performed_at')
-            .in('student_id', studentIds)
-            .order('performed_at', { ascending: false })
-        logs = data ?? []
-    }
+    const logs = (logsResult.data ?? []) as WorkoutLogSummary[]
 
     const lastWorkoutMap = new Map<string, string>()
 
@@ -82,34 +77,7 @@ export default async function TrainSelectorPage() {
         }
     }
 
-    // -------------------------
-    // 4. riesgo real
-    // -------------------------
-    const riskResults = await Promise.all(
-        (students ?? []).map(async (student) => {
-            const risk = await getStudentRisk(student.id)
-
-            const riskLevel: 'low' | 'medium' | 'high' =
-                risk?.level === 'high'
-                    ? 'high'
-                    : risk?.level === 'medium'
-                        ? 'medium'
-                        : 'low'
-
-            return {
-                studentId: student.id,
-                riskLevel,
-            }
-        })
-    )
-
-    const riskMap = new Map(
-        riskResults.map((r) => [r.studentId, r.riskLevel])
-    )
-
-    // -------------------------
-    // 5. merge final
-    // -------------------------
+    // Merge final
     const enrichedStudents: TrainStudentItem[] = (students ?? []).map(
         (student) => {
             const routine = routineMap.get(student.id)
@@ -126,7 +94,11 @@ export default async function TrainSelectorPage() {
                 daysPerWeek: routine?.days_per_week ?? null,
                 hasRoutine: !!routine,
                 lastWorkoutAt: lastWorkoutMap.get(student.id) ?? null,
-                riskLevel: riskMap.get(student.id) ?? 'low',
+                riskLevel: riskMap.get(student.id)?.level === 'high' || riskMap.get(student.id)?.level === 'critical'
+                    ? 'high'
+                    : riskMap.get(student.id)?.level === 'medium'
+                        ? 'medium'
+                        : 'low',
             }
         }
     )

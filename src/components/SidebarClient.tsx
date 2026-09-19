@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import {
     Home,
@@ -21,6 +22,11 @@ export default function SidebarClient({
     signOutAction,
 }: SidebarClientProps) {
     const pathname = usePathname()
+    const [pendingHref, setPendingHref] = useState<string | null>(null)
+
+    useEffect(() => {
+        setPendingHref(null)
+    }, [pathname])
 
     const navItems = [
         {
@@ -79,7 +85,7 @@ export default function SidebarClient({
             {/* ── Sidebar desktop ── */}
             <aside className="hidden md:flex md:w-64 md:flex-col md:border-r border-white/[0.06] bg-[#07070a] text-white">
                 <div className="border-b border-white/[0.06] px-6 py-6">
-                    <Link href="/dashboard" className="block">
+                    <Link href="/dashboard" prefetch className="block">
                         <div className="flex items-center gap-2.5">
                             <div
                                 className="flex h-7 w-7 items-center justify-center rounded-lg"
@@ -102,12 +108,16 @@ export default function SidebarClient({
                         {desktopNavItems.map((item) => {
                             const Icon = item.icon
                             const isActive = item.match(pathname)
+                            const isPending = pendingHref === item.href
 
                             return (
                                 <Link
                                     key={item.href}
                                     href={item.href}
-                                    className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${isActive
+                                    prefetch
+                                    onClick={() => setPendingHref(item.href)}
+                                    aria-busy={isPending}
+                                    className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${isActive || isPending
                                             ? 'bg-violet-500/15 text-violet-300 border border-violet-500/20'
                                             : 'text-white/40 hover:bg-white/[0.04] hover:text-white/80 border border-transparent'
                                         }`}
@@ -123,6 +133,7 @@ export default function SidebarClient({
                 <div className="border-t border-white/[0.06] p-3">
                     <Link
                         href="/dashboard/settings"
+                        prefetch
                         className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all mb-1 ${pathname === '/dashboard/settings'
                                 ? 'bg-violet-500/15 text-violet-300 border border-violet-500/20'
                                 : 'text-white/40 hover:bg-white/[0.04] hover:text-white/80 border border-transparent'
@@ -145,7 +156,7 @@ export default function SidebarClient({
 
             {/* ── Header mobile ── */}
             <div className="fixed inset-x-0 top-0 z-40 flex h-14 items-center justify-between border-b border-white/[0.06] px-4 md:hidden bg-[#07070a]/95 backdrop-blur">
-                <Link href="/dashboard" className="flex items-center gap-2">
+                <Link href="/dashboard" prefetch className="flex items-center gap-2">
                     <div
                         className="flex h-6 w-6 items-center justify-center rounded-lg"
                         style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)' }}
@@ -159,6 +170,7 @@ export default function SidebarClient({
 
                 <Link
                     href="/dashboard/settings"
+                    prefetch
                     className="flex h-8 w-8 items-center justify-center rounded-lg text-white/40 hover:bg-white/[0.06] hover:text-white transition-colors"
                 >
                     <Settings className="h-4 w-4" />
@@ -171,17 +183,21 @@ export default function SidebarClient({
                     {navItems.filter((item) => item.mobile !== false).map((item) => {
                         const Icon = item.icon
                         const isActive = item.match(pathname)
+                        const isPending = pendingHref === item.href
 
                         return (
                             <Link
                                 key={item.href}
                                 href={item.href}
-                                className={`flex flex-col items-center justify-center gap-1 py-2.5 text-[10px] font-medium transition-colors ${isActive
+                                prefetch
+                                onClick={() => setPendingHref(item.href)}
+                                aria-busy={isPending}
+                                className={`flex flex-col items-center justify-center gap-1 py-2.5 text-[10px] font-medium transition-colors ${isActive || isPending
                                         ? 'text-violet-400'
                                         : 'text-white/30 hover:text-white/60'
                                     }`}
                             >
-                                <Icon className={`h-4 w-4 ${isActive ? 'stroke-[2.5]' : ''}`} />
+                                <Icon className={`h-4 w-4 ${isActive || isPending ? 'stroke-[2.5]' : ''} ${isPending ? 'animate-pulse' : ''}`} />
                                 <span>{item.mobileLabel}</span>
                             </Link>
                         )

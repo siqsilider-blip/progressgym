@@ -2,13 +2,14 @@ import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import SettingsClient from './SettingsClient'
+import { getServerUser } from '@/lib/auth/server'
 
 export default async function SettingsPage() {
     const cookieStore = await cookies()
     const theme = cookieStore.get('theme')?.value === 'light' ? 'light' : 'dark'
 
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getServerUser()
     if (!user) redirect('/login')
 
     const { data: profile } = await supabase

@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getServerUser } from '@/lib/auth/server'
 
 export type RecentWorkoutActivityItem = {
     studentId: string
@@ -14,9 +15,7 @@ export async function getRecentWorkoutActivity(limit = 10): Promise<
 > {
     const supabase = await createClient()
 
-    const {
-        data: { user },
-    } = await supabase.auth.getUser()
+    const user = await getServerUser()
 
     if (!user) return []
 

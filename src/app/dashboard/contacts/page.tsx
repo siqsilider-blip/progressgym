@@ -1,12 +1,12 @@
 import Link from 'next/link'
 import { getContacts } from './getContacts'
-import { getContactStats } from './getContactStats'
+import { calculateContactStats } from './getContactStats'
 import ContactsClient, { type Contact } from './ContactsClient'
 import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
 
 export default async function ContactsPage() {
     const contacts = (await getContacts()) || []
-    const stats = await getContactStats()
+    const stats = calculateContactStats(contacts)
 
     return (
         <div className="mx-auto max-w-3xl space-y-4 p-4 pb-24 md:p-6">

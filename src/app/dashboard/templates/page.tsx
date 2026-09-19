@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { ClipboardList, Plus, Search, X } from 'lucide-react'
 import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
+import { getServerUser } from '@/lib/auth/server'
 
 type TemplateRow = {
     id: string
@@ -26,12 +27,9 @@ export default async function TemplatesListPage(props: PageProps) {
     const searchParams = await props.searchParams;
     const supabase = await createClient()
 
-    const {
-        data: { user },
-        error: authError,
-    } = await supabase.auth.getUser()
+    const user = await getServerUser()
 
-    if (authError || !user) {
+    if (!user) {
         redirect('/login')
     }
 

@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { getElapsedProgramWeekIndex } from '@/lib/buenosAiresDate'
+import { getServerUser } from '@/lib/auth/server'
 
 export type TrainerAlert = {
     type: 'inactive' | 'no_routine' | 'new_student' | 'unfinished_session' | 'program_ending'
@@ -23,12 +24,9 @@ type FollowUpRow = { student_id: string }
 export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
     const supabase = await createClient()
 
-    const {
-        data: { user },
-        error: authError,
-    } = await supabase.auth.getUser()
+    const user = await getServerUser()
 
-    if (authError || !user) {
+    if (!user) {
         return []
     }
 

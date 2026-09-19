@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getServerUser } from '@/lib/auth/server'
 
 function parseDateOnly(value: string) {
     const [year, month, day] = value.split('-').map(Number)
@@ -13,9 +14,7 @@ function startOfToday() {
 export async function getContactStats() {
     const supabase = await createClient()
 
-    const {
-        data: { user },
-    } = await supabase.auth.getUser()
+    const user = await getServerUser()
 
     if (!user) return null
 
@@ -36,8 +35,15 @@ export async function getContactStats() {
         }
     }
 
-    const today = startOfToday()
+    return calculateContactStats(data ?? [])
+}
 
+export function calculateContactStats(data: Array<{
+    temperature?: string | null
+    converted_to_student?: boolean | null
+    next_follow_up_at?: string | null
+}>) {
+    const today = startOfToday()
     const stats = {
         total: data?.length || 0,
         pendingToday: 0,
@@ -46,7 +52,7 @@ export async function getContactStats() {
         converted: 0,
     }
 
-    for (const c of data || []) {
+    for (const c of data) {
         if (c.temperature === 'hot') stats.hot++
         if (c.converted_to_student) stats.converted++
 
