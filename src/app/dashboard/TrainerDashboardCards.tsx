@@ -1,4 +1,4 @@
-import { Activity, ClipboardList, UserCheck, Users } from 'lucide-react'
+import { Activity, UserCheck, Users } from 'lucide-react'
 import type { TrainerDashboardStats } from './getTrainerDashboardStats'
 
 export default async function TrainerDashboardCards({
@@ -10,20 +10,9 @@ export default async function TrainerDashboardCards({
 }) {
     const cards = [
         {
-            label: 'Alumnos',
-            value: stats.totalStudents,
-            helper: 'Total registrados',
-            icon: Users,
-            valueColor: 'text-white',
-            iconColor: 'text-white/40',
-            iconBg: 'rgba(255,255,255,0.06)',
-            glow: 'rgba(124,58,237,0.08)',
-            border: 'rgba(255,255,255,0.07)',
-        },
-        {
             label: 'Pendientes',
             value: riskCount,
-            helper: 'Acciones prioritarias',
+            helper: riskCount === 1 ? 'acción' : 'acciones',
             icon: Activity,
             valueColor: riskCount > 0 ? 'text-amber-400' : 'text-white',
             iconColor: riskCount > 0 ? 'text-amber-400' : 'text-white/40',
@@ -32,20 +21,9 @@ export default async function TrainerDashboardCards({
             border: riskCount > 0 ? 'rgba(245,158,11,0.2)' : 'rgba(255,255,255,0.07)',
         },
         {
-            label: 'Con rutina',
-            value: stats.studentsWithRoutine,
-            helper: 'Asignados',
-            icon: ClipboardList,
-            valueColor: 'text-white',
-            iconColor: 'text-indigo-400',
-            iconBg: 'rgba(99,102,241,0.12)',
-            glow: 'transparent',
-            border: 'rgba(255,255,255,0.07)',
-        },
-        {
-            label: 'Activos 7 días',
+            label: 'Activos',
             value: stats.activeStudents,
-            helper: 'Entrenaron esta semana',
+            helper: 'últimos 7 días',
             icon: UserCheck,
             valueColor: 'text-emerald-400',
             iconColor: 'text-emerald-400',
@@ -53,31 +31,46 @@ export default async function TrainerDashboardCards({
             glow: 'rgba(16,185,129,0.06)',
             border: 'rgba(16,185,129,0.15)',
         },
+        {
+            label: 'Alumnos',
+            value: stats.totalStudents,
+            helper: `${stats.studentsWithRoutine} con programa`,
+            icon: Users,
+            valueColor: 'text-white',
+            iconColor: 'text-violet-400',
+            iconBg: 'rgba(124,58,237,0.12)',
+            glow: 'rgba(124,58,237,0.06)',
+            border: 'rgba(255,255,255,0.07)',
+        },
     ]
 
     return (
-        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <div className="grid grid-cols-3 gap-2">
             {cards.map((card) => {
                 const Icon = card.icon
                 return (
                     <div
                         key={card.label}
-                        className="rounded-2xl border p-4 transition"
+                        className="min-w-0 rounded-xl border p-3 transition"
                         style={{
                             background: card.glow,
                             borderColor: card.border,
                         }}
                     >
-                        <div className="flex items-start justify-between gap-2">
-                            <p className="text-xs text-white/40">{card.label}</p>
-                            <div className="rounded-xl p-2" style={{ background: card.iconBg }}>
-                                <Icon className={`h-3.5 w-3.5 ${card.iconColor}`} />
+                        <div className="flex items-center justify-between gap-1">
+                            <p className="truncate text-[10px] font-medium text-white/40 sm:text-xs">
+                                {card.label}
+                            </p>
+                            <div className="rounded-lg p-1.5" style={{ background: card.iconBg }}>
+                                <Icon className={`h-3 w-3 ${card.iconColor}`} />
                             </div>
                         </div>
-                        <p className={`mt-2 text-3xl font-black tracking-tight ${card.valueColor}`}>
+                        <p className={`mt-1 text-xl font-black tracking-tight sm:text-2xl ${card.valueColor}`}>
                             {card.value}
                         </p>
-                        <p className="mt-1 text-[10px] text-white/25">{card.helper}</p>
+                        <p className="mt-0.5 truncate text-[9px] text-white/25 sm:text-[10px]">
+                            {card.helper}
+                        </p>
                     </div>
                 )
             })}

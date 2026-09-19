@@ -1,8 +1,5 @@
-'use client'
-
 import Link from 'next/link'
-import { useState } from 'react'
-import { ArrowRight, Clock, Flame } from 'lucide-react'
+import { ArrowRight, Clock } from 'lucide-react'
 import { formatWeight, type WeightUnit } from '@/lib/weight'
 import type { RecentWorkoutActivityItem } from './getRecentWorkoutActivity'
 
@@ -31,139 +28,70 @@ export default function RecentWorkoutActivityCard({
     activity: RecentWorkoutActivityItem[]
     weightUnit: WeightUnit
 }) {
-    const [expanded, setExpanded] = useState(false)
-
-    const latest = activity[0]
-    const rest = activity.slice(1)
-    const visibleRest = expanded ? rest : rest.slice(0, 3)
-    const hiddenCount = Math.max(0, rest.length - visibleRest.length)
+    const visibleActivity = activity.slice(0, 4)
 
     return (
-        <div className="rounded-2xl border p-5 md:p-6" style={{borderColor: 'rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)'}}>
-            <div className="mb-5 flex items-center gap-3">
-                <div className="rounded-2xl bg-indigo-500/10 p-3 text-indigo-500">
-                    <Clock className="h-5 w-5" />
+        <section className="rounded-2xl border p-4" style={{ borderColor: 'rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)' }}>
+            <div className="mb-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                    <div className="rounded-xl bg-indigo-500/10 p-2 text-indigo-400">
+                        <Clock className="h-4 w-4" />
+                    </div>
+
+                    <div>
+                        <h2 className="text-sm font-semibold text-card-foreground">
+                            Actividad reciente
+                        </h2>
+                        <p className="text-[11px] text-muted-foreground">
+                            Últimos registros
+                        </p>
+                    </div>
                 </div>
 
-                <div>
-                    <h2 className="text-lg font-semibold text-card-foreground">
-                        Actividad reciente
-                    </h2>
-
-                    <p className="text-sm text-muted-foreground">
-                        Últimos entrenamientos registrados
-                    </p>
-                </div>
+                <Link
+                    href="/dashboard/workouts"
+                    className="text-[11px] font-medium text-indigo-400 transition hover:text-indigo-300"
+                >
+                    Ver historial
+                </Link>
             </div>
 
             {activity.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-border bg-muted/40 p-5 text-sm text-muted-foreground">
+                <div className="rounded-xl border border-dashed border-border bg-muted/40 p-4 text-xs text-muted-foreground">
                     Todavía no hay actividad reciente.
                 </div>
             ) : (
-                <div className="space-y-4">
-                    {latest ? (
-                        <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4 dark:border-indigo-500/20 dark:bg-indigo-500/5 md:p-5">
-                            <div className="mb-4 flex items-center gap-2">
-                                <div className="rounded-xl bg-indigo-100 p-2 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400">
-                                    <Flame className="h-4 w-4" />
-                                </div>
-
-                                <span className="text-xs font-semibold uppercase tracking-[0.14em] text-indigo-700 dark:text-indigo-300">
-                                    Último entrenamiento
-                                </span>
-                            </div>
-
-                            <div className="flex items-start justify-between gap-4">
-                                <div className="min-w-0">
-                                    <p className="text-lg font-semibold text-card-foreground">
-                                        {latest.studentName}
-                                    </p>
-
-                                    <p className="mt-1 text-sm text-muted-foreground">
-                                        {latest.exerciseName}
-                                    </p>
-
-                                    <p className="mt-2 text-xs text-muted-foreground">
-                                        {formatTimeAgo(latest.performedAt)}
-                                    </p>
-                                </div>
-
-                                <div className="shrink-0 text-right">
-                                    <p className="text-xl font-bold text-indigo-700 dark:text-indigo-300">
-                                        {formatWeight(latest.weight, weightUnit)}
-                                    </p>
-
-                                    <p className="mt-1 text-xs text-muted-foreground">
-                                        {latest.reps ?? 0} reps
-                                    </p>
-
-                                    <Link
-                                        href={`/dashboard/students/${latest.studentId}`}
-                                        className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-indigo-500 transition hover:text-indigo-400"
-                                    >
-                                        Ver alumno
-                                        <ArrowRight className="h-3.5 w-3.5" />
-                                    </Link>
-                                </div>
-                            </div>
-                        </div>
-                    ) : null}
-
-                    {visibleRest.length > 0 ? (
-                        <div className="space-y-2">
-                            {visibleRest.map((item, i) => (
-                                <div
-                                    key={`${item.studentId}-${item.exerciseName}-${i}`}
-                                    className="flex items-center justify-between rounded-2xl border border-border bg-muted/40 px-4 py-3 transition hover:bg-muted/70 dark:bg-muted/30 dark:hover:bg-card/90"
-                                >
-                                    <div className="min-w-0">
-                                        <p className="truncate text-sm font-medium text-card-foreground">
-                                            {item.studentName}
-                                        </p>
-
-                                        <p className="mt-1 truncate text-sm text-muted-foreground">
-                                            {item.exerciseName}
-                                        </p>
-
-                                        <p className="mt-1 text-xs text-muted-foreground">
-                                            {formatTimeAgo(item.performedAt)}
-                                        </p>
-                                    </div>
-
-                                    <div className="ml-4 shrink-0 text-right">
-                                        <p className="text-sm font-semibold text-indigo-500">
-                                            {formatWeight(item.weight, weightUnit)}
-                                        </p>
-
-                                        <p className="mt-1 text-xs text-muted-foreground">
-                                            {item.reps ?? 0} reps
-                                        </p>
-
-                                        <Link
-                                            href={`/dashboard/students/${item.studentId}`}
-                                            className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-indigo-500 transition hover:text-indigo-400"
-                                        >
-                                            Ver
-                                            <ArrowRight className="h-3 w-3" />
-                                        </Link>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    ) : null}
-
-                    {hiddenCount > 0 && (
-                        <button
-                            type="button"
-                            onClick={() => setExpanded((prev) => !prev)}
-                            className="w-full rounded-xl border border-border bg-secondary px-4 py-2.5 text-sm font-medium text-secondary-foreground transition hover:bg-muted"
+                <div className="divide-y divide-border/70 overflow-hidden rounded-xl border border-border bg-muted/20">
+                    {visibleActivity.map((item, index) => (
+                        <Link
+                            key={`${item.studentId}-${item.exerciseName}-${index}`}
+                            href={`/dashboard/students/${item.studentId}`}
+                            className="flex items-center justify-between gap-3 px-3 py-2.5 transition hover:bg-muted/60"
                         >
-                            {expanded ? 'Ver menos' : `Ver más (${hiddenCount})`}
-                        </button>
-                    )}
+                            <div className="min-w-0">
+                                <p className="truncate text-xs font-semibold text-card-foreground">
+                                    {item.studentName}
+                                </p>
+                                <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                                    {item.exerciseName} · {formatTimeAgo(item.performedAt)}
+                                </p>
+                            </div>
+
+                            <div className="flex shrink-0 items-center gap-2 text-right">
+                                <div>
+                                    <p className="text-xs font-semibold text-indigo-400">
+                                        {formatWeight(item.weight, weightUnit)}
+                                    </p>
+                                    <p className="text-[10px] text-muted-foreground">
+                                        {item.reps ?? 0} reps
+                                    </p>
+                                </div>
+                                <ArrowRight className="h-3.5 w-3.5 text-white/20" />
+                            </div>
+                        </Link>
+                    ))}
                 </div>
             )}
-        </div>
+        </section>
     )
 }

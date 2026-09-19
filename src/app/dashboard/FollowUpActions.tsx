@@ -51,13 +51,13 @@ export default function FollowUpActions({ alert }: { alert: TrainerAlert }) {
     }
 
     return (
-        <div className="flex shrink-0 flex-col items-end gap-2">
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
             <Link
                 href={alert.actionHref}
-                className="inline-flex items-center gap-1 text-sm font-medium text-indigo-500 transition hover:text-indigo-400"
+                className="inline-flex items-center gap-1 rounded-lg border border-indigo-500/20 bg-indigo-500/10 px-2 py-1 text-[10px] font-semibold text-indigo-400 transition hover:bg-indigo-500/15"
             >
                 Resolver
-                <ArrowRight className="h-3.5 w-3.5" />
+                <ArrowRight className="h-3 w-3" />
             </Link>
 
             {whatsappUrl ? (
@@ -66,15 +66,15 @@ export default function FollowUpActions({ alert }: { alert: TrainerAlert }) {
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => recordAction('whatsapp_opened')}
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-500 transition hover:text-emerald-400"
+                    className="inline-flex items-center gap-1 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-2 py-1 text-[10px] font-semibold text-emerald-400 transition hover:bg-emerald-500/15"
                 >
-                    <MessageCircle className="h-3.5 w-3.5" />
+                    <MessageCircle className="h-3 w-3" />
                     WhatsApp
                 </a>
             ) : (
                 <Link
                     href={`/dashboard/students/${alert.studentId}`}
-                    className="text-[11px] font-medium text-muted-foreground transition hover:text-foreground"
+                    className="rounded-lg border border-border bg-secondary px-2 py-1 text-[10px] font-medium text-muted-foreground transition hover:text-foreground"
                 >
                     Agregar teléfono
                 </Link>
@@ -84,13 +84,13 @@ export default function FollowUpActions({ alert }: { alert: TrainerAlert }) {
                 type="button"
                 disabled={isPending}
                 onClick={() => recordAction('snoozed')}
-                className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground transition hover:text-foreground disabled:opacity-50"
+                className="inline-flex items-center gap-1 rounded-lg border border-border bg-secondary px-2 py-1 text-[10px] font-medium text-muted-foreground transition hover:text-foreground disabled:opacity-50"
             >
-                <Clock3 className="h-3.5 w-3.5" />
-                {isPending ? 'Guardando...' : 'Posponer 3 días'}
+                <Clock3 className="h-3 w-3" />
+                {isPending ? 'Guardando...' : 'Después (3d)'}
             </button>
 
-            {error && <span className="max-w-32 text-right text-[10px] text-red-400">{error}</span>}
+            {error && <span className="w-full text-[10px] text-red-400">{error}</span>}
         </div>
     )
 }

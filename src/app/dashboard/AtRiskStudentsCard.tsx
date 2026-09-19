@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers'
+import Link from 'next/link'
 import { AlertTriangle, CircleStop, Flag, ListChecks, UserMinus, UserX } from 'lucide-react'
 import AppBadge from '@/components/ui/app-badge'
 import type { TrainerAlert } from './getTrainerAlerts'
@@ -94,29 +95,29 @@ export default async function AtRiskStudentsCard({
     const theme = cookieStore.get('theme')?.value === 'light' ? 'light' : 'dark'
     const isLight = theme === 'light'
 
-    const atRiskAlerts = alerts.slice(0, 4)
+    const atRiskAlerts = alerts.slice(0, 3)
 
     return (
-        <div className="rounded-2xl border p-6" style={{borderColor: 'rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)'}}>
-            <div className="mb-6 flex items-center gap-3">
-                <div className="rounded-2xl bg-amber-500/10 p-3 text-amber-500">
-                    <ListChecks className="h-5 w-5" />
+        <section className="rounded-2xl border p-4" style={{ borderColor: 'rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)' }}>
+            <div className="mb-3 flex items-center gap-2.5">
+                <div className="rounded-xl bg-amber-500/10 p-2 text-amber-500">
+                    <ListChecks className="h-4 w-4" />
                 </div>
 
                 <div>
-                    <h2 className="text-lg font-semibold text-card-foreground">
+                    <h2 className="text-sm font-semibold text-card-foreground">
                         Prioridades de hoy
                     </h2>
 
-                    <p className="text-sm text-muted-foreground">
-                        Una acción clara por alumno
+                    <p className="text-[11px] text-muted-foreground">
+                        Solo lo que requiere atención
                     </p>
                 </div>
             </div>
 
             {atRiskAlerts.length === 0 ? (
                 <div
-                    className={`rounded-2xl border border-dashed p-5 text-sm ${isLight
+                    className={`rounded-xl border border-dashed p-4 text-xs ${isLight
                             ? 'border-border bg-muted/50 text-muted-foreground'
                             : 'border-border bg-muted/30 text-muted-foreground'
                         }`}
@@ -124,7 +125,7 @@ export default async function AtRiskStudentsCard({
                     No hay acciones pendientes por ahora.
                 </div>
             ) : (
-                <div className="space-y-3">
+                <div className="space-y-2">
                     {atRiskAlerts.map((alert) => {
                         const meta = getRiskMeta(alert.type, isLight)
                         const Icon = meta.icon
@@ -132,15 +133,14 @@ export default async function AtRiskStudentsCard({
                         return (
                             <div
                                 key={`${alert.type}-${alert.studentId}`}
-                                className={`rounded-2xl border p-4 transition ${meta.cardClassName}`}
+                                className={`rounded-xl border p-3 transition ${meta.cardClassName}`}
                             >
-                                <div className="flex items-start justify-between gap-4">
-                                    <div className="flex min-w-0 items-start gap-3">
+                                <div className="flex min-w-0 items-start gap-2.5">
                                         <div
-                                            className={`rounded-xl p-2 ${meta.iconBgClassName}`}
+                                            className={`mt-0.5 rounded-lg p-1.5 ${meta.iconBgClassName}`}
                                         >
                                             <Icon
-                                                className={`h-4 w-4 ${meta.iconClassName}`}
+                                                className={`h-3.5 w-3.5 ${meta.iconClassName}`}
                                             />
                                         </div>
 
@@ -149,19 +149,27 @@ export default async function AtRiskStudentsCard({
                                                 {meta.label}
                                             </AppBadge>
 
-                                            <p className="mt-3 text-sm leading-6 text-card-foreground">
+                                            <p className="mt-1.5 text-xs leading-5 text-card-foreground">
                                                 {alert.message}
                                             </p>
+
+                                            <FollowUpActions alert={alert} />
                                         </div>
                                     </div>
-
-                                    <FollowUpActions alert={alert} />
-                                </div>
                             </div>
                         )
                     })}
                 </div>
             )}
-        </div>
+
+            {alerts.length > atRiskAlerts.length && (
+                <Link
+                    href="/dashboard/students"
+                    className="mt-3 block text-center text-[11px] font-medium text-white/35 transition hover:text-white/70"
+                >
+                    Ver las {alerts.length} prioridades
+                </Link>
+            )}
+        </section>
     )
 }
