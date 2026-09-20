@@ -9,29 +9,41 @@ BEGIN;
 
 DO $migration$
 DECLARE
-    function_definition text;
-    patched_definition text;
+    function_body text;
 BEGIN
-    SELECT pg_get_functiondef(
-        'public.get_students_risk_metrics(uuid[])'::regprocedure
-    )
-    INTO function_definition;
+    SELECT p.prosrc
+    INTO function_body
+    FROM pg_proc p
+    WHERE p.oid = 'public.get_students_risk_metrics(uuid[])'::regprocedure;
 
-    IF position('#variable_conflict use_column' IN function_definition) > 0 THEN
+    IF function_body IS NULL THEN
+        RAISE EXCEPTION 'No existe public.get_students_risk_metrics(uuid[])';
+    END IF;
+
+    IF position('#variable_conflict use_column' IN function_body) > 0 THEN
         RETURN;
     END IF;
 
-    patched_definition := replace(
-        function_definition,
-        E'AS $function$\n',
-        E'AS $function$\n#variable_conflict use_column\n'
+    function_body := E'#variable_conflict use_column\n' || function_body;
+
+    EXECUTE format(
+        $definition$
+        CREATE OR REPLACE FUNCTION public.get_students_risk_metrics(p_student_ids uuid[])
+        RETURNS TABLE(
+            student_id uuid,
+            last_workout_at date,
+            total_sessions integer,
+            adherence_rate numeric,
+            stagnant_days integer,
+            progress_count integer
+        )
+        LANGUAGE plpgsql
+        SECURITY DEFINER
+        SET search_path TO 'public'
+        AS %L
+        $definition$,
+        function_body
     );
-
-    IF patched_definition = function_definition THEN
-        RAISE EXCEPTION 'No se pudo localizar el inicio de get_students_risk_metrics';
-    END IF;
-
-    EXECUTE patched_definition;
 END;
 $migration$;
 
