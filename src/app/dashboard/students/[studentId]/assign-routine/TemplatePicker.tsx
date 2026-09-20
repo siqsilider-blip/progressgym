@@ -62,7 +62,7 @@ export default function TemplatePicker({
                     return
                 }
 
-                router.push(`/dashboard/students/${studentId}`)
+                router.push(`/dashboard/students/${studentId}?setup=invite`)
                 router.refresh()
             } catch {
                 setError('Ocurrió un error de conexión. Intentá nuevamente.')

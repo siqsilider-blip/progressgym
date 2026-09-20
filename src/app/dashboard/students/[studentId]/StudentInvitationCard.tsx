@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import { Check, Copy, ExternalLink, MessageCircle, Send } from 'lucide-react'
 import { createStudentAccessInvitation } from './invite-actions'
 
@@ -16,17 +16,30 @@ export default function StudentInvitationCard({
     defaultEmail,
     linkedEmail,
     hasRoutine,
+    programReady,
+    highlight = false,
 }: {
     studentId: string
     defaultEmail: string | null
     linkedEmail: string | null
     hasRoutine: boolean
+    programReady: boolean
+    highlight?: boolean
 }) {
+    const sectionRef = useRef<HTMLElement>(null)
     const [email, setEmail] = useState(linkedEmail ?? defaultEmail ?? '')
     const [prepared, setPrepared] = useState<PreparedInvitation | null>(null)
     const [error, setError] = useState('')
     const [copied, setCopied] = useState(false)
     const [isPending, startTransition] = useTransition()
+
+    useEffect(() => {
+        if (!highlight) return
+        const timeout = window.setTimeout(() => {
+            sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }, 200)
+        return () => window.clearTimeout(timeout)
+    }, [highlight])
 
     function prepareInvitation(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault()
@@ -54,13 +67,23 @@ export default function StudentInvitationCard({
     }
 
     return (
-        <section className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.055] p-3.5">
+        <section
+            ref={sectionRef}
+            className={`rounded-xl border bg-emerald-500/[0.055] p-3.5 ${highlight ? 'border-emerald-400/50 ring-2 ring-emerald-500/15' : 'border-emerald-500/20'}`}
+        >
             <div className="flex items-start gap-3">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400">
                     <Send className="h-4 w-4" />
                 </div>
                 <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-foreground">Acceso del alumno</p>
+                    <div className="flex items-center gap-2">
+                        <p className="text-sm font-semibold text-foreground">Acceso del alumno</p>
+                        {highlight && !linkedEmail && (
+                            <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-400">
+                                Último paso
+                            </span>
+                        )}
+                    </div>
                     <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
                         {linkedEmail
                             ? `Cuenta vinculada a ${linkedEmail}. Podés reenviarle un acceso si lo necesita.`
@@ -89,11 +112,17 @@ export default function StudentInvitationCard({
                     </p>
                 )}
 
+                {hasRoutine && !programReady && (
+                    <p className="rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-300">
+                        Agregá al menos un ejercicio a la rutina antes de enviar el acceso.
+                    </p>
+                )}
+
                 {error && <p className="text-xs font-medium text-red-400">{error}</p>}
 
                 <button
                     type="submit"
-                    disabled={isPending || !hasRoutine || !email.trim()}
+                    disabled={isPending || !programReady || !email.trim()}
                     className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-45"
                 >
                     <Send className="h-4 w-4" />

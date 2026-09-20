@@ -15,10 +15,14 @@ type PageProps = {
     params: Promise<{
         studentId: string
     }>
+    searchParams?: Promise<{
+        setup?: string
+    }>
 }
 
 export default async function StudentProfilePage(props: PageProps) {
     const params = await props.params;
+    const searchParams = await props.searchParams
     const supabase = await createClient()
 
     const {
@@ -52,9 +56,10 @@ export default async function StudentProfilePage(props: PageProps) {
     let currentWeekLabel = 'Semana 1'
     let programWeekNumber = 1
     let totalProgramWeeks = 1
+    let programReady = false
 
     if (assignedRoutineId && programStartedOn) {
-        const [routineResult, schedule] = await Promise.all([
+        const [routineResult, schedule, daysResult] = await Promise.all([
             supabase
                 .from('routines')
                 .select('name')
@@ -62,6 +67,10 @@ export default async function StudentProfilePage(props: PageProps) {
                 .eq('trainer_id', user.id)
                 .maybeSingle(),
             getRoutineSchedule(supabase, assignedRoutineId, { programStartedOn }),
+            supabase
+                .from('routine_days')
+                .select('id')
+                .eq('routine_id', assignedRoutineId),
         ])
 
         activeRoutineName = routineResult.data?.name ?? 'Rutina asignada'
@@ -69,6 +78,17 @@ export default async function StudentProfilePage(props: PageProps) {
             || (schedule.currentWeek ? `Semana ${schedule.currentWeek.week_number}` : 'Semana actual')
         programWeekNumber = schedule.programWeekNumber || 1
         totalProgramWeeks = schedule.totalProgramWeeks || 1
+
+        const dayIds = (daysResult.data ?? []).map((day) => day.id)
+        if (dayIds.length > 0) {
+            const { data: firstExercise } = await supabase
+                .from('routine_day_exercises')
+                .select('id')
+                .in('routine_day_id', dayIds)
+                .limit(1)
+                .maybeSingle()
+            programReady = Boolean(firstExercise)
+        }
     }
 
     const trainHref = `/dashboard/students/${params.studentId}/train`
@@ -105,6 +125,8 @@ export default async function StudentProfilePage(props: PageProps) {
                 defaultEmail={student.email ?? null}
                 linkedEmail={linkedProfile?.email ?? null}
                 hasRoutine={Boolean(assignedRoutineId)}
+                programReady={programReady}
+                highlight={searchParams?.setup === 'invite'}
             />
 
             <StudentRiskCard risk={risk} />

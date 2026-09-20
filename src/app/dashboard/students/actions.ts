@@ -45,5 +45,5 @@ export async function createStudent(formData: FormData) {
         redirect(`/dashboard/students/new?message=${message}`)
     }
 
-    redirect(`/dashboard/students/${data.id}`)
+    redirect(`/dashboard/students/${data.id}/assign-routine?setup=1`)
 }

@@ -36,7 +36,7 @@ export default function NewStudentPage(
             <div className="mx-auto max-w-2xl space-y-4">
                 <DashboardPageHeader
                     title="Agregar alumno"
-                    subtitle="Datos básicos para comenzar"
+                    subtitle="Después vas a asignarle un programa y enviarle el acceso"
                     backHref="/dashboard/students"
                 />
 

@@ -62,7 +62,7 @@ async function assignRoutine(formData: FormData) {
         throw new Error(assignError.message)
     }
 
-    redirect(`/dashboard/students/${studentId}`)
+    redirect(`/dashboard/students/${studentId}?setup=invite`)
 }
 
 export default async function AssignRoutinePage(props: PageProps) {
