@@ -121,6 +121,9 @@ export default async function SignupTrainerPage(
                         >
                             Crear cuenta
                         </button>
+                        <p className="text-center text-[10px] leading-4 text-white/25">
+                            Al crear tu cuenta aceptás los <a href="/terms" className="underline underline-offset-2 hover:text-white/50">Términos</a> y la <a href="/privacy" className="underline underline-offset-2 hover:text-white/50">Política de privacidad</a>.
+                        </p>
                     </form>
                 </div>
 

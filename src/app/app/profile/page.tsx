@@ -4,6 +4,7 @@ import { logout } from '@/app/auth/actions'
 import Link from 'next/link'
 import StudentPageHeader from '@/components/student/StudentPageHeader'
 import { getStudentAppContext } from '@/lib/auth/student'
+import AccountDeletionCard from '@/components/account/AccountDeletionCard'
 
 export default async function AppProfilePage() {
     const supabase = await createClient()
@@ -111,6 +112,14 @@ export default async function AppProfilePage() {
                     <span>Ver mis logros</span>
                     <span className="text-indigo-400">→</span>
                 </Link>
+
+                <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 py-1 text-[11px] text-muted-foreground">
+                    <Link href="/privacy">Privacidad</Link>
+                    <Link href="/terms">Términos</Link>
+                    <Link href="/support">Soporte</Link>
+                </div>
+
+                <AccountDeletionCard compact />
 
                 {/* ── Logout ── */}
                 <form action={logout}>

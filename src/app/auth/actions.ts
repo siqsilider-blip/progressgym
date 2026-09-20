@@ -20,6 +20,24 @@ const supabaseAdmin = createSupabaseClient(
     }
 )
 
+async function stopPendingDeletionLogin(
+    supabase: Awaited<ReturnType<typeof createClient>>,
+    userId: string
+) {
+    const { data, error } = await supabase
+        .from('account_deletion_requests')
+        .select('status')
+        .eq('user_id', userId)
+        .eq('status', 'pending')
+        .maybeSingle()
+
+    // Mientras la migración aún no exista, el login sigue funcionando.
+    if (!error && data) {
+        await supabase.auth.signOut()
+        redirect('/account-deletion?pending=1')
+    }
+}
+
 // ─── Signup entrenador ───
 export async function signup(formData: FormData) {
     const supabase = await createClient()
@@ -89,6 +107,7 @@ export async function loginTrainer(formData: FormData) {
 
     const { data: { user } } = await supabase.auth.getUser()
     if (user) {
+        await stopPendingDeletionLogin(supabase, user.id)
         const { data: profile } = await supabase
             .from('profiles')
             .select('role')
@@ -119,6 +138,7 @@ export async function loginStudent(formData: FormData) {
 
     const { data: { user } } = await supabase.auth.getUser()
     if (user) {
+        await stopPendingDeletionLogin(supabase, user.id)
         const { data: profile } = await supabase
             .from('profiles')
             .select('role')
@@ -149,6 +169,7 @@ export async function login(formData: FormData) {
 
     const { data: { user } } = await supabase.auth.getUser()
     if (user) {
+        await stopPendingDeletionLogin(supabase, user.id)
         const { data: profile } = await supabase
             .from('profiles')
             .select('role')

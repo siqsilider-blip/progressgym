@@ -61,7 +61,7 @@ export default function LandingPage() {
           </Link>
           <Link href="/signup" className="text-xs font-bold px-4 py-2.5 rounded-xl text-white transition-all hover:scale-[1.03]"
             style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)', boxShadow: '0 4px 16px rgba(124,58,237,0.4)' }}>
-            Gratis →
+            Crear cuenta →
           </Link>
         </div>
       </nav>
@@ -112,7 +112,7 @@ export default function LandingPage() {
           <Link href="/signup"
             className="w-full rounded-2xl py-3.5 text-sm font-black text-white text-center transition-all hover:scale-[1.02] active:scale-[0.98]"
             style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)', boxShadow: '0 8px 28px rgba(124,58,237,0.4)' }}>
-            Crear mi cuenta gratis →
+            Crear mi cuenta →
           </Link>
           <Link href="/login"
             className="w-full rounded-2xl border py-3.5 text-sm font-semibold text-white/70 hover:text-white text-center transition-all"
@@ -121,12 +121,12 @@ export default function LandingPage() {
           </Link>
         </div>
 
-        {/* Social proof */}
+        {/* Beneficios verificables */}
         <div className="anim-fadein-4 relative flex justify-center gap-5 mb-5">
           {[
-            { n: '+120', label: 'entrenadores' },
-            { n: '+3.800', label: 'sesiones' },
-            { n: '+940', label: 'PRs registrados' },
+            { n: '✓', label: 'rutinas claras' },
+            { n: '✓', label: 'seguimiento real' },
+            { n: '✓', label: 'desde el celular' },
           ].map((s) => (
             <div key={s.label} className="text-center">
               <p className="text-sm font-black text-white">{s.n}</p>
@@ -317,13 +317,13 @@ export default function LandingPage() {
           <div className="relative overflow-hidden rounded-3xl p-7 text-center border" style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.22), rgba(79,70,229,0.16))', borderColor: 'rgba(124,58,237,0.2)' }}>
             <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(circle at 20% 80%, rgba(167,139,250,0.15) 0%, transparent 60%)' }} />
             <h2 className="relative text-2xl font-black tracking-tight mb-1">Empezá hoy.</h2>
-            <p className="relative text-sm mb-5" style={{ color: 'rgba(255,255,255,0.45)' }}>Gratis para siempre hasta 1 alumno.</p>
+            <p className="relative text-sm mb-5" style={{ color: 'rgba(255,255,255,0.45)' }}>Organizá alumnos, rutinas y progreso desde un solo lugar.</p>
             <Link href="/signup"
               className="relative inline-block w-full rounded-2xl bg-white py-4 text-sm font-black text-violet-700 hover:bg-white/95 transition-all hover:scale-[1.02] active:scale-[0.98]"
               style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.3)' }}>
-              Crear cuenta gratis →
+              Crear cuenta →
             </Link>
-            <p className="relative mt-3 text-[10px]" style={{ color: 'rgba(255,255,255,0.2)' }}>Sin tarjeta de crédito · Cancalá cuando quieras</p>
+            <p className="relative mt-3 text-[10px]" style={{ color: 'rgba(255,255,255,0.2)' }}>Configuración simple · Acceso desde el celular</p>
           </div>
         </div>
       </section>
@@ -339,6 +339,12 @@ export default function LandingPage() {
           <span className="text-xs font-black" style={{ color: 'rgba(255,255,255,0.25)' }}>Progrezzia</span>
         </div>
         <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.12)' }}>© 2026 Progrezzia · Hecho para entrenadores</p>
+        <div className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-2 text-[10px] text-white/30">
+          <Link href="/privacy" className="hover:text-white/60">Privacidad</Link>
+          <Link href="/terms" className="hover:text-white/60">Términos</Link>
+          <Link href="/support" className="hover:text-white/60">Soporte</Link>
+          <Link href="/account-deletion" className="hover:text-white/60">Eliminar cuenta</Link>
+        </div>
       </footer>
     </main>
   )

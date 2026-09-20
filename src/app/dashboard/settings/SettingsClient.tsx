@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { User, Mail, Shield, Moon, Scale, Dumbbell, BarChart2, Bell, Building2, LogOut, Lock, Trash2 } from 'lucide-react'
+import { User, Mail, Shield, Moon, Scale, Dumbbell, BarChart2, Bell, Building2, LogOut, Lock } from 'lucide-react'
 import { saveSettings, signOutAction } from './actions'
 import { type SettingsData } from './types'
 import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
+import AccountDeletionCard from '@/components/account/AccountDeletionCard'
 
 type Props = {
     email: string
@@ -206,15 +207,7 @@ export default function SettingsClient({ email, theme, initialSettings }: Props)
                                 </button>
                             </form>
 
-                            <button
-                                type="button"
-                                disabled
-                                className="flex w-full items-center gap-3 rounded-xl border border-red-200 bg-red-50/50 px-4 py-3 text-left text-sm text-red-500 transition hover:bg-red-50 disabled:opacity-40 dark:border-red-500/20 dark:bg-red-500/5 dark:text-red-400"
-                            >
-                                <Trash2 className="h-4 w-4 shrink-0" />
-                                <span className="flex-1 font-medium">Eliminar cuenta</span>
-                                <span className="text-xs opacity-60">Próximamente</span>
-                            </button>
+                            <AccountDeletionCard />
                         </div>
                     </div>
 
