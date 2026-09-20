@@ -116,6 +116,16 @@ test('la biblioteca muestra la cobertura de videos', async ({ page }) => {
     await expect(page.getByText('Video listo', { exact: true })).toBeVisible()
 })
 
+test('el flujo de un alumno pendiente prioriza reutilizar un template', async ({ page }) => {
+    await logIn(page, 'trainer', trainerEmail)
+    await page.goto(`/dashboard/students/${inviteStudentId}/assign-routine`)
+
+    await expect(page.getByRole('heading', { name: 'Asignar programa' })).toBeVisible()
+    await expect(page.getByText(templateName, { exact: true })).toBeVisible()
+    await expect(page.getByText('Se copiará completo y quedará listo para personalizar.')).toBeVisible()
+    await expect(page.getByText('Crear una rutina desde cero')).toBeHidden()
+})
+
 test('el entrenador prepara un acceso personal para enviar por WhatsApp', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name === 'desktop-chromium', 'La generación del enlace se prueba una sola vez.')
 

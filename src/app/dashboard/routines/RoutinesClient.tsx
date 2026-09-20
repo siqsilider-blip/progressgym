@@ -175,7 +175,7 @@ export default function RoutinesClient({ students, routines, error }: Props) {
                                 return (
                                     <Link
                                         key={student.id}
-                                        href={`/dashboard/routines/new?studentId=${student.id}`}
+                                        href={`/dashboard/students/${student.id}/assign-routine`}
                                         className="flex min-h-14 items-center gap-2.5 px-2.5 py-2 transition hover:bg-amber-500/[0.04]"
                                     >
                                                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/[0.04] text-[10px] font-bold text-white/45">
@@ -183,7 +183,7 @@ export default function RoutinesClient({ students, routines, error }: Props) {
                                                 </div>
                                                 <div className="min-w-0 flex-1">
                                                     <p className="truncate text-xs font-semibold text-zinc-100">{name}</p>
-                                                    <p className="text-[11px] text-amber-400/60">Crear rutina</p>
+                                                    <p className="text-[11px] text-amber-400/60">Asignar programa</p>
                                                 </div>
                                         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-400">
                                             <Plus className="h-3.5 w-3.5" />
