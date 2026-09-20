@@ -15,14 +15,15 @@ export default async function AppHomePage() {
     const studentId = profile.student_id
     if (!studentId) redirect('/app')
 
-    const { data: student } = await supabase
-        .from('students')
-        .select('first_name, last_name, trainer_id')
-        .eq('id', studentId)
-        .single()
-
-    // Rutina asignada
-    const assignment = await getActiveStudentRoutine(supabase, studentId)
+    const [studentResult, assignment] = await Promise.all([
+        supabase
+            .from('students')
+            .select('first_name')
+            .eq('id', studentId)
+            .single(),
+        getActiveStudentRoutine(supabase, studentId),
+    ])
+    const student = studentResult.data
 
     let routineName: string | null = null
     let assignedRoutineId: string | null = null
@@ -39,19 +40,21 @@ export default async function AppHomePage() {
     let todayExercises: { name: string; sets: number; reps: string | null }[] = []
 
     if (assignment?.routineId) {
-        const { data: routine } = await supabase
-            .from('routines')
-            .select('id, name')
-            .eq('id', assignment.routineId)
-            .single()
+        const [routineResult, schedule] = await Promise.all([
+            supabase
+                .from('routines')
+                .select('id, name')
+                .eq('id', assignment.routineId)
+                .single(),
+            getRoutineSchedule(supabase, assignment.routineId, {
+                programStartedOn: assignment.programStartedOn,
+            }),
+        ])
+        const routine = routineResult.data
 
         if (routine) {
             assignedRoutineId = routine.id
             routineName = routine.name
-
-            const schedule = await getRoutineSchedule(supabase, routine.id, {
-                programStartedOn: assignment.programStartedOn,
-            })
             selectedMonthId = schedule.selectedMonth?.id ?? null
             selectedWeekId = schedule.selectedWeek?.id ?? null
             programWeekNumber = schedule.programWeekNumber
@@ -69,8 +72,9 @@ export default async function AppHomePage() {
                     const dayIds = days.map((day) => day.id)
                     const { data: weekExercises } = await supabase
                         .from('routine_day_exercises')
-                        .select('routine_day_id')
+                        .select('routine_day_id, sets, reps, exercise_id')
                         .in('routine_day_id', dayIds)
+                        .order('position', { ascending: true })
 
                     const daysWithExercises = new Set(
                         (weekExercises ?? []).map((exercise) => exercise.routine_day_id).filter(Boolean)
@@ -78,19 +82,32 @@ export default async function AppHomePage() {
                     const trainingDays = days.filter((day) => daysWithExercises.has(day.id))
                     totalTrainingDays = trainingDays.length
 
-                    if (trainingDays.length > 0) {
-                        const progress = await getStudentRoutineWeekProgress(
-                            supabase,
-                            studentId,
-                            trainingDays.map((day) => day.id),
-                            schedule.selectedWeekStart && schedule.selectedWeekEnd
-                                ? {
-                                    weekStart: schedule.selectedWeekStart,
-                                    weekEnd: schedule.selectedWeekEnd,
-                                }
-                                : null
-                        )
+                    const exerciseIds = [
+                        ...new Set((weekExercises ?? []).map((exercise) => exercise.exercise_id).filter(Boolean)),
+                    ]
+                    const [progress, exercisesResult] = await Promise.all([
+                        trainingDays.length > 0
+                            ? getStudentRoutineWeekProgress(
+                                supabase,
+                                studentId,
+                                trainingDays.map((day) => day.id),
+                                schedule.selectedWeekStart && schedule.selectedWeekEnd
+                                    ? {
+                                        weekStart: schedule.selectedWeekStart,
+                                        weekEnd: schedule.selectedWeekEnd,
+                                    }
+                                    : null
+                            )
+                            : Promise.resolve(null),
+                        exerciseIds.length > 0
+                            ? supabase
+                                .from('exercises')
+                                .select('id, name')
+                                .in('id', exerciseIds)
+                            : Promise.resolve({ data: [] }),
+                    ])
 
+                    if (trainingDays.length > 0 && progress) {
                         completedDays = trainingDays.filter(
                             (day) => progress.statusByDayId.get(day.id) === 'completed'
                         ).length
@@ -114,31 +131,19 @@ export default async function AppHomePage() {
                             || days[0].title?.trim()
                             || `Día ${days[0].day_index}`
                     }
-                }
-            }
 
-            // Ejercicios del día seleccionado
-            if (selectedDayId) {
-                const { data: rdes } = await supabase
-                    .from('routine_day_exercises')
-                    .select('sets, reps, exercise_id')
-                    .eq('routine_day_id', selectedDayId)
-                    .order('position', { ascending: true })
-
-                if (rdes && rdes.length > 0) {
-                    const exerciseIds = [...new Set(rdes.map(r => r.exercise_id).filter(Boolean))]
-                    const { data: exercises } = await supabase
-                        .from('exercises')
-                        .select('id, name')
-                        .in('id', exerciseIds)
-
-                    const exMap = new Map((exercises ?? []).map(e => [e.id, e.name]))
-
-                    todayExercises = rdes.map(r => ({
-                        name: exMap.get(r.exercise_id) ?? 'Ejercicio',
-                        sets: r.sets ?? 3,
-                        reps: r.reps != null ? String(r.reps) : null,
-                    }))
+                    if (selectedDayId) {
+                        const exMap = new Map(
+                            (exercisesResult.data ?? []).map((exercise) => [exercise.id, exercise.name])
+                        )
+                        todayExercises = (weekExercises ?? [])
+                            .filter((exercise) => exercise.routine_day_id === selectedDayId)
+                            .map((exercise) => ({
+                                name: exMap.get(exercise.exercise_id) ?? 'Ejercicio',
+                                sets: exercise.sets ?? 3,
+                                reps: exercise.reps != null ? String(exercise.reps) : null,
+                            }))
+                    }
                 }
             }
         }

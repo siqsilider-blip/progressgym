@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { getServerUser } from '@/lib/auth/server'
+import { getTrainerStudents } from './getTrainerStudents'
 
 export type TrainerDashboardStats = {
     totalStudents: number
@@ -11,36 +11,9 @@ export type TrainerDashboardStats = {
 
 export async function getTrainerDashboardStats(): Promise<TrainerDashboardStats> {
     const supabase = await createClient()
+    const students = await getTrainerStudents()
 
-    const user = await getServerUser()
-
-    if (!user) {
-        return {
-            totalStudents: 0,
-            activeStudents: 0,
-            inactiveStudents: 0,
-            totalPRs: 0,
-            studentsWithRoutine: 0,
-        }
-    }
-
-    const { data: students, error: studentsError } = await supabase
-        .from('students')
-        .select('id')
-        .eq('trainer_id', user.id)
-
-    if (studentsError) {
-        console.error('Error fetching students:', studentsError)
-        return {
-            totalStudents: 0,
-            activeStudents: 0,
-            inactiveStudents: 0,
-            totalPRs: 0,
-            studentsWithRoutine: 0,
-        }
-    }
-
-    const studentIds = (students ?? []).map((student) => student.id)
+    const studentIds = students.map((student) => student.id)
     const totalStudents = studentIds.length
 
     if (studentIds.length === 0) {

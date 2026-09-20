@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { getServerUser } from '@/lib/auth/server'
+import { getTrainerStudents } from './getTrainerStudents'
 
 export type RecentWorkoutActivityItem = {
     studentId: string
@@ -14,17 +14,8 @@ export async function getRecentWorkoutActivity(limit = 10): Promise<
     RecentWorkoutActivityItem[]
 > {
     const supabase = await createClient()
-
-    const user = await getServerUser()
-
-    if (!user) return []
-
-    const { data: students } = await supabase
-        .from('students')
-        .select('id, first_name, last_name')
-        .eq('trainer_id', user.id)
-
-    if (!students) return []
+    const students = await getTrainerStudents()
+    if (students.length === 0) return []
 
     const studentIds = students.map((s) => s.id)
 

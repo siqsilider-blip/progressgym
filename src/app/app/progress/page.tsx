@@ -13,21 +13,24 @@ export default async function AppProgressPage() {
     const studentId = context.profile.student_id
     if (!studentId) redirect('/app')
 
-    const { data: student } = await supabase
-        .from('students')
-        .select('first_name, last_name, trainer_id')
-        .eq('id', studentId)
-        .single()
+    const [studentResult, progressData] = await Promise.all([
+        supabase
+            .from('students')
+            .select('trainer_id')
+            .eq('id', studentId)
+            .single(),
+        getStudentExerciseProgress(studentId),
+    ])
 
-    const trainerProfile = student?.trainer_id ? await supabase
+    const trainerId = studentResult.data?.trainer_id
+    const trainerProfile = trainerId ? await supabase
         .from('profiles')
         .select('weight_unit')
-        .eq('id', student.trainer_id)
+        .eq('id', trainerId)
         .single()
         .then(r => r.data) : null
 
     const weightUnit = (trainerProfile?.weight_unit ?? 'kg') as WeightUnit
-    const progressData = await getStudentExerciseProgress(studentId)
 
     const totalProgress = progressData.reduce((acc, e) => acc + e.progressKg, 0)
     const totalExercises = progressData.length

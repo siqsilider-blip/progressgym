@@ -26,23 +26,14 @@ export async function getStudentSessionHistory(
 ): Promise<SessionHistoryItem[]> {
     const supabase = await createClient()
 
-    // 1. Traer IDs de sesiones que tienen logs
-    const { data: logsIndex } = await supabase
-        .from('exercise_logs')
-        .select('workout_session_id')
-        .eq('student_id', studentId)
-        .not('workout_session_id', 'is', null)
-
-    const sessionIdsWithLogs = [...new Set((logsIndex ?? []).map(l => l.workout_session_id).filter(Boolean))]
-    if (sessionIdsWithLogs.length === 0) return []
-
-    // 2. Traer sesiones completadas del alumno (solo las que tienen logs)
+    // Traer primero las sesiones recientes. Antes se descargaba el índice
+    // completo de logs solo para descubrir IDs, algo que empeoraba a medida
+    // que crecía el historial del alumno.
     const { data: sessions, error: sessionsError } = await supabase
         .from('workout_sessions')
         .select('id, performed_date, started_at, finished_at, duration_seconds, routine_day_id, notes')
         .eq('student_id', studentId)
         .eq('status', 'completed')
-        .in('id', sessionIdsWithLogs)
         .order('performed_date', { ascending: false })
         .order('started_at', { ascending: false })
         .limit(limit)
@@ -52,32 +43,33 @@ export async function getStudentSessionHistory(
     const sessionIds = sessions.map((s) => s.id)
     const routineDayIds = [...new Set(sessions.map((s) => s.routine_day_id).filter(Boolean))]
 
-    // 2. Traer labels de días de rutina
+    // Traer labels y logs en paralelo.
     const dayLabelMap = new Map<string, string>()
-    if (routineDayIds.length > 0) {
-        const { data: days } = await supabase
-            .from('routine_days')
-            .select('id, title, day_index')
-            .in('id', routineDayIds)
+    const [daysResult, logsResult] = await Promise.all([
+        routineDayIds.length > 0
+            ? supabase
+                .from('routine_days')
+                .select('id, title, day_index')
+                .in('id', routineDayIds)
+            : Promise.resolve({ data: [] }),
+        supabase
+            .from('exercise_logs')
+            .select('workout_session_id, routine_day_exercise_id, weight, reps, rpe, set_index')
+            .in('workout_session_id', sessionIds)
+            .eq('student_id', studentId),
+    ])
 
-        for (const day of days ?? []) {
-            dayLabelMap.set(
-                day.id,
-                day.title?.trim() || `Día ${day.day_index}`
-            )
-        }
+    for (const day of daysResult.data ?? []) {
+        dayLabelMap.set(
+            day.id,
+            day.title?.trim() || `Día ${day.day_index}`
+        )
     }
 
-    // 3. Traer todos los logs de esas sesiones
-    const { data: logs, error: logsError } = await supabase
-        .from('exercise_logs')
-        .select('workout_session_id, routine_day_exercise_id, weight, reps, rpe, set_index')
-        .in('workout_session_id', sessionIds)
-        .eq('student_id', studentId)
+    const logs = logsResult.data
+    if (logsResult.error || !logs) return []
 
-    if (logsError || !logs) return []
-
-    // 4. Traer routine_day_exercises + exercises para nombres
+    // Traer routine_day_exercises + exercises para nombres.
     const rdeIds = [...new Set(logs.map((l) => l.routine_day_exercise_id).filter(Boolean))]
     const exerciseNameMap = new Map<string, { name: string; isCardio: boolean }>()
 
@@ -110,7 +102,7 @@ export async function getStudentSessionHistory(
         }
     }
 
-    // 5. Agrupar logs por sesión
+    // Agrupar logs por sesión.
     const logsBySession = new Map<string, typeof logs>()
     for (const log of logs) {
         if (!log.workout_session_id) continue
@@ -120,8 +112,11 @@ export async function getStudentSessionHistory(
         logsBySession.get(log.workout_session_id)!.push(log)
     }
 
-    // 6. Construir resultado
-    return sessions.map((session) => {
+    // Las sesiones sin series no forman parte del historial visible, igual
+    // que antes, pero ya no condicionan la consulta inicial.
+    return sessions
+        .filter((session) => logsBySession.has(session.id))
+        .map((session) => {
         const sessionLogs = logsBySession.get(session.id) ?? []
 
         // Agrupar por ejercicio dentro de la sesión
@@ -184,5 +179,5 @@ export async function getStudentSessionHistory(
             note: session.notes ?? null,
             exercises,
         }
-    })
+        })
 }

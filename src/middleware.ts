@@ -4,6 +4,23 @@ import { createServerClient } from '@supabase/ssr'
 export async function middleware(request: NextRequest) {
     let supabaseResponse = NextResponse.next({ request })
 
+    const pathname = request.nextUrl.pathname
+
+    // Las rutas públicas no necesitan validar ni refrescar una sesión. Evita
+    // una llamada remota innecesaria en login, registro y health checks.
+    const isPublicRoute =
+        pathname === '/' ||
+        pathname === '/login' ||
+        pathname.startsWith('/login/') ||
+        pathname === '/signup' ||
+        pathname.startsWith('/signup/') ||
+        pathname === '/forgot-password' ||
+        pathname === '/reset-password' ||
+        pathname === '/api/health' ||
+        pathname.startsWith('/auth')
+
+    if (isPublicRoute) return supabaseResponse
+
     const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -25,23 +42,11 @@ export async function middleware(request: NextRequest) {
         }
     )
 
-    const { data: { user } } = await supabase.auth.getUser()
-    const pathname = request.nextUrl.pathname
-
-    // Rutas públicas
-    const isPublicRoute =
-        pathname === '/' ||
-        pathname === '/login' ||
-        pathname.startsWith('/login/') ||
-        pathname === '/signup' ||
-        pathname.startsWith('/signup/') ||
-        pathname === '/forgot-password' ||
-        pathname === '/reset-password' ||
-        pathname === '/api/health' ||
-        pathname.startsWith('/auth')
+    const { data, error } = await supabase.auth.getClaims()
+    const isAuthenticated = !error && Boolean(data?.claims?.sub)
 
     // Sin sesión en ruta protegida → login
-    if (!user && !isPublicRoute) {
+    if (!isAuthenticated) {
         return NextResponse.redirect(new URL('/login', request.url))
     }
 

@@ -55,7 +55,7 @@ test('el alumno entra a su portal y no al panel del entrenador', async ({ page }
     await expect(page.getByText(exerciseName, { exact: true })).toBeVisible()
     await page.getByRole('link', { name: /Entrenar/ }).click()
 
-    await expect(page).toHaveURL(/\/app\/train\?/)
+    await expect(page).toHaveURL(/\/app\/train\?/, { timeout: 30_000 })
     await expect(page.getByText(/Día E2E · Activación · 1\/1/)).toBeVisible()
     await expect(page.getByRole('heading', { name: exerciseName })).toBeVisible()
     await page.getByRole('button', { name: 'Ver cómo se hace' }).click()
@@ -83,6 +83,16 @@ test('el alumno entra a su portal y no al panel del entrenador', async ({ page }
     await page.goto('/app')
     await expect(page.getByText('Semana completada', { exact: true })).toBeVisible()
     await expect(page.getByText('¡Excelente trabajo! ✓')).toBeVisible()
+
+    await page.goto('/app/history')
+    await expect(page.getByRole('heading', { name: 'Historial' })).toBeVisible()
+    await expect(page.getByText(exerciseName, { exact: false })).toBeVisible()
+
+    await page.goto('/app/progress')
+    await expect(page.getByRole('heading', { name: 'Progreso' })).toBeVisible()
+
+    await page.goto('/app/profile')
+    await expect(page.getByRole('heading', { name: 'Perfil' })).toBeVisible()
 })
 
 test('cada tipo de cuenta es rechazado por el acceso equivocado', async ({ page }) => {

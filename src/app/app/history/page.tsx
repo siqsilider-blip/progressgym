@@ -36,21 +36,24 @@ export default async function AppHistoryPage() {
     const studentId = context.profile.student_id
     if (!studentId) redirect('/app')
 
-    const { data: student } = await supabase
-        .from('students')
-        .select('trainer_id')
-        .eq('id', studentId)
-        .single()
+    const [studentResult, sessions] = await Promise.all([
+        supabase
+            .from('students')
+            .select('trainer_id')
+            .eq('id', studentId)
+            .single(),
+        getStudentSessionHistory(studentId, 50),
+    ])
 
-    const trainerProfile = student?.trainer_id ? await supabase
+    const trainerId = studentResult.data?.trainer_id
+    const trainerProfile = trainerId ? await supabase
         .from('profiles')
         .select('weight_unit')
-        .eq('id', student.trainer_id)
+        .eq('id', trainerId)
         .single()
         .then(r => r.data) : null
 
     const weightUnit = (trainerProfile?.weight_unit ?? 'kg') as WeightUnit
-    const sessions = await getStudentSessionHistory(studentId, 50)
     const grouped = groupByMonth(sessions)
     const totalSets = sessions.reduce((acc, s) => acc + s.totalSets, 0)
     const avgDuration = sessions.filter(s => s.durationSeconds).length > 0

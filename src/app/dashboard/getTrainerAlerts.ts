@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { getElapsedProgramWeekIndex } from '@/lib/buenosAiresDate'
-import { getServerUser } from '@/lib/auth/server'
+import { getTrainerStudents } from './getTrainerStudents'
 
 export type TrainerAlert = {
     type: 'inactive' | 'no_routine' | 'new_student' | 'unfinished_session' | 'program_ending'
@@ -23,22 +23,7 @@ type FollowUpRow = { student_id: string }
 
 export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
     const supabase = await createClient()
-
-    const user = await getServerUser()
-
-    if (!user) {
-        return []
-    }
-
-    const { data: students, error: studentsError } = await supabase
-        .from('students')
-        .select('id, first_name, last_name, phone')
-        .eq('trainer_id', user.id)
-
-    if (studentsError || !students) {
-        console.error('Error fetching students for alerts:', studentsError)
-        return []
-    }
+    const students = await getTrainerStudents()
 
     if (students.length === 0) {
         return []
