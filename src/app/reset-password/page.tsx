@@ -7,6 +7,7 @@ export default async function ResetPasswordPage(
 ) {
     const searchParams = await props.searchParams
     const message = searchParams?.message
+    const isInvitation = searchParams?.invite === '1'
 
     return (
         <div className="relative flex min-h-screen flex-col items-center justify-center bg-[#07070a] p-5 text-white overflow-hidden">
@@ -29,7 +30,7 @@ export default async function ResetPasswordPage(
                     <div className="text-center">
                         <h1 className="text-2xl font-black tracking-tight">Progrezzia</h1>
                         <p className="mt-1 text-xs font-medium" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                            Crear nueva contraseña
+                            {isInvitation ? 'Activá tu acceso de alumno' : 'Crear nueva contraseña'}
                         </p>
                     </div>
                 </div>
@@ -38,6 +39,14 @@ export default async function ResetPasswordPage(
                     style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.08), rgba(79,70,229,0.04))', borderColor: 'rgba(124,58,237,0.2)' }}>
 
                     <form className="space-y-4" action={updatePassword}>
+                        {isInvitation && (
+                            <>
+                                <input type="hidden" name="flow" value="invitation" />
+                                <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-xs leading-relaxed text-emerald-300">
+                                    Elegí una contraseña. Después vas a entrar directamente a tu rutina.
+                                </div>
+                            </>
+                        )}
                         <div className="space-y-1.5">
                             <label className="text-xs font-semibold" style={{ color: 'rgba(255,255,255,0.5)' }} htmlFor="password">
                                 Contraseña nueva
@@ -81,7 +90,7 @@ export default async function ResetPasswordPage(
                             style={{ background: 'linear-gradient(135deg, #4f46e5, #7c3aed)', boxShadow: '0 4px 20px rgba(124,58,237,0.3)' }}
                             type="submit"
                         >
-                            Guardar contraseña
+                            {isInvitation ? 'Crear contraseña y entrar' : 'Guardar contraseña'}
                         </button>
                     </form>
                 </div>

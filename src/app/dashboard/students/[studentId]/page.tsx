@@ -4,7 +4,8 @@ import { createClient } from '@/lib/supabase/server'
 import StudentRiskCard from './StudentRiskCard'
 import { getStudentRisk } from './getStudentRisk'
 import DeleteStudentButton from './DeleteStudentButton'
-import LinkStudentAccountForm from './LinkStudentAccountForm'
+import StudentInvitationCard from './StudentInvitationCard'
+import { getStudentAccessAccount } from './invite-actions'
 import ProgramScheduleCard from './ProgramScheduleCard'
 import StudentContactCard from './StudentContactCard'
 import { getRoutineSchedule } from '@/lib/getRoutineSchedule'
@@ -41,7 +42,7 @@ export default async function StudentProfilePage(props: PageProps) {
     const [risk, routineAssignment, linkedProfile] = await Promise.all([
         getStudentRisk(studentId),
         supabase.from('student_routines').select('routine_id, program_started_on').eq('student_id', studentId).eq('status', 'active').maybeSingle(),
-        supabase.from('profiles').select('id, email').eq('student_id', studentId).maybeSingle(),
+        getStudentAccessAccount(studentId),
     ])
 
     const assignedRoutineId = routineAssignment.data?.routine_id ?? null
@@ -99,25 +100,18 @@ export default async function StudentProfilePage(props: PageProps) {
                 phone={student.phone ?? null}
             />
 
-            <StudentRiskCard risk={risk} />
+            <StudentInvitationCard
+                studentId={studentId}
+                defaultEmail={student.email ?? null}
+                linkedEmail={linkedProfile?.email ?? null}
+                hasRoutine={Boolean(assignedRoutineId)}
+            />
 
-            {!linkedProfile.data?.id && (
-                <LinkStudentAccountForm
-                    studentId={params.studentId}
-                    isLinked={false}
-                />
-            )}
+            <StudentRiskCard risk={risk} />
 
             <details className="rounded-xl border border-border bg-card px-3.5 py-3 text-sm">
                 <summary className="cursor-pointer font-semibold text-muted-foreground">Más opciones</summary>
                 <div className="mt-3 space-y-3 border-t border-border pt-3">
-                    {linkedProfile.data?.id && (
-                        <LinkStudentAccountForm
-                            studentId={params.studentId}
-                            isLinked
-                            linkedEmail={linkedProfile.data.email}
-                        />
-                    )}
                     <DeleteStudentButton studentId={params.studentId} />
                 </div>
             </details>

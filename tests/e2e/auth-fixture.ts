@@ -7,6 +7,7 @@ type CreatedFixture = {
     trainerUserId?: string
     studentUserId?: string
     studentId?: string
+    inviteStudentId?: string
     routineId?: string
     templateId?: string
     exerciseId?: string
@@ -68,6 +69,7 @@ export default async function createAuthFixture() {
     const password = `${randomBytes(24).toString('base64url')}Aa1!`
     const trainerEmail = `e2e-trainer-${runId}@example.com`
     const studentEmail = `e2e-student-${runId}@example.com`
+    const inviteStudentEmail = `e2e-student-invite-${runId}@example.com`
     const created: CreatedFixture = {}
 
     async function cleanup() {
@@ -77,7 +79,9 @@ export default async function createAuthFixture() {
         await removeAuthFixtureData(admin, {
             userIds,
             trainerIds: userIds,
-            studentIds: created.studentId ? [created.studentId] : [],
+            studentIds: [created.studentId, created.inviteStudentId].filter(
+                (id): id is string => Boolean(id)
+            ),
             routineIds: created.routineId ? [created.routineId] : [],
             exerciseIds: created.exerciseId ? [created.exerciseId] : [],
         })
@@ -129,6 +133,7 @@ export default async function createAuthFixture() {
                 first_name: 'Alumno',
                 last_name: 'E2E',
                 email: studentEmail,
+                phone: '+54 9 11 2345 6789',
                 active_plan: 'active',
             })
             .select('id')
@@ -138,6 +143,24 @@ export default async function createAuthFixture() {
             throw new Error(`No se pudo crear la ficha del alumno E2E: ${studentError?.message}`)
         }
         created.studentId = student.id
+
+        const { data: inviteStudent, error: inviteStudentError } = await admin
+            .from('students')
+            .insert({
+                trainer_id: trainerAuth.user.id,
+                first_name: 'Invitado',
+                last_name: 'E2E',
+                email: inviteStudentEmail,
+                phone: '+54 9 11 8765 4321',
+                active_plan: 'active',
+            })
+            .select('id')
+            .single()
+
+        if (inviteStudentError || !inviteStudent) {
+            throw new Error(`No se pudo crear el alumno invitado E2E: ${inviteStudentError?.message}`)
+        }
+        created.inviteStudentId = inviteStudent.id
 
         const { error: studentProfileError } = await admin.from('profiles').upsert({
             id: studentAuth.user.id,
@@ -294,19 +317,28 @@ export default async function createAuthFixture() {
             throw new Error(`No se pudo agregar el ejercicio E2E: ${dayExerciseError?.message}`)
         }
 
-        const { error: assignmentError } = await admin.from('student_routines').insert({
-            student_id: student.id,
-            routine_id: routine.id,
-            status: 'active',
-        })
+        const { error: assignmentError } = await admin.from('student_routines').insert([
+            {
+                student_id: student.id,
+                routine_id: routine.id,
+                status: 'active',
+            },
+            {
+                student_id: inviteStudent.id,
+                routine_id: routine.id,
+                status: 'active',
+            },
+        ])
         if (assignmentError) throw assignmentError
 
         process.env.E2E_TRAINER_EMAIL = trainerEmail
         process.env.E2E_STUDENT_EMAIL = studentEmail
+        process.env.E2E_INVITE_STUDENT_EMAIL = inviteStudentEmail
         process.env.E2E_AUTH_PASSWORD = password
         process.env.E2E_TRAINER_USER_ID = trainerAuth.user.id
         process.env.E2E_STUDENT_USER_ID = studentAuth.user.id
         process.env.E2E_STUDENT_ID = student.id
+        process.env.E2E_INVITE_STUDENT_ID = inviteStudent.id
         process.env.E2E_ROUTINE_ID = routine.id
         process.env.E2E_TEMPLATE_ID = template.id
         process.env.E2E_TEMPLATE_NAME = `Template E2E ${runId}`

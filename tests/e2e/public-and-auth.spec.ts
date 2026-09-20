@@ -27,6 +27,13 @@ test('el acceso separa correctamente entrenador y alumno', async ({ page }) => {
     )
 })
 
+test('los alumnos crean su acceso únicamente desde una invitación', async ({ page }) => {
+    await page.goto('/signup/student')
+
+    await expect(page).toHaveURL(/\/login\/student\?message=/)
+    await expect(page.getByText(/tu entrenador debe enviarte una invitación/i)).toBeVisible()
+})
+
 test('las áreas privadas no se muestran sin sesión', async ({ page }) => {
     for (const privatePath of ['/dashboard', '/dashboard/routines', '/app/train']) {
         await page.goto(privatePath)

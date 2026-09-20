@@ -203,13 +203,15 @@ export async function updatePassword(formData: FormData) {
 
     const password = formData.get('password') as string
     const confirmPassword = formData.get('confirm_password') as string
+    const isInvitation = formData.get('flow') === 'invitation'
+    const resetPath = isInvitation ? '/reset-password?invite=1' : '/reset-password?invite=0'
 
     if (!password || password.length < 6) {
-        redirect('/reset-password?message=La contraseña debe tener al menos 6 caracteres')
+        redirect(`${resetPath}&message=La contraseña debe tener al menos 6 caracteres`)
     }
 
     if (password !== confirmPassword) {
-        redirect('/reset-password?message=Las contraseñas no coinciden')
+        redirect(`${resetPath}&message=Las contraseñas no coinciden`)
     }
 
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -222,7 +224,7 @@ export async function updatePassword(formData: FormData) {
 
     if (error) {
         console.error('[updatePassword] error:', error)
-        redirect('/reset-password?message=No se pudo actualizar la contraseña')
+        redirect(`${resetPath}&message=No se pudo actualizar la contraseña`)
     }
 
     const { data: profile } = await supabase

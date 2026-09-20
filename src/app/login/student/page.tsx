@@ -118,8 +118,7 @@ export default async function StudentLoginPage(
                 {/* Footer */}
                 <div className="space-y-2 text-center">
                     <p className="text-xs" style={{ color: 'rgba(255,255,255,0.2)' }}>
-                        ¿No tenés cuenta?{' '}
-                        <a href="/signup/student" className="font-bold text-emerald-400 hover:text-emerald-300 transition-colors">Registrate gratis</a>
+                        ¿Todavía no tenés acceso? Pedile la invitación a tu entrenador.
                     </p>
                     <p>
                         <a href="/login" className="text-xs transition-colors" style={{ color: 'rgba(255,255,255,0.15)' }}>← Volver</a>

@@ -64,7 +64,7 @@ export default function SignupPage() {
 
                 {/* Card Alumno */}
                 <div className="mb-7">
-                    <Link href="/signup/student" className="group block w-full rounded-2xl border p-4 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                    <Link href="/login/student?message=Tu entrenador debe enviarte una invitación para crear tu acceso." className="group block w-full rounded-2xl border p-4 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
                         style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.1), rgba(5,150,105,0.05))', borderColor: 'rgba(16,185,129,0.2)', boxShadow: '0 4px 24px rgba(16,185,129,0.06)' }}>
                         <div className="flex items-center gap-3.5">
                             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-2xl"
@@ -74,7 +74,7 @@ export default function SignupPage() {
                             <div className="flex-1 min-w-0">
                                 <p className="text-sm font-black text-white">Soy alumno</p>
                                 <p className="mt-0.5 text-[11px]" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                                    Entrenás, registrás pesos y ves tu progreso
+                                    Ingresá con la invitación de tu entrenador
                                 </p>
                             </div>
                             <svg className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5" style={{ color: 'rgba(52,211,153,0.6)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>

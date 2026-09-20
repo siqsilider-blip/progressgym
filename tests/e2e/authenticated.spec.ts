@@ -8,6 +8,7 @@ const exerciseName = process.env.E2E_EXERCISE_NAME!
 const templateId = process.env.E2E_TEMPLATE_ID!
 const templateName = process.env.E2E_TEMPLATE_NAME!
 const studentId = process.env.E2E_STUDENT_ID!
+const inviteStudentId = process.env.E2E_INVITE_STUDENT_ID!
 
 async function logIn(
     page: import('@playwright/test').Page,
@@ -113,6 +114,47 @@ test('la biblioteca muestra la cobertura de videos', async ({ page }) => {
     await page.getByPlaceholder('Buscar ejercicio...').fill(exerciseName)
     await expect(page.getByText(exerciseName, { exact: true })).toBeVisible()
     await expect(page.getByText('Video listo', { exact: true })).toBeVisible()
+})
+
+test('el entrenador prepara un acceso personal para enviar por WhatsApp', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name === 'desktop-chromium', 'La generación del enlace se prueba una sola vez.')
+
+    await logIn(page, 'trainer', trainerEmail)
+    await page.goto(`/dashboard/students/${studentId}`)
+
+    await page.getByRole('button', { name: 'Preparar nuevo acceso' }).click()
+    await expect(page.getByText('Invitación lista', { exact: true })).toBeVisible({ timeout: 15_000 })
+
+    const whatsappLink = page.getByRole('link', { name: 'Enviar por WhatsApp' })
+    await expect(whatsappLink).toHaveAttribute('href', /^https:\/\/wa\.me\//)
+
+    const accessLink = page.getByRole('link', { name: /Probar enlace de acceso/ })
+    await expect(accessLink).toHaveAttribute('href', /\/auth\/confirm\?token_hash=/)
+})
+
+test('un alumno nuevo activa la invitación y entra directamente a su rutina', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name === 'desktop-chromium', 'La activación completa se prueba una sola vez.')
+
+    await logIn(page, 'trainer', trainerEmail)
+    await page.goto(`/dashboard/students/${inviteStudentId}`)
+    await page.getByRole('button', { name: 'Preparar invitación' }).click()
+    await expect(page.getByText('Invitación lista', { exact: true })).toBeVisible({ timeout: 15_000 })
+
+    const inviteUrl = await page.getByRole('link', { name: /Probar enlace de acceso/ }).getAttribute('href')
+    expect(inviteUrl).toContain('/auth/confirm?token_hash=')
+
+    await page.context().clearCookies()
+    await page.goto(inviteUrl!)
+    await expect(page).toHaveURL(/\/reset-password\?invite=1/, { timeout: 15_000 })
+    await expect(page.getByText('Activá tu acceso de alumno', { exact: true })).toBeVisible()
+
+    await page.getByLabel('Contraseña nueva').fill(password)
+    await page.getByLabel('Repetir contraseña').fill(password)
+    await page.getByRole('button', { name: 'Crear contraseña y entrar' }).click()
+
+    await expect(page).toHaveURL(/\/app(?:\?|$)/, { timeout: 20_000 })
+    await page.goto('/app/rutina')
+    await expect(page.getByText(routineName, { exact: true })).toBeVisible()
 })
 
 test('asignar un template crea un programa completo que el alumno puede abrir', async ({ page }, testInfo) => {
