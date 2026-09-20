@@ -10,6 +10,7 @@ export type StudentRiskReason = {
 
 export type StudentRiskMetrics = {
     lastWorkoutAt: string | null
+    programStartedOn: string | null
     adherenceRate: number | null
     stagnantDays: number | null
     progressCount30d: number | null
@@ -26,6 +27,7 @@ export type StudentRiskResult = {
     actions: string[]
     metrics: {
         daysSinceLastWorkout: number | null
+        daysSinceProgramStart: number | null
         adherenceRate: number | null
         stagnantDays: number | null
         progressCount30d: number | null
@@ -45,7 +47,7 @@ function daysBetween(dateString: string | null) {
 
     const now = new Date()
     const diffMs = now.getTime() - date.getTime()
-    return Math.floor(diffMs / (1000 * 60 * 60 * 24))
+    return Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)))
 }
 
 function getRiskLevel(score: number): StudentRiskLevel {
@@ -88,6 +90,7 @@ export function calculateStudentRisk(metrics: StudentRiskMetrics): StudentRiskRe
     let score = 0
 
     const daysSinceLastWorkout = daysBetween(metrics.lastWorkoutAt)
+    const daysSinceProgramStart = daysBetween(metrics.programStartedOn)
     const adherenceRate = metrics.adherenceRate
     const stagnantDays = metrics.stagnantDays
     const progressCount30d = metrics.progressCount30d
@@ -105,14 +108,25 @@ export function calculateStudentRisk(metrics: StudentRiskMetrics): StudentRiskRe
     }
 
     if (daysSinceLastWorkout === null) {
-        reasons.push({
-            key: 'no_recent_training',
-            label: 'Sin entrenamientos registrados',
-            points: 30,
-            severity: 'danger',
-            description: 'No hay una última sesión registrada o el dato está vacío.'
-        })
-        score += 30
+        if (daysSinceProgramStart === null || daysSinceProgramStart >= 8) {
+            reasons.push({
+                key: 'no_recent_training',
+                label: 'Sin entrenamientos registrados',
+                points: 30,
+                severity: 'danger',
+                description: 'No hay una última sesión registrada o el dato está vacío.'
+            })
+            score += 30
+        } else if (daysSinceProgramStart >= 4) {
+            reasons.push({
+                key: 'new_program_not_started',
+                label: 'Todavía no comenzó el programa',
+                points: 12,
+                severity: 'warning',
+                description: `El programa fue asignado hace ${daysSinceProgramStart} días y todavía no registra una sesión.`
+            })
+            score += 12
+        }
     } else if (daysSinceLastWorkout >= 21) {
         reasons.push({
             key: 'very_long_inactivity',
@@ -151,7 +165,7 @@ export function calculateStudentRisk(metrics: StudentRiskMetrics): StudentRiskRe
         score += 10
     }
 
-    if (adherenceRate !== null) {
+    if (adherenceRate !== null && (daysSinceProgramStart === null || daysSinceProgramStart >= 7)) {
         if (adherenceRate < 30) {
             reasons.push({
                 key: 'very_low_adherence',
@@ -191,7 +205,7 @@ export function calculateStudentRisk(metrics: StudentRiskMetrics): StudentRiskRe
         }
     }
 
-    if (stagnantDays !== null) {
+    if (stagnantDays !== null && (totalSessions ?? 0) >= 4) {
         if (stagnantDays >= 60) {
             reasons.push({
                 key: 'hard_stagnation',
@@ -213,7 +227,7 @@ export function calculateStudentRisk(metrics: StudentRiskMetrics): StudentRiskRe
         }
     }
 
-    if (progressCount30d !== null) {
+    if (progressCount30d !== null && (totalSessions ?? 0) >= 4) {
         if (progressCount30d === 0) {
             reasons.push({
                 key: 'no_progress_30d',
@@ -235,7 +249,7 @@ export function calculateStudentRisk(metrics: StudentRiskMetrics): StudentRiskRe
         }
     }
 
-    if (totalSessions !== null) {
+    if (totalSessions !== null && (daysSinceProgramStart === null || daysSinceProgramStart >= 14)) {
         if (totalSessions <= 3) {
             reasons.push({
                 key: 'very_low_history',
@@ -314,6 +328,7 @@ export function calculateStudentRisk(metrics: StudentRiskMetrics): StudentRiskRe
         actions,
         metrics: {
             daysSinceLastWorkout,
+            daysSinceProgramStart,
             adherenceRate,
             stagnantDays,
             progressCount30d,

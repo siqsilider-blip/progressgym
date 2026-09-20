@@ -16,26 +16,38 @@ export async function getActiveStudentRoutine(
     supabase: SupabaseServerClient,
     studentId: string
 ): Promise<ActiveStudentRoutine | null> {
-    const { data: assignment } = await supabase
+    const { data: assignment, error } = await supabase
+        .from('student_routines')
+        .select('id, routine_id, program_started_on')
+        .eq('student_id', studentId)
+        .eq('status', 'active')
+        .maybeSingle()
+
+    if (!error) {
+        if (!assignment?.id || !assignment.routine_id) return null
+        return {
+            assignmentId: assignment.id,
+            routineId: assignment.routine_id,
+            programStartedOn: typeof assignment.program_started_on === 'string'
+                ? assignment.program_started_on
+                : null,
+        }
+    }
+
+    // Compatibilidad temporal con instalaciones que aún no tengan la
+    // columna de progresión. Producción usa la consulta única de arriba.
+    const { data: legacyAssignment } = await supabase
         .from('student_routines')
         .select('id, routine_id')
         .eq('student_id', studentId)
         .eq('status', 'active')
         .maybeSingle()
 
-    if (!assignment?.id || !assignment.routine_id) return null
-
-    const { data: progression } = await supabase
-        .from('student_routines')
-        .select('program_started_on')
-        .eq('id', assignment.id)
-        .maybeSingle()
+    if (!legacyAssignment?.id || !legacyAssignment.routine_id) return null
 
     return {
-        assignmentId: assignment.id,
-        routineId: assignment.routine_id,
-        programStartedOn: typeof progression?.program_started_on === 'string'
-            ? progression.program_started_on
-            : null,
+        assignmentId: legacyAssignment.id,
+        routineId: legacyAssignment.routine_id,
+        programStartedOn: null,
     }
 }

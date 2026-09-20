@@ -309,6 +309,7 @@ export default async function createAuthFixture() {
         process.env.E2E_STUDENT_ID = student.id
         process.env.E2E_ROUTINE_ID = routine.id
         process.env.E2E_TEMPLATE_ID = template.id
+        process.env.E2E_TEMPLATE_NAME = `Template E2E ${runId}`
         process.env.E2E_ROUTINE_DAY_ID = day.id
         process.env.E2E_ROUTINE_DAY_EXERCISE_ID = dayExercise.id
         process.env.E2E_EXERCISE_ID = exercise.id

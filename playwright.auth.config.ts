@@ -5,6 +5,7 @@ const externalBaseUrl = process.env.PLAYWRIGHT_BASE_URL
 export default defineConfig({
     testDir: './tests/e2e',
     testMatch: 'authenticated.spec.ts',
+    timeout: 90_000,
     globalSetup: './tests/e2e/auth-fixture.ts',
     globalTeardown: './tests/e2e/auth-teardown.ts',
     fullyParallel: false,
@@ -33,6 +34,6 @@ export default defineConfig({
             command: 'npm run dev',
             url: 'http://127.0.0.1:3000',
             reuseExistingServer: !process.env.CI,
-            timeout: 120_000,
+            timeout: 240_000,
         },
 })

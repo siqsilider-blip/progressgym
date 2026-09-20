@@ -130,6 +130,7 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path TO 'public'
 AS $function$
+#variable_conflict use_column
 begin
 
   -- Seguridad: solo se pueden pedir métricas de alumnos del entrenador autenticado

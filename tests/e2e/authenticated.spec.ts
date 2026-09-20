@@ -6,12 +6,25 @@ const password = process.env.E2E_AUTH_PASSWORD!
 const routineName = process.env.E2E_ROUTINE_NAME!
 const exerciseName = process.env.E2E_EXERCISE_NAME!
 const templateId = process.env.E2E_TEMPLATE_ID!
+const templateName = process.env.E2E_TEMPLATE_NAME!
+const studentId = process.env.E2E_STUDENT_ID!
 
-async function logIn(page: import('@playwright/test').Page, role: 'trainer' | 'student', email: string) {
-    await page.goto(`/login/${role}`)
+async function logIn(
+    page: import('@playwright/test').Page,
+    role: 'trainer' | 'student',
+    email: string,
+    expectSuccess = true
+) {
+    await page.goto(`/login/${role}`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
+    await expect(page.getByLabel('Email')).toBeVisible({ timeout: 30_000 })
     await page.getByLabel('Email').fill(email)
     await page.getByLabel('Contraseña').fill(password)
     await page.getByRole('button', { name: 'Iniciar sesión' }).click()
+
+    if (expectSuccess) {
+        const destination = role === 'trainer' ? /\/dashboard(?:\?|$)/ : /\/app(?:\?|$)/
+        await expect(page).toHaveURL(destination, { timeout: 30_000 })
+    }
 }
 
 test('el entrenador entra al panel y no al portal del alumno', async ({ page }) => {
@@ -73,7 +86,7 @@ test('el alumno entra a su portal y no al panel del entrenador', async ({ page }
 })
 
 test('cada tipo de cuenta es rechazado por el acceso equivocado', async ({ page }) => {
-    await logIn(page, 'student', trainerEmail)
+    await logIn(page, 'student', trainerEmail, false)
     await expect(page).toHaveURL(/\/login\/student\?message=/)
     await expect(page.getByText(/esta cuenta es de entrenador/i)).toBeVisible()
 })
@@ -90,6 +103,33 @@ test('la biblioteca muestra la cobertura de videos', async ({ page }) => {
     await page.getByPlaceholder('Buscar ejercicio...').fill(exerciseName)
     await expect(page.getByText(exerciseName, { exact: true })).toBeVisible()
     await expect(page.getByText('Video listo', { exact: true })).toBeVisible()
+})
+
+test('asignar un template crea un programa completo que el alumno puede abrir', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name === 'desktop-chromium', 'La asignación se prueba una sola vez por fixture.')
+
+    await logIn(page, 'trainer', trainerEmail)
+    await page.goto(`/dashboard/routines/${templateId}/assign-to-student`, { waitUntil: 'domcontentloaded' })
+
+    const studentOption = page.locator('label').filter({ hasText: 'Alumno E2E' })
+    await expect(studentOption).toBeVisible()
+    await studentOption.getByRole('checkbox').check()
+
+    page.once('dialog', (dialog) => dialog.accept())
+    await page.getByRole('button', { name: 'Asignar seleccionados (1)' }).click()
+    await expect(page.getByText('Asignado correctamente ✓')).toBeVisible({ timeout: 15_000 })
+
+    await page.goto(`/dashboard/students/${studentId}`)
+    await expect(page.getByText('Seguimiento al día', { exact: true })).toBeVisible()
+    await expect(page.getByText('/100', { exact: false })).toHaveCount(0)
+
+    await page.context().clearCookies()
+    await logIn(page, 'student', studentEmail)
+    await page.goto('/app/rutina')
+
+    await expect(page.getByText(templateName, { exact: true })).toBeVisible()
+    await expect(page.getByText(exerciseName, { exact: true })).toBeVisible()
+    await expect(page.getByRole('link', { name: /Entrenar/ })).toBeVisible()
 })
 
 test('el entrenador reordena y elimina días de un template sin perder su estructura', async ({ page }, testInfo) => {
