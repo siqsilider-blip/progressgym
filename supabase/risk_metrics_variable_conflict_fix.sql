@@ -20,11 +20,21 @@ BEGIN
         RAISE EXCEPTION 'No existe public.get_students_risk_metrics(uuid[])';
     END IF;
 
-    IF position('#variable_conflict use_column' IN function_body) > 0 THEN
-        RETURN;
+    IF position('#variable_conflict use_column' IN function_body) = 0 THEN
+        function_body := E'#variable_conflict use_column\n' || function_body;
     END IF;
 
-    function_body := E'#variable_conflict use_column\n' || function_body;
+    function_body := replace(
+        function_body,
+        'coalesce(la.total_sessions, 0) as total_sessions',
+        'coalesce(la.total_sessions, 0)::integer as total_sessions'
+    );
+
+    function_body := replace(
+        function_body,
+        'coalesce(pc.progress_count, 0) as progress_count',
+        'coalesce(pc.progress_count, 0)::integer as progress_count'
+    );
 
     EXECUTE format(
         $definition$

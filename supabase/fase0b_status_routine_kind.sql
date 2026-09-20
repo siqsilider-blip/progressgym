@@ -374,7 +374,7 @@ begin
   select
     ts.student_id,
     la.last_workout_at,
-    coalesce(la.total_sessions, 0) as total_sessions,
+    coalesce(la.total_sessions, 0)::integer as total_sessions,
     case
       when ac.planned_sessions > 0
         then round(
@@ -384,7 +384,7 @@ begin
       else 0
     end as adherence_rate,
     sc.stagnant_days,
-    coalesce(pc.progress_count, 0) as progress_count
+    coalesce(pc.progress_count, 0)::integer as progress_count
   from target_students ts
   left join logs_agg la
     on la.student_id = ts.student_id
