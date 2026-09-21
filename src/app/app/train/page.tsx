@@ -42,6 +42,10 @@ type ExerciseLog = {
     set_index: number | null
     workout_session_id: string | null
     rpe: number | null
+    workout_sessions: {
+        status: string | null
+        completed_manually: boolean | null
+    } | null
 }
 
 type RoutineBlock = 'activation' | 'main' | 'closing'
@@ -240,7 +244,7 @@ export default async function AppTrainPage(props: PageProps) {
     if (routineDayExerciseIds.length > 0) {
         const { data: allLogs } = await supabase
             .from('exercise_logs')
-            .select('id, routine_day_exercise_id, weight, reps, rpe, performed_at, created_at, set_index, workout_session_id')
+            .select('id, routine_day_exercise_id, weight, reps, rpe, performed_at, created_at, set_index, workout_session_id, workout_sessions(status, completed_manually)')
             .eq('student_id', studentId)
             .in('routine_day_exercise_id', routineDayExerciseIds)
             .order('created_at', { ascending: false })
@@ -255,8 +259,15 @@ export default async function AppTrainPage(props: PageProps) {
                 ? logsForExercise.filter(l => l.workout_session_id === workoutSessionId)
                 : []
             const historicLogs = workoutSessionId
-                ? logsForExercise.filter(l => l.workout_session_id !== workoutSessionId)
-                : logsForExercise
+                ? logsForExercise.filter(l =>
+                    l.workout_session_id !== workoutSessionId
+                    && l.workout_sessions?.status === 'completed'
+                    && l.workout_sessions.completed_manually === true
+                )
+                : logsForExercise.filter(l =>
+                    l.workout_sessions?.status === 'completed'
+                    && l.workout_sessions.completed_manually === true
+                )
 
             const currentWeights: (number | null)[] = Array(setsCount).fill(null)
             const currentReps: (number | null)[] = Array(setsCount).fill(null)

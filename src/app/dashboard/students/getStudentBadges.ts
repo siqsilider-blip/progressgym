@@ -53,8 +53,11 @@ export async function getStudentBadges(studentId: string): Promise<Badge[]> {
     // Ejercicios únicos entrenados
     const { data: rawLogs } = await supabase
         .from('exercise_logs')
-        .select('routine_day_exercise_id')
+        .select('routine_day_exercise_id, workout_sessions!inner(student_id, status, completed_manually)')
         .eq('student_id', studentId)
+        .eq('workout_sessions.student_id', studentId)
+        .eq('workout_sessions.status', 'completed')
+        .eq('workout_sessions.completed_manually', true)
     const uniqueRDEs = new Set((rawLogs ?? []).map(l => l.routine_day_exercise_id)).size
 
     // Variables adicionales necesarias

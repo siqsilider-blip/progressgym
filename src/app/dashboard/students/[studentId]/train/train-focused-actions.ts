@@ -131,6 +131,7 @@ export async function completeSession(payload: {
             .from('workout_sessions')
             .update({
                 status: 'completed',
+                completed_manually: true,
                 finished_at: finishedAt.toISOString(),
                 duration_seconds: durationSeconds,
             })
@@ -166,8 +167,11 @@ export async function getExerciseMaxWeights(payload: {
 
     const { data: logs } = await supabase
         .from('exercise_logs')
-        .select('routine_day_exercise_id, weight')
+        .select('routine_day_exercise_id, weight, workout_sessions!inner(student_id, status, completed_manually)')
         .eq('student_id', payload.studentId)
+        .eq('workout_sessions.student_id', payload.studentId)
+        .eq('workout_sessions.status', 'completed')
+        .eq('workout_sessions.completed_manually', true)
         .in('routine_day_exercise_id', payload.routineDayExerciseIds)
         .not('weight', 'is', null)
 

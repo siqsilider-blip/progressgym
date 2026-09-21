@@ -19,8 +19,11 @@ export async function getStudentExerciseProgress(
 
     const { data: logs } = await supabase
         .from('exercise_logs')
-        .select('routine_day_exercise_id, weight, performed_at, created_at')
+        .select('routine_day_exercise_id, weight, performed_at, created_at, workout_sessions!inner(student_id, status, completed_manually)')
         .eq('student_id', studentId)
+        .eq('workout_sessions.student_id', studentId)
+        .eq('workout_sessions.status', 'completed')
+        .eq('workout_sessions.completed_manually', true)
         .not('weight', 'is', null)
         .not('weight', 'eq', 0)
         .order('performed_at', { ascending: true })
@@ -52,8 +55,6 @@ export async function getStudentExerciseProgress(
     const grouped = new Map<string, {
         name: string
         logsByDate: Map<string, number>
-        totalCount: number
-        absoluteFirstWeight: number
     }>()
 
     for (const log of logs) {
@@ -67,25 +68,24 @@ export async function getStudentExerciseProgress(
         const weight = Number(log.weight)
 
         if (!grouped.has(exerciseId)) {
-            grouped.set(exerciseId, { name, logsByDate: new Map(), totalCount: 0, absoluteFirstWeight: weight })
+            grouped.set(exerciseId, { name, logsByDate: new Map() })
         }
         const group = grouped.get(exerciseId)!
-        group.totalCount++
         const existing = group.logsByDate.get(date) ?? 0
         if (weight > existing) group.logsByDate.set(date, weight)
     }
 
     const result: ExerciseProgress[] = []
 
-    for (const [exerciseId, { name, logsByDate, absoluteFirstWeight }] of grouped) {
-        if (logsByDate.size === 0) continue
+    for (const [exerciseId, { name, logsByDate }] of grouped) {
+        if (logsByDate.size < 2) continue
 
         const sortedLogs = [...logsByDate.entries()]
             .sort(([a], [b]) => a.localeCompare(b))
             .map(([date, weight]) => ({ date, weight }))
 
         const bestWeight = Math.max(...sortedLogs.map(l => l.weight))
-        const firstWeight = absoluteFirstWeight
+        const firstWeight = sortedLogs[0].weight
         const lastWeight = sortedLogs[sortedLogs.length - 1].weight
         const progressKg = bestWeight - firstWeight
         const progressPercent = firstWeight > 0

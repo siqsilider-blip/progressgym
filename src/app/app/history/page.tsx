@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getStudentSessionHistory } from '@/app/dashboard/students/getStudentSessionHistory'
 import { formatWeight, type WeightUnit } from '@/lib/weight'
@@ -147,6 +148,14 @@ export default async function AppHistoryPage() {
                                                     <p className="text-[10px] font-medium text-muted-foreground">Nota</p>
                                                     <p className="mt-0.5 text-xs text-card-foreground">{session.note}</p>
                                                 </div>
+                                            )}
+                                            {session.routineDayId && session.routineWeekId && (
+                                                <Link
+                                                    href={`/app/train?week=${session.routineWeekId}&day=${session.routineDayId}`}
+                                                    className="mt-3 inline-flex min-h-10 items-center rounded-xl border border-indigo-500/25 bg-indigo-500/10 px-3 text-xs font-bold text-indigo-400"
+                                                >
+                                                    Revisar / editar sesión
+                                                </Link>
                                             )}
                                         </div>
                                     ))}

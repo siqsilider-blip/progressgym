@@ -5,6 +5,7 @@ import Link from 'next/link'
 import StudentPageHeader from '@/components/student/StudentPageHeader'
 import { getStudentAppContext } from '@/lib/auth/student'
 import AccountDeletionCard from '@/components/account/AccountDeletionCard'
+import { getActiveStudentRoutine } from '@/lib/getActiveStudentRoutine'
 
 export default async function AppProfilePage() {
     const supabase = await createClient()
@@ -27,17 +28,12 @@ export default async function AppProfilePage() {
         .single() : { data: null }
 
     // Rutina
-    const { data: assignment } = studentId ? await supabase
-        .from('student_routines')
-        .select('routine_id')
-        .eq('student_id', studentId)
-        .eq('status', 'active')
-        .maybeSingle() : { data: null }
+    const assignment = studentId ? await getActiveStudentRoutine(supabase, studentId) : null
 
-    const { data: routine } = assignment?.routine_id ? await supabase
+    const { data: routine } = assignment?.routineId ? await supabase
         .from('routines')
         .select('name')
-        .eq('id', assignment.routine_id)
+        .eq('id', assignment.routineId)
         .single() : { data: null }
 
     const fullName = student

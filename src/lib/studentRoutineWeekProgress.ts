@@ -53,6 +53,7 @@ export async function getStudentRoutineWeekProgress(
             .select('routine_day_id')
             .eq('student_id', studentId)
             .eq('status', 'completed')
+            .eq('completed_manually', true)
             .gte('performed_date', weekStart)
             .lte('performed_date', weekEnd)
             .in('routine_day_id', routineDayIds),
