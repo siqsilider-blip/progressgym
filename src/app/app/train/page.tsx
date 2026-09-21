@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { startWorkoutSession } from '@/app/dashboard/students/[studentId]/train/workout-session'
 import { getExerciseMaxWeights } from '@/app/dashboard/students/[studentId]/train/train-focused-actions'
-import TrainFocusedView from '@/app/dashboard/students/[studentId]/train/TrainFocusedView'
+import StudentWorkoutView from './StudentWorkoutView'
 import { getRoutineSchedule } from '@/lib/getRoutineSchedule'
 import { getStudentRoutineWeekProgress } from '@/lib/studentRoutineWeekProgress'
 import { getBuenosAiresDateString } from '@/lib/buenosAiresDate'
@@ -41,6 +41,7 @@ type ExerciseLog = {
     created_at: string | null
     set_index: number | null
     workout_session_id: string | null
+    rpe: number | null
 }
 
 type RoutineBlock = 'activation' | 'main' | 'closing'
@@ -212,16 +213,34 @@ export default async function AppTrainPage(props: PageProps) {
     const today = getBuenosAiresDateString()
     const routineDayExerciseIds = exercisesForDay.map(e => e.id)
 
+    // Iniciar o recuperar la sesión antes de leer los registros. Así podemos
+    // separar lo hecho hoy de la sesión anterior y evitar precargar referencias.
+    let workoutSessionId: string | null = null
+    let sessionJustCompleted = false
+    if (selectedDayId && exercisesForDay.length > 0) {
+        const sessionResult = await startWorkoutSession({
+            studentId,
+            trainerId: student.trainer_id,
+            routineDayId: selectedDayId,
+            allowCompleted: Boolean(searchParams?.day),
+        })
+        workoutSessionId = sessionResult.sessionId
+        sessionJustCompleted = sessionResult.justCompleted
+    }
+
     const logsByExerciseId = new Map<string, {
         weights: (number | null)[]
         reps: (number | null)[]
+        currentWeights: (number | null)[]
+        currentReps: (number | null)[]
+        currentRpes: (number | null)[]
         lastPerformedAt: string | null
     }>()
 
     if (routineDayExerciseIds.length > 0) {
         const { data: allLogs } = await supabase
             .from('exercise_logs')
-            .select('id, routine_day_exercise_id, weight, reps, performed_at, created_at, set_index, workout_session_id')
+            .select('id, routine_day_exercise_id, weight, reps, rpe, performed_at, created_at, set_index, workout_session_id')
             .eq('student_id', studentId)
             .in('routine_day_exercise_id', routineDayExerciseIds)
             .order('created_at', { ascending: false })
@@ -232,16 +251,44 @@ export default async function AppTrainPage(props: PageProps) {
         for (const exerciseRow of exercisesForDay) {
             const setsCount = Math.max(1, Number(exerciseRow.sets ?? 1))
             const logsForExercise = typedLogs.filter(l => l.routine_day_exercise_id === exerciseRow.id)
-            if (logsForExercise.length === 0) continue
+            const currentLogs = workoutSessionId
+                ? logsForExercise.filter(l => l.workout_session_id === workoutSessionId)
+                : []
+            const historicLogs = workoutSessionId
+                ? logsForExercise.filter(l => l.workout_session_id !== workoutSessionId)
+                : logsForExercise
 
-            const latestSessionId = logsForExercise[0]?.workout_session_id ?? null
-            const latestCreatedAt = logsForExercise[0]?.created_at ?? null
+            const currentWeights: (number | null)[] = Array(setsCount).fill(null)
+            const currentReps: (number | null)[] = Array(setsCount).fill(null)
+            const currentRpes: (number | null)[] = Array(setsCount).fill(null)
+            currentLogs.forEach((log, fallbackIndex) => {
+                const index = log.set_index ?? fallbackIndex
+                if (index < 0 || index >= setsCount) return
+                currentWeights[index] = log.weight ?? null
+                currentReps[index] = log.reps ?? null
+                currentRpes[index] = log.rpe ?? null
+            })
+
+            if (historicLogs.length === 0) {
+                logsByExerciseId.set(exerciseRow.id, {
+                    weights: Array(setsCount).fill(null),
+                    reps: Array(setsCount).fill(null),
+                    currentWeights,
+                    currentReps,
+                    currentRpes,
+                    lastPerformedAt: null,
+                })
+                continue
+            }
+
+            const latestSessionId = historicLogs[0]?.workout_session_id ?? null
+            const latestCreatedAt = historicLogs[0]?.created_at ?? null
 
             let latestSessionLogs = latestSessionId
-                ? logsForExercise.filter(l => l.workout_session_id === latestSessionId)
+                ? historicLogs.filter(l => l.workout_session_id === latestSessionId)
                 : latestCreatedAt
-                    ? logsForExercise.filter(l => String(l.created_at ?? '').split('T')[0] === String(latestCreatedAt).split('T')[0])
-                    : logsForExercise
+                    ? historicLogs.filter(l => String(l.created_at ?? '').split('T')[0] === String(latestCreatedAt).split('T')[0])
+                    : historicLogs
 
             latestSessionLogs = latestSessionLogs
                 .sort((a, b) => (a.set_index ?? 999) - (b.set_index ?? 999))
@@ -250,22 +297,12 @@ export default async function AppTrainPage(props: PageProps) {
             logsByExerciseId.set(exerciseRow.id, {
                 weights: latestSessionLogs.map(l => l.weight ?? null),
                 reps: latestSessionLogs.map(l => l.reps ?? null),
+                currentWeights,
+                currentReps,
+                currentRpes,
                 lastPerformedAt: latestSessionLogs[0]?.performed_at ?? String(latestSessionLogs[0]?.created_at ?? '').split('T')[0] ?? null,
             })
         }
-    }
-
-    // Iniciar sesión
-    let workoutSessionId: string | null = null
-    let sessionJustCompleted = false
-    if (selectedDayId && exercisesForDay.length > 0) {
-        const sessionResult = await startWorkoutSession({
-            studentId,
-            trainerId: student.trainer_id,
-            routineDayId: selectedDayId,
-        })
-        workoutSessionId = sessionResult.sessionId
-        sessionJustCompleted = sessionResult.justCompleted
     }
 
     const focusedExercises = exercisesForDay.map((exercise) => {
@@ -276,6 +313,9 @@ export default async function AppTrainPage(props: PageProps) {
 
         const previousWeights: (number | null)[] = Array.from({ length: setsCount }, (_, i) => previousSession?.weights[i] ?? null)
         const previousReps: (number | null)[] = Array.from({ length: setsCount }, (_, i) => previousSession?.reps[i] ?? null)
+        const currentWeights: (number | null)[] = Array.from({ length: setsCount }, (_, i) => previousSession?.currentWeights[i] ?? null)
+        const currentReps: (number | null)[] = Array.from({ length: setsCount }, (_, i) => previousSession?.currentReps[i] ?? null)
+        const currentRpes: (number | null)[] = Array.from({ length: setsCount }, (_, i) => previousSession?.currentRpes[i] ?? null)
 
         return {
             id: exercise.id,
@@ -287,6 +327,9 @@ export default async function AppTrainPage(props: PageProps) {
             restSeconds: exercise.rest_seconds ?? 60,
             previousWeights,
             previousReps,
+            currentWeights,
+            currentReps,
+            currentRpes,
             lastPerformedAt: previousSession?.lastPerformedAt ?? null,
             video_url: override?.video_url ?? meta?.video_url ?? null,
             instructions: override?.instructions ?? meta?.description ?? null,
@@ -356,7 +399,7 @@ export default async function AppTrainPage(props: PageProps) {
                 </div>
             </div>
 
-            <TrainFocusedView
+            <StudentWorkoutView
                 key={workoutSessionId}
                 sessionId={workoutSessionId}
                 studentId={studentId}
@@ -372,7 +415,7 @@ export default async function AppTrainPage(props: PageProps) {
                 routineHref={`/app/rutina?${selectedMonth ? `month=${selectedMonth.id}&` : ''}week=${selectedWeek?.id}`}
                 progressHref="/app/progress"
                 showPrs={true}
-                initialPhase={sessionJustCompleted ? 'summary' : 'training'}
+                initialSummary={sessionJustCompleted}
             />
         </div>
     )

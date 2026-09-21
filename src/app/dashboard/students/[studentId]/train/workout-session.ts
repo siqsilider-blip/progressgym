@@ -6,6 +6,7 @@ export async function startWorkoutSession(payload: {
     trainerId: string
     routineDayId: string
     performedDate?: string
+    allowCompleted?: boolean
 }): Promise<{ sessionId: string | null; resumed: boolean; justCompleted: boolean }> {
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -17,6 +18,7 @@ export async function startWorkoutSession(payload: {
         p_student_id: payload.studentId,
         p_routine_day_id: payload.routineDayId,
         p_performed_date: payload.performedDate ?? getBuenosAiresDateString(),
+        p_allow_completed: payload.allowCompleted ?? false,
     })
 
     const session = data?.[0]

@@ -105,19 +105,27 @@ export async function completeSession(payload: {
             return { ok: false, error: 'Estado de sesión inválido', durationSeconds: null, totalSets: 0 }
         }
 
-        const { count } = await supabase
+        const { data: latestLog, count } = await supabase
             .from('exercise_logs')
-            .select('id', { count: 'exact', head: true })
+            .select('id, created_at', { count: 'exact' })
             .eq('workout_session_id', payload.sessionId)
+            .order('created_at', { ascending: false })
+            .limit(1)
 
         if (!count || count === 0) {
             return { ok: false, error: 'No hay series registradas', durationSeconds: null, totalSets: 0 }
         }
 
-        const finishedAt = new Date()
-        const durationSeconds = Math.floor(
+        const now = new Date()
+        const latestActivityAt = latestLog?.[0]?.created_at
+            ? new Date(latestLog[0].created_at)
+            : now
+        const idleMilliseconds = now.getTime() - latestActivityAt.getTime()
+        const finishedAt = idleMilliseconds <= 15 * 60 * 1000 ? now : latestActivityAt
+        const rawDurationSeconds = Math.floor(
             (finishedAt.getTime() - new Date(session.started_at).getTime()) / 1000
         )
+        const durationSeconds = Math.max(0, Math.min(rawDurationSeconds, 4 * 60 * 60))
 
         const { error: updateError } = await supabase
             .from('workout_sessions')

@@ -273,10 +273,10 @@ export default async function AppRutinePage(props: PageProps) {
                                             )}
                                             {hasExercises && isCompleted && (
                                                 <Link
-                                                    href="/app/history"
+                                                    href={`/app/train?${selectedMonth ? `month=${selectedMonth.id}&` : ''}week=${selectedWeek?.id}&day=${day.id}`}
                                                     className="shrink-0 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-xs font-bold text-emerald-500 transition active:scale-[0.97]"
                                                 >
-                                                    Ver registro
+                                                    Revisar / editar
                                                 </Link>
                                             )}
                                         </div>

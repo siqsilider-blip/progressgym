@@ -1,5 +1,5 @@
 import type { createClient } from '@/lib/supabase/server'
-import { getCurrentBuenosAiresWeek } from '@/lib/buenosAiresDate'
+import { getBuenosAiresDateString, getCurrentBuenosAiresWeek } from '@/lib/buenosAiresDate'
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>
 
@@ -19,8 +19,8 @@ export type RoutineWeekProgress = {
 
 /**
  * Builds the student's progress for routine days during the current calendar
- * week. An unfinished session always wins so the student can resume it even if
- * it was started before Monday.
+ * week. Only a session opened today can take precedence. Abandoned sessions
+ * from previous days must never send the student back to an old workout.
  */
 export async function getStudentRoutineWeekProgress(
     supabase: SupabaseServerClient,
@@ -29,6 +29,7 @@ export async function getStudentRoutineWeekProgress(
     programWeekRange?: { weekStart: string; weekEnd: string } | null
 ): Promise<RoutineWeekProgress> {
     const { weekStart, weekEnd } = programWeekRange ?? getCurrentBuenosAiresWeek()
+    const today = getBuenosAiresDateString()
     const statusByDayId = new Map<string, RoutineDayProgressStatus>()
     const completedDayIds = new Set<string>()
     const inProgressDayIds = new Set<string>()
@@ -45,6 +46,7 @@ export async function getStudentRoutineWeekProgress(
             .select('routine_day_id')
             .eq('student_id', studentId)
             .eq('status', 'in_progress')
+            .eq('performed_date', today)
             .in('routine_day_id', routineDayIds),
         supabase
             .from('workout_sessions')
