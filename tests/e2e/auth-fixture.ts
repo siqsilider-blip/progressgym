@@ -5,6 +5,7 @@ import { removeAuthFixtureData } from './auth-fixture-cleanup'
 
 type CreatedFixture = {
     trainerUserId?: string
+    otherTrainerUserId?: string
     studentUserId?: string
     studentId?: string
     inviteStudentId?: string
@@ -68,12 +69,13 @@ export default async function createAuthFixture() {
     const runId = `${Date.now()}-${randomBytes(4).toString('hex')}`
     const password = `${randomBytes(24).toString('base64url')}Aa1!`
     const trainerEmail = `e2e-trainer-${runId}@example.com`
+    const otherTrainerEmail = `e2e-trainer-other-${runId}@example.com`
     const studentEmail = `e2e-student-${runId}@example.com`
     const inviteStudentEmail = `e2e-student-invite-${runId}@example.com`
     const created: CreatedFixture = {}
 
     async function cleanup() {
-        const userIds = [created.trainerUserId, created.studentUserId].filter(
+        const userIds = [created.trainerUserId, created.otherTrainerUserId, created.studentUserId].filter(
             (id): id is string => Boolean(id)
         )
         await removeAuthFixtureData(admin, {
@@ -113,6 +115,32 @@ export default async function createAuthFixture() {
             role: 'trainer',
         })
         if (trainerProfileError) throw trainerProfileError
+
+        const { data: otherTrainerAuth, error: otherTrainerAuthError } = await admin.auth.admin.createUser({
+            email: otherTrainerEmail,
+            password,
+            email_confirm: true,
+            user_metadata: { full_name: 'Entrenador Ajeno E2E' },
+        })
+
+        if (otherTrainerAuthError || !otherTrainerAuth.user) {
+            throw new Error(`No se pudo crear el segundo entrenador E2E: ${otherTrainerAuthError?.message}`)
+        }
+        created.otherTrainerUserId = otherTrainerAuth.user.id
+
+        const { error: otherTrainerRowError } = await admin.from('trainers').upsert({
+            id: otherTrainerAuth.user.id,
+            full_name: 'Entrenador Ajeno E2E',
+        })
+        if (otherTrainerRowError) throw otherTrainerRowError
+
+        const { error: otherTrainerProfileError } = await admin.from('profiles').upsert({
+            id: otherTrainerAuth.user.id,
+            email: otherTrainerEmail,
+            name: 'Entrenador Ajeno E2E',
+            role: 'trainer',
+        })
+        if (otherTrainerProfileError) throw otherTrainerProfileError
 
         const { data: studentAuth, error: studentAuthError } = await admin.auth.admin.createUser({
             email: studentEmail,
@@ -332,10 +360,12 @@ export default async function createAuthFixture() {
         if (assignmentError) throw assignmentError
 
         process.env.E2E_TRAINER_EMAIL = trainerEmail
+        process.env.E2E_OTHER_TRAINER_EMAIL = otherTrainerEmail
         process.env.E2E_STUDENT_EMAIL = studentEmail
         process.env.E2E_INVITE_STUDENT_EMAIL = inviteStudentEmail
         process.env.E2E_AUTH_PASSWORD = password
         process.env.E2E_TRAINER_USER_ID = trainerAuth.user.id
+        process.env.E2E_OTHER_TRAINER_USER_ID = otherTrainerAuth.user.id
         process.env.E2E_STUDENT_USER_ID = studentAuth.user.id
         process.env.E2E_STUDENT_ID = student.id
         process.env.E2E_INVITE_STUDENT_ID = inviteStudent.id

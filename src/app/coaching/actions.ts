@@ -157,6 +157,16 @@ export async function saveWorkoutFeedback(payload: {
     }
 
     const supabase = await createClient()
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, student_id')
+        .eq('id', user.id)
+        .maybeSingle()
+
+    if (profile?.role !== 'student' || profile.student_id !== payload.studentId) {
+        return { ok: false, error: 'Esta evaluación corresponde al alumno de la sesión.' }
+    }
+
     const { data: session } = await supabase
         .from('workout_sessions')
         .select('id, student_id, trainer_id')

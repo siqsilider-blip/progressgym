@@ -44,6 +44,7 @@ export default async function StudentProfilePage(props: PageProps) {
         .from('students')
         .select('*')
         .eq('id', studentId)
+        .eq('trainer_id', user.id)
         .single()
 
     if (!student) {

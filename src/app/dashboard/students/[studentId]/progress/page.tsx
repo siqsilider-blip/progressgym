@@ -21,6 +21,8 @@ export default async function StudentProgressPage(props: PageProps) {
         getTrainerProfile(),
     ])
 
+    if (!student.data) redirect('/dashboard/students')
+
     const weightUnit = (trainerProfile?.weight_unit ?? 'kg') as WeightUnit
     const fullName = `${student.data?.first_name ?? ''} ${student.data?.last_name ?? ''}`.trim()
 

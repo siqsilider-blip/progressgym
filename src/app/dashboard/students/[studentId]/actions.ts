@@ -52,6 +52,17 @@ export async function saveStudentNote(
         return { error: 'La nota no puede estar vacía' }
     }
 
+    const { data: student } = await supabase
+        .from('students')
+        .select('id')
+        .eq('id', studentId)
+        .eq('trainer_id', user.id)
+        .maybeSingle()
+
+    if (!student) {
+        return { error: 'Alumno no encontrado' }
+    }
+
     const { error } = await supabase.from('student_notes').upsert(
         {
             student_id: studentId,

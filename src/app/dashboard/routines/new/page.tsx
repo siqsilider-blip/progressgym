@@ -37,6 +37,7 @@ export default async function NewRoutinePage(props: PageProps) {
         .from('students')
         .select('id, first_name, last_name')
         .eq('id', studentId)
+        .eq('trainer_id', user.id)
         .single()
 
     if (studentError || !student) {

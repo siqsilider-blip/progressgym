@@ -4,7 +4,9 @@ test('la portada carga y permite comenzar', async ({ page }) => {
     await page.goto('/')
 
     await expect(page.getByRole('heading', { name: /el sistema para/i })).toBeVisible()
-    await expect(page.getByRole('link', { name: /crear mi cuenta gratis/i })).toBeVisible()
+    const createAccountLink = page.getByRole('link', { name: /crear mi cuenta/i }).first()
+    await expect(createAccountLink).toBeVisible()
+    await expect(createAccountLink).toHaveAttribute('href', '/signup')
     await expect(page.getByRole('link', { name: /ya tengo cuenta/i })).toBeVisible()
 
     const hasHorizontalOverflow = await page.evaluate(

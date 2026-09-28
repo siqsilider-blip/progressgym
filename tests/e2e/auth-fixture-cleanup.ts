@@ -82,6 +82,21 @@ export async function removeAuthFixtureData(admin: SupabaseClient, refs: AuthFix
         assertNoError(exercises.error, 'No se pudieron eliminar los ejercicios E2E')
     }
 
+    for (const userId of userIds) {
+        const { data: objects, error: listError } = await admin.storage
+            .from('progress-photos')
+            .list(userId, { limit: 1000 })
+        assertNoError(listError, 'No se pudieron localizar las fotos E2E')
+
+        const paths = (objects ?? []).map((object) => `${userId}/${object.name}`)
+        if (paths.length > 0) {
+            const { error: removeError } = await admin.storage
+                .from('progress-photos')
+                .remove(paths)
+            assertNoError(removeError, 'No se pudieron eliminar las fotos E2E')
+        }
+    }
+
     if (userIds.length > 0) {
         const profiles = await admin.from('profiles').delete().in('id', userIds)
         assertNoError(profiles.error, 'No se pudieron eliminar los perfiles E2E')

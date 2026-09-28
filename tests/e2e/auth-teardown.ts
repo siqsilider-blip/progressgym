@@ -8,6 +8,7 @@ export default async function removeAuthFixture() {
     const supabaseUrl = process.env.E2E_SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL
     const serviceRoleKey = process.env.E2E_SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY
     const trainerUserId = process.env.E2E_TRAINER_USER_ID
+    const otherTrainerUserId = process.env.E2E_OTHER_TRAINER_USER_ID
     const studentUserId = process.env.E2E_STUDENT_USER_ID
     const studentId = process.env.E2E_STUDENT_ID
     const inviteStudentId = process.env.E2E_INVITE_STUDENT_ID
@@ -38,7 +39,7 @@ export default async function removeAuthFixture() {
         }
     }
 
-    const userIds = [trainerUserId, studentUserId, invitedUserId].filter(
+    const userIds = [trainerUserId, otherTrainerUserId, studentUserId, invitedUserId].filter(
         (id): id is string => Boolean(id)
     )
 

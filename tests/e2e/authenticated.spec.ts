@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
 
 const trainerEmail = process.env.E2E_TRAINER_EMAIL!
+const otherTrainerEmail = process.env.E2E_OTHER_TRAINER_EMAIL!
 const studentEmail = process.env.E2E_STUDENT_EMAIL!
 const password = process.env.E2E_AUTH_PASSWORD!
 const routineName = process.env.E2E_ROUTINE_NAME!
@@ -39,6 +40,19 @@ test('el entrenador entra al panel y no al portal del alumno', async ({ page }) 
     await expect(page).toHaveURL(/\/dashboard(?:\?|$)/)
 })
 
+test('un entrenador no puede abrir ni usar alumnos de otro entrenador', async ({ page }) => {
+    await logIn(page, 'trainer', otherTrainerEmail)
+
+    await page.goto(`/dashboard/students/${studentId}`)
+    await expect(page.getByText('No se encontró el alumno.')).toBeVisible()
+
+    await page.goto(`/dashboard/routines/new?studentId=${studentId}`)
+    await expect(page.getByText('Alumno no encontrado.')).toBeVisible()
+
+    await page.goto(`/dashboard/students/${studentId}/progress`)
+    await expect(page).toHaveURL(/\/dashboard\/students(?:\?|$)/)
+})
+
 test('el alumno entra a su portal y no al panel del entrenador', async ({ page }, testInfo) => {
     await logIn(page, 'student', studentEmail)
 
@@ -57,8 +71,8 @@ test('el alumno entra a su portal y no al panel del entrenador', async ({ page }
     await page.getByRole('link', { name: /Entrenar/ }).click()
 
     await expect(page).toHaveURL(/\/app\/train\?/, { timeout: 30_000 })
-    await expect(page.getByText(/Día E2E · Activación · 1\/1/)).toBeVisible()
-    await expect(page.getByRole('heading', { name: exerciseName })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Día E2E' })).toBeVisible()
+    await expect(page.getByRole('button', { name: new RegExp(exerciseName) })).toBeVisible()
     await page.getByRole('button', { name: 'Ver cómo se hace' }).click()
     await expect(page.getByRole('dialog')).toBeVisible()
     await expect(page.getByText('Mantené la espalda apoyada y controlá el movimiento.')).toBeVisible()
@@ -67,14 +81,16 @@ test('el alumno entra a su portal y no al panel del entrenador', async ({ page }
     await expect(numberInputs).toHaveCount(2)
     await numberInputs.nth(0).fill('35')
     await numberInputs.nth(1).fill('10')
-    await page.getByRole('button', { name: 'Agregar esfuerzo percibido (opcional)' }).click()
-    await page.getByRole('button', { name: 'Esfuerzo 7 de 10' }).click()
-    await page.getByRole('button', { name: 'Guardar serie 1' }).click()
+    await page.getByRole('combobox', { name: 'Esfuerzo opcional' }).selectOption('7')
+    await page.getByRole('button', { name: 'Guardar serie' }).click()
+    await expect(page.getByText('Guardada ✓')).toBeVisible({ timeout: 15_000 })
+    await page.getByRole('button', { name: 'Finalizar entrenamiento' }).click()
 
-    await expect(page.getByRole('heading', { name: 'Sesión completada' })).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByRole('heading', { name: 'Entrenamiento guardado' })).toBeVisible({ timeout: 15_000 })
 
     await page.reload()
-    await expect(page.getByRole('heading', { name: 'Sesión completada' })).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByText('Finalizada · editable')).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByRole('button', { name: 'Actualizar' })).toBeVisible()
 
     await page.goto('/app/rutina')
     await expect(page.getByText('Semana completada ✓')).toBeVisible()
@@ -100,6 +116,49 @@ test('cada tipo de cuenta es rechazado por el acceso equivocado', async ({ page 
     await logIn(page, 'student', trainerEmail, false)
     await expect(page).toHaveURL(/\/login\/student\?message=/)
     await expect(page.getByText(/esta cuenta es de entrenador/i)).toBeVisible()
+})
+
+test('el check-in y la conversación privada llegan de alumno a entrenador y vuelven', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name === 'desktop-chromium', 'El circuito de seguimiento se prueba una sola vez.')
+
+    await logIn(page, 'student', studentEmail)
+    await page.goto('/app/check-in')
+
+    await expect(page.getByRole('heading', { name: '¿Cómo estuvo tu semana?' })).toBeVisible()
+    await page.getByRole('button', { name: 'Buena', exact: true }).click()
+    await page.getByRole('button', { name: 'Bien', exact: true }).click()
+    await page.getByRole('button', { name: 'Poco', exact: true }).click()
+    await page.getByRole('button', { name: 'Justos', exact: true }).click()
+    await page.getByLabel('¿Querés contarle algo más a tu entrenador?').fill('Check-in automático E2E')
+    const photoInputs = page.locator('input[type="file"]')
+    await expect(photoInputs).toHaveCount(3)
+    await photoInputs.first().setInputFiles('public/icon-192.png')
+    await expect(page.getByAltText('Vista previa: Frente')).toBeVisible()
+    await page.getByRole('button', { name: 'Enviar control semanal' }).click()
+    await expect(page.getByText('Control enviado a tu entrenador.')).toBeVisible({ timeout: 15_000 })
+    await page.reload()
+    await expect(page.getByAltText('Foto guardada: Frente')).toBeVisible({ timeout: 15_000 })
+
+    await page.goto('/app/messages')
+    await page.getByRole('combobox').selectOption('question')
+    await page.getByPlaceholder('Escribile a tu entrenador…').fill('Consulta privada E2E')
+    await page.getByRole('button', { name: 'Enviar' }).click()
+    await expect(page.getByText('Mensaje enviado ✓')).toBeVisible({ timeout: 15_000 })
+
+    await page.context().clearCookies()
+    await logIn(page, 'trainer', trainerEmail)
+    await page.goto(`/dashboard/students/${studentId}`)
+    await expect(page.locator('img[alt^="Progreso del"]')).toHaveCount(1)
+    await page.goto(`/dashboard/messages?student=${studentId}`)
+    await expect(page.getByText('Consulta privada E2E')).toBeVisible({ timeout: 15_000 })
+    await page.getByPlaceholder('Responderle a Alumno…').fill('Respuesta privada E2E')
+    await page.getByRole('button', { name: 'Enviar' }).click()
+    await expect(page.getByText('Mensaje enviado ✓')).toBeVisible({ timeout: 15_000 })
+
+    await page.context().clearCookies()
+    await logIn(page, 'student', studentEmail)
+    await page.goto('/app/messages')
+    await expect(page.getByText('Respuesta privada E2E')).toBeVisible({ timeout: 15_000 })
 })
 
 test('la biblioteca muestra la cobertura de videos', async ({ page }) => {

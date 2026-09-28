@@ -59,6 +59,8 @@ export default async function StudentHistoryPage(props: PageProps) {
     ])
 
     const student = studentResult.data
+    if (!student) redirect('/dashboard/students')
+
     const weightUnit = (trainerProfile?.weight_unit ?? 'kg') as WeightUnit
     const fullName = `${student?.first_name ?? ''} ${student?.last_name ?? ''}`.trim()
 
