@@ -11,6 +11,8 @@ import StudentContactCard from './StudentContactCard'
 import { getRoutineSchedule } from '@/lib/getRoutineSchedule'
 import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
 import ProgressPhotoGallery, { type ProgressPhotoItem } from '@/components/coaching/ProgressPhotoGallery'
+import StudentMonthlySummaryCard from './StudentMonthlySummaryCard'
+import { getBuenosAiresDateString } from '@/lib/buenosAiresDate'
 
 type PageProps = {
     params: Promise<{
@@ -33,6 +35,10 @@ export default async function StudentProfilePage(props: PageProps) {
     if (!user) redirect('/login')
 
     const studentId = params.studentId
+    const today = getBuenosAiresDateString()
+    const currentPeriodStart = shiftDate(today, -27)
+    const previousPeriodStart = shiftDate(today, -55)
+    const previousPeriodEnd = shiftDate(today, -28)
 
     const { data: student } = await supabase
         .from('students')
@@ -44,7 +50,7 @@ export default async function StudentProfilePage(props: PageProps) {
         return <div className="p-6">No se encontró el alumno.</div>
     }
 
-    const [risk, routineAssignment, linkedProfile, feedbackResult, weeklyCheckinResult, progressPhotosResult] = await Promise.all([
+    const [risk, routineAssignment, linkedProfile, feedbackResult, weeklyCheckinsResult, progressPhotosResult, sessionsResult] = await Promise.all([
         getStudentRisk(studentId),
         supabase.from('student_routines').select('routine_id, program_started_on').eq('student_id', studentId).eq('status', 'active').maybeSingle(),
         getStudentAccessAccount(studentId),
@@ -60,14 +66,21 @@ export default async function StudentProfilePage(props: PageProps) {
             .select('energy, sleep_quality, stress, training_difficulty, had_pain, pain_details, body_weight, waist_cm, comment, week_start')
             .eq('student_id', studentId)
             .order('week_start', { ascending: false })
-            .limit(1)
-            .maybeSingle(),
+            .limit(8),
         supabase
             .from('student_progress_photos')
             .select('id, storage_path, captured_on, pose, marketing_consent')
             .eq('student_id', studentId)
             .order('captured_on', { ascending: true })
             .limit(30),
+        supabase
+            .from('workout_sessions')
+            .select('performed_date')
+            .eq('student_id', studentId)
+            .eq('status', 'completed')
+            .eq('completed_manually', true)
+            .gte('performed_date', previousPeriodStart)
+            .lte('performed_date', today),
     ])
 
     const progressPhotos = (await Promise.all((progressPhotosResult.data ?? []).map(async (photo) => {
@@ -83,6 +96,17 @@ export default async function StudentProfilePage(props: PageProps) {
             marketingConsent: photo.marketing_consent,
         } as ProgressPhotoItem
     }))).filter((photo): photo is ProgressPhotoItem => photo !== null)
+
+    const weeklyCheckins = weeklyCheckinsResult.data ?? []
+    const latestWeeklyCheckin = weeklyCheckins[0] ?? null
+    const currentCheckins = weeklyCheckins.filter((checkin) => checkin.week_start >= currentPeriodStart)
+    const sessions = sessionsResult.data ?? []
+    const currentSessions = sessions.filter((session) => session.performed_date >= currentPeriodStart).length
+    const previousSessions = sessions.filter((session) => (
+        session.performed_date >= previousPeriodStart && session.performed_date <= previousPeriodEnd
+    )).length
+    const weightChange = getMeasurementChange(currentCheckins, 'body_weight')
+    const waistChange = getMeasurementChange(currentCheckins, 'waist_cm')
 
     const assignedRoutineId = routineAssignment.data?.routine_id ?? null
     const programStartedOn = routineAssignment.data?.program_started_on ?? null
@@ -155,35 +179,45 @@ export default async function StudentProfilePage(props: PageProps) {
                 phone={student.phone ?? null}
             />
 
-            {weeklyCheckinResult.data && (
-                <section className={`rounded-2xl border p-4 ${weeklyCheckinResult.data.had_pain ? 'border-amber-500/30 bg-amber-500/[0.07]' : 'border-border bg-card'}`}>
+            <StudentMonthlySummaryCard
+                studentId={studentId}
+                sessions={currentSessions}
+                previousSessions={previousSessions}
+                checkins={currentCheckins.length}
+                weightChange={weightChange}
+                waistChange={waistChange}
+                painReports={currentCheckins.filter((checkin) => checkin.had_pain).length}
+            />
+
+            {latestWeeklyCheckin && (
+                <section className={`rounded-2xl border p-4 ${latestWeeklyCheckin.had_pain ? 'border-amber-500/30 bg-amber-500/[0.07]' : 'border-border bg-card'}`}>
                     <div className="flex items-start justify-between gap-3">
                         <div>
                             <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Check-in semanal</p>
                             <h2 className="mt-1 text-sm font-bold text-foreground">
-                                {weeklyCheckinResult.data.had_pain ? '⚠️ Requiere atención' : 'Estado general del alumno'}
+                                {latestWeeklyCheckin.had_pain ? '⚠️ Requiere atención' : 'Estado general del alumno'}
                             </h2>
                         </div>
                         <span className="shrink-0 text-[10px] text-muted-foreground">
-                            Semana del {formatCheckinDate(weeklyCheckinResult.data.week_start)}
+                            Semana del {formatCheckinDate(latestWeeklyCheckin.week_start)}
                         </span>
                     </div>
                     <div className="mt-3 grid grid-cols-4 gap-1.5 text-center">
-                        <CheckinMetric label="Energía" value={weeklyCheckinResult.data.energy} />
-                        <CheckinMetric label="Sueño" value={weeklyCheckinResult.data.sleep_quality} />
-                        <CheckinMetric label="Estrés" value={weeklyCheckinResult.data.stress} inverse />
-                        <CheckinMetric label="Exigencia" value={weeklyCheckinResult.data.training_difficulty} inverse />
+                        <CheckinMetric label="Energía" value={latestWeeklyCheckin.energy} />
+                        <CheckinMetric label="Sueño" value={latestWeeklyCheckin.sleep_quality} />
+                        <CheckinMetric label="Estrés" value={latestWeeklyCheckin.stress} inverse />
+                        <CheckinMetric label="Exigencia" value={latestWeeklyCheckin.training_difficulty} inverse />
                     </div>
-                    {(weeklyCheckinResult.data.body_weight != null || weeklyCheckinResult.data.waist_cm != null) && (
+                    {(latestWeeklyCheckin.body_weight != null || latestWeeklyCheckin.waist_cm != null) && (
                         <p className="mt-3 text-[11px] text-muted-foreground">
-                            {weeklyCheckinResult.data.body_weight != null ? `Peso ${weeklyCheckinResult.data.body_weight} kg` : ''}
-                            {weeklyCheckinResult.data.body_weight != null && weeklyCheckinResult.data.waist_cm != null ? ' · ' : ''}
-                            {weeklyCheckinResult.data.waist_cm != null ? `Cintura ${weeklyCheckinResult.data.waist_cm} cm` : ''}
+                            {latestWeeklyCheckin.body_weight != null ? `Peso ${latestWeeklyCheckin.body_weight} kg` : ''}
+                            {latestWeeklyCheckin.body_weight != null && latestWeeklyCheckin.waist_cm != null ? ' · ' : ''}
+                            {latestWeeklyCheckin.waist_cm != null ? `Cintura ${latestWeeklyCheckin.waist_cm} cm` : ''}
                         </p>
                     )}
-                    {(weeklyCheckinResult.data.pain_details || weeklyCheckinResult.data.comment) && (
-                        <p className={`mt-3 text-xs leading-5 ${weeklyCheckinResult.data.had_pain ? 'font-medium text-amber-500' : 'text-muted-foreground'}`}>
-                            {weeklyCheckinResult.data.pain_details || weeklyCheckinResult.data.comment}
+                    {(latestWeeklyCheckin.pain_details || latestWeeklyCheckin.comment) && (
+                        <p className={`mt-3 text-xs leading-5 ${latestWeeklyCheckin.had_pain ? 'font-medium text-amber-500' : 'text-muted-foreground'}`}>
+                            {latestWeeklyCheckin.pain_details || latestWeeklyCheckin.comment}
                         </p>
                     )}
                 </section>
@@ -292,4 +326,22 @@ function CheckinMetric({ label, value, inverse = false }: { label: string; value
 
 function formatCheckinDate(value: string) {
     return new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(`${value}T00:00:00Z`))
+}
+
+function shiftDate(value: string, days: number) {
+    const date = new Date(`${value}T00:00:00Z`)
+    date.setUTCDate(date.getUTCDate() + days)
+    return date.toISOString().slice(0, 10)
+}
+
+function getMeasurementChange(
+    rows: { body_weight: number | null; waist_cm: number | null }[],
+    key: 'body_weight' | 'waist_cm'
+) {
+    const values = rows
+        .map((row) => row[key])
+        .filter((value): value is number => value !== null)
+
+    if (values.length < 2) return null
+    return Math.round((values[0] - values[values.length - 1]) * 10) / 10
 }
