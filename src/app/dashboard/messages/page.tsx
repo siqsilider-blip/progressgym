@@ -6,6 +6,7 @@ import { getServerUser } from '@/lib/auth/server'
 import MessageComposer from '@/components/coaching/MessageComposer'
 import ReadMarker from '@/components/coaching/ReadMarker'
 import NotificationTypeReadMarker from '@/components/coaching/NotificationTypeReadMarker'
+import StudentConversationPicker from '@/components/coaching/StudentConversationPicker'
 
 type PageProps = { searchParams?: Promise<{ student?: string }> }
 type StudentRow = { id: string; first_name: string; last_name: string }
@@ -115,7 +116,7 @@ export default async function TrainerMessagesPage(props: PageProps) {
     }
 
     return (
-        <main className="mx-auto max-w-6xl space-y-4 p-4 pb-24 md:p-6">
+        <main className="mx-auto w-full min-w-0 max-w-6xl space-y-4 overflow-x-hidden p-4 pb-28 md:p-6">
             {conversationId && <ReadMarker conversationId={conversationId} />}
             <NotificationTypeReadMarker type="workout_feedback" />
 
@@ -126,16 +127,16 @@ export default async function TrainerMessagesPage(props: PageProps) {
             </header>
 
             {(feedbackData as FeedbackRow[] | null)?.length ? (
-                <section>
+                <section className="min-w-0 max-w-full">
                     <div className="mb-2 flex items-center justify-between">
                         <h2 className="text-xs font-black uppercase tracking-widest text-white/40">Controles recientes</h2>
                         <span className="text-[10px] text-white/25">Después de entrenar</span>
                     </div>
-                    <div className="flex gap-2 overflow-x-auto pb-1">
+                    <div className="flex w-full max-w-full gap-2 overflow-x-auto overscroll-x-contain pb-1">
                         {(feedbackData as FeedbackRow[]).map((feedback) => {
                             const student = studentMap.get(feedback.student_id)
                             return (
-                                <Link key={feedback.id} href={`/dashboard/students/${feedback.student_id}`} className={`min-w-64 rounded-2xl border p-3 ${feedback.had_pain ? 'border-amber-500/30 bg-amber-500/[0.07]' : 'border-white/[0.07] bg-white/[0.03]'}`}>
+                                <Link key={feedback.id} href={`/dashboard/students/${feedback.student_id}`} className={`w-64 shrink-0 rounded-2xl border p-3 ${feedback.had_pain ? 'border-amber-500/30 bg-amber-500/[0.07]' : 'border-white/[0.07] bg-white/[0.03]'}`}>
                                     <div className="flex items-center gap-2">
                                         {feedback.had_pain && <AlertTriangle className="h-4 w-4 text-amber-400" />}
                                         <p className="text-xs font-bold text-white">{student ? `${student.first_name} ${student.last_name}` : 'Alumno'}</p>
@@ -159,16 +160,30 @@ export default async function TrainerMessagesPage(props: PageProps) {
                     <p className="mt-1 text-xs text-white/35">Cuando agregues uno, vas a poder conversar desde acá.</p>
                 </section>
             ) : (
-                <div className="grid gap-3 md:grid-cols-[260px_minmax(0,1fr)]">
-                    <aside className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-2">
+                <div className="grid min-w-0 gap-3 md:grid-cols-[260px_minmax(0,1fr)]">
+                    <div className="md:hidden">
+                        <StudentConversationPicker
+                            selectedStudentId={selectedStudent?.id ?? ''}
+                            students={orderedStudents.map((student) => {
+                                const conversation = conversationByStudent.get(student.id)
+                                return {
+                                    id: student.id,
+                                    label: `${student.first_name} ${student.last_name}`,
+                                    unread: conversation ? unreadByConversation.get(conversation.id) ?? 0 : 0,
+                                }
+                            })}
+                        />
+                    </div>
+
+                    <aside className="hidden min-w-0 rounded-2xl border border-white/[0.07] bg-white/[0.03] p-2 md:block">
                         <p className="px-2 pb-2 pt-1 text-[10px] font-bold uppercase tracking-widest text-white/30">Alumnos</p>
-                        <div className="flex gap-2 overflow-x-auto md:block md:space-y-1 md:overflow-visible">
+                        <div className="space-y-1">
                             {orderedStudents.map((student) => {
                                 const selected = student.id === selectedStudent?.id
                                 const conversation = conversationByStudent.get(student.id)
                                 const unread = conversation ? unreadByConversation.get(conversation.id) ?? 0 : 0
                                 return (
-                                    <Link key={student.id} href={`/dashboard/messages?student=${student.id}`} className={`flex min-w-52 items-center gap-2 rounded-xl border px-3 py-2.5 transition md:min-w-0 ${selected ? 'border-violet-500/30 bg-violet-500/10' : 'border-transparent hover:bg-white/[0.04]'}`}>
+                                    <Link key={student.id} href={`/dashboard/messages?student=${student.id}`} className={`flex min-w-0 items-center gap-2 rounded-xl border px-3 py-2.5 transition ${selected ? 'border-violet-500/30 bg-violet-500/10' : 'border-transparent hover:bg-white/[0.04]'}`}>
                                         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/[0.06] text-xs font-black text-white/65">{student.first_name.slice(0, 1)}{student.last_name.slice(0, 1)}</span>
                                         <span className="min-w-0 flex-1 truncate text-xs font-semibold text-white/75">{student.first_name} {student.last_name}</span>
                                         {unread > 0 && <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-violet-500 px-1 text-[9px] font-black text-white">{unread}</span>}
@@ -178,26 +193,26 @@ export default async function TrainerMessagesPage(props: PageProps) {
                         </div>
                     </aside>
 
-                    <section className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-3">
+                    <section className="min-w-0 overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.03] p-3">
                         <div className="border-b border-white/[0.06] px-1 pb-3">
                             <h2 className="text-sm font-bold text-white">{selectedStudent?.first_name} {selectedStudent?.last_name}</h2>
                             <p className="text-[10px] text-white/35">Conversación privada</p>
                         </div>
 
-                        <div className="min-h-72 space-y-2 py-3">
+                        <div className="min-h-44 min-w-0 space-y-2 py-3 md:min-h-72">
                             {messages.length ? messages.map((message) => {
                                 const own = message.sender_role === 'trainer'
                                 return (
-                                    <article key={message.id} className={`flex ${own ? 'justify-end' : 'justify-start'}`}>
-                                        <div className={`max-w-[86%] rounded-2xl px-3.5 py-2.5 ${own ? 'rounded-br-md bg-violet-600 text-white' : 'rounded-bl-md border border-white/[0.08] bg-[#0d0d12] text-white/85'}`}>
+                                    <article key={message.id} className={`flex min-w-0 ${own ? 'justify-end' : 'justify-start'}`}>
+                                        <div className={`min-w-0 max-w-[86%] rounded-2xl px-3.5 py-2.5 ${own ? 'rounded-br-md bg-violet-600 text-white' : 'rounded-bl-md border border-white/[0.08] bg-[#0d0d12] text-white/85'}`}>
                                             <p className="mb-1 text-[9px] font-bold uppercase tracking-wide opacity-60">{own ? 'Vos' : selectedStudent?.first_name} · {TOPIC_LABELS[message.topic] ?? 'Mensaje'}</p>
-                                            <p className="whitespace-pre-wrap text-sm leading-5">{message.body}</p>
+                                            <p className="break-words whitespace-pre-wrap text-sm leading-5">{message.body}</p>
                                             <p className="mt-1 text-right text-[9px] opacity-50">{formatMessageDate(message.created_at)}</p>
                                         </div>
                                     </article>
                                 )
                             }) : (
-                                <div className="flex min-h-64 flex-col items-center justify-center text-center">
+                                <div className="flex min-h-44 flex-col items-center justify-center text-center md:min-h-64">
                                     <MessageCircle className="h-8 w-8 text-violet-400" />
                                     <p className="mt-3 text-sm font-bold text-white">Iniciar conversación</p>
                                     <p className="mt-1 max-w-sm text-xs leading-5 text-white/35">Podés enviar una indicación o responder cuando el alumno consulte desde su entrenamiento.</p>
@@ -207,7 +222,11 @@ export default async function TrainerMessagesPage(props: PageProps) {
 
                         {selectedStudent && (
                             <div className="border-t border-white/[0.06] pt-3 [--background:#0d0d12] [--border:rgba(255,255,255,0.1)] [--foreground:white] [--muted-foreground:rgba(255,255,255,0.4)]">
-                                <MessageComposer studentId={selectedStudent.id} placeholder={`Escribirle a ${selectedStudent.first_name}…`} />
+                                <MessageComposer
+                                    studentId={selectedStudent.id}
+                                    placeholder={`Responderle a ${selectedStudent.first_name}…`}
+                                    showTopic={false}
+                                />
                             </div>
                         )}
                     </section>

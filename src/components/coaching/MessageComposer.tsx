@@ -20,6 +20,7 @@ export default function MessageComposer({
     defaultTopic = 'general',
     placeholder = 'Escribí tu mensaje…',
     compact = false,
+    showTopic = true,
 }: {
     studentId?: string
     routineDayExerciseId?: string | null
@@ -27,6 +28,7 @@ export default function MessageComposer({
     defaultTopic?: CoachingTopic
     placeholder?: string
     compact?: boolean
+    showTopic?: boolean
 }) {
     const [topic, setTopic] = useState<CoachingTopic>(defaultTopic)
     const [body, setBody] = useState('')
@@ -57,15 +59,17 @@ export default function MessageComposer({
 
     return (
         <div className={compact ? 'space-y-2' : 'space-y-3'}>
-            <select
-                value={topic}
-                onChange={(event) => setTopic(event.target.value as CoachingTopic)}
-                className="h-10 w-full rounded-xl border border-border bg-background px-3 text-xs font-semibold text-foreground outline-none focus:border-indigo-500"
-            >
-                {TOPICS.map((item) => (
-                    <option key={item.value} value={item.value}>{item.label}</option>
-                ))}
-            </select>
+            {showTopic && (
+                <select
+                    value={topic}
+                    onChange={(event) => setTopic(event.target.value as CoachingTopic)}
+                    className="h-10 w-full rounded-xl border border-border bg-background px-3 text-xs font-semibold text-foreground outline-none focus:border-indigo-500"
+                >
+                    {TOPICS.map((item) => (
+                        <option key={item.value} value={item.value}>{item.label}</option>
+                    ))}
+                </select>
+            )}
             <textarea
                 value={body}
                 onChange={(event) => { setBody(event.target.value); setError(null); setSent(false) }}
@@ -74,7 +78,7 @@ export default function MessageComposer({
                 rows={compact ? 2 : 3}
                 className="w-full resize-none rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-indigo-500"
             />
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0 text-[11px]">
                     {error && <p className="text-red-500">{error}</p>}
                     {sent && <p className="text-emerald-500">Mensaje enviado ✓</p>}
@@ -83,7 +87,7 @@ export default function MessageComposer({
                     type="button"
                     onClick={submit}
                     disabled={pending || !body.trim()}
-                    className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 text-xs font-bold text-white disabled:opacity-45"
+                    className="inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 text-xs font-bold text-white disabled:opacity-45 sm:w-auto"
                 >
                     <Send className="h-3.5 w-3.5" />
                     {pending ? 'Enviando…' : 'Enviar'}
