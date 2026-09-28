@@ -14,14 +14,18 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     if (profile?.role !== 'student') redirect('/login')
 
     const supabase = await createClient()
-    const { count: unreadNotifications } = await supabase
+    const { count: unreadMessages } = await supabase
         .from('internal_notifications')
         .select('id', { count: 'exact', head: true })
         .eq('recipient_user_id', profile.id)
+        .eq('type', 'coaching_message')
         .is('read_at', null)
 
     return (
-        <StudentAppShell studentId={profile.student_id} unreadNotifications={unreadNotifications ?? 0}>
+        <StudentAppShell
+            studentId={profile.student_id}
+            unreadMessages={unreadMessages ?? 0}
+        >
             <Suspense fallback={null}>
                 <StudentNavigationTracker />
             </Suspense>

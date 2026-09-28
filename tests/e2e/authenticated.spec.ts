@@ -147,6 +147,9 @@ test('el check-in y la conversación privada llegan de alumno a entrenador y vue
 
     await page.context().clearCookies()
     await logIn(page, 'trainer', trainerEmail)
+    await page.goto('/dashboard/notifications')
+    await expect(page.getByText('Nuevo check-in semanal', { exact: true })).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByText('Nueva consulta de alumno', { exact: true })).toBeVisible({ timeout: 15_000 })
     await page.goto(`/dashboard/students/${studentId}`)
     await expect(page.locator('img[alt^="Progreso del"]')).toHaveCount(1)
     await page.goto(`/dashboard/messages?student=${studentId}`)
@@ -157,6 +160,8 @@ test('el check-in y la conversación privada llegan de alumno a entrenador y vue
 
     await page.context().clearCookies()
     await logIn(page, 'student', studentEmail)
+    await page.goto('/app/notifications')
+    await expect(page.getByText('Respuesta de tu entrenador', { exact: true })).toBeVisible({ timeout: 15_000 })
     await page.goto('/app/messages')
     await expect(page.getByText('Respuesta privada E2E')).toBeVisible({ timeout: 15_000 })
 })

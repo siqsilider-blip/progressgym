@@ -13,16 +13,19 @@ import {
     Settings,
     MessageSquare,
     MessageCircle,
+    Bell,
 } from 'lucide-react'
 
 type SidebarClientProps = {
     signOutAction: () => Promise<void>
     unreadNotifications: number
+    unreadMessages: number
 }
 
 export default function SidebarClient({
     signOutAction,
     unreadNotifications,
+    unreadMessages,
 }: SidebarClientProps) {
     const pathname = usePathname()
     const [pendingHref, setPendingHref] = useState<string | null>(null)
@@ -62,6 +65,14 @@ export default function SidebarClient({
             icon: MessageCircle,
             match: (path: string) =>
                 path === '/dashboard/messages' || path.startsWith('/dashboard/messages/'),
+        },
+        {
+            href: '/dashboard/notifications',
+            label: 'Avisos',
+            mobileLabel: 'Avisos',
+            icon: Bell,
+            mobile: false,
+            match: (path: string) => path === '/dashboard/notifications',
         },
         {
             href: '/dashboard/routines',
@@ -136,8 +147,11 @@ export default function SidebarClient({
                                 >
                                     <Icon className={`h-4 w-4 ${isActive ? 'text-violet-400' : ''}`} />
                                     {item.label}
-                                    {item.label === 'Mensajes' && unreadNotifications > 0 && (
-                                        <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-black text-white">{Math.min(unreadNotifications, 99)}</span>
+                                    {item.label === 'Mensajes' && unreadMessages > 0 && (
+                                        <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-black text-white">{Math.min(unreadMessages, 99)}</span>
+                                    )}
+                                    {item.label === 'Avisos' && unreadNotifications > 0 && (
+                                        <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-violet-500 px-1 text-[9px] font-black text-white">{Math.min(unreadNotifications, 99)}</span>
                                     )}
                                 </Link>
                             )
@@ -183,13 +197,29 @@ export default function SidebarClient({
                     <span className="text-sm font-black text-white">Progrezzia</span>
                 </Link>
 
-                <Link
-                    href="/dashboard/settings"
-                    prefetch
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-white/40 hover:bg-white/[0.06] hover:text-white transition-colors"
-                >
-                    <Settings className="h-4 w-4" />
-                </Link>
+                <div className="flex items-center gap-1">
+                    <Link
+                        href="/dashboard/notifications"
+                        prefetch
+                        aria-label="Avisos"
+                        className="relative flex h-8 w-8 items-center justify-center rounded-lg text-white/40 transition-colors hover:bg-white/[0.06] hover:text-white"
+                    >
+                        <Bell className="h-4 w-4" />
+                        {unreadNotifications > 0 && (
+                            <span className="absolute right-0.5 top-0.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-violet-500 px-0.5 text-[7px] font-black text-white">
+                                {Math.min(unreadNotifications, 9)}
+                            </span>
+                        )}
+                    </Link>
+                    <Link
+                        href="/dashboard/settings"
+                        prefetch
+                        aria-label="Configuración"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-white/40 hover:bg-white/[0.06] hover:text-white transition-colors"
+                    >
+                        <Settings className="h-4 w-4" />
+                    </Link>
+                </div>
             </div>
 
             {/* ── Nav mobile bottom ── */}
@@ -214,8 +244,8 @@ export default function SidebarClient({
                             >
                                 <span className="relative">
                                     <Icon className={`h-4 w-4 ${isActive || isPending ? 'stroke-[2.5]' : ''} ${isPending ? 'animate-pulse' : ''}`} />
-                                    {item.label === 'Mensajes' && unreadNotifications > 0 && (
-                                        <span className="absolute -right-2 -top-2 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-red-500 px-0.5 text-[7px] font-black text-white">{Math.min(unreadNotifications, 9)}</span>
+                                    {item.label === 'Mensajes' && unreadMessages > 0 && (
+                                        <span className="absolute -right-2 -top-2 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-red-500 px-0.5 text-[7px] font-black text-white">{Math.min(unreadMessages, 9)}</span>
                                     )}
                                 </span>
                                 <span>{item.mobileLabel}</span>

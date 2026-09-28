@@ -17,11 +17,11 @@ const navItems = [
 export default function StudentAppShell({
     children,
     studentId,
-    unreadNotifications,
+    unreadMessages,
 }: {
     children: React.ReactNode
     studentId: string | null
-    unreadNotifications: number
+    unreadMessages: number
 }) {
     const pathname = usePathname()
     const router = useRouter()
@@ -70,9 +70,9 @@ export default function StudentAppShell({
                             >
                                 <span className="relative">
                                     <Icon className={`h-5 w-5 ${isActive ? 'stroke-[2.5]' : ''}`} />
-                                    {label === 'Mensajes' && unreadNotifications > 0 && (
+                                    {label === 'Mensajes' && unreadMessages > 0 && (
                                         <span className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[8px] font-black text-white">
-                                            {Math.min(unreadNotifications, 9)}
+                                            {Math.min(unreadMessages, 9)}
                                         </span>
                                     )}
                                 </span>

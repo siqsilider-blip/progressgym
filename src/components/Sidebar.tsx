@@ -19,11 +19,25 @@ export default async function Sidebar() {
         redirect('/login')
     }
 
-    const { count: unreadNotifications } = await supabase
-        .from('internal_notifications')
-        .select('id', { count: 'exact', head: true })
-        .eq('recipient_user_id', user.id)
-        .is('read_at', null)
+    const [{ count: unreadNotifications }, { count: unreadMessages }] = await Promise.all([
+        supabase
+            .from('internal_notifications')
+            .select('id', { count: 'exact', head: true })
+            .eq('recipient_user_id', user.id)
+            .is('read_at', null),
+        supabase
+            .from('internal_notifications')
+            .select('id', { count: 'exact', head: true })
+            .eq('recipient_user_id', user.id)
+            .eq('type', 'coaching_message')
+            .is('read_at', null),
+    ])
 
-    return <SidebarClient signOutAction={signOut} unreadNotifications={unreadNotifications ?? 0} />
+    return (
+        <SidebarClient
+            signOutAction={signOut}
+            unreadNotifications={unreadNotifications ?? 0}
+            unreadMessages={unreadMessages ?? 0}
+        />
+    )
 }

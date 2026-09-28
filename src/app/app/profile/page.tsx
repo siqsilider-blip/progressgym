@@ -6,6 +6,7 @@ import StudentPageHeader from '@/components/student/StudentPageHeader'
 import { getStudentAppContext } from '@/lib/auth/student'
 import AccountDeletionCard from '@/components/account/AccountDeletionCard'
 import { getActiveStudentRoutine } from '@/lib/getActiveStudentRoutine'
+import { Bell } from 'lucide-react'
 
 export default async function AppProfilePage() {
     const supabase = await createClient()
@@ -106,6 +107,14 @@ export default async function AppProfilePage() {
 
                 <Link href="/app/logros" prefetch={true} className="flex items-center justify-between rounded-xl border border-border bg-card px-3.5 py-3 text-sm font-semibold text-foreground">
                     <span>Ver mis logros</span>
+                    <span className="text-indigo-400">→</span>
+                </Link>
+
+                <Link href="/app/notifications" prefetch={true} className="flex items-center justify-between rounded-xl border border-border bg-card px-3.5 py-3 text-sm font-semibold text-foreground">
+                    <span className="flex items-center gap-2">
+                        <Bell className="h-4 w-4 text-indigo-400" />
+                        Avisos
+                    </span>
                     <span className="text-indigo-400">→</span>
                 </Link>
 

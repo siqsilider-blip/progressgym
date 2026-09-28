@@ -6,6 +6,7 @@ import { getStudentRoutineWeekProgress, type RoutineDayProgressStatus } from '@/
 import { getBuenosAiresDateString, getBuenosAiresHour, getCurrentBuenosAiresWeek, getElapsedProgramWeekIndex } from '@/lib/buenosAiresDate'
 import { getActiveStudentRoutine } from '@/lib/getActiveStudentRoutine'
 import { getStudentAppContext } from '@/lib/auth/student'
+import { Bell } from 'lucide-react'
 
 export default async function AppHomePage() {
     const supabase = await createClient()
@@ -16,7 +17,7 @@ export default async function AppHomePage() {
     if (!studentId) redirect('/app')
 
     const { weekStart: currentWeekStart } = getCurrentBuenosAiresWeek()
-    const [studentResult, assignment, weeklyCheckinResult, latestPhotoResult] = await Promise.all([
+    const [studentResult, assignment, weeklyCheckinResult, latestPhotoResult, unreadNotificationsResult] = await Promise.all([
         supabase
             .from('students')
             .select('first_name')
@@ -36,10 +37,16 @@ export default async function AppHomePage() {
             .order('captured_on', { ascending: false })
             .limit(1)
             .maybeSingle(),
+        supabase
+            .from('internal_notifications')
+            .select('id', { count: 'exact', head: true })
+            .eq('recipient_user_id', profile.id)
+            .is('read_at', null),
     ])
     const student = studentResult.data
     const weeklyCheckinCompleted = Boolean(weeklyCheckinResult.data)
     const latestPhotoDate = latestPhotoResult.data?.captured_on ?? null
+    const unreadNotifications = unreadNotificationsResult.count ?? 0
     const programAgeWeeks = assignment?.programStartedOn
         ? getElapsedProgramWeekIndex(assignment.programStartedOn)
         : 0
@@ -192,14 +199,29 @@ export default async function AppHomePage() {
             <div className="mx-auto max-w-lg space-y-4">
 
                 {/* ── Header ── */}
-                <div className="pt-2">
-                    <p className="text-xs font-medium text-indigo-500">Progrezzia</p>
-                    <h1 className="mt-1 text-2xl font-black text-foreground">
-                        {greeting}, {firstName} 👋
-                    </h1>
-                    {routineName && (
-                        <p className="mt-0.5 text-sm text-muted-foreground">{routineName}</p>
-                    )}
+                <div className="flex items-start justify-between gap-3 pt-2">
+                    <div className="min-w-0">
+                        <p className="text-xs font-medium text-indigo-500">Progrezzia</p>
+                        <h1 className="mt-1 truncate text-2xl font-black text-foreground">
+                            {greeting}, {firstName} 👋
+                        </h1>
+                        {routineName && (
+                            <p className="mt-0.5 truncate text-sm text-muted-foreground">{routineName}</p>
+                        )}
+                    </div>
+                    <Link
+                        href="/app/notifications"
+                        prefetch
+                        aria-label="Ver avisos"
+                        className="relative mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground transition hover:text-foreground"
+                    >
+                        <Bell className="h-4.5 w-4.5" />
+                        {unreadNotifications > 0 && (
+                            <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-violet-500 px-1 text-[8px] font-black text-white">
+                                {Math.min(unreadNotifications, 9)}
+                            </span>
+                        )}
+                    </Link>
                 </div>
 
                 {/* ── CTA Entrenar ── */}
