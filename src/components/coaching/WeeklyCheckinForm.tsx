@@ -191,11 +191,10 @@ export default function WeeklyCheckinForm({
                 ) : (
                     <label className="mt-3 flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-indigo-500/35 bg-indigo-500/[0.06] text-xs font-bold text-indigo-500">
                         <Camera className="h-4 w-4" />
-                        Sacar o elegir foto
+                        Elegir de la galería o sacar una foto
                         <input
                             type="file"
-                            accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
-                            capture="environment"
+                            accept="image/*"
                             className="sr-only"
                             onChange={(event) => {
                                 const selected = event.target.files?.[0] ?? null
