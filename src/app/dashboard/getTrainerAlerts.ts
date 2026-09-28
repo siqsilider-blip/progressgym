@@ -3,7 +3,7 @@ import { getElapsedProgramWeekIndex } from '@/lib/buenosAiresDate'
 import { getTrainerStudents } from './getTrainerStudents'
 
 export type TrainerAlert = {
-    type: 'inactive' | 'no_routine' | 'new_student' | 'unfinished_session' | 'program_ending'
+    type: 'inactive' | 'no_routine' | 'new_student' | 'unfinished_session' | 'program_ending' | 'weekly_checkin'
     studentId: string
     studentName: string
     studentPhone: string | null
@@ -20,6 +20,14 @@ type AssignmentRow = {
 type WeekRow = { routine_id: string }
 type SessionRow = { student_id: string; started_at: string }
 type FollowUpRow = { student_id: string }
+type WeeklyCheckinRow = {
+    student_id: string
+    energy: number
+    sleep_quality: number
+    stress: number
+    training_difficulty: number
+    had_pain: boolean
+}
 
 export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
     const supabase = await createClient()
@@ -32,7 +40,7 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
     const studentIds = students.map((student) => student.id)
     const now = new Date()
 
-    const [workoutsResult, routinesResult, activeSessionsResult, followUpsResult] = await Promise.all([
+    const [workoutsResult, routinesResult, activeSessionsResult, followUpsResult, weeklyCheckinsResult] = await Promise.all([
         supabase
             .from('exercise_logs')
             .select('student_id, performed_at')
@@ -57,6 +65,13 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
             .select('student_id')
             .in('student_id', studentIds)
             .gt('snoozed_until', now.toISOString()),
+
+        supabase
+            .from('student_weekly_checkins')
+            .select('student_id, energy, sleep_quality, stress, training_difficulty, had_pain')
+            .in('student_id', studentIds)
+            .is('reviewed_at', null)
+            .order('week_start', { ascending: false }),
     ])
 
     if (workoutsResult.error) {
@@ -75,12 +90,27 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
         console.error('Error fetching follow-ups for alerts:', followUpsResult.error)
     }
 
+    if (weeklyCheckinsResult.error) {
+        console.error('Error fetching weekly check-ins for alerts:', weeklyCheckinsResult.error)
+    }
+
     const workouts = workoutsResult.data ?? []
     const routines = (routinesResult.data as AssignmentRow[] | null) ?? []
     const activeSessions = (activeSessionsResult.data as SessionRow[] | null) ?? []
     const suppressedStudentIds = new Set(
         ((followUpsResult.data as FollowUpRow[] | null) ?? []).map((row) => row.student_id)
     )
+    const attentionCheckinByStudent = new Map<string, WeeklyCheckinRow>()
+    for (const checkin of ((weeklyCheckinsResult.data as WeeklyCheckinRow[] | null) ?? [])) {
+        const requiresAttention = checkin.had_pain
+            || checkin.energy <= 2
+            || checkin.sleep_quality <= 2
+            || checkin.stress >= 4
+            || checkin.training_difficulty >= 5
+        if (requiresAttention && !attentionCheckinByStudent.has(checkin.student_id)) {
+            attentionCheckinByStudent.set(checkin.student_id, checkin)
+        }
+    }
 
     const routineIds = [...new Set(routines.map((routine) => routine.routine_id))]
     const weekCountByRoutine = new Map<string, number>()
@@ -133,8 +163,21 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
 
         const lastWorkoutAt = lastWorkoutByStudent.get(student.id)
         const assignment = assignmentByStudent.get(student.id)
+        const attentionCheckin = attentionCheckinByStudent.get(student.id)
 
         // Una sola prioridad por alumno: siempre queda arriba la acción más urgente.
+        if (attentionCheckin) {
+            alerts.push({
+                type: 'weekly_checkin',
+                studentId: student.id,
+                studentName: fullName,
+                studentPhone: student.phone ?? null,
+                message: getWeeklyCheckinAlertMessage(fullName, attentionCheckin),
+                actionHref: `/dashboard/messages?student=${student.id}`,
+            })
+            continue
+        }
+
         if (!assignment) {
             alerts.push({
                 type: 'no_routine',
@@ -207,12 +250,21 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
     }
 
     const priority: Record<TrainerAlert['type'], number> = {
-        no_routine: 0,
-        unfinished_session: 1,
-        inactive: 2,
-        new_student: 3,
-        program_ending: 4,
+        weekly_checkin: 0,
+        no_routine: 1,
+        unfinished_session: 2,
+        inactive: 3,
+        new_student: 4,
+        program_ending: 5,
     }
 
     return alerts.sort((a, b) => priority[a.type] - priority[b.type])
+}
+
+function getWeeklyCheckinAlertMessage(studentName: string, checkin: WeeklyCheckinRow) {
+    if (checkin.had_pain) return `${studentName} informó dolor o una molestia en su check-in.`
+    if (checkin.energy <= 2) return `${studentName} informó energía baja esta semana.`
+    if (checkin.sleep_quality <= 2) return `${studentName} informó que durmió mal esta semana.`
+    if (checkin.stress >= 4) return `${studentName} informó estrés alto esta semana.`
+    return `${studentName} sintió los entrenamientos demasiado exigentes.`
 }

@@ -1,11 +1,24 @@
 import { cookies } from 'next/headers'
-import { AlertTriangle, CircleStop, Flag, ListChecks, UserMinus, UserX } from 'lucide-react'
+import { AlertTriangle, CircleStop, Flag, HeartPulse, ListChecks, UserMinus, UserX } from 'lucide-react'
 import AppBadge from '@/components/ui/app-badge'
 import type { TrainerAlert } from './getTrainerAlerts'
 import FollowUpActions from './FollowUpActions'
 
 function getRiskMeta(type: TrainerAlert['type'], isLight: boolean) {
     switch (type) {
+        case 'weekly_checkin':
+            return {
+                label: 'Check-in',
+                badgeClassName: isLight
+                    ? 'bg-orange-100 text-orange-700'
+                    : 'bg-orange-500/10 text-orange-300',
+                icon: HeartPulse,
+                iconClassName: 'text-orange-500',
+                iconBgClassName: 'bg-orange-500/10',
+                cardClassName: isLight
+                    ? 'border-orange-200 bg-orange-50'
+                    : 'border-orange-500/20 bg-orange-500/5',
+            }
         case 'inactive':
             return {
                 label: 'Inactivo',

@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getRoutineSchedule } from '@/lib/getRoutineSchedule'
 import { getStudentRoutineWeekProgress, type RoutineDayProgressStatus } from '@/lib/studentRoutineWeekProgress'
-import { getBuenosAiresHour } from '@/lib/buenosAiresDate'
+import { getBuenosAiresHour, getCurrentBuenosAiresWeek } from '@/lib/buenosAiresDate'
 import { getActiveStudentRoutine } from '@/lib/getActiveStudentRoutine'
 import { getStudentAppContext } from '@/lib/auth/student'
 
@@ -15,15 +15,23 @@ export default async function AppHomePage() {
     const studentId = profile.student_id
     if (!studentId) redirect('/app')
 
-    const [studentResult, assignment] = await Promise.all([
+    const { weekStart: currentWeekStart } = getCurrentBuenosAiresWeek()
+    const [studentResult, assignment, weeklyCheckinResult] = await Promise.all([
         supabase
             .from('students')
             .select('first_name')
             .eq('id', studentId)
             .single(),
         getActiveStudentRoutine(supabase, studentId),
+        supabase
+            .from('student_weekly_checkins')
+            .select('id')
+            .eq('student_id', studentId)
+            .eq('week_start', currentWeekStart)
+            .maybeSingle(),
     ])
     const student = studentResult.data
+    const weeklyCheckinCompleted = Boolean(weeklyCheckinResult.data)
 
     let routineName: string | null = null
     let assignedRoutineId: string | null = null
@@ -244,6 +252,25 @@ export default async function AppHomePage() {
                         <p className="mt-1 text-xs text-muted-foreground">Tu entrenador todavía no te asignó una rutina.</p>
                     </div>
                 )}
+
+                <Link
+                    href="/app/check-in"
+                    prefetch={true}
+                    className={`flex items-center justify-between rounded-2xl border px-4 py-3 transition active:scale-[0.99] ${weeklyCheckinCompleted
+                        ? 'border-emerald-500/20 bg-emerald-500/[0.05]'
+                        : 'border-indigo-500/25 bg-indigo-500/[0.07]'
+                        }`}
+                >
+                    <div>
+                        <p className={`text-sm font-bold ${weeklyCheckinCompleted ? 'text-emerald-500' : 'text-foreground'}`}>
+                            {weeklyCheckinCompleted ? 'Control semanal enviado ✓' : 'Control semanal · 1 minuto'}
+                        </p>
+                        <p className="mt-0.5 text-[10px] text-muted-foreground">
+                            {weeklyCheckinCompleted ? 'Podés actualizarlo si algo cambió' : 'Energía, descanso, estrés y molestias'}
+                        </p>
+                    </div>
+                    <span className={`text-lg ${weeklyCheckinCompleted ? 'text-emerald-500' : 'text-indigo-500'}`}>→</span>
+                </Link>
 
                 {/* ── Ejercicios de hoy ── */}
                 {todayExercises.length > 0 && !weekCompleted && (

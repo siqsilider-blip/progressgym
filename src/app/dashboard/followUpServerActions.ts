@@ -10,6 +10,7 @@ const ALERT_TYPES: TrainerAlert['type'][] = [
     'new_student',
     'unfinished_session',
     'program_ending',
+    'weekly_checkin',
 ]
 
 type FollowUpAction = 'whatsapp_opened' | 'snoozed'

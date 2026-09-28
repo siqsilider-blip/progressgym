@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { getServerUser } from '@/lib/auth/server'
+import { getCurrentBuenosAiresWeek } from '@/lib/buenosAiresDate'
 
 export type CoachingTopic =
     | 'general'
@@ -197,4 +198,113 @@ export async function saveWorkoutFeedback(payload: {
     revalidatePath('/dashboard/messages')
     revalidatePath('/dashboard')
     return { ok: true, error: null }
+}
+
+export type WeeklyCheckinPayload = {
+    energy: number
+    sleepQuality: number
+    stress: number
+    trainingDifficulty: number
+    hadPain: boolean
+    painDetails: string
+    bodyWeight: string
+    waistCm: string
+    comment: string
+}
+
+export async function saveWeeklyCheckin(
+    payload: WeeklyCheckinPayload
+): Promise<{ ok: boolean; error: string | null }> {
+    const user = await getServerUser()
+    if (!user) return { ok: false, error: 'No autenticado.' }
+
+    const scores = [payload.energy, payload.sleepQuality, payload.stress, payload.trainingDifficulty]
+        .map(Number)
+    if (scores.some((value) => !Number.isInteger(value) || value < 1 || value > 5)) {
+        return { ok: false, error: 'Completá las cuatro preguntas del control.' }
+    }
+    if (payload.hadPain && !payload.painDetails.trim()) {
+        return { ok: false, error: 'Contanos dónde sentiste la molestia.' }
+    }
+
+    const bodyWeight = parseOptionalNumber(payload.bodyWeight)
+    const waistCm = parseOptionalNumber(payload.waistCm)
+    if (bodyWeight === undefined || waistCm === undefined) {
+        return { ok: false, error: 'Revisá las medidas ingresadas.' }
+    }
+    if (bodyWeight !== null && (bodyWeight < 20 || bodyWeight > 400)) {
+        return { ok: false, error: 'El peso ingresado no parece válido.' }
+    }
+    if (waistCm !== null && (waistCm < 30 || waistCm > 300)) {
+        return { ok: false, error: 'La medida de cintura no parece válida.' }
+    }
+
+    const supabase = await createClient()
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, student_id')
+        .eq('id', user.id)
+        .maybeSingle()
+
+    if (profile?.role !== 'student' || !profile.student_id) {
+        return { ok: false, error: 'Este control es para alumnos.' }
+    }
+
+    const { weekStart } = getCurrentBuenosAiresWeek()
+    const { error } = await supabase.rpc('upsert_weekly_checkin', {
+        p_week_start: weekStart,
+        p_energy: scores[0],
+        p_sleep_quality: scores[1],
+        p_stress: scores[2],
+        p_training_difficulty: scores[3],
+        p_had_pain: payload.hadPain,
+        p_pain_details: payload.hadPain ? payload.painDetails.trim() : null,
+        p_body_weight: bodyWeight,
+        p_waist_cm: waistCm,
+        p_comment: payload.comment.trim() || null,
+    })
+
+    if (error) {
+        console.error('[saveWeeklyCheckin]', error)
+        return {
+            ok: false,
+            error: error.code === 'PGRST205' || error.code === '42P01'
+                ? 'Falta aplicar la migración del control semanal.'
+                : 'No pudimos guardar el control semanal.',
+        }
+    }
+
+    revalidatePath('/app')
+    revalidatePath('/app/check-in')
+    revalidatePath('/dashboard')
+    revalidatePath('/dashboard/messages')
+    return { ok: true, error: null }
+}
+
+export async function markWeeklyCheckinReviewed(
+    checkinId: string
+): Promise<{ ok: boolean; error: string | null }> {
+    const user = await getServerUser()
+    if (!user || !checkinId) return { ok: false, error: 'No autenticado.' }
+
+    const supabase = await createClient()
+    const { data, error } = await supabase.rpc('mark_weekly_checkin_reviewed', {
+        p_checkin_id: checkinId,
+    })
+
+    if (error || data !== true) {
+        console.error('[markWeeklyCheckinReviewed]', error)
+        return { ok: false, error: 'No pudimos marcar el control como revisado.' }
+    }
+
+    revalidatePath('/dashboard')
+    revalidatePath('/dashboard/messages')
+    return { ok: true, error: null }
+}
+
+function parseOptionalNumber(value: string) {
+    const normalized = value.trim().replace(',', '.')
+    if (!normalized) return null
+    const parsed = Number(normalized)
+    return Number.isFinite(parsed) ? parsed : undefined
 }

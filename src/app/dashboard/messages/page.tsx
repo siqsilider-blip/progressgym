@@ -7,6 +7,7 @@ import MessageComposer from '@/components/coaching/MessageComposer'
 import ReadMarker from '@/components/coaching/ReadMarker'
 import NotificationTypeReadMarker from '@/components/coaching/NotificationTypeReadMarker'
 import StudentConversationPicker from '@/components/coaching/StudentConversationPicker'
+import ReviewCheckinButton from '@/components/coaching/ReviewCheckinButton'
 
 type PageProps = { searchParams?: Promise<{ student?: string }> }
 type StudentRow = { id: string; first_name: string; last_name: string }
@@ -29,6 +30,18 @@ type FeedbackRow = {
     comment: string | null
     created_at: string
 }
+type WeeklyCheckinRow = {
+    id: string
+    student_id: string
+    energy: number
+    sleep_quality: number
+    stress: number
+    training_difficulty: number
+    had_pain: boolean
+    pain_details: string | null
+    comment: string | null
+    week_start: string
+}
 
 const TOPIC_LABELS: Record<string, string> = {
     general: 'Mensaje',
@@ -45,7 +58,7 @@ export default async function TrainerMessagesPage(props: PageProps) {
     if (!user) redirect('/login')
 
     const supabase = await createClient()
-    const [{ data: studentsData }, { data: conversationsData }, { data: feedbackData }] = await Promise.all([
+    const [{ data: studentsData }, { data: conversationsData }, { data: feedbackData }, { data: weeklyCheckinsData }] = await Promise.all([
         supabase
             .from('students')
             .select('id, first_name, last_name')
@@ -62,6 +75,13 @@ export default async function TrainerMessagesPage(props: PageProps) {
             .eq('trainer_id', user.id)
             .order('created_at', { ascending: false })
             .limit(8),
+        supabase
+            .from('student_weekly_checkins')
+            .select('id, student_id, energy, sleep_quality, stress, training_difficulty, had_pain, pain_details, comment, week_start')
+            .eq('trainer_id', user.id)
+            .is('reviewed_at', null)
+            .order('week_start', { ascending: false })
+            .limit(12),
     ])
 
     const students = (studentsData as StudentRow[] | null) ?? []
@@ -125,6 +145,43 @@ export default async function TrainerMessagesPage(props: PageProps) {
                 <h1 className="mt-1 text-xl font-black text-white md:text-2xl">Mensajes</h1>
                 <p className="mt-1 text-xs text-white/40">Consultas, molestias y respuestas de tus alumnos.</p>
             </header>
+
+            {(weeklyCheckinsData as WeeklyCheckinRow[] | null)?.length ? (
+                <section className="rounded-2xl border border-white/[0.07] bg-white/[0.025] p-3">
+                    <div className="mb-2">
+                        <h2 className="text-xs font-black uppercase tracking-widest text-white/45">Check-ins para revisar</h2>
+                        <p className="mt-0.5 text-[10px] text-white/25">Primero aparecen los que requieren atención.</p>
+                    </div>
+                    <div className="grid gap-2 md:grid-cols-2">
+                        {[...(weeklyCheckinsData as WeeklyCheckinRow[])]
+                            .sort((a, b) => Number(checkinNeedsAttention(b)) - Number(checkinNeedsAttention(a)))
+                            .map((checkin) => {
+                                const student = studentMap.get(checkin.student_id)
+                                const needsAttention = checkinNeedsAttention(checkin)
+                                return (
+                                    <article key={checkin.id} className={`rounded-xl border p-3 ${needsAttention ? 'border-amber-500/25 bg-amber-500/[0.06]' : 'border-white/[0.07] bg-white/[0.025]'}`}>
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div className="min-w-0">
+                                                <p className="truncate text-xs font-bold text-white">{student ? `${student.first_name} ${student.last_name}` : 'Alumno'}</p>
+                                                <p className="mt-1 text-[10px] leading-4 text-white/45">Energía {checkin.energy}/5 · Sueño {checkin.sleep_quality}/5 · Estrés {checkin.stress}/5 · Exigencia {checkin.training_difficulty}/5</p>
+                                            </div>
+                                            {needsAttention && <AlertTriangle className="h-4 w-4 shrink-0 text-amber-400" />}
+                                        </div>
+                                        {(checkin.had_pain || checkin.comment) && (
+                                            <p className={`mt-2 line-clamp-2 text-[11px] leading-4 ${checkin.had_pain ? 'font-medium text-amber-300' : 'text-white/45'}`}>
+                                                {checkin.had_pain ? checkin.pain_details || 'Informó una molestia.' : checkin.comment}
+                                            </p>
+                                        )}
+                                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                                            <Link href={`/dashboard/messages?student=${checkin.student_id}`} className="inline-flex min-h-8 items-center rounded-lg border border-violet-500/25 bg-violet-500/10 px-2.5 text-[10px] font-bold text-violet-300">Conversar</Link>
+                                            <ReviewCheckinButton checkinId={checkin.id} />
+                                        </div>
+                                    </article>
+                                )
+                            })}
+                    </div>
+                </section>
+            ) : null}
 
             {(feedbackData as FeedbackRow[] | null)?.length ? (
                 <section className="min-w-0 max-w-full">
@@ -244,4 +301,12 @@ function formatMessageDate(value: string) {
         minute: '2-digit',
         timeZone: 'America/Argentina/Buenos_Aires',
     }).format(new Date(value))
+}
+
+function checkinNeedsAttention(checkin: WeeklyCheckinRow) {
+    return checkin.had_pain
+        || checkin.energy <= 2
+        || checkin.sleep_quality <= 2
+        || checkin.stress >= 4
+        || checkin.training_difficulty >= 5
 }
