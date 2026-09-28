@@ -51,7 +51,7 @@ export default async function DashboardPage() {
                     { href: '/dashboard/train', icon: Zap, label: 'Entrenar', color: 'text-emerald-400' },
                     { href: '/dashboard/students', icon: Users, label: 'Alumnos', color: 'text-violet-400' },
                     { href: '/dashboard/routines', icon: ClipboardList, label: 'Rutinas', color: 'text-indigo-400' },
-                    { href: '/dashboard/contacts', icon: MessageSquare, label: 'Contactos', color: 'text-amber-400' },
+                    { href: '/dashboard/messages', icon: MessageSquare, label: 'Mensajes', color: 'text-amber-400' },
                 ].map((item) => {
                     const Icon = item.icon
                     return (

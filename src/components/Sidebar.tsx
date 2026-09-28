@@ -10,12 +10,20 @@ export default async function Sidebar() {
         redirect('/login')
     }
 
+    const supabase = await createClient()
+
     async function signOut() {
         'use server'
-        const supabase = await createClient()
-        await supabase.auth.signOut()
+        const actionSupabase = await createClient()
+        await actionSupabase.auth.signOut()
         redirect('/login')
     }
 
-    return <SidebarClient signOutAction={signOut} />
+    const { count: unreadNotifications } = await supabase
+        .from('internal_notifications')
+        .select('id', { count: 'exact', head: true })
+        .eq('recipient_user_id', user.id)
+        .is('read_at', null)
+
+    return <SidebarClient signOutAction={signOut} unreadNotifications={unreadNotifications ?? 0} />
 }

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { BarChart2, CalendarDays, Clock, Home, User } from 'lucide-react'
+import { BarChart2, CalendarDays, Clock, Home, MessageCircle, User } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 
 const navItems = [
@@ -10,15 +10,18 @@ const navItems = [
     { href: '/app/rutina', icon: CalendarDays, label: 'Rutina', exact: false },
     { href: '/app/progress', icon: BarChart2, label: 'Progreso', exact: false },
     { href: '/app/history', icon: Clock, label: 'Historial', exact: false },
+    { href: '/app/messages', icon: MessageCircle, label: 'Mensajes', exact: false },
     { href: '/app/profile', icon: User, label: 'Perfil', exact: false },
 ]
 
 export default function StudentAppShell({
     children,
     studentId,
+    unreadNotifications,
 }: {
     children: React.ReactNode
     studentId: string | null
+    unreadNotifications: number
 }) {
     const pathname = usePathname()
     const router = useRouter()
@@ -51,7 +54,7 @@ export default function StudentAppShell({
             {children}
 
             <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/95 backdrop-blur">
-                <div className="mx-auto flex max-w-lg items-center justify-around px-1 py-2">
+                <div className="mx-auto grid max-w-lg grid-cols-6 items-center px-1 py-2">
                     {navItems.map(({ href, icon: Icon, label, exact }) => {
                         const isActive = exact ? pathname === href : pathname.startsWith(href)
                         return (
@@ -59,14 +62,21 @@ export default function StudentAppShell({
                                 key={href}
                                 href={href}
                                 prefetch={true}
-                                className={`flex flex-col items-center gap-0.5 rounded-xl px-3 py-2 transition ${
+                                className={`flex min-w-0 flex-col items-center gap-0.5 rounded-xl px-1 py-2 transition ${
                                     isActive
                                         ? 'text-indigo-500'
                                         : 'text-muted-foreground hover:text-foreground'
                                 }`}
                             >
-                                <Icon className={`h-5 w-5 ${isActive ? 'stroke-[2.5]' : ''}`} />
-                                <span className={`text-[9px] font-medium ${isActive ? 'font-bold' : ''}`}>
+                                <span className="relative">
+                                    <Icon className={`h-5 w-5 ${isActive ? 'stroke-[2.5]' : ''}`} />
+                                    {label === 'Mensajes' && unreadNotifications > 0 && (
+                                        <span className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[8px] font-black text-white">
+                                            {Math.min(unreadNotifications, 9)}
+                                        </span>
+                                    )}
+                                </span>
+                                <span className={`max-w-full truncate text-[8px] font-medium ${isActive ? 'font-bold' : ''}`}>
                                     {label}
                                 </span>
                             </Link>

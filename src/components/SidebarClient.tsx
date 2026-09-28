@@ -12,14 +12,17 @@ import {
     Dumbbell,
     Settings,
     MessageSquare,
+    MessageCircle,
 } from 'lucide-react'
 
 type SidebarClientProps = {
     signOutAction: () => Promise<void>
+    unreadNotifications: number
 }
 
 export default function SidebarClient({
     signOutAction,
+    unreadNotifications,
 }: SidebarClientProps) {
     const pathname = usePathname()
     const [pendingHref, setPendingHref] = useState<string | null>(null)
@@ -49,7 +52,16 @@ export default function SidebarClient({
             label: 'Nuevo',
             mobileLabel: 'Nuevo',
             icon: Plus,
+            mobile: false,
             match: (path: string) => path === '/dashboard/new',
+        },
+        {
+            href: '/dashboard/messages',
+            label: 'Mensajes',
+            mobileLabel: 'Mensajes',
+            icon: MessageCircle,
+            match: (path: string) =>
+                path === '/dashboard/messages' || path.startsWith('/dashboard/messages/'),
         },
         {
             href: '/dashboard/routines',
@@ -124,6 +136,9 @@ export default function SidebarClient({
                                 >
                                     <Icon className={`h-4 w-4 ${isActive ? 'text-violet-400' : ''}`} />
                                     {item.label}
+                                    {item.label === 'Mensajes' && unreadNotifications > 0 && (
+                                        <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-black text-white">{Math.min(unreadNotifications, 99)}</span>
+                                    )}
                                 </Link>
                             )
                         })}
@@ -197,7 +212,12 @@ export default function SidebarClient({
                                         : 'text-white/30 hover:text-white/60'
                                     }`}
                             >
-                                <Icon className={`h-4 w-4 ${isActive || isPending ? 'stroke-[2.5]' : ''} ${isPending ? 'animate-pulse' : ''}`} />
+                                <span className="relative">
+                                    <Icon className={`h-4 w-4 ${isActive || isPending ? 'stroke-[2.5]' : ''} ${isPending ? 'animate-pulse' : ''}`} />
+                                    {item.label === 'Mensajes' && unreadNotifications > 0 && (
+                                        <span className="absolute -right-2 -top-2 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-red-500 px-0.5 text-[7px] font-black text-white">{Math.min(unreadNotifications, 9)}</span>
+                                    )}
+                                </span>
                                 <span>{item.mobileLabel}</span>
                             </Link>
                         )

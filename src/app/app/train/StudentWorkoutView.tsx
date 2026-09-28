@@ -2,9 +2,11 @@
 
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, ChevronDown, ChevronUp, Clock3, Save, Trophy } from 'lucide-react'
-import { completeSession, saveSessionNote, saveSet } from '@/app/dashboard/students/[studentId]/train/train-focused-actions'
+import { Check, ChevronDown, ChevronUp, Clock3, MessageCircle, Save, Trophy } from 'lucide-react'
+import { completeSession, saveSet } from '@/app/dashboard/students/[studentId]/train/train-focused-actions'
 import ExerciseDemo from '@/app/dashboard/students/[studentId]/train/ExerciseDemo'
+import MessageComposer from '@/components/coaching/MessageComposer'
+import WorkoutFeedbackForm from '@/components/coaching/WorkoutFeedbackForm'
 
 type RoutineBlock = 'activation' | 'main' | 'closing'
 
@@ -124,9 +126,6 @@ export default function StudentWorkoutView({
     const [restExerciseName, setRestExerciseName] = React.useState('')
     const [completedSession, setCompletedSession] = React.useState(initialSummary)
     const [summary, setSummary] = React.useState<{ durationSeconds: number | null; totalSets: number } | null>(null)
-    const [sessionNote, setSessionNote] = React.useState('')
-    const [savingNote, setSavingNote] = React.useState(false)
-    const [noteSaved, setNoteSaved] = React.useState(false)
     const [localMaxWeights, setLocalMaxWeights] = React.useState({ ...maxWeights })
 
     const totalPlannedSets = exercises.reduce((total, exercise) => total + exercise.setsCount, 0)
@@ -152,7 +151,6 @@ export default function StudentWorkoutView({
                 )
         ))
         setGlobalError(null)
-        setNoteSaved(false)
     }
 
     async function saveOneSet(exerciseIndex: number, setIndex: number) {
@@ -259,15 +257,6 @@ export default function StudentWorkoutView({
         window.scrollTo({ top: 0, behavior: 'smooth' })
     }
 
-    async function saveNote() {
-        setSavingNote(true)
-        setNoteSaved(false)
-        const result = await saveSessionNote({ sessionId, studentId, note: sessionNote })
-        setSavingNote(false)
-        if (result.ok) setNoteSaved(true)
-        else setGlobalError(result.error || 'No pudimos guardar la nota.')
-    }
-
     if (summary) {
         return (
             <main className="mx-auto max-w-lg px-4 py-6">
@@ -280,19 +269,7 @@ export default function StudentWorkoutView({
                     <p className="mt-2 text-xs text-muted-foreground">Si necesitás corregir un peso, podés volver a abrir este día.</p>
                 </section>
 
-                <section className="mt-4 rounded-2xl border border-border bg-card p-4">
-                    <label className="text-sm font-semibold text-foreground" htmlFor="session-note">¿Cómo te sentiste? (opcional)</label>
-                    <textarea
-                        id="session-note"
-                        value={sessionNote}
-                        onChange={(event) => { setSessionNote(event.target.value); setNoteSaved(false) }}
-                        placeholder="Ej.: me sentí con energía, molestia en la rodilla..."
-                        className="mt-2 min-h-24 w-full rounded-xl border border-border bg-background p-3 text-sm text-foreground outline-none focus:border-indigo-500"
-                    />
-                    <button type="button" onClick={saveNote} disabled={savingNote} className="mt-2 min-h-11 w-full rounded-xl border border-border bg-secondary px-4 text-sm font-semibold text-foreground disabled:opacity-50">
-                        {savingNote ? 'Guardando…' : noteSaved ? 'Nota guardada ✓' : 'Guardar nota'}
-                    </button>
-                </section>
+                <WorkoutFeedbackForm sessionId={sessionId} studentId={studentId} />
 
                 <div className="mt-4 grid grid-cols-2 gap-2">
                     <button type="button" onClick={() => router.push(routineHref)} className="min-h-12 rounded-xl bg-indigo-600 px-4 text-sm font-bold text-white">Ver rutina</button>
@@ -385,6 +362,23 @@ export default function StudentWorkoutView({
                                                     {!exercise.video_url && exercise.instructions?.trim() && (
                                                         <p className="mb-3 rounded-xl bg-muted/50 px-3 py-2 text-xs leading-5 text-muted-foreground">{exercise.instructions}</p>
                                                     )}
+
+                                                    <details className="mt-3 rounded-xl border border-border bg-background/60">
+                                                        <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-3 text-xs font-semibold text-indigo-400">
+                                                            <MessageCircle className="h-4 w-4" />
+                                                            Consultar por este ejercicio
+                                                        </summary>
+                                                        <div className="border-t border-border p-3">
+                                                            <p className="mb-2 text-[11px] leading-4 text-muted-foreground">Tu entrenador verá que la consulta corresponde a {exercise.exerciseName}.</p>
+                                                            <MessageComposer
+                                                                routineDayExerciseId={exercise.id}
+                                                                workoutSessionId={sessionId}
+                                                                defaultTopic="question"
+                                                                placeholder={`Consulta sobre ${exercise.exerciseName}…`}
+                                                                compact
+                                                            />
+                                                        </div>
+                                                    </details>
 
                                                     <div className="mt-3 space-y-2.5">
                                                         {exerciseSets.map((set, setIndex) => {
