@@ -5,6 +5,7 @@ import { getCurrentBuenosAiresWeek } from '@/lib/buenosAiresDate'
 import WeeklyCheckinForm from '@/components/coaching/WeeklyCheckinForm'
 
 type WeeklyCheckinRow = {
+    id: string
     energy: number
     sleep_quality: number
     stress: number
@@ -26,7 +27,7 @@ export default async function WeeklyCheckinPage() {
     const [{ data }, { data: student }] = await Promise.all([
         supabase
             .from('student_weekly_checkins')
-            .select('energy, sleep_quality, stress, training_difficulty, had_pain, pain_details, body_weight, waist_cm, comment')
+            .select('id, energy, sleep_quality, stress, training_difficulty, had_pain, pain_details, body_weight, waist_cm, comment')
             .eq('student_id', context.profile.student_id)
             .eq('week_start', weekStart)
             .maybeSingle(),
@@ -37,9 +38,35 @@ export default async function WeeklyCheckinPage() {
             .maybeSingle(),
     ])
 
-    const { data: trainer } = student?.trainer_id
-        ? await supabase.from('profiles').select('name').eq('id', student.trainer_id).maybeSingle()
-        : { data: null }
+    const [{ data: trainer }, photosResult] = await Promise.all([
+        student?.trainer_id
+            ? supabase.from('profiles').select('name').eq('id', student.trainer_id).maybeSingle()
+            : Promise.resolve({ data: null }),
+        data?.id
+            ? supabase
+                .from('student_progress_photos')
+                .select('id, storage_path, pose, marketing_consent, created_at')
+                .eq('student_id', context.profile.student_id)
+                .eq('weekly_checkin_id', data.id)
+                .order('created_at', { ascending: false })
+            : Promise.resolve({ data: [] }),
+    ])
+
+    const seenPoses = new Set<string>()
+    const savedPhotos = (await Promise.all((photosResult.data ?? []).map(async (photo) => {
+        if (seenPoses.has(photo.pose)) return null
+        seenPoses.add(photo.pose)
+        const { data: signed } = await supabase.storage
+            .from('progress-photos')
+            .createSignedUrl(photo.storage_path, 3600)
+        if (!signed?.signedUrl) return null
+        return {
+            id: photo.id,
+            url: signed.signedUrl,
+            pose: photo.pose as 'front' | 'side' | 'back',
+            marketingConsent: photo.marketing_consent,
+        }
+    }))).filter((photo): photo is NonNullable<typeof photo> => photo !== null)
 
     return (
         <main className="mx-auto w-full max-w-lg p-4 pb-28 md:p-6">
@@ -50,6 +77,7 @@ export default async function WeeklyCheckinPage() {
             </header>
             <WeeklyCheckinForm
                 initialValue={(data as WeeklyCheckinRow | null) ?? null}
+                initialPhotos={savedPhotos}
                 studentUserId={context.user.id}
                 trainerName={trainer?.name ?? 'tu entrenador'}
             />

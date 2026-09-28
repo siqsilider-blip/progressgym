@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import { Camera, Check, ChevronDown, X } from 'lucide-react'
 import { deleteProgressPhoto, registerProgressPhoto, saveWeeklyCheckin } from '@/app/coaching/actions'
 import { supabase } from '@/lib/supabase/client'
@@ -12,6 +13,13 @@ type PhotoPose = 'front' | 'side' | 'back'
 type SelectedProgressPhoto = {
     file: File
     preview: string
+}
+
+type SavedProgressPhoto = {
+    id: string
+    url: string
+    pose: PhotoPose
+    marketingConsent: boolean
 }
 
 const PHOTO_POSES: { value: PhotoPose; label: string }[] = [
@@ -34,13 +42,16 @@ type WeeklyCheckinValue = {
 
 export default function WeeklyCheckinForm({
     initialValue,
+    initialPhotos,
     studentUserId,
     trainerName,
 }: {
     initialValue: WeeklyCheckinValue | null
+    initialPhotos: SavedProgressPhoto[]
     studentUserId: string
     trainerName: string
 }) {
+    const router = useRouter()
     const [energy, setEnergy] = useState(initialValue?.energy ?? 0)
     const [sleepQuality, setSleepQuality] = useState(initialValue?.sleep_quality ?? 0)
     const [stress, setStress] = useState(initialValue?.stress ?? 0)
@@ -51,12 +62,22 @@ export default function WeeklyCheckinForm({
     const [waistCm, setWaistCm] = useState(initialValue?.waist_cm?.toString() ?? '')
     const [comment, setComment] = useState(initialValue?.comment ?? '')
     const [photos, setPhotos] = useState<Partial<Record<PhotoPose, SelectedProgressPhoto>>>({})
+    const [savedPhotos, setSavedPhotos] = useState(initialPhotos)
     const [marketingConsent, setMarketingConsent] = useState(false)
     const [saved, setSaved] = useState(Boolean(initialValue))
     const [error, setError] = useState('')
     const [pending, startTransition] = useTransition()
 
     const selectedPhotoCount = PHOTO_POSES.filter(({ value }) => photos[value]).length
+
+    useEffect(() => {
+        setSavedPhotos((current) => {
+            current.forEach((photo) => {
+                if (photo.url.startsWith('blob:')) URL.revokeObjectURL(photo.url)
+            })
+            return initialPhotos
+        })
+    }, [initialPhotos])
 
     function selectPhoto(pose: PhotoPose, selected: File | null) {
         if (!selected) return
@@ -117,7 +138,7 @@ export default function WeeklyCheckinForm({
             })
 
             if (photosToUpload.length > 0) {
-                const registeredPhotoIds: string[] = []
+                const registeredPhotos: SavedProgressPhoto[] = []
                 const uploadedPaths = new Set<string>()
                 try {
                     for (const selected of photosToUpload) {
@@ -143,14 +164,30 @@ export default function WeeklyCheckinForm({
                             throw new Error(registration.error ?? `No pudimos guardar la foto de ${poseLabel(selected.pose).toLowerCase()}.`)
                         }
                         uploadedPaths.delete(storagePath)
-                        registeredPhotoIds.push(registration.photoId)
+                        registeredPhotos.push({
+                            id: registration.photoId,
+                            url: selected.preview,
+                            pose: selected.pose,
+                            marketingConsent,
+                        })
                     }
 
-                    photosToUpload.forEach(({ preview }) => URL.revokeObjectURL(preview))
+                    const replacedPhotoIds = photosToUpload.flatMap(({ pose }) => {
+                        const previous = savedPhotos.find((photo) => photo.pose === pose)
+                        return previous ? [previous.id] : []
+                    })
+                    await Promise.allSettled(replacedPhotoIds.map((photoId) => deleteProgressPhoto(photoId)))
+
+                    const uploadedPoses = new Set(registeredPhotos.map((photo) => photo.pose))
+                    setSavedPhotos((current) => [
+                        ...current.filter((photo) => !uploadedPoses.has(photo.pose)),
+                        ...registeredPhotos,
+                    ])
                     setPhotos({})
                     setMarketingConsent(false)
+                    router.refresh()
                 } catch (photoError) {
-                    await Promise.allSettled(registeredPhotoIds.map((photoId) => deleteProgressPhoto(photoId)))
+                    await Promise.allSettled(registeredPhotos.map((photo) => deleteProgressPhoto(photo.id)))
                     if (uploadedPaths.size > 0) {
                         await supabase.storage.from('progress-photos').remove([...uploadedPaths])
                     }
@@ -241,10 +278,11 @@ export default function WeeklyCheckinForm({
                     <Camera className="h-5 w-5 shrink-0 text-indigo-500" />
                 </div>
 
-                <p className="mt-3 text-[11px] font-semibold text-foreground">Podés cargar una, dos o las tres posiciones.</p>
+                <p className="mt-3 text-[11px] font-semibold text-foreground">Podés cargar una, dos o las tres posiciones. Las guardadas quedan visibles; tocá una para reemplazarla.</p>
                 <div className="mt-2 grid grid-cols-3 gap-2">
                     {PHOTO_POSES.map(({ value, label }) => {
                         const selected = photos[value]
+                        const saved = savedPhotos.find((photo) => photo.pose === value)
                         return (
                             <div key={value} className="relative overflow-hidden rounded-xl border border-border bg-background">
                                 <p className="px-2 py-2 text-center text-[10px] font-bold uppercase tracking-wide text-muted-foreground">{label}</p>
@@ -266,6 +304,25 @@ export default function WeeklyCheckinForm({
                                             <X className="h-4 w-4" />
                                         </button>
                                         <p className="px-1 py-1.5 text-center text-[9px] font-semibold text-indigo-500">Tocá para cambiar</p>
+                                    </>
+                                ) : saved ? (
+                                    <>
+                                        <label className="relative block aspect-[3/4] cursor-pointer overflow-hidden bg-black">
+                                            <Image src={saved.url} alt={`Foto guardada: ${label}`} fill unoptimized className="object-cover" />
+                                            <span className="absolute bottom-1.5 left-1/2 -translate-x-1/2 rounded-full bg-emerald-500 px-2 py-1 text-[8px] font-black uppercase tracking-wide text-black">Guardada</span>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                className="sr-only"
+                                                onChange={(event) => {
+                                                    selectPhoto(value, event.target.files?.[0] ?? null)
+                                                    event.target.value = ''
+                                                }}
+                                            />
+                                        </label>
+                                        <p className={`px-1 py-1.5 text-center text-[8px] font-semibold ${saved.marketingConsent ? 'text-emerald-500' : 'text-muted-foreground'}`}>
+                                            {saved.marketingConsent ? 'Autorizada' : 'Privada'}
+                                        </p>
                                     </>
                                 ) : (
                                     <label className="flex aspect-[3/4] cursor-pointer flex-col items-center justify-center gap-2 border-t border-dashed border-indigo-500/25 bg-indigo-500/[0.04] px-1 text-center text-[10px] font-bold text-indigo-500">
