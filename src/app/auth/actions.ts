@@ -255,7 +255,7 @@ export async function updatePassword(formData: FormData) {
         .maybeSingle()
 
     if (profile?.role === 'student') {
-        redirect('/app?message=Contraseña actualizada')
+        redirect(isInvitation ? '/app/onboarding' : '/app?message=Contraseña actualizada')
     }
 
     redirect('/dashboard?message=Contraseña actualizada')

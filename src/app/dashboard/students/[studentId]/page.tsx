@@ -13,6 +13,13 @@ import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
 import ProgressPhotoGallery, { type ProgressPhotoItem } from '@/components/coaching/ProgressPhotoGallery'
 import StudentMonthlySummaryCard from './StudentMonthlySummaryCard'
 import { getBuenosAiresDateString } from '@/lib/buenosAiresDate'
+import {
+    ONBOARDING_EQUIPMENT,
+    ONBOARDING_EXPERIENCE,
+    ONBOARDING_GOALS,
+    ONBOARDING_LOCATIONS,
+    type StudentOnboardingProfile,
+} from '@/lib/studentOnboarding'
 
 type PageProps = {
     params: Promise<{
@@ -51,7 +58,7 @@ export default async function StudentProfilePage(props: PageProps) {
         return <div className="p-6">No se encontró el alumno.</div>
     }
 
-    const [risk, routineAssignment, linkedProfile, feedbackResult, weeklyCheckinsResult, progressPhotosResult, sessionsResult] = await Promise.all([
+    const [risk, routineAssignment, linkedProfile, feedbackResult, weeklyCheckinsResult, progressPhotosResult, sessionsResult, onboardingResult] = await Promise.all([
         getStudentRisk(studentId),
         supabase.from('student_routines').select('routine_id, program_started_on').eq('student_id', studentId).eq('status', 'active').maybeSingle(),
         getStudentAccessAccount(studentId),
@@ -82,7 +89,14 @@ export default async function StudentProfilePage(props: PageProps) {
             .eq('completed_manually', true)
             .gte('performed_date', previousPeriodStart)
             .lte('performed_date', today),
+        supabase
+            .from('student_onboarding_profiles')
+            .select('student_id, goals, experience_level, training_days_per_week, session_minutes, training_location, available_equipment, limitations, preferences, completed_at')
+            .eq('student_id', studentId)
+            .maybeSingle(),
     ])
+
+    const onboarding = (onboardingResult.data as StudentOnboardingProfile | null) ?? null
 
     const progressPhotos = (await Promise.all((progressPhotosResult.data ?? []).map(async (photo) => {
         const { data: signed } = await supabase.storage
@@ -179,6 +193,51 @@ export default async function StudentProfilePage(props: PageProps) {
                 studentId={studentId}
                 phone={student.phone ?? null}
             />
+
+            {onboarding ? (
+                <section className="rounded-2xl border border-indigo-500/25 bg-indigo-500/[0.06] p-4">
+                    <div className="flex items-start justify-between gap-3">
+                        <div>
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-400">Ficha inicial</p>
+                            <h2 className="mt-1 text-sm font-black text-foreground">Objetivos y disponibilidad</h2>
+                        </div>
+                        <span className="rounded-full bg-emerald-500/10 px-2 py-1 text-[9px] font-bold text-emerald-400">Completada</span>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                        {onboarding.goals.map((goal) => (
+                            <span key={goal} className="rounded-full border border-indigo-500/20 bg-indigo-500/10 px-2.5 py-1 text-[10px] font-bold text-indigo-300">
+                                {labelFor(ONBOARDING_GOALS, goal)}
+                            </span>
+                        ))}
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
+                        <OnboardingMetric label="Experiencia" value={labelFor(ONBOARDING_EXPERIENCE, onboarding.experience_level)} />
+                        <OnboardingMetric label="Disponibilidad" value={`${onboarding.training_days_per_week} días · ${onboarding.session_minutes} min`} />
+                        <OnboardingMetric label="Lugar" value={labelFor(ONBOARDING_LOCATIONS, onboarding.training_location)} />
+                        <OnboardingMetric
+                            label="Equipamiento"
+                            value={onboarding.available_equipment.length
+                                ? onboarding.available_equipment.map((item) => labelFor(ONBOARDING_EQUIPMENT, item)).join(', ')
+                                : 'Sin especificar'}
+                        />
+                    </div>
+                    {(onboarding.limitations || onboarding.preferences) && (
+                        <div className="mt-3 space-y-2 border-t border-indigo-500/15 pt-3 text-xs leading-5">
+                            {onboarding.limitations && (
+                                <p><span className="font-bold text-amber-400">Cuidados: </span><span className="text-muted-foreground">{onboarding.limitations}</span></p>
+                            )}
+                            {onboarding.preferences && (
+                                <p><span className="font-bold text-foreground">Preferencias: </span><span className="text-muted-foreground">{onboarding.preferences}</span></p>
+                            )}
+                        </div>
+                    )}
+                </section>
+            ) : linkedProfile ? (
+                <section className="rounded-xl border border-amber-500/20 bg-amber-500/[0.05] px-3.5 py-3">
+                    <p className="text-xs font-bold text-amber-400">Ficha inicial pendiente</p>
+                    <p className="mt-0.5 text-[10px] leading-4 text-muted-foreground">El alumno todavía no completó sus objetivos y disponibilidad.</p>
+                </section>
+            ) : null}
 
             <StudentMonthlySummaryCard
                 studentId={studentId}
@@ -325,6 +384,19 @@ function CheckinMetric({ label, value, inverse = false }: { label: string; value
             <p className="mt-0.5 truncate text-[9px] text-muted-foreground">{label}</p>
         </div>
     )
+}
+
+function OnboardingMetric({ label, value }: { label: string; value: string }) {
+    return (
+        <div className="rounded-xl bg-background/60 px-3 py-2.5">
+            <p className="text-[9px] font-bold uppercase tracking-wide text-muted-foreground">{label}</p>
+            <p className="mt-1 font-bold leading-4 text-foreground">{value}</p>
+        </div>
+    )
+}
+
+function labelFor(labels: Record<string, string>, value: string) {
+    return labels[value] ?? value
 }
 
 function formatCheckinDate(value: string) {

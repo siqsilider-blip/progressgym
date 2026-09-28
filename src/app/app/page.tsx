@@ -6,7 +6,7 @@ import { getStudentRoutineWeekProgress, type RoutineDayProgressStatus } from '@/
 import { getBuenosAiresDateString, getBuenosAiresHour, getCurrentBuenosAiresWeek, getElapsedProgramWeekIndex } from '@/lib/buenosAiresDate'
 import { getActiveStudentRoutine } from '@/lib/getActiveStudentRoutine'
 import { getStudentAppContext } from '@/lib/auth/student'
-import { Bell } from 'lucide-react'
+import { Bell, ClipboardCheck } from 'lucide-react'
 
 export default async function AppHomePage() {
     const supabase = await createClient()
@@ -17,7 +17,7 @@ export default async function AppHomePage() {
     if (!studentId) redirect('/app')
 
     const { weekStart: currentWeekStart } = getCurrentBuenosAiresWeek()
-    const [studentResult, assignment, weeklyCheckinResult, latestPhotoResult, unreadNotificationsResult] = await Promise.all([
+    const [studentResult, assignment, weeklyCheckinResult, latestPhotoResult, unreadNotificationsResult, onboardingResult] = await Promise.all([
         supabase
             .from('students')
             .select('first_name')
@@ -42,11 +42,17 @@ export default async function AppHomePage() {
             .select('id', { count: 'exact', head: true })
             .eq('recipient_user_id', profile.id)
             .is('read_at', null),
+        supabase
+            .from('student_onboarding_profiles')
+            .select('completed_at')
+            .eq('student_id', studentId)
+            .maybeSingle(),
     ])
     const student = studentResult.data
     const weeklyCheckinCompleted = Boolean(weeklyCheckinResult.data)
     const latestPhotoDate = latestPhotoResult.data?.captured_on ?? null
     const unreadNotifications = unreadNotificationsResult.count ?? 0
+    const onboardingCompleted = Boolean(onboardingResult.data?.completed_at)
     const programAgeWeeks = assignment?.programStartedOn
         ? getElapsedProgramWeekIndex(assignment.programStartedOn)
         : 0
@@ -223,6 +229,22 @@ export default async function AppHomePage() {
                         )}
                     </Link>
                 </div>
+
+                {!onboardingCompleted && (
+                    <Link
+                        href="/app/onboarding"
+                        className="flex items-center gap-3 rounded-2xl border border-indigo-500/25 bg-indigo-500/[0.08] p-3.5 transition active:scale-[0.99]"
+                    >
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-500/15 text-indigo-400">
+                            <ClipboardCheck className="h-4.5 w-4.5" />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                            <span className="block text-sm font-black text-foreground">Completá tu ficha inicial</span>
+                            <span className="mt-0.5 block text-[11px] leading-4 text-muted-foreground">Objetivos, tiempo disponible y cuidados importantes.</span>
+                        </span>
+                        <span className="text-indigo-400">→</span>
+                    </Link>
+                )}
 
                 {/* ── CTA Entrenar ── */}
                 {assignedRoutineId && weekCompleted ? (

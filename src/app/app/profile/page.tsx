@@ -118,6 +118,11 @@ export default async function AppProfilePage() {
                     <span className="text-indigo-400">→</span>
                 </Link>
 
+                <Link href="/app/onboarding" prefetch={true} className="flex items-center justify-between rounded-xl border border-border bg-card px-3.5 py-3 text-sm font-semibold text-foreground">
+                    <span>Mis objetivos y disponibilidad</span>
+                    <span className="text-indigo-400">→</span>
+                </Link>
+
                 <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 py-1 text-[11px] text-muted-foreground">
                     <Link href="/privacy">Privacidad</Link>
                     <Link href="/terms">Términos</Link>

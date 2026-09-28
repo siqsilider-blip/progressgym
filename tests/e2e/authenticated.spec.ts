@@ -118,6 +118,36 @@ test('cada tipo de cuenta es rechazado por el acceso equivocado', async ({ page 
     await expect(page.getByText(/esta cuenta es de entrenador/i)).toBeVisible()
 })
 
+test('el alumno completa su ficha inicial y el entrenador la recibe', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name === 'desktop-chromium', 'La ficha inicial se prueba una sola vez por fixture.')
+
+    await logIn(page, 'student', studentEmail)
+    await page.goto('/app/onboarding')
+
+    await expect(page.getByRole('heading', { name: 'Contanos sobre vos' })).toBeVisible()
+    await page.getByText('Ganar fuerza', { exact: true }).click()
+    await page.getByText('Moverme mejor', { exact: true }).click()
+    await page.getByText('Estoy empezando', { exact: true }).click()
+    await page.getByLabel('Días por semana').selectOption('3')
+    await page.getByLabel('Minutos por sesión').selectOption('60')
+    await page.getByText('Gimnasio', { exact: true }).click()
+    await page.getByText('Máquinas', { exact: true }).click()
+    await page.getByLabel(/dolores, lesiones/i).fill('Cuidar la rodilla derecha.')
+    await page.getByLabel(/algo que te guste/i).fill('Prefiero explicaciones simples.')
+    await page.getByRole('button', { name: 'Guardar y empezar' }).click()
+
+    await expect(page).toHaveURL(/\/app\?onboarding=completed/, { timeout: 15_000 })
+    await expect(page.getByText('Completá tu ficha inicial')).toHaveCount(0)
+
+    await page.context().clearCookies()
+    await logIn(page, 'trainer', trainerEmail)
+    await page.goto('/dashboard/notifications')
+    await expect(page.getByText('Ficha inicial completada', { exact: true })).toBeVisible({ timeout: 15_000 })
+    await page.goto(`/dashboard/students/${studentId}`)
+    await expect(page.getByText('Objetivos y disponibilidad', { exact: true })).toBeVisible()
+    await expect(page.getByText('Cuidar la rodilla derecha.', { exact: true })).toBeVisible()
+})
+
 test('el check-in y la conversación privada llegan de alumno a entrenador y vuelven', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name === 'desktop-chromium', 'El circuito de seguimiento se prueba una sola vez.')
 

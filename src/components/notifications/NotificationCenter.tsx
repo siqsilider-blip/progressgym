@@ -1,4 +1,4 @@
-import { Activity, Bell, Check, CheckCheck, ChevronRight, MessageCircle, TriangleAlert } from 'lucide-react'
+import { Activity, Bell, Check, CheckCheck, ChevronRight, ClipboardCheck, MessageCircle, TriangleAlert } from 'lucide-react'
 import { markAllInternalNotificationsRead, markInternalNotificationReadAndOpen } from '@/app/notifications/actions'
 
 export type NotificationRow = {
@@ -26,6 +26,9 @@ function notificationVisual(type: string, title: string) {
         return urgent
             ? { Icon: TriangleAlert, color: 'text-amber-400', background: 'bg-amber-500/10' }
             : { Icon: Activity, color: 'text-sky-400', background: 'bg-sky-500/10' }
+    }
+    if (type === 'student_onboarding') {
+        return { Icon: ClipboardCheck, color: 'text-indigo-400', background: 'bg-indigo-500/10' }
     }
     return { Icon: Bell, color: 'text-violet-400', background: 'bg-violet-500/10' }
 }
