@@ -11,6 +11,8 @@ const ALERT_TYPES: TrainerAlert['type'][] = [
     'unfinished_session',
     'program_ending',
     'weekly_checkin',
+    'missing_checkin',
+    'progress_photo_due',
 ]
 
 type FollowUpAction = 'whatsapp_opened' | 'snoozed'

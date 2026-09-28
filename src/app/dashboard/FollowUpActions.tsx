@@ -12,6 +12,10 @@ function getFollowUpMessage(alert: TrainerAlert) {
     const firstName = alert.studentName.split(' ')[0] || '¿cómo estás?'
 
     switch (alert.type) {
+        case 'missing_checkin':
+            return `Hola ${firstName}, ¿cómo estás? Cuando puedas completá el control semanal desde la app. Me ayuda a saber cómo venís y ajustar el entrenamiento si hace falta.`
+        case 'progress_photo_due':
+            return `Hola ${firstName}, cuando puedas actualizá tus fotos de progreso desde el control semanal. Tratá de usar una luz, distancia y postura parecidas a las anteriores para comparar mejor.`
         case 'weekly_checkin':
             return `Hola ${firstName}, vi tu control semanal y quería saber un poco más para ajustar el entrenamiento. ¿Cómo te estás sintiendo hoy?`
         case 'inactive':

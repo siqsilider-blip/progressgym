@@ -1,11 +1,37 @@
 import { cookies } from 'next/headers'
-import { AlertTriangle, CircleStop, Flag, HeartPulse, ListChecks, UserMinus, UserX } from 'lucide-react'
+import { AlertTriangle, Camera, CircleStop, ClipboardX, Flag, HeartPulse, ListChecks, UserMinus, UserX } from 'lucide-react'
 import AppBadge from '@/components/ui/app-badge'
 import type { TrainerAlert } from './getTrainerAlerts'
 import FollowUpActions from './FollowUpActions'
 
 function getRiskMeta(type: TrainerAlert['type'], isLight: boolean) {
     switch (type) {
+        case 'missing_checkin':
+            return {
+                label: 'Falta control',
+                badgeClassName: isLight
+                    ? 'bg-indigo-100 text-indigo-700'
+                    : 'bg-indigo-500/10 text-indigo-300',
+                icon: ClipboardX,
+                iconClassName: 'text-indigo-500',
+                iconBgClassName: 'bg-indigo-500/10',
+                cardClassName: isLight
+                    ? 'border-indigo-200 bg-indigo-50'
+                    : 'border-indigo-500/20 bg-indigo-500/5',
+            }
+        case 'progress_photo_due':
+            return {
+                label: 'Fotos pendientes',
+                badgeClassName: isLight
+                    ? 'bg-cyan-100 text-cyan-700'
+                    : 'bg-cyan-500/10 text-cyan-300',
+                icon: Camera,
+                iconClassName: 'text-cyan-500',
+                iconBgClassName: 'bg-cyan-500/10',
+                cardClassName: isLight
+                    ? 'border-cyan-200 bg-cyan-50'
+                    : 'border-cyan-500/20 bg-cyan-500/5',
+            }
         case 'weekly_checkin':
             return {
                 label: 'Check-in',
