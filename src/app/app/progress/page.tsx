@@ -5,6 +5,7 @@ import { type WeightUnit } from '@/lib/weight'
 import ExerciseProgressCard from '@/app/dashboard/students/ExerciseProgressCard'
 import StudentPageHeader from '@/components/student/StudentPageHeader'
 import { getStudentAppContext } from '@/lib/auth/student'
+import WeeklyWellnessProgressCard, { type WeeklyWellnessPoint } from '@/components/coaching/WeeklyWellnessProgressCard'
 
 export default async function AppProgressPage() {
     const supabase = await createClient()
@@ -13,13 +14,19 @@ export default async function AppProgressPage() {
     const studentId = context.profile.student_id
     if (!studentId) redirect('/app')
 
-    const [studentResult, progressData] = await Promise.all([
+    const [studentResult, progressData, checkinsResult] = await Promise.all([
         supabase
             .from('students')
             .select('trainer_id')
             .eq('id', studentId)
             .single(),
         getStudentExerciseProgress(studentId),
+        supabase
+            .from('student_weekly_checkins')
+            .select('week_start, energy, sleep_quality, stress, training_difficulty, body_weight, waist_cm')
+            .eq('student_id', studentId)
+            .order('week_start', { ascending: true })
+            .limit(24),
     ])
 
     const trainerId = studentResult.data?.trainer_id
@@ -45,6 +52,8 @@ export default async function AppProgressPage() {
                         action={<span className="text-sm font-bold text-emerald-500">+{totalProgress.toFixed(1)}{weightUnit}</span>}
                     />
                 </div>
+
+                <WeeklyWellnessProgressCard data={(checkinsResult.data as WeeklyWellnessPoint[] | null) ?? []} />
 
                 <div className="mb-4 grid grid-cols-3 gap-2">
                     <div className="rounded-xl border border-border bg-card p-2.5 text-center">

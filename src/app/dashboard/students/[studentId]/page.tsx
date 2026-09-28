@@ -43,7 +43,7 @@ export default async function StudentProfilePage(props: PageProps) {
         return <div className="p-6">No se encontró el alumno.</div>
     }
 
-    const [risk, routineAssignment, linkedProfile, feedbackResult] = await Promise.all([
+    const [risk, routineAssignment, linkedProfile, feedbackResult, weeklyCheckinResult] = await Promise.all([
         getStudentRisk(studentId),
         supabase.from('student_routines').select('routine_id, program_started_on').eq('student_id', studentId).eq('status', 'active').maybeSingle(),
         getStudentAccessAccount(studentId),
@@ -52,6 +52,13 @@ export default async function StudentProfilePage(props: PageProps) {
             .select('energy, difficulty, had_pain, pain_details, comment, created_at')
             .eq('student_id', studentId)
             .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+        supabase
+            .from('student_weekly_checkins')
+            .select('energy, sleep_quality, stress, training_difficulty, had_pain, pain_details, body_weight, waist_cm, comment, week_start')
+            .eq('student_id', studentId)
+            .order('week_start', { ascending: false })
             .limit(1)
             .maybeSingle(),
     ])
@@ -126,6 +133,40 @@ export default async function StudentProfilePage(props: PageProps) {
                 studentId={studentId}
                 phone={student.phone ?? null}
             />
+
+            {weeklyCheckinResult.data && (
+                <section className={`rounded-2xl border p-4 ${weeklyCheckinResult.data.had_pain ? 'border-amber-500/30 bg-amber-500/[0.07]' : 'border-border bg-card'}`}>
+                    <div className="flex items-start justify-between gap-3">
+                        <div>
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Check-in semanal</p>
+                            <h2 className="mt-1 text-sm font-bold text-foreground">
+                                {weeklyCheckinResult.data.had_pain ? '⚠️ Requiere atención' : 'Estado general del alumno'}
+                            </h2>
+                        </div>
+                        <span className="shrink-0 text-[10px] text-muted-foreground">
+                            Semana del {formatCheckinDate(weeklyCheckinResult.data.week_start)}
+                        </span>
+                    </div>
+                    <div className="mt-3 grid grid-cols-4 gap-1.5 text-center">
+                        <CheckinMetric label="Energía" value={weeklyCheckinResult.data.energy} />
+                        <CheckinMetric label="Sueño" value={weeklyCheckinResult.data.sleep_quality} />
+                        <CheckinMetric label="Estrés" value={weeklyCheckinResult.data.stress} inverse />
+                        <CheckinMetric label="Exigencia" value={weeklyCheckinResult.data.training_difficulty} inverse />
+                    </div>
+                    {(weeklyCheckinResult.data.body_weight != null || weeklyCheckinResult.data.waist_cm != null) && (
+                        <p className="mt-3 text-[11px] text-muted-foreground">
+                            {weeklyCheckinResult.data.body_weight != null ? `Peso ${weeklyCheckinResult.data.body_weight} kg` : ''}
+                            {weeklyCheckinResult.data.body_weight != null && weeklyCheckinResult.data.waist_cm != null ? ' · ' : ''}
+                            {weeklyCheckinResult.data.waist_cm != null ? `Cintura ${weeklyCheckinResult.data.waist_cm} cm` : ''}
+                        </p>
+                    )}
+                    {(weeklyCheckinResult.data.pain_details || weeklyCheckinResult.data.comment) && (
+                        <p className={`mt-3 text-xs leading-5 ${weeklyCheckinResult.data.had_pain ? 'font-medium text-amber-500' : 'text-muted-foreground'}`}>
+                            {weeklyCheckinResult.data.pain_details || weeklyCheckinResult.data.comment}
+                        </p>
+                    )}
+                </section>
+            )}
 
             {feedbackResult.data && (
                 <section className={`rounded-2xl border p-4 ${feedbackResult.data.had_pain ? 'border-amber-500/30 bg-amber-500/[0.07]' : 'border-border bg-card'}`}>
@@ -213,4 +254,19 @@ export default async function StudentProfilePage(props: PageProps) {
             </div>
         </div>
     )
+}
+
+function CheckinMetric({ label, value, inverse = false }: { label: string; value: number; inverse?: boolean }) {
+    const warning = inverse ? value >= 4 : value <= 2
+    const positive = inverse ? value <= 2 : value >= 4
+    return (
+        <div className="rounded-xl bg-background/60 px-1 py-2">
+            <p className={`text-sm font-black ${warning ? 'text-amber-500' : positive ? 'text-emerald-500' : 'text-foreground'}`}>{value}/5</p>
+            <p className="mt-0.5 truncate text-[9px] text-muted-foreground">{label}</p>
+        </div>
+    )
+}
+
+function formatCheckinDate(value: string) {
+    return new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(`${value}T00:00:00Z`))
 }
