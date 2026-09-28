@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getRoutineSchedule } from '@/lib/getRoutineSchedule'
 import { getStudentRoutineWeekProgress, type RoutineDayProgressStatus } from '@/lib/studentRoutineWeekProgress'
-import { getBuenosAiresHour, getCurrentBuenosAiresWeek } from '@/lib/buenosAiresDate'
+import { getBuenosAiresDateString, getBuenosAiresHour, getCurrentBuenosAiresWeek, getElapsedProgramWeekIndex } from '@/lib/buenosAiresDate'
 import { getActiveStudentRoutine } from '@/lib/getActiveStudentRoutine'
 import { getStudentAppContext } from '@/lib/auth/student'
 
@@ -16,7 +16,7 @@ export default async function AppHomePage() {
     if (!studentId) redirect('/app')
 
     const { weekStart: currentWeekStart } = getCurrentBuenosAiresWeek()
-    const [studentResult, assignment, weeklyCheckinResult] = await Promise.all([
+    const [studentResult, assignment, weeklyCheckinResult, latestPhotoResult] = await Promise.all([
         supabase
             .from('students')
             .select('first_name')
@@ -29,9 +29,26 @@ export default async function AppHomePage() {
             .eq('student_id', studentId)
             .eq('week_start', currentWeekStart)
             .maybeSingle(),
+        supabase
+            .from('student_progress_photos')
+            .select('captured_on')
+            .eq('student_id', studentId)
+            .order('captured_on', { ascending: false })
+            .limit(1)
+            .maybeSingle(),
     ])
     const student = studentResult.data
     const weeklyCheckinCompleted = Boolean(weeklyCheckinResult.data)
+    const latestPhotoDate = latestPhotoResult.data?.captured_on ?? null
+    const programAgeWeeks = assignment?.programStartedOn
+        ? getElapsedProgramWeekIndex(assignment.programStartedOn)
+        : 0
+    const photoAgeDays = latestPhotoDate
+        ? daysBetween(latestPhotoDate, getBuenosAiresDateString())
+        : null
+    const progressPhotoDue = Boolean(assignment?.routineId) && (latestPhotoDate
+        ? photoAgeDays !== null && photoAgeDays >= 35
+        : programAgeWeeks >= 4)
 
     let routineName: string | null = null
     let assignedRoutineId: string | null = null
@@ -256,20 +273,32 @@ export default async function AppHomePage() {
                 <Link
                     href="/app/check-in"
                     prefetch={true}
-                    className={`flex items-center justify-between rounded-2xl border px-4 py-3 transition active:scale-[0.99] ${weeklyCheckinCompleted
+                    className={`flex items-center justify-between rounded-2xl border px-4 py-3 transition active:scale-[0.99] ${weeklyCheckinCompleted && !progressPhotoDue
                         ? 'border-emerald-500/20 bg-emerald-500/[0.05]'
+                        : progressPhotoDue
+                            ? 'border-cyan-500/25 bg-cyan-500/[0.07]'
                         : 'border-indigo-500/25 bg-indigo-500/[0.07]'
                         }`}
                 >
                     <div>
-                        <p className={`text-sm font-bold ${weeklyCheckinCompleted ? 'text-emerald-500' : 'text-foreground'}`}>
-                            {weeklyCheckinCompleted ? 'Control semanal enviado ✓' : 'Control semanal · 1 minuto'}
+                        <p className={`text-sm font-bold ${weeklyCheckinCompleted && !progressPhotoDue ? 'text-emerald-500' : 'text-foreground'}`}>
+                            {progressPhotoDue && weeklyCheckinCompleted
+                                ? 'Actualizá tus fotos de progreso'
+                                : weeklyCheckinCompleted
+                                    ? 'Control semanal enviado ✓'
+                                    : 'Control semanal · 1 minuto'}
                         </p>
                         <p className="mt-0.5 text-[10px] text-muted-foreground">
-                            {weeklyCheckinCompleted ? 'Podés actualizarlo si algo cambió' : 'Energía, descanso, estrés y molestias'}
+                            {progressPhotoDue
+                                ? weeklyCheckinCompleted
+                                    ? 'Frente, perfil y espalda · cada 4 semanas'
+                                    : 'Energía, descanso y fotos pendientes'
+                                : weeklyCheckinCompleted
+                                    ? 'Podés actualizarlo si algo cambió'
+                                    : 'Energía, descanso, estrés y molestias'}
                         </p>
                     </div>
-                    <span className={`text-lg ${weeklyCheckinCompleted ? 'text-emerald-500' : 'text-indigo-500'}`}>→</span>
+                    <span className={`text-lg ${weeklyCheckinCompleted && !progressPhotoDue ? 'text-emerald-500' : progressPhotoDue ? 'text-cyan-500' : 'text-indigo-500'}`}>→</span>
                 </Link>
 
                 {/* ── Ejercicios de hoy ── */}
@@ -313,4 +342,10 @@ export default async function AppHomePage() {
             </div>
         </div>
     )
+}
+
+function daysBetween(from: string, to: string) {
+    const start = new Date(`${from}T00:00:00Z`)
+    const end = new Date(`${to}T00:00:00Z`)
+    return Math.max(0, Math.floor((end.getTime() - start.getTime()) / 86_400_000))
 }
