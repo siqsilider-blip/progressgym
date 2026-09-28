@@ -6,6 +6,7 @@ import ExerciseProgressCard from '@/app/dashboard/students/ExerciseProgressCard'
 import StudentPageHeader from '@/components/student/StudentPageHeader'
 import { getStudentAppContext } from '@/lib/auth/student'
 import WeeklyWellnessProgressCard, { type WeeklyWellnessPoint } from '@/components/coaching/WeeklyWellnessProgressCard'
+import ProgressPhotoGallery, { type ProgressPhotoItem } from '@/components/coaching/ProgressPhotoGallery'
 
 export default async function AppProgressPage() {
     const supabase = await createClient()
@@ -14,7 +15,7 @@ export default async function AppProgressPage() {
     const studentId = context.profile.student_id
     if (!studentId) redirect('/app')
 
-    const [studentResult, progressData, checkinsResult] = await Promise.all([
+    const [studentResult, progressData, checkinsResult, photosResult] = await Promise.all([
         supabase
             .from('students')
             .select('trainer_id')
@@ -27,7 +28,27 @@ export default async function AppProgressPage() {
             .eq('student_id', studentId)
             .order('week_start', { ascending: true })
             .limit(24),
+        supabase
+            .from('student_progress_photos')
+            .select('id, storage_path, captured_on, pose, marketing_consent')
+            .eq('student_id', studentId)
+            .order('captured_on', { ascending: true })
+            .limit(30),
     ])
+
+    const progressPhotos = (await Promise.all((photosResult.data ?? []).map(async (photo) => {
+        const { data: signed } = await supabase.storage
+            .from('progress-photos')
+            .createSignedUrl(photo.storage_path, 3600)
+        if (!signed?.signedUrl) return null
+        return {
+            id: photo.id,
+            url: signed.signedUrl,
+            capturedOn: photo.captured_on,
+            pose: photo.pose,
+            marketingConsent: photo.marketing_consent,
+        } as ProgressPhotoItem
+    }))).filter((photo): photo is ProgressPhotoItem => photo !== null)
 
     const trainerId = studentResult.data?.trainer_id
     const trainerProfile = trainerId ? await supabase
@@ -54,6 +75,7 @@ export default async function AppProgressPage() {
                 </div>
 
                 <WeeklyWellnessProgressCard data={(checkinsResult.data as WeeklyWellnessPoint[] | null) ?? []} />
+                <ProgressPhotoGallery photos={progressPhotos} role="student" />
 
                 <div className="mb-4 grid grid-cols-3 gap-2">
                     <div className="rounded-xl border border-border bg-card p-2.5 text-center">

@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { getServerUser } from '@/lib/auth/server'
-import { getCurrentBuenosAiresWeek } from '@/lib/buenosAiresDate'
+import { getBuenosAiresDateString, getCurrentBuenosAiresWeek } from '@/lib/buenosAiresDate'
 
 export type CoachingTopic =
     | 'general'
@@ -214,7 +214,7 @@ export type WeeklyCheckinPayload = {
 
 export async function saveWeeklyCheckin(
     payload: WeeklyCheckinPayload
-): Promise<{ ok: boolean; error: string | null }> {
+): Promise<{ ok: boolean; error: string | null; checkinId?: string }> {
     const user = await getServerUser()
     if (!user) return { ok: false, error: 'No autenticado.' }
 
@@ -251,7 +251,7 @@ export async function saveWeeklyCheckin(
     }
 
     const { weekStart } = getCurrentBuenosAiresWeek()
-    const { error } = await supabase.rpc('upsert_weekly_checkin', {
+    const { data: checkinId, error } = await supabase.rpc('upsert_weekly_checkin', {
         p_week_start: weekStart,
         p_energy: scores[0],
         p_sleep_quality: scores[1],
@@ -278,7 +278,150 @@ export async function saveWeeklyCheckin(
     revalidatePath('/app/check-in')
     revalidatePath('/dashboard')
     revalidatePath('/dashboard/messages')
+    return { ok: true, error: null, checkinId: typeof checkinId === 'string' ? checkinId : undefined }
+}
+
+export async function registerProgressPhoto(payload: {
+    checkinId: string
+    storagePath: string
+    pose: 'front' | 'side' | 'back'
+    marketingConsent: boolean
+}): Promise<{ ok: boolean; error: string | null; photoId?: string }> {
+    const user = await getServerUser()
+    if (!user) return { ok: false, error: 'No autenticado.' }
+    if (!payload.storagePath.startsWith(`${user.id}/`)) {
+        return { ok: false, error: 'La ruta de la imagen no es válida.' }
+    }
+
+    const supabase = await createClient()
+    const { data, error } = await supabase.rpc('register_progress_photo', {
+        p_weekly_checkin_id: payload.checkinId,
+        p_storage_path: payload.storagePath,
+        p_captured_on: getBuenosAiresDateString(),
+        p_pose: payload.pose,
+        p_marketing_consent: payload.marketingConsent,
+    })
+
+    if (error || typeof data !== 'string') {
+        console.error('[registerProgressPhoto]', error)
+        return {
+            ok: false,
+            error: error?.code === 'PGRST202' || error?.code === '42P01'
+                ? 'Falta aplicar la migración de fotos de progreso.'
+                : 'No pudimos vincular la foto al control.',
+        }
+    }
+
+    revalidatePath('/app/check-in')
+    revalidatePath('/app/progress')
+    revalidatePath('/dashboard')
+    return { ok: true, error: null, photoId: data }
+}
+
+export async function setProgressPhotoMarketingConsent(
+    photoId: string,
+    allowed: boolean
+): Promise<{ ok: boolean; error: string | null }> {
+    const user = await getServerUser()
+    if (!user || !photoId) return { ok: false, error: 'No autenticado.' }
+
+    const supabase = await createClient()
+    const { data, error } = await supabase.rpc('set_progress_photo_marketing_consent', {
+        p_photo_id: photoId,
+        p_allowed: allowed,
+    })
+    if (error || data !== true) {
+        console.error('[setProgressPhotoMarketingConsent]', error)
+        return { ok: false, error: 'No pudimos actualizar el permiso.' }
+    }
+
+    revalidatePath('/app/progress')
+    revalidatePath('/app/check-in')
     return { ok: true, error: null }
+}
+
+export async function deleteProgressPhoto(
+    photoId: string
+): Promise<{ ok: boolean; error: string | null }> {
+    const user = await getServerUser()
+    if (!user || !photoId) return { ok: false, error: 'No autenticado.' }
+
+    const supabase = await createClient()
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('student_id')
+        .eq('id', user.id)
+        .maybeSingle()
+    if (!profile?.student_id) return { ok: false, error: 'Alumno no encontrado.' }
+
+    const { data: photo } = await supabase
+        .from('student_progress_photos')
+        .select('storage_path')
+        .eq('id', photoId)
+        .eq('student_id', profile.student_id)
+        .maybeSingle()
+    if (!photo?.storage_path) return { ok: false, error: 'Foto no encontrada.' }
+
+    const { error: storageError } = await supabase.storage
+        .from('progress-photos')
+        .remove([photo.storage_path])
+    if (storageError) {
+        console.error('[deleteProgressPhoto] storage:', storageError)
+        return { ok: false, error: 'No pudimos eliminar el archivo.' }
+    }
+
+    const { data, error } = await supabase.rpc('delete_progress_photo_record', {
+        p_photo_id: photoId,
+    })
+    if (error || data !== true) {
+        console.error('[deleteProgressPhoto] record:', error)
+        return { ok: false, error: 'La imagen se eliminó, pero no pudimos actualizar la galería.' }
+    }
+
+    revalidatePath('/app/progress')
+    revalidatePath('/app/check-in')
+    revalidatePath(`/dashboard/students/${profile.student_id}`)
+    return { ok: true, error: null }
+}
+
+export async function getProgressPhotoComparisonExport(
+    beforeId: string,
+    afterId: string
+): Promise<{
+    ok: boolean
+    error: string | null
+    photos?: { id: string; url: string; capturedOn: string }[]
+}> {
+    const user = await getServerUser()
+    if (!user || !beforeId || !afterId || beforeId === afterId) {
+        return { ok: false, error: 'Selección de fotos inválida.' }
+    }
+
+    const supabase = await createClient()
+    const { data: photos, error } = await supabase
+        .from('student_progress_photos')
+        .select('id, storage_path, captured_on')
+        .eq('trainer_id', user.id)
+        .eq('marketing_consent', true)
+        .in('id', [beforeId, afterId])
+
+    if (error || !photos || photos.length !== 2) {
+        return { ok: false, error: 'Una de las fotos ya no tiene autorización para redes.' }
+    }
+
+    const signedPhotos = (await Promise.all(photos.map(async (photo) => {
+        const { data: signed } = await supabase.storage
+            .from('progress-photos')
+            .createSignedUrl(photo.storage_path, 300)
+        return signed?.signedUrl
+            ? { id: photo.id, url: signed.signedUrl, capturedOn: photo.captured_on }
+            : null
+    }))).filter((photo): photo is { id: string; url: string; capturedOn: string } => photo !== null)
+
+    if (signedPhotos.length !== 2) {
+        return { ok: false, error: 'No pudimos preparar las imágenes privadas.' }
+    }
+    return { ok: true, error: null, photos: signedPhotos }
 }
 
 export async function markWeeklyCheckinReviewed(

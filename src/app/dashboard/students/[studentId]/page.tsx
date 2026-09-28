@@ -10,6 +10,7 @@ import ProgramScheduleCard from './ProgramScheduleCard'
 import StudentContactCard from './StudentContactCard'
 import { getRoutineSchedule } from '@/lib/getRoutineSchedule'
 import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
+import ProgressPhotoGallery, { type ProgressPhotoItem } from '@/components/coaching/ProgressPhotoGallery'
 
 type PageProps = {
     params: Promise<{
@@ -43,7 +44,7 @@ export default async function StudentProfilePage(props: PageProps) {
         return <div className="p-6">No se encontró el alumno.</div>
     }
 
-    const [risk, routineAssignment, linkedProfile, feedbackResult, weeklyCheckinResult] = await Promise.all([
+    const [risk, routineAssignment, linkedProfile, feedbackResult, weeklyCheckinResult, progressPhotosResult] = await Promise.all([
         getStudentRisk(studentId),
         supabase.from('student_routines').select('routine_id, program_started_on').eq('student_id', studentId).eq('status', 'active').maybeSingle(),
         getStudentAccessAccount(studentId),
@@ -61,7 +62,27 @@ export default async function StudentProfilePage(props: PageProps) {
             .order('week_start', { ascending: false })
             .limit(1)
             .maybeSingle(),
+        supabase
+            .from('student_progress_photos')
+            .select('id, storage_path, captured_on, pose, marketing_consent')
+            .eq('student_id', studentId)
+            .order('captured_on', { ascending: true })
+            .limit(30),
     ])
+
+    const progressPhotos = (await Promise.all((progressPhotosResult.data ?? []).map(async (photo) => {
+        const { data: signed } = await supabase.storage
+            .from('progress-photos')
+            .createSignedUrl(photo.storage_path, 3600)
+        if (!signed?.signedUrl) return null
+        return {
+            id: photo.id,
+            url: signed.signedUrl,
+            capturedOn: photo.captured_on,
+            pose: photo.pose,
+            marketingConsent: photo.marketing_consent,
+        } as ProgressPhotoItem
+    }))).filter((photo): photo is ProgressPhotoItem => photo !== null)
 
     const assignedRoutineId = routineAssignment.data?.routine_id ?? null
     const programStartedOn = routineAssignment.data?.program_started_on ?? null
@@ -167,6 +188,8 @@ export default async function StudentProfilePage(props: PageProps) {
                     )}
                 </section>
             )}
+
+            <ProgressPhotoGallery photos={progressPhotos} role="trainer" />
 
             {feedbackResult.data && (
                 <section className={`rounded-2xl border p-4 ${feedbackResult.data.had_pain ? 'border-amber-500/30 bg-amber-500/[0.07]' : 'border-border bg-card'}`}>
