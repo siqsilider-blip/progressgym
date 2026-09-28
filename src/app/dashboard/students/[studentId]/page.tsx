@@ -181,6 +181,8 @@ export default async function StudentProfilePage(props: PageProps) {
 
             <StudentMonthlySummaryCard
                 studentId={studentId}
+                studentName={fullName}
+                studentPhone={student.phone ?? null}
                 sessions={currentSessions}
                 previousSessions={previousSessions}
                 checkins={currentCheckins.length}

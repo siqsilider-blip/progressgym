@@ -1,9 +1,14 @@
+'use client'
+
 import Link from 'next/link'
-import { Activity, CalendarCheck, MessageCircle, Ruler } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { Activity, CalendarCheck, Check, MessageCircle, Ruler, X } from 'lucide-react'
+import { useState, type ReactNode } from 'react'
+import { buildWhatsAppUrl } from '@/lib/whatsapp'
 
 type StudentMonthlySummaryCardProps = {
     studentId: string
+    studentName: string
+    studentPhone: string | null
     sessions: number
     previousSessions: number
     checkins: number
@@ -14,6 +19,8 @@ type StudentMonthlySummaryCardProps = {
 
 export default function StudentMonthlySummaryCard({
     studentId,
+    studentName,
+    studentPhone,
     sessions,
     previousSessions,
     checkins,
@@ -21,8 +28,19 @@ export default function StudentMonthlySummaryCard({
     waistChange,
     painReports,
 }: StudentMonthlySummaryCardProps) {
+    const [showSharePreview, setShowSharePreview] = useState(false)
+    const [includeWeight, setIncludeWeight] = useState(false)
+    const [includeWaist, setIncludeWaist] = useState(false)
     const sessionDelta = sessions - previousSessions
     const hasMeasurements = weightChange !== null || waistChange !== null
+    const summaryMessage = buildSummaryMessage({
+        studentName,
+        sessions,
+        checkins,
+        weightChange: includeWeight ? weightChange : null,
+        waistChange: includeWaist ? waistChange : null,
+    })
+    const whatsappUrl = studentPhone ? buildWhatsAppUrl(studentPhone, summaryMessage) : null
 
     return (
         <section className="rounded-2xl border border-border bg-card p-4">
@@ -73,10 +91,49 @@ export default function StudentMonthlySummaryCard({
                 <Link href={`/dashboard/students/${studentId}/history`} className="flex min-h-9 items-center justify-center rounded-xl border border-border bg-background text-[10px] font-bold text-foreground">
                     Ver historial
                 </Link>
-                <Link href={`/dashboard/messages?student=${studentId}`} className="flex min-h-9 items-center justify-center gap-1.5 rounded-xl bg-indigo-600 text-[10px] font-bold text-white">
-                    <MessageCircle className="h-3.5 w-3.5" /> Seguimiento
-                </Link>
+                {whatsappUrl ? (
+                    <button type="button" onClick={() => setShowSharePreview((current) => !current)} className="flex min-h-9 items-center justify-center gap-1.5 rounded-xl bg-indigo-600 text-[10px] font-bold text-white">
+                        <MessageCircle className="h-3.5 w-3.5" /> Preparar resumen
+                    </button>
+                ) : (
+                    <Link href={`/dashboard/messages?student=${studentId}`} className="flex min-h-9 items-center justify-center gap-1.5 rounded-xl bg-indigo-600 text-[10px] font-bold text-white">
+                        <MessageCircle className="h-3.5 w-3.5" /> Seguimiento
+                    </Link>
+                )}
             </div>
+
+            {showSharePreview && whatsappUrl && (
+                <div className="mt-3 rounded-xl border border-indigo-500/25 bg-indigo-500/[0.05] p-3">
+                    <div className="flex items-start justify-between gap-3">
+                        <div>
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-400">Vista previa</p>
+                            <p className="mt-1 text-[10px] leading-4 text-muted-foreground">Nada se envía automáticamente. Podés revisarlo y editarlo también en WhatsApp.</p>
+                        </div>
+                        <button type="button" onClick={() => setShowSharePreview(false)} aria-label="Cerrar vista previa" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground">
+                            <X className="h-3.5 w-3.5" />
+                        </button>
+                    </div>
+
+                    {hasMeasurements && (
+                        <div className="mt-3 space-y-2">
+                            {weightChange !== null && (
+                                <ShareOption checked={includeWeight} onChange={setIncludeWeight} label={`Incluir cambio de peso (${formatChange(weightChange, 'kg')})`} />
+                            )}
+                            {waistChange !== null && (
+                                <ShareOption checked={includeWaist} onChange={setIncludeWaist} label={`Incluir cambio de cintura (${formatChange(waistChange, 'cm')})`} />
+                            )}
+                        </div>
+                    )}
+
+                    <div className="mt-3 whitespace-pre-wrap rounded-xl border border-border bg-background p-3 text-[11px] leading-5 text-foreground">
+                        {summaryMessage}
+                    </div>
+
+                    <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="mt-3 flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 text-xs font-bold text-white">
+                        <MessageCircle className="h-4 w-4" /> Abrir WhatsApp
+                    </a>
+                </div>
+            )}
         </section>
     )
 }
@@ -108,4 +165,56 @@ function formatChange(value: number | null, unit: string) {
     if (value === null) return '—'
     if (Math.abs(value) < 0.05) return `0 ${unit}`
     return `${value > 0 ? '+' : ''}${value.toFixed(1)} ${unit}`
+}
+
+function ShareOption({
+    checked,
+    onChange,
+    label,
+}: {
+    checked: boolean
+    onChange: (checked: boolean) => void
+    label: string
+}) {
+    return (
+        <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-border bg-background px-2.5 py-2 text-[10px] font-semibold text-foreground">
+            <span className={`flex h-4 w-4 items-center justify-center rounded border ${checked ? 'border-indigo-500 bg-indigo-600 text-white' : 'border-border'}`}>
+                {checked && <Check className="h-3 w-3" />}
+            </span>
+            <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="sr-only" />
+            {label}
+        </label>
+    )
+}
+
+function buildSummaryMessage({
+    studentName,
+    sessions,
+    checkins,
+    weightChange,
+    waistChange,
+}: {
+    studentName: string
+    sessions: number
+    checkins: number
+    weightChange: number | null
+    waistChange: number | null
+}) {
+    const firstName = studentName.split(' ')[0] || '¿cómo estás?'
+    const lines = [
+        `Hola ${firstName}, te comparto tu resumen de los últimos 28 días:`,
+        '',
+        `• Entrenamientos completados: ${sessions}`,
+        `• Controles semanales enviados: ${checkins}`,
+    ]
+
+    if (weightChange !== null) lines.push(`• Cambio de peso registrado: ${formatChange(weightChange, 'kg')}`)
+    if (waistChange !== null) lines.push(`• Cambio de cintura registrado: ${formatChange(waistChange, 'cm')}`)
+
+    lines.push(
+        '',
+        'Estos datos nos ayudan a revisar tu evolución y ajustar el próximo bloque. ¿Cómo te sentiste este mes?'
+    )
+
+    return lines.join('\n')
 }
