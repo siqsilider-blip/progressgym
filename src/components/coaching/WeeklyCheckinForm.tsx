@@ -3,9 +3,22 @@
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Camera, Check, ChevronDown } from 'lucide-react'
-import { registerProgressPhoto, saveWeeklyCheckin } from '@/app/coaching/actions'
+import { Camera, Check, ChevronDown, X } from 'lucide-react'
+import { deleteProgressPhoto, registerProgressPhoto, saveWeeklyCheckin } from '@/app/coaching/actions'
 import { supabase } from '@/lib/supabase/client'
+
+type PhotoPose = 'front' | 'side' | 'back'
+
+type SelectedProgressPhoto = {
+    file: File
+    preview: string
+}
+
+const PHOTO_POSES: { value: PhotoPose; label: string }[] = [
+    { value: 'front', label: 'Frente' },
+    { value: 'side', label: 'Perfil' },
+    { value: 'back', label: 'Espalda' },
+]
 
 type WeeklyCheckinValue = {
     energy: number
@@ -37,13 +50,45 @@ export default function WeeklyCheckinForm({
     const [bodyWeight, setBodyWeight] = useState(initialValue?.body_weight?.toString() ?? '')
     const [waistCm, setWaistCm] = useState(initialValue?.waist_cm?.toString() ?? '')
     const [comment, setComment] = useState(initialValue?.comment ?? '')
-    const [photo, setPhoto] = useState<File | null>(null)
-    const [photoPreview, setPhotoPreview] = useState('')
-    const [photoPose, setPhotoPose] = useState<'front' | 'side' | 'back'>('front')
+    const [photos, setPhotos] = useState<Partial<Record<PhotoPose, SelectedProgressPhoto>>>({})
     const [marketingConsent, setMarketingConsent] = useState(false)
     const [saved, setSaved] = useState(Boolean(initialValue))
     const [error, setError] = useState('')
     const [pending, startTransition] = useTransition()
+
+    const selectedPhotoCount = PHOTO_POSES.filter(({ value }) => photos[value]).length
+
+    function selectPhoto(pose: PhotoPose, selected: File | null) {
+        if (!selected) return
+        if (!selected.type.startsWith('image/')) {
+            setError('Elegí una imagen válida.')
+            return
+        }
+        if (selected.size > 20 * 1024 * 1024) {
+            setError('Cada imagen original puede pesar hasta 20 MB.')
+            return
+        }
+
+        setError('')
+        setPhotos((current) => {
+            const previous = current[pose]
+            if (previous) URL.revokeObjectURL(previous.preview)
+            return {
+                ...current,
+                [pose]: { file: selected, preview: URL.createObjectURL(selected) },
+            }
+        })
+    }
+
+    function removePhoto(pose: PhotoPose) {
+        setPhotos((current) => {
+            const selected = current[pose]
+            if (selected) URL.revokeObjectURL(selected.preview)
+            const next = { ...current }
+            delete next[pose]
+            return next
+        })
+    }
 
     function submit() {
         if (pending) return
@@ -66,34 +111,49 @@ export default function WeeklyCheckinForm({
                 return
             }
 
-            if (photo) {
-                try {
-                    const compressed = await compressProgressPhoto(photo)
-                    const storagePath = `${studentUserId}/${crypto.randomUUID()}.jpg`
-                    const { error: uploadError } = await supabase.storage
-                        .from('progress-photos')
-                        .upload(storagePath, compressed, {
-                            contentType: 'image/jpeg',
-                            cacheControl: '3600',
-                            upsert: false,
-                        })
-                    if (uploadError) throw new Error('No pudimos subir la foto.')
+            const photosToUpload = PHOTO_POSES.flatMap(({ value }) => {
+                const selected = photos[value]
+                return selected ? [{ pose: value, ...selected }] : []
+            })
 
-                    const registration = await registerProgressPhoto({
-                        checkinId: result.checkinId,
-                        storagePath,
-                        pose: photoPose,
-                        marketingConsent,
-                    })
-                    if (!registration.ok) {
-                        await supabase.storage.from('progress-photos').remove([storagePath])
-                        throw new Error(registration.error ?? 'No pudimos guardar la foto.')
+            if (photosToUpload.length > 0) {
+                const registeredPhotoIds: string[] = []
+                const uploadedPaths = new Set<string>()
+                try {
+                    for (const selected of photosToUpload) {
+                        const compressed = await compressProgressPhoto(selected.file)
+                        const storagePath = `${studentUserId}/${crypto.randomUUID()}.jpg`
+                        const { error: uploadError } = await supabase.storage
+                            .from('progress-photos')
+                            .upload(storagePath, compressed, {
+                                contentType: 'image/jpeg',
+                                cacheControl: '3600',
+                                upsert: false,
+                            })
+                        if (uploadError) throw new Error(`No pudimos subir la foto de ${poseLabel(selected.pose).toLowerCase()}.`)
+                        uploadedPaths.add(storagePath)
+
+                        const registration = await registerProgressPhoto({
+                            checkinId: result.checkinId,
+                            storagePath,
+                            pose: selected.pose,
+                            marketingConsent,
+                        })
+                        if (!registration.ok || !registration.photoId) {
+                            throw new Error(registration.error ?? `No pudimos guardar la foto de ${poseLabel(selected.pose).toLowerCase()}.`)
+                        }
+                        uploadedPaths.delete(storagePath)
+                        registeredPhotoIds.push(registration.photoId)
                     }
 
-                    setPhoto(null)
-                    setPhotoPreview('')
+                    photosToUpload.forEach(({ preview }) => URL.revokeObjectURL(preview))
+                    setPhotos({})
                     setMarketingConsent(false)
                 } catch (photoError) {
+                    await Promise.allSettled(registeredPhotoIds.map((photoId) => deleteProgressPhoto(photoId)))
+                    if (uploadedPaths.size > 0) {
+                        await supabase.storage.from('progress-photos').remove([...uploadedPaths])
+                    }
                     setError(photoError instanceof Error ? photoError.message : 'No pudimos procesar la foto.')
                     return
                 }
@@ -181,51 +241,54 @@ export default function WeeklyCheckinForm({
                     <Camera className="h-5 w-5 shrink-0 text-indigo-500" />
                 </div>
 
-                {photoPreview ? (
-                    <div className="mt-3 overflow-hidden rounded-xl border border-border bg-black">
-                        <div className="relative aspect-[3/4] max-h-80 w-full">
-                            <Image src={photoPreview} alt="Vista previa de la foto de progreso" fill unoptimized className="object-contain" />
-                        </div>
-                        <button type="button" onClick={() => { setPhoto(null); setPhotoPreview('') }} className="w-full border-t border-white/10 py-2 text-xs font-semibold text-white/70">Elegir otra foto</button>
-                    </div>
-                ) : (
-                    <label className="mt-3 flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-indigo-500/35 bg-indigo-500/[0.06] text-xs font-bold text-indigo-500">
-                        <Camera className="h-4 w-4" />
-                        Elegir de la galería o sacar una foto
-                        <input
-                            type="file"
-                            accept="image/*"
-                            className="sr-only"
-                            onChange={(event) => {
-                                const selected = event.target.files?.[0] ?? null
-                                if (!selected) return
-                                if (!['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'].includes(selected.type)) {
-                                    setError('Elegí una imagen JPG, PNG, WebP o HEIC.')
-                                    return
-                                }
-                                if (selected.size > 20 * 1024 * 1024) {
-                                    setError('La imagen original no puede superar 20 MB.')
-                                    return
-                                }
-                                setError('')
-                                setPhoto(selected)
-                                setPhotoPreview(URL.createObjectURL(selected))
-                            }}
-                        />
-                    </label>
-                )}
-
-                {photo && (
-                    <div className="mt-3 space-y-3">
-                        <div>
-                            <p className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Posición</p>
-                            <div className="grid grid-cols-3 gap-1.5">
-                                {([['front', 'Frente'], ['side', 'Perfil'], ['back', 'Espalda']] as const).map(([value, label]) => (
-                                    <button key={value} type="button" onClick={() => setPhotoPose(value)} className={`min-h-9 rounded-xl border text-[11px] font-bold ${photoPose === value ? 'border-indigo-500 bg-indigo-500/10 text-indigo-500' : 'border-border bg-background text-muted-foreground'}`}>{label}</button>
-                                ))}
+                <p className="mt-3 text-[11px] font-semibold text-foreground">Podés cargar una, dos o las tres posiciones.</p>
+                <div className="mt-2 grid grid-cols-3 gap-2">
+                    {PHOTO_POSES.map(({ value, label }) => {
+                        const selected = photos[value]
+                        return (
+                            <div key={value} className="relative overflow-hidden rounded-xl border border-border bg-background">
+                                <p className="px-2 py-2 text-center text-[10px] font-bold uppercase tracking-wide text-muted-foreground">{label}</p>
+                                {selected ? (
+                                    <>
+                                        <label className="relative block aspect-[3/4] cursor-pointer overflow-hidden bg-black">
+                                            <Image src={selected.preview} alt={`Vista previa: ${label}`} fill unoptimized className="object-cover" />
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                className="sr-only"
+                                                onChange={(event) => {
+                                                    selectPhoto(value, event.target.files?.[0] ?? null)
+                                                    event.target.value = ''
+                                                }}
+                                            />
+                                        </label>
+                                        <button type="button" onClick={() => removePhoto(value)} aria-label={`Quitar foto de ${label}`} className="absolute right-1.5 top-8 flex h-7 w-7 items-center justify-center rounded-full bg-black/75 text-white">
+                                            <X className="h-4 w-4" />
+                                        </button>
+                                        <p className="px-1 py-1.5 text-center text-[9px] font-semibold text-indigo-500">Tocá para cambiar</p>
+                                    </>
+                                ) : (
+                                    <label className="flex aspect-[3/4] cursor-pointer flex-col items-center justify-center gap-2 border-t border-dashed border-indigo-500/25 bg-indigo-500/[0.04] px-1 text-center text-[10px] font-bold text-indigo-500">
+                                        <Camera className="h-5 w-5" />
+                                        Agregar
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            className="sr-only"
+                                            onChange={(event) => {
+                                                selectPhoto(value, event.target.files?.[0] ?? null)
+                                                event.target.value = ''
+                                            }}
+                                        />
+                                    </label>
+                                )}
                             </div>
-                        </div>
+                        )
+                    })}
+                </div>
 
+                {selectedPhotoCount > 0 && (
+                    <div className="mt-3 space-y-3">
                         <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-border bg-background p-3">
                             <input type="checkbox" checked={marketingConsent} onChange={(event) => setMarketingConsent(event.target.checked)} className="mt-0.5 h-4 w-4 accent-indigo-600" />
                             <span className="text-[11px] leading-4 text-muted-foreground">
@@ -246,11 +309,15 @@ export default function WeeklyCheckinForm({
             )}
 
             <button type="button" onClick={submit} disabled={pending} className="min-h-12 w-full rounded-xl bg-indigo-600 px-4 text-sm font-black text-white transition active:scale-[0.99] disabled:opacity-50">
-                {pending ? (photo ? 'Guardando y subiendo foto…' : 'Guardando…') : initialValue ? 'Actualizar control' : 'Enviar control semanal'}
+                {pending ? (selectedPhotoCount > 0 ? `Guardando y subiendo ${selectedPhotoCount === 1 ? 'foto' : 'fotos'}…` : 'Guardando…') : initialValue ? 'Actualizar control' : 'Enviar control semanal'}
             </button>
             <Link href="/app" className="block py-2 text-center text-xs font-semibold text-muted-foreground">Volver al inicio</Link>
         </div>
     )
+}
+
+function poseLabel(pose: PhotoPose) {
+    return PHOTO_POSES.find((item) => item.value === pose)?.label ?? 'foto'
 }
 
 async function compressProgressPhoto(file: File) {
