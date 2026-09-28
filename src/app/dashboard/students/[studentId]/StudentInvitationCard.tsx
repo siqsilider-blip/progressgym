@@ -15,15 +15,11 @@ export default function StudentInvitationCard({
     studentId,
     defaultEmail,
     linkedEmail,
-    hasRoutine,
-    programReady,
     highlight = false,
 }: {
     studentId: string
     defaultEmail: string | null
     linkedEmail: string | null
-    hasRoutine: boolean
-    programReady: boolean
     highlight?: boolean
 }) {
     const sectionRef = useRef<HTMLElement>(null)
@@ -68,6 +64,7 @@ export default function StudentInvitationCard({
 
     return (
         <section
+            id="student-access"
             ref={sectionRef}
             className={`rounded-xl border bg-emerald-500/[0.055] p-3.5 ${highlight ? 'border-emerald-400/50 ring-2 ring-emerald-500/15' : 'border-emerald-500/20'}`}
         >
@@ -80,14 +77,14 @@ export default function StudentInvitationCard({
                         <p className="text-sm font-semibold text-foreground">Acceso del alumno</p>
                         {highlight && !linkedEmail && (
                             <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-400">
-                                Último paso
+                                Siguiente paso
                             </span>
                         )}
                     </div>
                     <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
                         {linkedEmail
                             ? `Cuenta vinculada a ${linkedEmail}. Podés reenviarle un acceso si lo necesita.`
-                            : 'Prepará un enlace para que cree su contraseña y entre directamente a su rutina.'}
+                            : 'Enviá el enlace para que cree su contraseña y complete su ficha inicial. Después vas a elegir el programa con toda la información.'}
                     </p>
                 </div>
             </div>
@@ -106,23 +103,11 @@ export default function StudentInvitationCard({
                     className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none transition focus:border-emerald-500 disabled:opacity-70"
                 />
 
-                {!hasRoutine && (
-                    <p className="rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-300">
-                        Primero asignale una rutina. Así, cuando ingrese, encontrará todo listo.
-                    </p>
-                )}
-
-                {hasRoutine && !programReady && (
-                    <p className="rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-300">
-                        Agregá al menos un ejercicio a la rutina antes de enviar el acceso.
-                    </p>
-                )}
-
                 {error && <p className="text-xs font-medium text-red-400">{error}</p>}
 
                 <button
                     type="submit"
-                    disabled={isPending || !programReady || !email.trim()}
+                    disabled={isPending || !email.trim()}
                     className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-45"
                 >
                     <Send className="h-4 w-4" />

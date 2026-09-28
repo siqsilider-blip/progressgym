@@ -97,6 +97,7 @@ export default async function StudentProfilePage(props: PageProps) {
     ])
 
     const onboarding = (onboardingResult.data as StudentOnboardingProfile | null) ?? null
+    const onboardingCompleted = Boolean(onboarding?.completed_at)
 
     const progressPhotos = (await Promise.all((progressPhotosResult.data ?? []).map(async (photo) => {
         const { data: signed } = await supabase.storage
@@ -130,10 +131,9 @@ export default async function StudentProfilePage(props: PageProps) {
     let currentWeekLabel = 'Semana 1'
     let programWeekNumber = 1
     let totalProgramWeeks = 1
-    let programReady = false
 
     if (assignedRoutineId && programStartedOn) {
-        const [routineResult, schedule, daysResult] = await Promise.all([
+        const [routineResult, schedule] = await Promise.all([
             supabase
                 .from('routines')
                 .select('name')
@@ -141,10 +141,6 @@ export default async function StudentProfilePage(props: PageProps) {
                 .eq('trainer_id', user.id)
                 .maybeSingle(),
             getRoutineSchedule(supabase, assignedRoutineId, { programStartedOn }),
-            supabase
-                .from('routine_days')
-                .select('id')
-                .eq('routine_id', assignedRoutineId),
         ])
 
         activeRoutineName = routineResult.data?.name ?? 'Rutina asignada'
@@ -152,17 +148,6 @@ export default async function StudentProfilePage(props: PageProps) {
             || (schedule.currentWeek ? `Semana ${schedule.currentWeek.week_number}` : 'Semana actual')
         programWeekNumber = schedule.programWeekNumber || 1
         totalProgramWeeks = schedule.totalProgramWeeks || 1
-
-        const dayIds = (daysResult.data ?? []).map((day) => day.id)
-        if (dayIds.length > 0) {
-            const { data: firstExercise } = await supabase
-                .from('routine_day_exercises')
-                .select('id')
-                .in('routine_day_id', dayIds)
-                .limit(1)
-                .maybeSingle()
-            programReady = Boolean(firstExercise)
-        }
     }
 
     const trainHref = `/dashboard/students/${params.studentId}/train`
@@ -194,7 +179,16 @@ export default async function StudentProfilePage(props: PageProps) {
                 phone={student.phone ?? null}
             />
 
-            {onboarding ? (
+            {!linkedProfile && (
+                <StudentInvitationCard
+                    studentId={studentId}
+                    defaultEmail={student.email ?? null}
+                    linkedEmail={null}
+                    highlight={searchParams?.setup === 'invite'}
+                />
+            )}
+
+            {onboardingCompleted && onboarding ? (
                 <section className="rounded-2xl border border-indigo-500/25 bg-indigo-500/[0.06] p-4">
                     <div className="flex items-start justify-between gap-3">
                         <div>
@@ -310,20 +304,28 @@ export default async function StudentProfilePage(props: PageProps) {
                 </section>
             )}
 
-            <StudentInvitationCard
-                studentId={studentId}
-                defaultEmail={student.email ?? null}
-                linkedEmail={linkedProfile?.email ?? null}
-                hasRoutine={Boolean(assignedRoutineId)}
-                programReady={programReady}
-                highlight={searchParams?.setup === 'invite'}
-            />
+            {linkedProfile && (
+                <StudentInvitationCard
+                    studentId={studentId}
+                    defaultEmail={student.email ?? null}
+                    linkedEmail={linkedProfile.email ?? null}
+                    highlight={searchParams?.setup === 'invite'}
+                />
+            )}
 
             <StudentRiskCard risk={risk} />
 
             <details className="rounded-xl border border-border bg-card px-3.5 py-3 text-sm">
                 <summary className="cursor-pointer font-semibold text-muted-foreground">Más opciones</summary>
                 <div className="mt-3 space-y-3 border-t border-border pt-3">
+                    {!assignedRoutineId && !onboardingCompleted && (
+                        <Link
+                            href={`/dashboard/students/${studentId}/assign-routine`}
+                            className="block rounded-xl border border-border bg-secondary px-3 py-2.5 text-center text-xs font-semibold text-secondary-foreground"
+                        >
+                            Asignar programa igualmente
+                        </Link>
+                    )}
                     <DeleteStudentButton studentId={params.studentId} />
                 </div>
             </details>
@@ -343,13 +345,24 @@ export default async function StudentProfilePage(props: PageProps) {
                         >
                             Ver rutina
                         </Link>
-                    ) : (
+                    ) : onboardingCompleted ? (
                         <Link
                             href={`/dashboard/students/${params.studentId}/assign-routine`}
                             className="rounded-xl border border-border bg-secondary px-3 py-2.5 text-center text-xs font-medium text-secondary-foreground transition hover:bg-muted"
                         >
-                            Asignar rutina
+                            Elegir programa
                         </Link>
+                    ) : !linkedProfile ? (
+                        <a
+                            href="#student-access"
+                            className="rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-3 py-2.5 text-center text-xs font-semibold text-emerald-400"
+                        >
+                            Enviar acceso
+                        </a>
+                    ) : (
+                        <span className="rounded-xl border border-amber-500/20 bg-amber-500/[0.06] px-3 py-2.5 text-center text-xs font-semibold text-amber-400">
+                            Esperando ficha
+                        </span>
                     )}
                     <Link
                         href={`/dashboard/students/${params.studentId}/progress`}

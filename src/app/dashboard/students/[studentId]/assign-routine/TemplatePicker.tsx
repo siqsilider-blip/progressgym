@@ -19,11 +19,13 @@ export default function TemplatePicker({
     studentName,
     templates,
     hasActiveProgram,
+    recommendedDays,
 }: {
     studentId: string
     studentName: string
     templates: TemplateOption[]
     hasActiveProgram: boolean
+    recommendedDays: number | null
 }) {
     const router = useRouter()
     const [search, setSearch] = useState('')
@@ -33,9 +35,15 @@ export default function TemplatePicker({
 
     const filtered = useMemo(() => {
         const term = search.trim().toLocaleLowerCase()
-        if (!term) return templates
-        return templates.filter((template) => template.name.toLocaleLowerCase().includes(term))
-    }, [search, templates])
+        const matching = term
+            ? templates.filter((template) => template.name.toLocaleLowerCase().includes(term))
+            : templates
+
+        return [...matching].sort((a, b) => {
+            if (!recommendedDays) return 0
+            return Number(b.daysPerWeek === recommendedDays) - Number(a.daysPerWeek === recommendedDays)
+        })
+    }, [recommendedDays, search, templates])
 
     function assignTemplate(template: TemplateOption) {
         if (isPending || template.exercises === 0) return
@@ -112,6 +120,11 @@ export default function TemplatePicker({
                         >
                             <div className="min-w-0 flex-1">
                                 <p className="truncate text-sm font-semibold text-foreground">{template.name}</p>
+                                {recommendedDays && template.daysPerWeek === recommendedDays && (
+                                    <span className="mt-1 inline-flex rounded-full bg-emerald-500/10 px-2 py-0.5 text-[9px] font-bold text-emerald-400">
+                                        Coincide con su disponibilidad
+                                    </span>
+                                )}
                                 <p className="mt-1 text-[11px] text-muted-foreground">
                                     {template.daysPerWeek} {template.daysPerWeek === 1 ? 'día' : 'días'}
                                     <span className="mx-1.5 text-border">·</span>

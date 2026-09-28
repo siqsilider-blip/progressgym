@@ -43,7 +43,7 @@ export default async function ResetPasswordPage(
                             <>
                                 <input type="hidden" name="flow" value="invitation" />
                                 <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-xs leading-relaxed text-emerald-300">
-                                    Elegí una contraseña. Después vas a entrar directamente a tu rutina.
+                                    Elegí una contraseña. Después completás una ficha breve para que tu entrenador prepare la rutina adecuada.
                                 </div>
                             </>
                         )}

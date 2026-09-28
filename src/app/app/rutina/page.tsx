@@ -25,16 +25,31 @@ export default async function AppRutinePage(props: PageProps) {
     const assignment = await getActiveStudentRoutine(supabase, studentId)
 
     if (!assignment?.routineId) {
+        const { data: onboarding } = await supabase
+            .from('student_onboarding_profiles')
+            .select('completed_at')
+            .eq('student_id', studentId)
+            .maybeSingle()
+
         return (
             <div className="p-4 pb-24">
                 <div className="mx-auto max-w-lg">
                     <div className="mb-4"><StudentPageHeader title="Rutina" subtitle="Tu programa actual" /></div>
                     <div className="rounded-2xl border border-dashed border-border bg-card p-8 text-center">
                         <p className="text-3xl">📋</p>
-                        <p className="mt-3 text-sm font-semibold text-card-foreground">Sin rutina asignada</p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                            Tu entrenador todavía no te asignó una rutina.
+                        <p className="mt-3 text-sm font-semibold text-card-foreground">
+                            {onboarding?.completed_at ? 'Tu entrenador está preparando tu programa' : 'Completá primero tu ficha inicial'}
                         </p>
+                        <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                            {onboarding?.completed_at
+                                ? 'Ya recibió tu información. La rutina aparecerá acá cuando esté lista.'
+                                : 'Así puede conocer tus objetivos, disponibilidad y cuidados antes de elegir la rutina.'}
+                        </p>
+                        {!onboarding?.completed_at && (
+                            <Link href="/app/onboarding" className="mt-4 inline-flex rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white">
+                                Completar ficha
+                            </Link>
+                        )}
                     </div>
                 </div>
             </div>

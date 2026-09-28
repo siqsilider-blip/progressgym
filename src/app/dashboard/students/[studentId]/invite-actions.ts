@@ -164,46 +164,6 @@ export async function createStudentAccessInvitation(input: {
         return { ok: false, error: 'No se encontró el alumno.' }
     }
 
-    const { data: activeRoutine } = await supabase
-        .from('student_routines')
-        .select('routine_id')
-        .eq('student_id', student.id)
-        .eq('status', 'active')
-        .maybeSingle()
-
-    if (!activeRoutine?.routine_id) {
-        return { ok: false, error: 'Primero asignale una rutina para que no ingrese a una cuenta vacía.' }
-    }
-
-    const { data: routineDays, error: routineDaysError } = await supabase
-        .from('routine_days')
-        .select('id')
-        .eq('routine_id', activeRoutine.routine_id)
-
-    if (routineDaysError) {
-        return { ok: false, error: 'No se pudo verificar la rutina asignada.' }
-    }
-
-    const routineDayIds = (routineDays ?? []).map((day) => day.id)
-    if (routineDayIds.length === 0) {
-        return { ok: false, error: 'La rutina todavía no tiene ejercicios cargados.' }
-    }
-
-    const { data: firstExercise, error: exerciseError } = await supabase
-        .from('routine_day_exercises')
-        .select('id')
-        .in('routine_day_id', routineDayIds)
-        .limit(1)
-        .maybeSingle()
-
-    if (exerciseError) {
-        return { ok: false, error: 'No se pudo verificar la rutina asignada.' }
-    }
-
-    if (!firstExercise) {
-        return { ok: false, error: 'Agregá al menos un ejercicio antes de invitar al alumno.' }
-    }
-
     const fullName = `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim() || 'Alumno'
 
     try {
@@ -276,7 +236,8 @@ export async function createStudentAccessInvitation(input: {
         const inviteUrl = `${origin}/auth/confirm?${confirmParams.toString()}`
         const message = [
             `Hola ${student.first_name ?? ''} 👋`,
-            'Te envío el acceso a Progrezzia para que puedas ver tu rutina y registrar tus entrenamientos.',
+            'Te envío el acceso a Progrezzia. Primero vas a completar una ficha breve con tus objetivos, disponibilidad y cualquier cuidado importante.',
+            'Con esa información voy a preparar la rutina más adecuada para vos.',
             'Abrí este enlace y elegí tu contraseña:',
             inviteUrl,
         ].join('\n\n')

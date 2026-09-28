@@ -3,6 +3,7 @@ import { expect, test } from '@playwright/test'
 const trainerEmail = process.env.E2E_TRAINER_EMAIL!
 const otherTrainerEmail = process.env.E2E_OTHER_TRAINER_EMAIL!
 const studentEmail = process.env.E2E_STUDENT_EMAIL!
+const inviteStudentEmail = process.env.E2E_INVITE_STUDENT_EMAIL!
 const password = process.env.E2E_AUTH_PASSWORD!
 const routineName = process.env.E2E_ROUTINE_NAME!
 const exerciseName = process.env.E2E_EXERCISE_NAME!
@@ -215,7 +216,7 @@ test('el flujo de un alumno pendiente prioriza reutilizar un template', async ({
     await page.goto(`/dashboard/students/${inviteStudentId}/assign-routine`)
 
     await expect(page.getByRole('heading', { name: 'Asignar programa' })).toBeVisible()
-    await expect(page.getByText(templateName, { exact: true })).toBeVisible()
+    await expect(page.getByRole('article').getByText(templateName, { exact: true })).toBeVisible()
     await expect(page.getByText('Se copiará completo y quedará listo para personalizar.')).toBeVisible()
     await expect(page.getByText('Crear una rutina desde cero')).toBeHidden()
 })
@@ -236,7 +237,7 @@ test('el entrenador prepara un acceso personal para enviar por WhatsApp', async 
     await expect(accessLink).toHaveAttribute('href', /\/auth\/confirm\?token_hash=/)
 })
 
-test('un alumno nuevo activa la invitación y entra directamente a su rutina', async ({ page }, testInfo) => {
+test('un alumno nuevo activa la invitación y completa su ficha antes de recibir rutina', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name === 'desktop-chromium', 'La activación completa se prueba una sola vez.')
 
     await logIn(page, 'trainer', trainerEmail)
@@ -256,9 +257,19 @@ test('un alumno nuevo activa la invitación y entra directamente a su rutina', a
     await page.getByLabel('Repetir contraseña').fill(password)
     await page.getByRole('button', { name: 'Crear contraseña y entrar' }).click()
 
-    await expect(page).toHaveURL(/\/app(?:\?|$)/, { timeout: 20_000 })
-    await page.goto('/app/rutina')
-    await expect(page.getByText(routineName, { exact: true })).toBeVisible()
+    await expect(page).toHaveURL(/\/app\/onboarding/, { timeout: 20_000 })
+    await expect(page.getByRole('heading', { name: 'Contanos sobre vos' })).toBeVisible()
+    await page.getByText('Bajar grasa', { exact: true }).click()
+    await page.getByText('Estoy empezando', { exact: true }).click()
+    await page.getByLabel('Días por semana').selectOption('3')
+    await page.getByLabel('Minutos por sesión').selectOption('45')
+    await page.getByText('Gimnasio', { exact: true }).click()
+    await page.getByText('Máquinas', { exact: true }).click()
+    await page.getByLabel(/dolores, lesiones/i).fill('Sin limitaciones actuales.')
+    await page.getByRole('button', { name: 'Guardar y empezar' }).click()
+
+    await expect(page).toHaveURL(/\/app\?onboarding=completed/, { timeout: 15_000 })
+    await expect(page.getByText('Tu entrenador está preparando tu programa')).toBeVisible()
 })
 
 test('asignar un template crea un programa completo que el alumno puede abrir', async ({ page }, testInfo) => {
@@ -267,7 +278,7 @@ test('asignar un template crea un programa completo que el alumno puede abrir', 
     await logIn(page, 'trainer', trainerEmail)
     await page.goto(`/dashboard/routines/${templateId}/assign-to-student`, { waitUntil: 'domcontentloaded' })
 
-    const studentOption = page.locator('label').filter({ hasText: 'Alumno E2E' })
+    const studentOption = page.locator('label').filter({ hasText: 'Invitado E2E' })
     await expect(studentOption).toBeVisible()
     await studentOption.getByRole('checkbox').check()
 
@@ -275,12 +286,11 @@ test('asignar un template crea un programa completo que el alumno puede abrir', 
     await page.getByRole('button', { name: 'Asignar seleccionados (1)' }).click()
     await expect(page.getByText('Asignado correctamente ✓')).toBeVisible({ timeout: 15_000 })
 
-    await page.goto(`/dashboard/students/${studentId}`)
-    await expect(page.getByText('Seguimiento al día', { exact: true })).toBeVisible()
-    await expect(page.getByText('/100', { exact: false })).toHaveCount(0)
+    await page.goto(`/dashboard/students/${inviteStudentId}`)
+    await expect(page.getByText('Objetivos y disponibilidad', { exact: true })).toBeVisible()
 
     await page.context().clearCookies()
-    await logIn(page, 'student', studentEmail)
+    await logIn(page, 'student', inviteStudentEmail)
     await page.goto('/app/rutina')
 
     await expect(page.getByText(templateName, { exact: true })).toBeVisible()

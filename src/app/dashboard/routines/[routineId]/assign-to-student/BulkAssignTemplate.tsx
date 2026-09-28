@@ -18,6 +18,7 @@ type Props = {
 type Result = { ok: boolean; error?: string }
 
 export default function BulkAssignTemplate({ templateId, students, assignAction }: Props) {
+    const [isReady, setIsReady] = React.useState(false)
     const [search, setSearch] = React.useState('')
     const [selected, setSelected] = React.useState<Set<string>>(new Set())
     const [results, setResults] = React.useState<Record<string, Result>>({})
@@ -35,6 +36,10 @@ export default function BulkAssignTemplate({ templateId, students, assignAction 
     const allFilteredSelected = filtered.length > 0 && filtered.every((student) => selected.has(student.id))
     const successCount = Object.values(results).filter((result) => result.ok).length
     const failureCount = Object.values(results).filter((result) => !result.ok).length
+
+    React.useEffect(() => {
+        setIsReady(true)
+    }, [])
 
     function toggleStudent(studentId: string) {
         setSelected((current) => {
@@ -105,7 +110,7 @@ export default function BulkAssignTemplate({ templateId, students, assignAction 
                 <div className="flex items-center justify-between gap-3">
                     <button
                         type="button"
-                        disabled={isAssigning || filtered.length === 0}
+                        disabled={!isReady || isAssigning || filtered.length === 0}
                         onClick={toggleFiltered}
                         className="text-xs font-medium text-indigo-500 disabled:opacity-50"
                     >
@@ -113,7 +118,7 @@ export default function BulkAssignTemplate({ templateId, students, assignAction 
                     </button>
                     <button
                         type="button"
-                        disabled={isAssigning || selectedStudents.length === 0}
+                        disabled={!isReady || isAssigning || selectedStudents.length === 0}
                         onClick={assignSelected}
                         className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
                     >
@@ -148,7 +153,7 @@ export default function BulkAssignTemplate({ templateId, students, assignAction 
                         <input
                             type="checkbox"
                             checked={isSelected}
-                            disabled={isAssigning || result?.ok}
+                            disabled={!isReady || isAssigning || result?.ok}
                             onChange={() => toggleStudent(student.id)}
                             className="h-5 w-5 shrink-0 accent-indigo-600"
                         />

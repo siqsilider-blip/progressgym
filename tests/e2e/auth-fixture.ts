@@ -345,18 +345,11 @@ export default async function createAuthFixture() {
             throw new Error(`No se pudo agregar el ejercicio E2E: ${dayExerciseError?.message}`)
         }
 
-        const { error: assignmentError } = await admin.from('student_routines').insert([
-            {
-                student_id: student.id,
-                routine_id: routine.id,
-                status: 'active',
-            },
-            {
-                student_id: inviteStudent.id,
-                routine_id: routine.id,
-                status: 'active',
-            },
-        ])
+        const { error: assignmentError } = await admin.from('student_routines').insert({
+            student_id: student.id,
+            routine_id: routine.id,
+            status: 'active',
+        })
         if (assignmentError) throw assignmentError
 
         process.env.E2E_TRAINER_EMAIL = trainerEmail

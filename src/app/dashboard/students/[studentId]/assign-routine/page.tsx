@@ -3,6 +3,12 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
 import TemplatePicker from './TemplatePicker'
+import {
+    ONBOARDING_EXPERIENCE,
+    ONBOARDING_GOALS,
+    ONBOARDING_LOCATIONS,
+    type StudentOnboardingProfile,
+} from '@/lib/studentOnboarding'
 
 type PageProps = {
     params: Promise<{
@@ -89,7 +95,7 @@ export default async function AssignRoutinePage(props: PageProps) {
         redirect('/dashboard/students')
     }
 
-    const [{ data: routines, error: routinesError }, { data: templates, error: templatesError }, { data: activeAssignment }] = await Promise.all([
+    const [{ data: routines, error: routinesError }, { data: templates, error: templatesError }, { data: activeAssignment }, { data: onboardingData }] = await Promise.all([
         supabase
             .from('routines')
             .select('id, name')
@@ -108,7 +114,15 @@ export default async function AssignRoutinePage(props: PageProps) {
             .eq('student_id', student.id)
             .eq('status', 'active')
             .maybeSingle(),
+        supabase
+            .from('student_onboarding_profiles')
+            .select('student_id, goals, experience_level, training_days_per_week, session_minutes, training_location, available_equipment, limitations, preferences, completed_at')
+            .eq('student_id', student.id)
+            .maybeSingle(),
     ])
+
+    const onboarding = (onboardingData as StudentOnboardingProfile | null) ?? null
+    const onboardingCompleted = Boolean(onboarding?.completed_at)
 
     if (routinesError || templatesError) {
         return (
@@ -175,11 +189,40 @@ export default async function AssignRoutinePage(props: PageProps) {
                 backHref={`/dashboard/students/${student.id}`}
             />
 
+            {onboardingCompleted && onboarding ? (
+                <section className="rounded-2xl border border-indigo-500/25 bg-indigo-500/[0.06] p-4">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Información para elegir</p>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                        {onboarding.goals.map((goal) => (
+                            <span key={goal} className="rounded-full bg-indigo-500/15 px-2.5 py-1 text-[10px] font-bold text-indigo-300">
+                                {labelFor(ONBOARDING_GOALS, goal)}
+                            </span>
+                        ))}
+                    </div>
+                    <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                        {labelFor(ONBOARDING_EXPERIENCE, onboarding.experience_level)} · {onboarding.training_days_per_week} días por semana · {onboarding.session_minutes} min · {labelFor(ONBOARDING_LOCATIONS, onboarding.training_location)}
+                    </p>
+                    {onboarding.limitations && (
+                        <p className="mt-2 rounded-xl border border-amber-500/20 bg-amber-500/[0.07] px-3 py-2 text-xs leading-5 text-amber-300">
+                            <strong>Cuidados:</strong> {onboarding.limitations}
+                        </p>
+                    )}
+                </section>
+            ) : (
+                <section className="rounded-xl border border-amber-500/20 bg-amber-500/[0.06] p-3.5">
+                    <p className="text-xs font-bold text-amber-400">La ficha inicial todavía está pendiente</p>
+                    <p className="mt-1 text-[11px] leading-4 text-muted-foreground">
+                        Recomendamos esperar a conocer objetivos, disponibilidad y lesiones. Podés asignar igualmente si ya tenés esa información por otro medio.
+                    </p>
+                </section>
+            )}
+
             {templateList.length > 0 ? (
                 <TemplatePicker
                     studentId={student.id}
                     studentName={studentName}
                     hasActiveProgram={Boolean(activeAssignment?.routine_id)}
+                    recommendedDays={onboardingCompleted ? onboarding?.training_days_per_week ?? null : null}
                     templates={templateList.map((template) => ({
                         id: template.id,
                         name: template.name ?? 'Template sin nombre',
@@ -261,4 +304,8 @@ export default async function AssignRoutinePage(props: PageProps) {
             </details>
         </div>
     )
+}
+
+function labelFor(labels: Record<string, string>, value: string) {
+    return labels[value] ?? value
 }

@@ -309,8 +309,14 @@ export default async function AppHomePage() {
                 ) : (
                     <div className="rounded-3xl border border-dashed border-border bg-card p-6 text-center">
                         <p className="text-3xl">📋</p>
-                        <p className="mt-3 text-sm font-semibold text-card-foreground">Sin rutina asignada</p>
-                        <p className="mt-1 text-xs text-muted-foreground">Tu entrenador todavía no te asignó una rutina.</p>
+                        <p className="mt-3 text-sm font-semibold text-card-foreground">
+                            {onboardingCompleted ? 'Tu entrenador está preparando tu programa' : 'Primero completá tu ficha inicial'}
+                        </p>
+                        <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                            {onboardingCompleted
+                                ? 'Ya recibió tus objetivos y disponibilidad. Vas a ver la rutina acá cuando esté lista.'
+                                : 'Con tus respuestas va a poder elegir la rutina más adecuada para vos.'}
+                        </p>
                     </div>
                 )}
 
