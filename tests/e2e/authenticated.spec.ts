@@ -146,9 +146,15 @@ test('el alumno completa su ficha inicial y el entrenador la recibe', async ({ p
     await logIn(page, 'trainer', trainerEmail)
     await page.goto('/dashboard/notifications')
     await expect(page.getByText('Ficha inicial completada', { exact: true })).toBeVisible({ timeout: 15_000 })
-    await page.goto(`/dashboard/students/${studentId}`)
+    await page.getByText('Ficha inicial completada', { exact: true }).click()
+    await expect(page).toHaveURL(new RegExp(`/dashboard/students/${studentId}$`), { timeout: 15_000 })
     await expect(page.getByText('Objetivos y disponibilidad', { exact: true })).toBeVisible()
     await expect(page.getByText('Cuidar la rodilla derecha.', { exact: true })).toBeVisible()
+
+    // También debe poder abrirse nuevamente cuando ya quedó en "Anteriores".
+    await page.goto('/dashboard/notifications')
+    await page.getByText('Ficha inicial completada', { exact: true }).click()
+    await expect(page).toHaveURL(new RegExp(`/dashboard/students/${studentId}$`), { timeout: 15_000 })
 })
 
 test('el check-in y la conversación privada llegan de alumno a entrenador y vuelven', async ({ page }, testInfo) => {
@@ -183,9 +189,8 @@ test('el check-in y la conversación privada llegan de alumno a entrenador y vue
     await page.goto('/dashboard/notifications')
     await expect(page.getByText('Nuevo check-in semanal', { exact: true })).toBeVisible({ timeout: 15_000 })
     await expect(page.getByText('Nueva consulta de alumno', { exact: true })).toBeVisible({ timeout: 15_000 })
-    await page.goto(`/dashboard/students/${studentId}`)
-    await expect(page.locator('img[alt^="Progreso del"]')).toHaveCount(1)
-    await page.goto(`/dashboard/messages?student=${studentId}`)
+    await page.getByText('Nuevo check-in semanal', { exact: true }).click()
+    await expect(page).toHaveURL(new RegExp(`/dashboard/messages\\?student=${studentId}$`), { timeout: 15_000 })
     await expect(page.getByText('Consulta privada E2E')).toBeVisible({ timeout: 15_000 })
     await page.getByPlaceholder('Responderle a Alumno…').fill('Respuesta privada E2E')
     await page.getByRole('button', { name: 'Enviar' }).click()

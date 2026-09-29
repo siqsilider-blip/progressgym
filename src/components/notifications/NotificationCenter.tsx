@@ -1,5 +1,6 @@
+import Link from 'next/link'
 import { Activity, Bell, Check, CheckCheck, ChevronRight, ClipboardCheck, MessageCircle, TriangleAlert } from 'lucide-react'
-import { markAllInternalNotificationsRead, markInternalNotificationReadAndOpen } from '@/app/notifications/actions'
+import { markAllInternalNotificationsRead } from '@/app/notifications/actions'
 
 export type NotificationRow = {
     id: string
@@ -57,14 +58,13 @@ function NotificationList({ items }: { items: NotificationRow[] }) {
             {items.map((item, index) => {
                 const { Icon, color, background } = notificationVisual(item.type, item.title)
                 return (
-                    <form
+                    <div
                         key={item.id}
-                        action={markInternalNotificationReadAndOpen}
                         className={index > 0 ? 'border-t border-border' : ''}
                     >
-                        <input type="hidden" name="notificationId" value={item.id} />
-                        <button
-                            type="submit"
+                        <Link
+                            href={`/notifications/open?id=${encodeURIComponent(item.id)}`}
+                            prefetch={false}
                             className="flex w-full items-start gap-3 px-3.5 py-3 text-left transition hover:bg-white/[0.025]"
                         >
                             <span className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${background} ${color}`}>
@@ -91,8 +91,8 @@ function NotificationList({ items }: { items: NotificationRow[] }) {
                             {!item.read_at && (
                                 <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-violet-500" aria-label="Sin leer" />
                             )}
-                        </button>
-                    </form>
+                        </Link>
+                    </div>
                 )
             })}
         </div>
