@@ -9,6 +9,7 @@ import {
     ONBOARDING_LOCATIONS,
     type StudentOnboardingProfile,
 } from '@/lib/studentOnboarding'
+import { normalizeStringArray } from '@/lib/templateMatching'
 
 type PageProps = {
     params: Promise<{
@@ -104,7 +105,7 @@ export default async function AssignRoutinePage(props: PageProps) {
             .order('created_at', { ascending: false }),
         supabase
             .from('routines')
-            .select('id, name, days_per_week')
+            .select('id, name, days_per_week, target_goals, target_experience_levels, target_locations, required_equipment, target_session_minutes')
             .eq('trainer_id', user.id)
             .eq('routine_kind', 'template')
             .order('created_at', { ascending: false }),
@@ -222,13 +223,18 @@ export default async function AssignRoutinePage(props: PageProps) {
                     studentId={student.id}
                     studentName={studentName}
                     hasActiveProgram={Boolean(activeAssignment?.routine_id)}
-                    recommendedDays={onboardingCompleted ? onboarding?.training_days_per_week ?? null : null}
+                    studentProfile={onboardingCompleted ? onboarding : null}
                     templates={templateList.map((template) => ({
                         id: template.id,
                         name: template.name ?? 'Template sin nombre',
                         daysPerWeek: template.days_per_week ?? 0,
                         weeks: weeksByTemplate.get(template.id) ?? 0,
                         exercises: exercisesByTemplate.get(template.id) ?? 0,
+                        target_goals: normalizeStringArray(template.target_goals),
+                        target_experience_levels: normalizeStringArray(template.target_experience_levels),
+                        target_locations: normalizeStringArray(template.target_locations),
+                        required_equipment: normalizeStringArray(template.required_equipment),
+                        target_session_minutes: typeof template.target_session_minutes === 'number' ? template.target_session_minutes : null,
                     }))}
                 />
             ) : (

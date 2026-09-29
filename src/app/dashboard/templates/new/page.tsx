@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createTemplate } from './actions'
 import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
+import TemplateCriteriaFields from '@/components/TemplateCriteriaFields'
 
 export default async function NewTemplatePage() {
     const supabase = await createClient()
@@ -24,13 +25,14 @@ export default async function NewTemplatePage() {
 
             <form
                 action={createTemplate}
-                className="max-w-md space-y-4 rounded-xl border border-white/[0.07] bg-white/[0.025] p-4"
+                className="space-y-5 rounded-xl border border-white/[0.07] bg-white/[0.025] p-4"
             >
                 <div>
-                    <label className="mb-2 block text-sm font-medium text-foreground">
+                    <label htmlFor="template-name" className="mb-2 block text-sm font-medium text-foreground">
                         Nombre del template
                     </label>
                     <input
+                        id="template-name"
                         type="text"
                         name="name"
                         required
@@ -40,10 +42,11 @@ export default async function NewTemplatePage() {
                 </div>
 
                 <div>
-                    <label className="mb-2 block text-sm font-medium text-foreground">
+                    <label htmlFor="template-days" className="mb-2 block text-sm font-medium text-foreground">
                         Días por semana
                     </label>
                     <input
+                        id="template-days"
                         type="number"
                         name="days_count"
                         min={1}
@@ -56,6 +59,14 @@ export default async function NewTemplatePage() {
                         Se usa como default al agregar la primera semana. Se puede
                         ajustar después desde el editor.
                     </p>
+                </div>
+
+                <div className="border-t border-border pt-5">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Criterios de recomendación</p>
+                    <p className="mb-4 mt-1 text-xs leading-5 text-muted-foreground">
+                        Esto permite sugerir el template correcto cuando el alumno complete su ficha. La app nunca lo asignará sola.
+                    </p>
+                    <TemplateCriteriaFields />
                 </div>
 
                 <button

@@ -4,12 +4,18 @@ import { createClient } from '@/lib/supabase/server'
 import { ClipboardList, Plus, Search, X } from 'lucide-react'
 import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
 import { getServerUser } from '@/lib/auth/server'
+import { hasMatchingCriteria, normalizeStringArray } from '@/lib/templateMatching'
 
 type TemplateRow = {
     id: string
     name: string | null
     days_per_week: number | null
     created_at: string | null
+    target_goals: unknown
+    target_experience_levels: unknown
+    target_locations: unknown
+    required_equipment: unknown
+    target_session_minutes: number | null
 }
 
 type TemplateStats = {
@@ -41,7 +47,7 @@ export default async function TemplatesListPage(props: PageProps) {
 
     let templatesQuery = supabase
         .from('routines')
-        .select('id, name, days_per_week, created_at')
+        .select('id, name, days_per_week, created_at, target_goals, target_experience_levels, target_locations, required_equipment, target_session_minutes')
         .eq('trainer_id', user.id)
         .eq('routine_kind', 'template')
         .order('created_at', { ascending: false })
@@ -181,6 +187,14 @@ export default async function TemplatesListPage(props: PageProps) {
                 <div className="space-y-2">
                     {templateList.map((template) => {
                         const stats = statsByTemplate.get(template.id) ?? { weeks: 0, exercises: 0 }
+                        const isClassified = hasMatchingCriteria({
+                            daysPerWeek: template.days_per_week ?? 0,
+                            target_goals: normalizeStringArray(template.target_goals),
+                            target_experience_levels: normalizeStringArray(template.target_experience_levels),
+                            target_locations: normalizeStringArray(template.target_locations),
+                            required_equipment: normalizeStringArray(template.required_equipment),
+                            target_session_minutes: template.target_session_minutes,
+                        })
                         return (
                             <div
                                 key={template.id}
@@ -196,6 +210,9 @@ export default async function TemplatesListPage(props: PageProps) {
                                         {stats.weeks} {stats.weeks === 1 ? 'semana' : 'semanas'}
                                         <span className="mx-1.5 text-border">·</span>
                                         {stats.exercises} {stats.exercises === 1 ? 'ejercicio' : 'ejercicios'}
+                                    </p>
+                                    <p className={`mt-1 text-[10px] font-medium ${isClassified ? 'text-emerald-400' : 'text-amber-400'}`}>
+                                        {isClassified ? 'Listo para recomendar' : 'Faltan criterios de recomendación'}
                                     </p>
                                 </Link>
 

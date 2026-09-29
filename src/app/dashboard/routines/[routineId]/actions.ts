@@ -3,6 +3,12 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import {
+    TEMPLATE_EQUIPMENT,
+    TEMPLATE_EXPERIENCE,
+    TEMPLATE_GOALS,
+    TEMPLATE_LOCATIONS,
+} from '@/lib/templateMatching'
 
 export async function addExerciseToRoutineDay(formData: FormData) {
     const supabase = await createClient()
@@ -559,6 +565,67 @@ export async function updateRoutineName(input: {
     revalidatePath(`/dashboard/routines/${routineId}`)
 
     return { ok: true }
+}
+
+export async function updateTemplateMatchingProfile(formData: FormData) {
+    const supabase = await createClient()
+    const routineId = String(formData.get('routineId') ?? '')
+
+    const {
+        data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user || !routineId) {
+        throw new Error('No se pudo identificar el template.')
+    }
+
+    const targetGoals = getAllowedFormValues(formData, 'target_goals', TEMPLATE_GOALS)
+    const targetExperience = getAllowedFormValues(formData, 'target_experience_levels', TEMPLATE_EXPERIENCE)
+    const targetLocations = getAllowedFormValues(formData, 'target_locations', TEMPLATE_LOCATIONS)
+    const requiredEquipment = getAllowedFormValues(formData, 'required_equipment', TEMPLATE_EQUIPMENT)
+    const sessionMinutesRaw = String(formData.get('target_session_minutes') ?? '')
+    const sessionMinutes = sessionMinutesRaw ? Number(sessionMinutesRaw) : null
+
+    if (sessionMinutes !== null && (!Number.isInteger(sessionMinutes) || sessionMinutes < 15 || sessionMinutes > 180)) {
+        throw new Error('La duración estimada no es válida.')
+    }
+
+    const { data: updatedTemplate, error } = await supabase
+        .from('routines')
+        .update({
+            target_goals: targetGoals,
+            target_experience_levels: targetExperience,
+            target_locations: targetLocations,
+            required_equipment: requiredEquipment,
+            target_session_minutes: sessionMinutes,
+        })
+        .eq('id', routineId)
+        .eq('trainer_id', user.id)
+        .eq('routine_kind', 'template')
+        .select('id')
+        .maybeSingle()
+
+    if (error) {
+        const migrationPending = error.code === '42703' || error.message.includes('target_goals')
+        throw new Error(migrationPending
+            ? 'Falta aplicar la migración de recomendaciones de templates.'
+            : 'No se pudieron guardar los criterios del template.')
+    }
+
+    if (!updatedTemplate) {
+        throw new Error('No se encontró el template o no tenés permiso para modificarlo.')
+    }
+
+    revalidatePath('/dashboard/templates')
+    revalidatePath(`/dashboard/routines/${routineId}`)
+}
+
+function getAllowedFormValues(
+    formData: FormData,
+    field: string,
+    allowed: Record<string, string>,
+) {
+    return formData.getAll(field).map(String).filter((value) => value in allowed)
 }
 
 export async function addRoutineWeek(formData: FormData): Promise<{ ok: boolean; newWeekId?: string; error?: string }> {

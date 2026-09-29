@@ -5,8 +5,10 @@ import Link from 'next/link'
 import { Check, Search } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { assignTemplateAction } from '@/app/dashboard/routines/[routineId]/assign-to-student/actions'
+import { getTemplateMatch, type TemplateMatchingProfile } from '@/lib/templateMatching'
+import type { StudentOnboardingProfile } from '@/lib/studentOnboarding'
 
-type TemplateOption = {
+type TemplateOption = TemplateMatchingProfile & {
     id: string
     name: string
     daysPerWeek: number
@@ -19,13 +21,13 @@ export default function TemplatePicker({
     studentName,
     templates,
     hasActiveProgram,
-    recommendedDays,
+    studentProfile,
 }: {
     studentId: string
     studentName: string
     templates: TemplateOption[]
     hasActiveProgram: boolean
-    recommendedDays: number | null
+    studentProfile: StudentOnboardingProfile | null
 }) {
     const router = useRouter()
     const [search, setSearch] = useState('')
@@ -40,10 +42,13 @@ export default function TemplatePicker({
             : templates
 
         return [...matching].sort((a, b) => {
-            if (!recommendedDays) return 0
-            return Number(b.daysPerWeek === recommendedDays) - Number(a.daysPerWeek === recommendedDays)
+            const aMatch = getTemplateMatch(a, studentProfile)
+            const bMatch = getTemplateMatch(b, studentProfile)
+            return bMatch.score - aMatch.score
+                || Number(bMatch.isClassified) - Number(aMatch.isClassified)
+                || a.name.localeCompare(b.name, 'es')
         })
-    }, [recommendedDays, search, templates])
+    }, [search, studentProfile, templates])
 
     function assignTemplate(template: TemplateOption) {
         if (isPending || template.exercises === 0) return
@@ -112,6 +117,7 @@ export default function TemplatePicker({
                 {filtered.map((template) => {
                     const isEmpty = template.exercises === 0
                     const isSelected = selectedId === template.id && isPending
+                    const match = getTemplateMatch(template, studentProfile)
 
                     return (
                         <article
@@ -120,10 +126,28 @@ export default function TemplatePicker({
                         >
                             <div className="min-w-0 flex-1">
                                 <p className="truncate text-sm font-semibold text-foreground">{template.name}</p>
-                                {recommendedDays && template.daysPerWeek === recommendedDays && (
+                                {match.isStrongMatch && (
                                     <span className="mt-1 inline-flex rounded-full bg-emerald-500/10 px-2 py-0.5 text-[9px] font-bold text-emerald-400">
-                                        Coincide con su disponibilidad
+                                        Recomendado para este alumno
                                     </span>
+                                )}
+                                {!match.isStrongMatch && match.reasons.length > 0 && (
+                                    <p className="mt-1 text-[10px] font-medium text-emerald-400">
+                                        Coincide: {match.reasons.slice(0, 3).join(' · ')}
+                                    </p>
+                                )}
+                                {match.warnings.length > 0 && (
+                                    <p className="mt-1 text-[10px] text-amber-400">
+                                        Revisar: {match.warnings.slice(0, 2).join(' · ')}
+                                    </p>
+                                )}
+                                {!match.isClassified && (
+                                    <Link
+                                        href={`/dashboard/routines/${template.id}`}
+                                        className="mt-1 inline-block text-[10px] font-medium text-indigo-400"
+                                    >
+                                        Agregar criterios para mejorar la recomendación →
+                                    </Link>
                                 )}
                                 <p className="mt-1 text-[11px] text-muted-foreground">
                                     {template.daysPerWeek} {template.daysPerWeek === 1 ? 'día' : 'días'}

@@ -267,6 +267,11 @@ export default async function createAuthFixture() {
                 name: `Template E2E ${runId}`,
                 days_per_week: 3,
                 routine_kind: 'template',
+                target_goals: ['lose_fat'],
+                target_experience_levels: ['beginner'],
+                target_locations: ['gym'],
+                required_equipment: ['machines'],
+                target_session_minutes: 45,
             })
             .select('id')
             .single()

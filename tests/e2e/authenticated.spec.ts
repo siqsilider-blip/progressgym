@@ -211,6 +211,30 @@ test('la biblioteca muestra la cobertura de videos', async ({ page }) => {
     await expect(page.getByText('Video listo', { exact: true })).toBeVisible()
 })
 
+test('el entrenador crea un template con criterios de recomendación', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name === 'desktop-chromium', 'La creación se prueba una sola vez por fixture.')
+
+    await logIn(page, 'trainer', trainerEmail)
+    await page.goto('/dashboard/templates/new')
+
+    await page.getByLabel('Nombre del template').fill('Template clasificado E2E')
+    await page.getByLabel('Días por semana').fill('2')
+    await page.getByText('Bajar grasa', { exact: true }).click()
+    await page.getByText('Estoy empezando', { exact: true }).click()
+    await page.getByText('Gimnasio', { exact: true }).click()
+    await page.getByText('Máquinas', { exact: true }).click()
+    await page.getByLabel('Duración aproximada').selectOption('45')
+    await page.getByRole('button', { name: 'Crear template' }).click()
+
+    await expect(page).toHaveURL(/\/dashboard\/routines\/[0-9a-f-]+$/, { timeout: 15_000 })
+    await expect(page.getByText('5 criterios configurados', { exact: true })).toBeVisible()
+
+    await page.getByText('Criterios de recomendación', { exact: true }).click()
+    await page.getByText('Ganar fuerza', { exact: true }).click()
+    await page.getByRole('button', { name: 'Guardar criterios' }).click()
+    await expect(page.getByText('6 criterios configurados', { exact: true })).toBeVisible()
+})
+
 test('el flujo de un alumno pendiente prioriza reutilizar un template', async ({ page }) => {
     await logIn(page, 'trainer', trainerEmail)
     await page.goto(`/dashboard/students/${inviteStudentId}/assign-routine`)
@@ -276,6 +300,9 @@ test('asignar un template crea un programa completo que el alumno puede abrir', 
     test.skip(testInfo.project.name === 'desktop-chromium', 'La asignación se prueba una sola vez por fixture.')
 
     await logIn(page, 'trainer', trainerEmail)
+    await page.goto(`/dashboard/students/${inviteStudentId}/assign-routine`)
+    await expect(page.getByText('Recomendado para este alumno', { exact: true })).toBeVisible()
+
     await page.goto(`/dashboard/routines/${templateId}/assign-to-student`, { waitUntil: 'domcontentloaded' })
 
     const studentOption = page.locator('label').filter({ hasText: 'Invitado E2E' })

@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { addExerciseToRoutineDay, createExerciseFromRoutine, deleteExerciseFromRoutineDay, addRoutineWeek, duplicateRoutineWeek, updateRoutineName, deleteRoutineWeek, addRoutineMonth, renameRoutineMonth, deleteRoutineMonth, renameRoutineWeek, deleteTemplate, updateExerciseInRoutineDay, moveExerciseInRoutineDay, renameRoutineDay, duplicateRoutineDay, moveRoutineDay, deleteRoutineDay } from './actions'
+import { addExerciseToRoutineDay, createExerciseFromRoutine, deleteExerciseFromRoutineDay, addRoutineWeek, duplicateRoutineWeek, updateRoutineName, updateTemplateMatchingProfile, deleteRoutineWeek, addRoutineMonth, renameRoutineMonth, deleteRoutineMonth, renameRoutineWeek, deleteTemplate, updateExerciseInRoutineDay, moveExerciseInRoutineDay, renameRoutineDay, duplicateRoutineDay, moveRoutineDay, deleteRoutineDay } from './actions'
 import { getTrainerProfile } from '@/lib/getTrainerProfile'
 import { type WeightUnit } from '@/lib/weight'
 import DayBlockEditor, { type DayExercise } from './DayBlockEditor'
@@ -10,6 +10,8 @@ import BackButton from './BackButton'
 import WeekMonthSelector from './WeekMonthSelector'
 import DeleteTemplateButton from './DeleteTemplateButton'
 import DayControls from './DayControls'
+import TemplateCriteriaFields from '@/components/TemplateCriteriaFields'
+import { normalizeStringArray, type TemplateMatchingProfile } from '@/lib/templateMatching'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -98,7 +100,7 @@ export default async function RoutineDetailPage(props: PageProps) {
 
     const { data: routine, error: routineError } = await supabase
         .from('routines')
-        .select('id, name, trainer_id, student_id, days_per_week, routine_kind')
+        .select('id, name, trainer_id, student_id, days_per_week, routine_kind, target_goals, target_experience_levels, target_locations, required_equipment, target_session_minutes')
         .eq('id', params.routineId)
         .eq('trainer_id', user.id)
         .single()
@@ -111,6 +113,19 @@ export default async function RoutineDetailPage(props: PageProps) {
             </div>
         )
     }
+
+    const templateMatchingProfile: TemplateMatchingProfile = {
+        target_goals: normalizeStringArray(routine.target_goals),
+        target_experience_levels: normalizeStringArray(routine.target_experience_levels),
+        target_locations: normalizeStringArray(routine.target_locations),
+        required_equipment: normalizeStringArray(routine.required_equipment),
+        target_session_minutes: typeof routine.target_session_minutes === 'number' ? routine.target_session_minutes : null,
+    }
+    const templateCriteriaCount = templateMatchingProfile.target_goals.length
+        + templateMatchingProfile.target_experience_levels.length
+        + templateMatchingProfile.target_locations.length
+        + templateMatchingProfile.required_equipment.length
+        + Number(templateMatchingProfile.target_session_minutes !== null)
 
     const [studentResult, weeksResult] = await Promise.all([
         supabase
@@ -350,6 +365,34 @@ export default async function RoutineDetailPage(props: PageProps) {
                         </div>
                     </div>
                 </div>
+
+                {routine.routine_kind === 'template' && (
+                    <details className="rounded-xl border border-indigo-500/20 bg-indigo-500/[0.045] px-3.5 py-3">
+                        <summary className="cursor-pointer list-none">
+                            <div className="flex items-center justify-between gap-3">
+                                <div>
+                                    <p className="text-xs font-bold text-foreground">Criterios de recomendación</p>
+                                    <p className="mt-0.5 text-[11px] text-muted-foreground">
+                                        {templateCriteriaCount > 0
+                                            ? `${templateCriteriaCount} criterios configurados`
+                                            : 'Sin configurar: este template no podrá recomendarse con precisión'}
+                                    </p>
+                                </div>
+                                <span className="text-xs font-semibold text-indigo-400">Editar</span>
+                            </div>
+                        </summary>
+                        <form action={updateTemplateMatchingProfile} className="mt-4 space-y-5 border-t border-border pt-4">
+                            <input type="hidden" name="routineId" value={routine.id} />
+                            <TemplateCriteriaFields defaultValue={templateMatchingProfile} />
+                            <button
+                                type="submit"
+                                className="w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500"
+                            >
+                                Guardar criterios
+                            </button>
+                        </form>
+                    </details>
+                )}
 
                 {daysError ? (
                     <div className="rounded-2xl border border-red-300 bg-red-50 p-4 text-sm text-red-600 dark:border-red-900 dark:bg-red-950/40 dark:text-red-400">
