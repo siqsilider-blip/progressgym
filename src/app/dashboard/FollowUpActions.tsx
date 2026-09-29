@@ -27,7 +27,13 @@ function getFollowUpMessage(alert: TrainerAlert) {
         case 'new_student':
             return `Hola ${firstName}, ¿cómo estás? Ya tenés tu programa disponible. Si necesitás ayuda para empezar o te surge alguna duda, escribime.`
         case 'no_routine':
-            return `Hola ${firstName}, ¿cómo estás? Estoy organizando tu programa de entrenamiento. Te aviso apenas quede listo para que podamos empezar.`
+            if (alert.stage === 'access_pending') {
+                return `Hola ${firstName}, te reenvié el acceso a Progrezzia. Abrí el enlace para crear tu contraseña y completar tu ficha inicial.`
+            }
+            if (alert.stage === 'onboarding_pending') {
+                return `Hola ${firstName}, cuando puedas completá la ficha inicial de Progrezzia. Con esos datos preparo el programa más adecuado para vos.`
+            }
+            return `Hola ${firstName}, recibí tu ficha inicial. Estoy preparando tu programa y te aviso apenas quede listo.`
     }
 }
 
@@ -62,7 +68,7 @@ export default function FollowUpActions({ alert }: { alert: TrainerAlert }) {
                 href={alert.actionHref}
                 className="inline-flex items-center gap-1 rounded-lg border border-indigo-500/20 bg-indigo-500/10 px-2 py-1 text-[10px] font-semibold text-indigo-400 transition hover:bg-indigo-500/15"
             >
-                Resolver
+                {alert.actionLabel ?? 'Resolver'}
                 <ArrowRight className="h-3 w-3" />
             </Link>
 

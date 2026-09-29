@@ -36,6 +36,8 @@ test('el entrenador entra al panel y no al portal del alumno', async ({ page }) 
     await expect(page).toHaveURL(/\/dashboard(?:\?|$)/)
     await expect(page.getByRole('link', { name: 'Alumnos' }).first()).toBeVisible()
     await expect(page.getByRole('link', { name: 'Rutinas' }).first()).toBeVisible()
+    await expect(page.getByText('Invitado E2E todavía no activó su acceso a la aplicación.', { exact: true })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Enviar acceso' })).toBeVisible()
 
     await page.goto('/app')
     await expect(page).toHaveURL(/\/dashboard(?:\?|$)/)
@@ -283,6 +285,14 @@ test('un alumno nuevo activa la invitación y completa su ficha antes de recibir
 
     await expect(page).toHaveURL(/\/app\/onboarding/, { timeout: 20_000 })
     await expect(page.getByRole('heading', { name: 'Contanos sobre vos' })).toBeVisible()
+
+    await page.context().clearCookies()
+    await logIn(page, 'trainer', trainerEmail)
+    await expect(page.getByText('Invitado E2E creó su acceso, pero todavía no completó la ficha inicial.', { exact: true })).toBeVisible()
+
+    await page.context().clearCookies()
+    await logIn(page, 'student', inviteStudentEmail)
+    await page.goto('/app/onboarding')
     await page.getByText('Bajar grasa', { exact: true }).click()
     await page.getByText('Estoy empezando', { exact: true }).click()
     await page.getByLabel('Días por semana').selectOption('3')
@@ -300,6 +310,8 @@ test('asignar un template crea un programa completo que el alumno puede abrir', 
     test.skip(testInfo.project.name === 'desktop-chromium', 'La asignación se prueba una sola vez por fixture.')
 
     await logIn(page, 'trainer', trainerEmail)
+    await expect(page.getByText('Invitado E2E completó su ficha. Falta elegir el programa.', { exact: true })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Elegir programa' })).toBeVisible()
     await page.goto(`/dashboard/students/${inviteStudentId}/assign-routine`)
     await expect(page.getByText('Recomendado para este alumno', { exact: true })).toBeVisible()
 

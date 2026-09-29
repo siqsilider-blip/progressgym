@@ -1,14 +1,17 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { getBuenosAiresDateString, getElapsedProgramWeekIndex } from '@/lib/buenosAiresDate'
 import { getTrainerStudents } from './getTrainerStudents'
 
 export type TrainerAlert = {
     type: 'inactive' | 'no_routine' | 'new_student' | 'unfinished_session' | 'program_ending' | 'weekly_checkin' | 'missing_checkin' | 'progress_photo_due'
+    stage?: 'access_pending' | 'onboarding_pending' | 'ready_for_program'
     studentId: string
     studentName: string
     studentPhone: string | null
     message: string
     actionHref: string
+    actionLabel?: string
 }
 
 type AssignmentRow = {
@@ -31,9 +34,12 @@ type WeeklyCheckinRow = {
     reviewed_at: string | null
 }
 type ProgressPhotoRow = { student_id: string; captured_on: string }
+type LinkedProfileRow = { id: string; student_id: string | null }
+type OnboardingRow = { student_id: string; completed_at: string | null }
 
 export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
     const supabase = await createClient()
+    const admin = createAdminClient()
     const students = await getTrainerStudents()
 
     if (students.length === 0) {
@@ -44,7 +50,7 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
     const now = new Date()
     const today = getBuenosAiresDateString(now)
 
-    const [workoutsResult, routinesResult, activeSessionsResult, followUpsResult, weeklyCheckinsResult, progressPhotosResult] = await Promise.all([
+    const [workoutsResult, routinesResult, activeSessionsResult, followUpsResult, weeklyCheckinsResult, progressPhotosResult, linkedProfilesResult, onboardingResult] = await Promise.all([
         supabase
             .from('exercise_logs')
             .select('student_id, performed_at')
@@ -81,6 +87,17 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
             .select('student_id, captured_on')
             .in('student_id', studentIds)
             .order('captured_on', { ascending: false }),
+
+        admin
+            .from('profiles')
+            .select('id, student_id')
+            .in('student_id', studentIds)
+            .eq('role', 'student'),
+
+        supabase
+            .from('student_onboarding_profiles')
+            .select('student_id, completed_at')
+            .in('student_id', studentIds),
     ])
 
     if (workoutsResult.error) {
@@ -107,9 +124,40 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
         console.error('Error fetching progress photos for alerts:', progressPhotosResult.error)
     }
 
+    if (linkedProfilesResult.error) {
+        console.error('Error fetching linked profiles for alerts:', linkedProfilesResult.error)
+    }
+
+    if (onboardingResult.error) {
+        console.error('Error fetching onboarding profiles for alerts:', onboardingResult.error)
+    }
+
     const workouts = workoutsResult.data ?? []
     const routines = (routinesResult.data as AssignmentRow[] | null) ?? []
     const activeSessions = (activeSessionsResult.data as SessionRow[] | null) ?? []
+    const linkedProfiles = (linkedProfilesResult.data as LinkedProfileRow[] | null) ?? []
+    const completedOnboardingStudentIds = new Set(
+        ((onboardingResult.data as OnboardingRow[] | null) ?? [])
+            .filter((profile) => Boolean(profile.completed_at))
+            .map((profile) => profile.student_id)
+    )
+    const activatedStudentIds = new Set(completedOnboardingStudentIds)
+    const activationResults = await Promise.all(
+        linkedProfiles
+            .filter((profile) => profile.student_id && !completedOnboardingStudentIds.has(profile.student_id))
+            .map(async (profile) => {
+                const { data, error } = await admin.auth.admin.getUserById(profile.id)
+                if (error) {
+                    console.error('Error fetching student access status:', error)
+                    return null
+                }
+
+                return data.user.email_confirmed_at ? profile.student_id : null
+            })
+    )
+    for (const studentId of activationResults) {
+        if (studentId) activatedStudentIds.add(studentId)
+    }
     const suppressedAlertKeys = new Set(
         ((followUpsResult.data as FollowUpRow[] | null) ?? [])
             .map((row) => `${row.student_id}:${row.alert_type}`)
@@ -208,13 +256,32 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
 
         if (!assignment) {
             if (!isSuppressed(student.id, 'no_routine')) {
+                const onboardingCompleted = completedOnboardingStudentIds.has(student.id)
+                const accountActivated = activatedStudentIds.has(student.id)
+                const stage: TrainerAlert['stage'] = onboardingCompleted
+                    ? 'ready_for_program'
+                    : accountActivated
+                        ? 'onboarding_pending'
+                        : 'access_pending'
                 alerts.push({
                     type: 'no_routine',
+                    stage,
                     studentId: student.id,
                     studentName: fullName,
                     studentPhone: student.phone ?? null,
-                    message: `${fullName} no tiene un programa activo.`,
-                    actionHref: `/dashboard/students/${student.id}/assign-routine`,
+                    message: onboardingCompleted
+                        ? `${fullName} completó su ficha. Falta elegir el programa.`
+                        : accountActivated
+                            ? `${fullName} creó su acceso, pero todavía no completó la ficha inicial.`
+                            : `${fullName} todavía no activó su acceso a la aplicación.`,
+                    actionHref: onboardingCompleted
+                        ? `/dashboard/students/${student.id}/assign-routine`
+                        : `/dashboard/students/${student.id}${accountActivated ? '' : '?setup=invite'}`,
+                    actionLabel: onboardingCompleted
+                        ? 'Elegir programa'
+                        : accountActivated
+                            ? 'Ver ficha'
+                            : 'Enviar acceso',
                 })
             }
             continue
@@ -330,13 +397,20 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
         no_routine: 1,
         unfinished_session: 2,
         inactive: 3,
-        new_student: 4,
-        missing_checkin: 5,
-        program_ending: 6,
-        progress_photo_due: 7,
+        new_student: 6,
+        missing_checkin: 7,
+        program_ending: 8,
+        progress_photo_due: 9,
     }
 
-    return alerts.sort((a, b) => priority[a.type] - priority[b.type])
+    const getPriority = (alert: TrainerAlert) => {
+        if (alert.type !== 'no_routine') return priority[alert.type]
+        if (alert.stage === 'ready_for_program') return 1
+        if (alert.stage === 'onboarding_pending') return 4
+        return 5
+    }
+
+    return alerts.sort((a, b) => getPriority(a) - getPriority(b))
 }
 
 function daysBetween(from: string, to: string) {

@@ -4,7 +4,42 @@ import AppBadge from '@/components/ui/app-badge'
 import type { TrainerAlert } from './getTrainerAlerts'
 import FollowUpActions from './FollowUpActions'
 
-function getRiskMeta(type: TrainerAlert['type'], isLight: boolean) {
+function getRiskMeta(alert: TrainerAlert, isLight: boolean) {
+    const { type } = alert
+
+    if (type === 'no_routine' && alert.stage === 'ready_for_program') {
+        return {
+            label: 'Ficha lista',
+            badgeClassName: isLight ? 'bg-emerald-100 text-emerald-700' : 'bg-emerald-500/10 text-emerald-300',
+            icon: ListChecks,
+            iconClassName: 'text-emerald-500',
+            iconBgClassName: 'bg-emerald-500/10',
+            cardClassName: isLight ? 'border-emerald-200 bg-emerald-50' : 'border-emerald-500/20 bg-emerald-500/5',
+        }
+    }
+
+    if (type === 'no_routine' && alert.stage === 'onboarding_pending') {
+        return {
+            label: 'Ficha pendiente',
+            badgeClassName: isLight ? 'bg-amber-100 text-amber-700' : 'bg-amber-500/10 text-amber-300',
+            icon: ClipboardX,
+            iconClassName: 'text-amber-500',
+            iconBgClassName: 'bg-amber-500/10',
+            cardClassName: isLight ? 'border-amber-200 bg-amber-50' : 'border-amber-500/20 bg-amber-500/5',
+        }
+    }
+
+    if (type === 'no_routine' && alert.stage === 'access_pending') {
+        return {
+            label: 'Acceso pendiente',
+            badgeClassName: isLight ? 'bg-sky-100 text-sky-700' : 'bg-sky-500/10 text-sky-300',
+            icon: UserX,
+            iconClassName: 'text-sky-500',
+            iconBgClassName: 'bg-sky-500/10',
+            cardClassName: isLight ? 'border-sky-200 bg-sky-50' : 'border-sky-500/20 bg-sky-500/5',
+        }
+    }
+
     switch (type) {
         case 'missing_checkin':
             return {
@@ -137,7 +172,7 @@ export default async function AtRiskStudentsCard({
     const remainingAlerts = alerts.slice(3)
 
     function renderAlert(alert: TrainerAlert) {
-        const meta = getRiskMeta(alert.type, isLight)
+        const meta = getRiskMeta(alert, isLight)
         const Icon = meta.icon
 
         return (
