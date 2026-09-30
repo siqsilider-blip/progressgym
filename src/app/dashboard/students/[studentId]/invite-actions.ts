@@ -233,7 +233,10 @@ export async function createStudentAccessInvitation(input: {
             type: verificationType,
             next: '/reset-password?invite=1',
         })
-        const inviteUrl = `${origin}/auth/confirm?${confirmParams.toString()}`
+        // WhatsApp y otras aplicaciones pueden abrir el enlace para generar una
+        // vista previa. La pantalla intermedia no consume el token hasta que la
+        // persona confirma explícitamente que quiere continuar.
+        const inviteUrl = `${origin}/auth/invitation?${confirmParams.toString()}`
         const message = [
             `Hola ${student.first_name ?? ''} 👋`,
             'Te envío el acceso a Progrezzia. Primero vas a completar una ficha breve con tus objetivos, disponibilidad y cualquier cuidado importante.',

@@ -265,7 +265,7 @@ test('el entrenador prepara un acceso personal para enviar por WhatsApp', async 
     await expect(whatsappLink).toHaveAttribute('href', /^https:\/\/wa\.me\//)
 
     const accessLink = page.getByRole('link', { name: /Probar enlace de acceso/ })
-    await expect(accessLink).toHaveAttribute('href', /\/auth\/confirm\?token_hash=/)
+    await expect(accessLink).toHaveAttribute('href', /\/auth\/invitation\?token_hash=/)
 })
 
 test('un alumno nuevo activa la invitación y completa su ficha antes de recibir rutina', async ({ page }, testInfo) => {
@@ -277,10 +277,17 @@ test('un alumno nuevo activa la invitación y completa su ficha antes de recibir
     await expect(page.getByText('Invitación lista', { exact: true })).toBeVisible({ timeout: 15_000 })
 
     const inviteUrl = await page.getByRole('link', { name: /Probar enlace de acceso/ }).getAttribute('href')
-    expect(inviteUrl).toContain('/auth/confirm?token_hash=')
+    expect(inviteUrl).toContain('/auth/invitation?token_hash=')
+
+    // Simula la vista previa automática de WhatsApp. Esta visita no debe
+    // consumir el acceso antes de que el alumno toque Continuar.
+    const previewResponse = await page.request.get(inviteUrl!)
+    expect(previewResponse.ok()).toBeTruthy()
 
     await page.context().clearCookies()
     await page.goto(inviteUrl!)
+    await expect(page.getByRole('heading', { name: 'Activá tu acceso' })).toBeVisible()
+    await page.getByRole('button', { name: 'Continuar y crear contraseña' }).click()
     await expect(page).toHaveURL(/\/reset-password\?invite=1/, { timeout: 15_000 })
     await expect(page.getByText('Activá tu acceso de alumno', { exact: true })).toBeVisible()
 
