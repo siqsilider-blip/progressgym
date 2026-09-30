@@ -5,6 +5,7 @@ import { getStudentSessionHistory } from '../getStudentSessionHistory'
 import { getTrainerProfile } from '@/lib/getTrainerProfile'
 import { formatWeight, type WeightUnit } from '@/lib/weight'
 import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
+import { getServerUser } from '@/lib/auth/server'
 
 type PageProps = {
     params: Promise<{ studentId: string }>
@@ -44,7 +45,7 @@ function groupByMonth(sessions: Awaited<ReturnType<typeof getStudentSessionHisto
 export default async function StudentHistoryPage(props: PageProps) {
     const params = await props.params;
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getServerUser()
     if (!user) redirect('/login')
 
     const [studentResult, sessions, trainerProfile] = await Promise.all([

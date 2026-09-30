@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { assignTemplateAction } from './actions'
 import BulkAssignTemplate from './BulkAssignTemplate'
 import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
+import { getServerUser } from '@/lib/auth/server'
 
 type PageProps = {
     params: Promise<{
@@ -19,13 +20,9 @@ type StudentRow = {
 export default async function AssignTemplateToStudentPage(props: PageProps) {
     const params = await props.params;
     const supabase = await createClient()
+    const user = await getServerUser()
 
-    const {
-        data: { user },
-        error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    if (!user) {
         redirect('/login')
     }
 

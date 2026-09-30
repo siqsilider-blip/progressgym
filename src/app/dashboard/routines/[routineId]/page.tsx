@@ -12,6 +12,7 @@ import DeleteTemplateButton from './DeleteTemplateButton'
 import DayControls from './DayControls'
 import TemplateCriteriaFields from '@/components/TemplateCriteriaFields'
 import { normalizeStringArray, type TemplateMatchingProfile } from '@/lib/templateMatching'
+import { getServerUser } from '@/lib/auth/server'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -86,15 +87,13 @@ export default async function RoutineDetailPage(props: PageProps) {
     const searchParams = await props.searchParams;
     const params = await props.params;
     const supabase = await createClient()
-    const trainerProfile = await getTrainerProfile()
+    const [user, trainerProfile] = await Promise.all([
+        getServerUser(),
+        getTrainerProfile(),
+    ])
     const weightUnit = (trainerProfile?.weight_unit ?? 'kg') as WeightUnit
 
-    const {
-        data: { user },
-        error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    if (!user) {
         redirect('/login')
     }
 

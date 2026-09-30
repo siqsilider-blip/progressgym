@@ -1,15 +1,11 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
 import { createTemplate } from './actions'
 import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
 import TemplateCriteriaFields from '@/components/TemplateCriteriaFields'
+import { getServerUser } from '@/lib/auth/server'
 
 export default async function NewTemplatePage() {
-    const supabase = await createClient()
-
-    const {
-        data: { user },
-    } = await supabase.auth.getUser()
+    const user = await getServerUser()
 
     if (!user) {
         redirect('/login')

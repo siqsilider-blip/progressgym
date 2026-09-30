@@ -20,6 +20,8 @@ import {
     ONBOARDING_LOCATIONS,
     type StudentOnboardingProfile,
 } from '@/lib/studentOnboarding'
+import { getServerUser } from '@/lib/auth/server'
+import { createProgressPhotoUrls, type ProgressPhotoRecord } from '@/lib/progressPhotoUrls'
 
 type PageProps = {
     params: Promise<{
@@ -34,10 +36,7 @@ export default async function StudentProfilePage(props: PageProps) {
     const params = await props.params;
     const searchParams = await props.searchParams
     const supabase = await createClient()
-
-    const {
-        data: { user },
-    } = await supabase.auth.getUser()
+    const user = await getServerUser()
 
     if (!user) redirect('/login')
 
@@ -99,19 +98,17 @@ export default async function StudentProfilePage(props: PageProps) {
     const onboarding = (onboardingResult.data as StudentOnboardingProfile | null) ?? null
     const onboardingCompleted = Boolean(onboarding?.completed_at)
 
-    const progressPhotos = (await Promise.all((progressPhotosResult.data ?? []).map(async (photo) => {
-        const { data: signed } = await supabase.storage
-            .from('progress-photos')
-            .createSignedUrl(photo.storage_path, 3600)
-        if (!signed?.signedUrl) return null
-        return {
-            id: photo.id,
-            url: signed.signedUrl,
-            capturedOn: photo.captured_on,
-            pose: photo.pose,
-            marketingConsent: photo.marketing_consent,
-        } as ProgressPhotoItem
-    }))).filter((photo): photo is ProgressPhotoItem => photo !== null)
+    const signedPhotos = await createProgressPhotoUrls(
+        supabase,
+        (progressPhotosResult.data ?? []) as ProgressPhotoRecord[]
+    )
+    const progressPhotos: ProgressPhotoItem[] = signedPhotos.map((photo) => ({
+        id: photo.id,
+        url: photo.url,
+        capturedOn: photo.captured_on,
+        pose: photo.pose,
+        marketingConsent: photo.marketing_consent,
+    }))
 
     const weeklyCheckins = weeklyCheckinsResult.data ?? []
     const latestWeeklyCheckin = weeklyCheckins[0] ?? null

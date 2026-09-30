@@ -7,6 +7,7 @@ import StudentPageHeader from '@/components/student/StudentPageHeader'
 import { getStudentAppContext } from '@/lib/auth/student'
 import WeeklyWellnessProgressCard, { type WeeklyWellnessPoint } from '@/components/coaching/WeeklyWellnessProgressCard'
 import ProgressPhotoGallery, { type ProgressPhotoItem } from '@/components/coaching/ProgressPhotoGallery'
+import { createProgressPhotoUrls, type ProgressPhotoRecord } from '@/lib/progressPhotoUrls'
 
 export default async function AppProgressPage() {
     const supabase = await createClient()
@@ -36,19 +37,17 @@ export default async function AppProgressPage() {
             .limit(30),
     ])
 
-    const progressPhotos = (await Promise.all((photosResult.data ?? []).map(async (photo) => {
-        const { data: signed } = await supabase.storage
-            .from('progress-photos')
-            .createSignedUrl(photo.storage_path, 3600)
-        if (!signed?.signedUrl) return null
-        return {
-            id: photo.id,
-            url: signed.signedUrl,
-            capturedOn: photo.captured_on,
-            pose: photo.pose,
-            marketingConsent: photo.marketing_consent,
-        } as ProgressPhotoItem
-    }))).filter((photo): photo is ProgressPhotoItem => photo !== null)
+    const signedPhotos = await createProgressPhotoUrls(
+        supabase,
+        (photosResult.data ?? []) as ProgressPhotoRecord[]
+    )
+    const progressPhotos: ProgressPhotoItem[] = signedPhotos.map((photo) => ({
+        id: photo.id,
+        url: photo.url,
+        capturedOn: photo.captured_on,
+        pose: photo.pose,
+        marketingConsent: photo.marketing_consent,
+    }))
 
     const trainerId = studentResult.data?.trainer_id
     const trainerProfile = trainerId ? await supabase

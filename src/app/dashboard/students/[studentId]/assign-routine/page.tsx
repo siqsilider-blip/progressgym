@@ -10,6 +10,7 @@ import {
     type StudentOnboardingProfile,
 } from '@/lib/studentOnboarding'
 import { normalizeStringArray } from '@/lib/templateMatching'
+import { getServerUser } from '@/lib/auth/server'
 
 type PageProps = {
     params: Promise<{
@@ -75,13 +76,9 @@ async function assignRoutine(formData: FormData) {
 export default async function AssignRoutinePage(props: PageProps) {
     const params = await props.params;
     const supabase = await createClient()
+    const user = await getServerUser()
 
-    const {
-        data: { user },
-        error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    if (!user) {
         redirect('/login')
     }
 

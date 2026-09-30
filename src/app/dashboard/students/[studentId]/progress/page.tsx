@@ -5,13 +5,14 @@ import { getTrainerProfile } from '@/lib/getTrainerProfile'
 import { type WeightUnit } from '@/lib/weight'
 import ExerciseProgressCard from '../../ExerciseProgressCard'
 import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
+import { getServerUser } from '@/lib/auth/server'
 
 type PageProps = { params: Promise<{ studentId: string }> }
 
 export default async function StudentProgressPage(props: PageProps) {
     const params = await props.params;
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getServerUser()
     if (!user) redirect('/login')
 
     const [student, progressData, trainerProfile] = await Promise.all([

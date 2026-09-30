@@ -10,6 +10,7 @@ import { getRoutineSchedule } from '@/lib/getRoutineSchedule'
 import { getBuenosAiresDateString } from '@/lib/buenosAiresDate'
 import { getActiveStudentRoutine } from '@/lib/getActiveStudentRoutine'
 import DashboardBackButton from '@/components/dashboard/DashboardBackButton'
+import { getServerUser } from '@/lib/auth/server'
 
 type PageProps = {
     params: Promise<{ studentId: string }>
@@ -52,17 +53,14 @@ export default async function StudentTrainPage(props: PageProps) {
     const searchParams = await props.searchParams;
     const params = await props.params;
     const supabase = await createClient()
+    const [user, trainerProfile] = await Promise.all([
+        getServerUser(),
+        getTrainerProfile(),
+    ])
 
-    const {
-        data: { user },
-        error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    if (!user) {
         redirect('/login')
     }
-
-    const trainerProfile = await getTrainerProfile()
     const weightUnit = (trainerProfile?.weight_unit ?? 'kg') as WeightUnit
     const showPrs = trainerProfile?.show_prs ?? true
 

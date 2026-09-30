@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { createRoutine } from './actions'
 import { getTrainerProfile } from '@/lib/getTrainerProfile'
 import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
+import { getServerUser } from '@/lib/auth/server'
 
 type PageProps = {
     searchParams: Promise<{
@@ -13,10 +14,10 @@ type PageProps = {
 export default async function NewRoutinePage(props: PageProps) {
     const searchParams = await props.searchParams;
     const supabase = await createClient()
-
-    const {
-        data: { user },
-    } = await supabase.auth.getUser()
+    const [user, profile] = await Promise.all([
+        getServerUser(),
+        getTrainerProfile(),
+    ])
 
     if (!user) {
         redirect('/login')
@@ -49,7 +50,6 @@ export default async function NewRoutinePage(props: PageProps) {
         )
     }
 
-    const profile = await getTrainerProfile()
     const defaultRoutineDays = profile?.default_routine_days ?? 4
     const studentName = `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim()
 
