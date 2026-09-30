@@ -416,7 +416,6 @@ export default async function AppTrainPage(props: PageProps) {
                 studentId={studentId}
                 studentName={fullName}
                 dayLabel={selectedDayLabel}
-                routineName={routine?.name ?? ''}
                 performedAt={today}
                 exercises={focusedExercises}
                 maxWeights={maxWeights}

@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, ChevronDown, ChevronUp, Clock3, MessageCircle, Save, Trophy } from 'lucide-react'
+import { Check, ChevronDown, ChevronUp, Clock3, MessageCircle, Trophy } from 'lucide-react'
 import { completeSession, saveSet } from '@/app/dashboard/students/[studentId]/train/train-focused-actions'
 import ExerciseDemo from '@/app/dashboard/students/[studentId]/train/ExerciseDemo'
 import MessageComposer from '@/components/coaching/MessageComposer'
@@ -44,7 +44,6 @@ type Props = {
     studentId: string
     studentName: string
     dayLabel: string
-    routineName: string
     performedAt: string
     exercises: ExerciseData[]
     maxWeights: Record<string, number>
@@ -99,7 +98,6 @@ export default function StudentWorkoutView({
     sessionId,
     studentId,
     dayLabel,
-    routineName,
     performedAt,
     exercises,
     maxWeights,
@@ -283,8 +281,8 @@ export default function StudentWorkoutView({
         <main className="mx-auto max-w-lg px-4 pb-40 pt-4">
             <div className="flex items-start justify-between gap-3">
                 <div>
-                    <p className="text-xs font-medium text-indigo-400">{routineName}</p>
-                    <h1 className="text-xl font-black text-foreground">{dayLabel}</h1>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-indigo-400">Entrenamiento</p>
+                    <h1 className="mt-0.5 text-xl font-black text-foreground">{dayLabel}</h1>
                 </div>
                 {completedSession && (
                     <span className="rounded-full bg-emerald-500/10 px-3 py-1.5 text-[11px] font-bold text-emerald-500">Finalizada · editable</span>
@@ -293,7 +291,7 @@ export default function StudentWorkoutView({
 
             <div className="mt-3">
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>{savedSets} de {totalPlannedSets} series guardadas</span>
+                    <span>{savedSets} de {totalPlannedSets} series</span>
                     <span>{progress}%</span>
                 </div>
                 <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
@@ -345,10 +343,10 @@ export default function StudentWorkoutView({
                                                 <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-black ${completed === exercise.setsCount ? 'bg-emerald-500 text-white' : 'bg-indigo-500/10 text-indigo-400'}`}>
                                                     {completed === exercise.setsCount ? '✓' : exerciseIndex + 1}
                                                 </span>
-                                                <span className="min-w-0 flex-1">
+                                                    <span className="min-w-0 flex-1">
                                                     <span className="block truncate text-sm font-bold text-foreground">{exercise.exerciseName}</span>
                                                     <span className="mt-0.5 block text-[11px] text-muted-foreground">
-                                                        {exercise.setsCount} series{exercise.targetReps ? ` · objetivo ${exercise.targetReps}${exercise.isCardio ? ' min' : ' reps'}` : ''} · {completed}/{exercise.setsCount} guardadas
+                                                            {exercise.setsCount}{exercise.targetReps ? ` × ${exercise.targetReps}${exercise.isCardio ? ' min' : ' reps'}` : ' series'} · {completed}/{exercise.setsCount} listas
                                                     </span>
                                                 </span>
                                                 {isOpen ? <ChevronUp className="h-5 w-5 text-muted-foreground" /> : <ChevronDown className="h-5 w-5 text-muted-foreground" />}
@@ -363,13 +361,108 @@ export default function StudentWorkoutView({
                                                         <p className="mb-3 rounded-xl bg-muted/50 px-3 py-2 text-xs leading-5 text-muted-foreground">{exercise.instructions}</p>
                                                     )}
 
+                                                    <div className="mt-3">
+                                                        <div className={`mb-1.5 grid items-end gap-2 px-2 ${exercise.isCardio ? 'grid-cols-[2rem_minmax(0,1fr)_4.75rem]' : 'grid-cols-[2rem_minmax(0,1fr)_minmax(0,1fr)_4.75rem]'}`}>
+                                                            <span className="text-center text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Serie</span>
+                                                            {!exercise.isCardio && <span className="text-center text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Peso</span>}
+                                                            <span className="text-center text-[10px] font-bold uppercase tracking-wide text-muted-foreground">{exercise.isCardio ? 'Minutos' : 'Reps'}</span>
+                                                            <span className="text-center text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Guardar</span>
+                                                        </div>
+
+                                                        <div className="space-y-2">
+                                                        {exerciseSets.map((set, setIndex) => {
+                                                            const key = `${exerciseIndex}-${setIndex}`
+                                                            return (
+                                                                <div key={setIndex} className={`rounded-xl border px-2 py-2 ${set.dirty ? 'border-amber-500/35 bg-amber-500/[0.04]' : set.saved ? 'border-emerald-500/20 bg-emerald-500/[0.03]' : 'border-border bg-background/50'}`}>
+                                                                    <div className={`grid items-center gap-2 ${exercise.isCardio ? 'grid-cols-[2rem_minmax(0,1fr)_4.75rem]' : 'grid-cols-[2rem_minmax(0,1fr)_minmax(0,1fr)_4.75rem]'}`}>
+                                                                        <span className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-black ${set.saved && !set.dirty ? 'bg-emerald-500/15 text-emerald-500' : 'bg-indigo-500/10 text-indigo-400'}`}>
+                                                                            {setIndex + 1}
+                                                                        </span>
+
+                                                                        {!exercise.isCardio && (
+                                                                            <input
+                                                                                aria-label={`Peso serie ${setIndex + 1}`}
+                                                                                type="number"
+                                                                                inputMode="decimal"
+                                                                                step="0.5"
+                                                                                placeholder="—"
+                                                                                value={set.weight}
+                                                                                onChange={(event) => updateField(exerciseIndex, setIndex, 'weight', event.target.value)}
+                                                                                className="h-10 min-w-0 w-full rounded-lg border border-border bg-background px-2 text-center text-base font-bold text-foreground outline-none focus:border-indigo-500"
+                                                                            />
+                                                                        )}
+
+                                                                        <input
+                                                                            aria-label={`${exercise.isCardio ? 'Minutos' : 'Repeticiones'} serie ${setIndex + 1}`}
+                                                                            type="number"
+                                                                            inputMode="numeric"
+                                                                            placeholder="—"
+                                                                            value={set.reps}
+                                                                            onChange={(event) => updateField(exerciseIndex, setIndex, 'reps', event.target.value)}
+                                                                            className="h-10 min-w-0 w-full rounded-lg border border-border bg-background px-2 text-center text-base font-bold text-foreground outline-none focus:border-indigo-500"
+                                                                        />
+
+                                                                        <button
+                                                                            type="button"
+                                                                            aria-label={`Guardar serie ${setIndex + 1}`}
+                                                                            onClick={() => saveOneSet(exerciseIndex, setIndex)}
+                                                                            disabled={savingKey != null || (!set.dirty && set.saved)}
+                                                                            className={`inline-flex h-10 w-full items-center justify-center rounded-lg px-1 text-[10px] font-bold text-white disabled:opacity-55 ${set.saved && !set.dirty ? 'bg-emerald-600' : 'bg-indigo-600'}`}
+                                                                        >
+                                                                            {savingKey === key ? 'Guardando…' : set.saved ? 'Actualizar' : 'Guardar'}
+                                                                        </button>
+                                                                    </div>
+
+                                                                    <div className={`mt-1 grid gap-2 pl-10 pr-[5.25rem] ${exercise.isCardio ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                                                                        {!exercise.isCardio && (
+                                                                            <span className="truncate text-center text-[9px] text-muted-foreground">
+                                                                                {exercise.previousWeights[setIndex] != null ? `Anterior ${exercise.previousWeights[setIndex]} ${weightUnit}` : 'Sin peso anterior'}
+                                                                            </span>
+                                                                        )}
+                                                                        <span className="truncate text-center text-[9px] text-muted-foreground">
+                                                                            {exercise.previousReps[setIndex] != null
+                                                                                ? `Anterior ${exercise.previousReps[setIndex]} ${exercise.isCardio ? 'min' : 'reps'}`
+                                                                                : exercise.targetReps ? `Objetivo ${exercise.targetReps}` : 'Sin registro anterior'}
+                                                                        </span>
+                                                                    </div>
+
+                                                                    <div className="mt-1.5 flex items-center justify-between gap-2 pl-10">
+                                                                        <details className="min-w-0 flex-1">
+                                                                            <summary className="cursor-pointer list-none text-[10px] font-medium text-muted-foreground underline decoration-dotted underline-offset-2">
+                                                                                {set.rpe ? `Esfuerzo ${set.rpe}/10` : 'Agregar esfuerzo (opcional)'}
+                                                                            </summary>
+                                                                            <label className="mt-2 flex items-center gap-2">
+                                                                                <span className="text-[10px] text-muted-foreground">Esfuerzo</span>
+                                                                                <select
+                                                                                    aria-label="Esfuerzo opcional"
+                                                                                    value={set.rpe}
+                                                                                    onChange={(event) => updateField(exerciseIndex, setIndex, 'rpe', event.target.value)}
+                                                                                    className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none focus:border-indigo-500"
+                                                                                >
+                                                                                    <option value="">Sin indicar</option>
+                                                                                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => <option key={value} value={value}>{value}/10</option>)}
+                                                                                </select>
+                                                                            </label>
+                                                                        </details>
+                                                                        <span className={`shrink-0 text-[9px] font-bold ${set.dirty ? 'text-amber-500' : set.saved ? 'text-emerald-500' : 'text-muted-foreground'}`}>
+                                                                            {set.dirty ? 'Sin guardar' : set.saved ? 'Guardada ✓' : 'Pendiente'}
+                                                                        </span>
+                                                                    </div>
+
+                                                                    {set.isPr && <p className="mt-2 flex items-center gap-1 text-[10px] font-bold text-amber-500"><Trophy className="h-3.5 w-3.5" /> Nuevo mejor peso</p>}
+                                                                    {set.error && <p className="mt-2 text-[11px] font-medium text-red-500">{set.error}</p>}
+                                                                </div>
+                                                            )
+                                                        })}
+                                                        </div>
+                                                    </div>
+
                                                     <details className="mt-3 rounded-xl border border-border bg-background/60">
-                                                        <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-3 text-xs font-semibold text-indigo-400">
+                                                        <summary className="flex min-h-10 cursor-pointer list-none items-center gap-2 px-3 text-xs font-semibold text-indigo-400">
                                                             <MessageCircle className="h-4 w-4" />
-                                                            Consultar por este ejercicio
+                                                            Tengo una duda sobre este ejercicio
                                                         </summary>
                                                         <div className="border-t border-border p-3">
-                                                            <p className="mb-2 text-[11px] leading-4 text-muted-foreground">Tu entrenador verá que la consulta corresponde a {exercise.exerciseName}.</p>
                                                             <MessageComposer
                                                                 routineDayExerciseId={exercise.id}
                                                                 workoutSessionId={sessionId}
@@ -379,84 +472,6 @@ export default function StudentWorkoutView({
                                                             />
                                                         </div>
                                                     </details>
-
-                                                    <div className="mt-3 space-y-2.5">
-                                                        {exerciseSets.map((set, setIndex) => {
-                                                            const key = `${exerciseIndex}-${setIndex}`
-                                                            return (
-                                                                <div key={setIndex} className={`rounded-xl border p-3 ${set.dirty ? 'border-amber-500/35 bg-amber-500/[0.04]' : set.saved ? 'border-emerald-500/20 bg-emerald-500/[0.03]' : 'border-border bg-background/50'}`}>
-                                                                    <div className="mb-2 flex items-center justify-between">
-                                                                        <p className="text-xs font-bold text-foreground">Serie {setIndex + 1}</p>
-                                                                        <span className={`text-[10px] font-bold ${set.dirty ? 'text-amber-500' : set.saved ? 'text-emerald-500' : 'text-muted-foreground'}`}>
-                                                                            {set.dirty ? 'Sin guardar' : set.saved ? 'Guardada ✓' : 'Pendiente'}
-                                                                        </span>
-                                                                    </div>
-
-                                                                    <div className={`grid gap-2 ${exercise.isCardio ? 'grid-cols-1' : 'grid-cols-2'}`}>
-                                                                        {!exercise.isCardio && (
-                                                                            <label>
-                                                                                <span className="mb-1 block text-[11px] font-semibold text-muted-foreground">Peso ({weightUnit})</span>
-                                                                                <input
-                                                                                    type="number"
-                                                                                    inputMode="decimal"
-                                                                                    step="0.5"
-                                                                                    placeholder="Escribir"
-                                                                                    value={set.weight}
-                                                                                    onChange={(event) => updateField(exerciseIndex, setIndex, 'weight', event.target.value)}
-                                                                                    className="h-11 w-full rounded-lg border border-border bg-background px-3 text-center text-base font-bold text-foreground outline-none focus:border-indigo-500"
-                                                                                />
-                                                                                <span className="mt-1 block text-[10px] text-muted-foreground">
-                                                                                    {exercise.previousWeights[setIndex] != null ? `Anterior: ${exercise.previousWeights[setIndex]} ${weightUnit}` : 'Sin registro anterior'}
-                                                                                </span>
-                                                                            </label>
-                                                                        )}
-
-                                                                        <label>
-                                                                            <span className="mb-1 block text-[11px] font-semibold text-muted-foreground">{exercise.isCardio ? 'Tiempo (min)' : 'Repeticiones'}</span>
-                                                                            <input
-                                                                                type="number"
-                                                                                inputMode="numeric"
-                                                                                placeholder="Escribir"
-                                                                                value={set.reps}
-                                                                                onChange={(event) => updateField(exerciseIndex, setIndex, 'reps', event.target.value)}
-                                                                                className="h-11 w-full rounded-lg border border-border bg-background px-3 text-center text-base font-bold text-foreground outline-none focus:border-indigo-500"
-                                                                            />
-                                                                            <span className="mt-1 block text-[10px] text-muted-foreground">
-                                                                                {exercise.previousReps[setIndex] != null
-                                                                                    ? `Anterior: ${exercise.previousReps[setIndex]} ${exercise.isCardio ? 'min' : 'reps'}`
-                                                                                    : exercise.targetReps ? `Objetivo: ${exercise.targetReps}` : 'Sin registro anterior'}
-                                                                            </span>
-                                                                        </label>
-                                                                    </div>
-
-                                                                    <div className="mt-2 flex items-end gap-2">
-                                                                        <label className="min-w-0 flex-1">
-                                                                            <span className="mb-1 block text-[10px] text-muted-foreground">Esfuerzo opcional</span>
-                                                                            <select
-                                                                                value={set.rpe}
-                                                                                onChange={(event) => updateField(exerciseIndex, setIndex, 'rpe', event.target.value)}
-                                                                                className="h-10 w-full rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none focus:border-indigo-500"
-                                                                            >
-                                                                                <option value="">Sin indicar</option>
-                                                                                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => <option key={value} value={value}>{value}/10</option>)}
-                                                                            </select>
-                                                                        </label>
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => saveOneSet(exerciseIndex, setIndex)}
-                                                                            disabled={savingKey != null || (!set.dirty && set.saved)}
-                                                                            className="inline-flex h-10 min-w-32 items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-3 text-xs font-bold text-white disabled:opacity-45"
-                                                                        >
-                                                                            {savingKey === key ? 'Guardando…' : set.saved ? <><Save className="h-3.5 w-3.5" />Actualizar</> : 'Guardar serie'}
-                                                                        </button>
-                                                                    </div>
-
-                                                                    {set.isPr && <p className="mt-2 flex items-center gap-1 text-[10px] font-bold text-amber-500"><Trophy className="h-3.5 w-3.5" /> Nuevo mejor peso</p>}
-                                                                    {set.error && <p className="mt-2 text-[11px] font-medium text-red-500">{set.error}</p>}
-                                                                </div>
-                                                            )
-                                                        })}
-                                                    </div>
                                                 </div>
                                             )}
                                         </article>

@@ -84,6 +84,7 @@ test('el alumno entra a su portal y no al panel del entrenador', async ({ page }
     await expect(numberInputs).toHaveCount(2)
     await numberInputs.nth(0).fill('35')
     await numberInputs.nth(1).fill('10')
+    await page.getByText('Agregar esfuerzo (opcional)', { exact: true }).click()
     await page.getByRole('combobox', { name: 'Esfuerzo opcional' }).selectOption('7')
     await page.getByRole('button', { name: 'Guardar serie' }).click()
     await expect(page.getByText('Guardada ✓')).toBeVisible({ timeout: 15_000 })
@@ -93,7 +94,7 @@ test('el alumno entra a su portal y no al panel del entrenador', async ({ page }
 
     await page.reload()
     await expect(page.getByText('Finalizada · editable')).toBeVisible({ timeout: 15_000 })
-    await expect(page.getByRole('button', { name: 'Actualizar' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Guardar serie 1' })).toContainText('Actualizar')
 
     await page.goto('/app/rutina')
     await expect(page.getByText('Semana completada ✓')).toBeVisible()
