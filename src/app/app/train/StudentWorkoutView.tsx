@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, ChevronDown, ChevronUp, Clock3, MessageCircle, Trophy } from 'lucide-react'
+import { Check, ChevronDown, ChevronUp, Clock3, MessageCircle, RefreshCw, Trophy, WifiOff } from 'lucide-react'
 import { completeSession, saveSet } from '@/app/dashboard/students/[studentId]/train/train-focused-actions'
 import ExerciseDemo from '@/app/dashboard/students/[studentId]/train/ExerciseDemo'
 import MessageComposer from '@/components/coaching/MessageComposer'
@@ -35,8 +35,24 @@ type SetState = {
     rpe: string
     saved: boolean
     dirty: boolean
+    queued: boolean
     isPr: boolean
     error: string | null
+}
+
+type WorkoutDraftEntry = {
+    exerciseId: string
+    setIndex: number
+    weight: string
+    reps: string
+    rpe: string
+    queued: boolean
+}
+
+type WorkoutDraft = {
+    version: 1
+    updatedAt: string
+    entries: WorkoutDraftEntry[]
 }
 
 type Props = {
@@ -63,6 +79,7 @@ const BLOCKS: { id: RoutineBlock; label: string; emoji: string }[] = [
 ]
 
 const APP_BOTTOM_NAV_HEIGHT_PX = 72
+const WORKOUT_DRAFT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000
 
 function createInitialSets(exercises: ExerciseData[]): SetState[][] {
     return exercises.map((exercise) =>
@@ -78,6 +95,7 @@ function createInitialSets(exercises: ExerciseData[]): SetState[][] {
                 rpe: rpe != null ? String(rpe) : '',
                 saved,
                 dirty: false,
+                queued: false,
                 isPr: false,
                 error: null,
             }
@@ -125,10 +143,20 @@ export default function StudentWorkoutView({
     const [completedSession, setCompletedSession] = React.useState(initialSummary)
     const [summary, setSummary] = React.useState<{ durationSeconds: number | null; totalSets: number } | null>(null)
     const [localMaxWeights, setLocalMaxWeights] = React.useState({ ...maxWeights })
+    const [isOnline, setIsOnline] = React.useState(true)
+    const [draftReady, setDraftReady] = React.useState(false)
+    const [draftRecovered, setDraftRecovered] = React.useState(false)
+    const [syncingDrafts, setSyncingDrafts] = React.useState(false)
+    const setsRef = React.useRef(sets)
+    const syncingDraftsRef = React.useRef(false)
+    const syncQueuedSetsRef = React.useRef<() => void>(() => undefined)
+    const draftStorageKey = `progrezzia:workout-draft:${studentId}:${sessionId}`
 
     const totalPlannedSets = exercises.reduce((total, exercise) => total + exercise.setsCount, 0)
     const savedSets = sets.reduce((total, exerciseSets) => total + exerciseSets.filter((set) => set.saved).length, 0)
     const progress = totalPlannedSets > 0 ? Math.round((savedSets / totalPlannedSets) * 100) : 0
+    const hasDraftChanges = sets.some((exerciseSets) => exerciseSets.some((set) => set.dirty))
+    const hasQueuedChanges = sets.some((exerciseSets) => exerciseSets.some((set) => set.queued))
 
     React.useEffect(() => {
         if (restTimeLeft <= 0) return
@@ -137,6 +165,113 @@ export default function StudentWorkoutView({
         }, 1000)
         return () => window.clearInterval(timer)
     }, [restTimeLeft])
+
+    React.useEffect(() => {
+        setsRef.current = sets
+    }, [sets])
+
+    React.useEffect(() => {
+        setIsOnline(window.navigator.onLine)
+
+        const handleOnline = () => setIsOnline(true)
+        const handleOffline = () => setIsOnline(false)
+        window.addEventListener('online', handleOnline)
+        window.addEventListener('offline', handleOffline)
+
+        return () => {
+            window.removeEventListener('online', handleOnline)
+            window.removeEventListener('offline', handleOffline)
+        }
+    }, [])
+
+    React.useEffect(() => {
+        try {
+            const stored = window.localStorage.getItem(draftStorageKey)
+            if (!stored) return
+
+            const draft = JSON.parse(stored) as WorkoutDraft
+            const updatedAt = new Date(draft.updatedAt).getTime()
+            if (
+                draft.version !== 1
+                || !Array.isArray(draft.entries)
+                || !Number.isFinite(updatedAt)
+                || Date.now() - updatedAt > WORKOUT_DRAFT_MAX_AGE_MS
+            ) {
+                window.localStorage.removeItem(draftStorageKey)
+                return
+            }
+
+            const entryMap = new Map(
+                draft.entries.map((entry) => [`${entry.exerciseId}:${entry.setIndex}`, entry])
+            )
+
+            setSets((previous) => previous.map((exerciseSets, exerciseIndex) =>
+                exerciseSets.map((set, setIndex) => {
+                    const exercise = exercises[exerciseIndex]
+                    const entry = exercise ? entryMap.get(`${exercise.id}:${setIndex}`) : null
+                    if (!entry) return set
+
+                    return {
+                        ...set,
+                        weight: entry.weight,
+                        reps: entry.reps,
+                        rpe: entry.rpe,
+                        dirty: true,
+                        queued: Boolean(entry.queued),
+                        error: null,
+                    }
+                })
+            ))
+            setDraftRecovered(draft.entries.length > 0)
+        } catch {
+            try {
+                window.localStorage.removeItem(draftStorageKey)
+            } catch {
+                // La app sigue funcionando aunque el navegador bloquee storage.
+            }
+        } finally {
+            setDraftReady(true)
+        }
+    }, [draftStorageKey, exercises])
+
+    React.useEffect(() => {
+        if (!draftReady) return
+
+        const entries: WorkoutDraftEntry[] = []
+        sets.forEach((exerciseSets, exerciseIndex) => {
+            const exercise = exercises[exerciseIndex]
+            if (!exercise) return
+
+            exerciseSets.forEach((set, setIndex) => {
+                if (!set.dirty) return
+                entries.push({
+                    exerciseId: exercise.id,
+                    setIndex,
+                    weight: set.weight,
+                    reps: set.reps,
+                    rpe: set.rpe,
+                    queued: set.queued,
+                })
+            })
+        })
+
+        try {
+            if (entries.length === 0) {
+                window.localStorage.removeItem(draftStorageKey)
+                return
+            }
+
+            const draft: WorkoutDraft = {
+                version: 1,
+                updatedAt: new Date().toISOString(),
+                entries,
+            }
+            window.localStorage.setItem(draftStorageKey, JSON.stringify(draft))
+        } catch {
+            // Algunos modos privados restringen localStorage. El guardado online
+            // continúa disponible y la interfaz no debe interrumpirse.
+        }
+    }, [draftReady, draftStorageKey, exercises, sets])
 
     function updateField(exerciseIndex: number, setIndex: number, field: 'weight' | 'reps' | 'rpe', value: string) {
         setSets((previous) => previous.map((exerciseSets, currentExerciseIndex) =>
@@ -153,12 +288,11 @@ export default function StudentWorkoutView({
 
     async function saveOneSet(exerciseIndex: number, setIndex: number) {
         const exercise = exercises[exerciseIndex]
-        const set = sets[exerciseIndex]?.[setIndex]
-        if (!exercise || !set || savingKey) return
+        const set = setsRef.current[exerciseIndex]?.[setIndex]
+        if (!exercise || !set || savingKey || syncingDraftsRef.current) return
 
         const weight = set.weight.trim() === '' ? null : Number(set.weight)
         const reps = set.reps.trim() === '' ? null : Number(set.reps)
-        const rpe = set.rpe.trim() === '' ? null : Number(set.rpe)
 
         if (weight === null && reps === null) {
             setSets((previous) => previous.map((exerciseSets, currentExerciseIndex) =>
@@ -172,6 +306,37 @@ export default function StudentWorkoutView({
             ))
             return
         }
+
+        if (!window.navigator.onLine) {
+            setIsOnline(false)
+            setSets((previous) => previous.map((exerciseSets, currentExerciseIndex) =>
+                currentExerciseIndex !== exerciseIndex
+                    ? exerciseSets
+                    : exerciseSets.map((item, currentSetIndex) =>
+                        currentSetIndex === setIndex
+                            ? { ...item, dirty: true, queued: true, error: null }
+                            : item
+                    )
+            ))
+            setGlobalError(null)
+            return
+        }
+
+        await persistSet(exerciseIndex, setIndex, set, false)
+    }
+
+    async function persistSet(
+        exerciseIndex: number,
+        setIndex: number,
+        set: SetState,
+        automatic: boolean
+    ) {
+        const exercise = exercises[exerciseIndex]
+        if (!exercise) return false
+
+        const weight = set.weight.trim() === '' ? null : Number(set.weight)
+        const reps = set.reps.trim() === '' ? null : Number(set.reps)
+        const rpe = set.rpe.trim() === '' ? null : Number(set.rpe)
 
         const key = `${exerciseIndex}-${setIndex}`
         setSavingKey(key)
@@ -194,10 +359,15 @@ export default function StudentWorkoutView({
                     currentExerciseIndex !== exerciseIndex
                         ? exerciseSets
                         : exerciseSets.map((item, currentSetIndex) =>
-                            currentSetIndex === setIndex ? { ...item, error: result.error || 'No se pudo guardar.' } : item
+                            currentSetIndex === setIndex
+                                ? { ...item, dirty: true, queued: automatic || item.queued, error: automatic ? null : result.error || 'No se pudo guardar.' }
+                                : item
                         )
                 ))
-                return
+                if (automatic) {
+                    setGlobalError('No pudimos sincronizar todavía. Tus datos siguen guardados en este teléfono.')
+                }
+                return false
             }
 
             const oldMax = localMaxWeights[exercise.id] ?? 0
@@ -211,24 +381,77 @@ export default function StudentWorkoutView({
                     ? exerciseSets
                     : exerciseSets.map((item, currentSetIndex) =>
                         currentSetIndex === setIndex
-                            ? { ...item, saved: true, dirty: false, isPr, error: null }
+                            ? { ...item, saved: true, dirty: false, queued: false, isPr, error: null }
                             : item
                     )
             ))
 
-            if (!completedSession && !set.saved && exercise.restSeconds > 0) {
+            if (!automatic && !completedSession && !set.saved && exercise.restSeconds > 0) {
                 setRestExerciseName(exercise.exerciseName)
                 setRestTimeLeft(exercise.restSeconds)
             }
+            return true
         } catch {
-            setGlobalError('No pudimos guardar. Revisá tu conexión e intentá nuevamente.')
+            setSets((previous) => previous.map((exerciseSets, currentExerciseIndex) =>
+                currentExerciseIndex !== exerciseIndex
+                    ? exerciseSets
+                    : exerciseSets.map((item, currentSetIndex) =>
+                        currentSetIndex === setIndex
+                            ? { ...item, dirty: true, queued: true, error: null }
+                            : item
+                    )
+            ))
+            setGlobalError('No pudimos conectar. Tus datos quedaron guardados en este teléfono.')
+            return false
         } finally {
             setSavingKey(null)
         }
     }
 
+    async function syncQueuedSets() {
+        if (syncingDraftsRef.current || !window.navigator.onLine) return
+
+        const pending = setsRef.current.flatMap((exerciseSets, exerciseIndex) =>
+            exerciseSets
+                .map((set, setIndex) => ({ exerciseIndex, setIndex, set }))
+                .filter(({ set }) => set.dirty && set.queued)
+        )
+        if (pending.length === 0) return
+
+        syncingDraftsRef.current = true
+        setSyncingDrafts(true)
+        setGlobalError(null)
+
+        try {
+            for (const item of pending) {
+                if (!window.navigator.onLine) break
+                await persistSet(item.exerciseIndex, item.setIndex, item.set, true)
+            }
+        } finally {
+            syncingDraftsRef.current = false
+            setSyncingDrafts(false)
+        }
+    }
+
+    React.useEffect(() => {
+        syncQueuedSetsRef.current = () => {
+            void syncQueuedSets()
+        }
+    })
+
+    React.useEffect(() => {
+        if (!draftReady || !isOnline) return
+        const timeout = window.setTimeout(() => syncQueuedSetsRef.current(), 500)
+        return () => window.clearTimeout(timeout)
+    }, [draftReady, isOnline])
+
     async function finishWorkout() {
         if (finishing) return
+        if (!window.navigator.onLine) {
+            setIsOnline(false)
+            setGlobalError('Necesitás conexión para finalizar. El borrador está guardado en este teléfono.')
+            return
+        }
         const hasUnsavedValues = sets.some((exerciseSets) => exerciseSets.some((set) => set.dirty))
         if (hasUnsavedValues) {
             setGlobalError('Hay cambios sin guardar. Guardá las series marcadas antes de finalizar.')
@@ -252,6 +475,11 @@ export default function StudentWorkoutView({
         setCompletedSession(true)
         setSummary({ durationSeconds: result.durationSeconds, totalSets: result.totalSets })
         setRestTimeLeft(0)
+        try {
+            window.localStorage.removeItem(draftStorageKey)
+        } catch {
+            // No afecta a la sesión ya finalizada.
+        }
         window.scrollTo({ top: 0, behavior: 'smooth' })
     }
 
@@ -298,6 +526,27 @@ export default function StudentWorkoutView({
                     <div className="h-full rounded-full bg-indigo-500 transition-all" style={{ width: `${progress}%` }} />
                 </div>
             </div>
+
+            {!isOnline && (
+                <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-500/25 bg-amber-500/[0.07] px-3 py-2.5 text-amber-400">
+                    <WifiOff className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                    <p className="text-xs leading-5">Sin conexión. Podés seguir completando: guardamos el borrador en este teléfono.</p>
+                </div>
+            )}
+
+            {isOnline && syncingDrafts && (
+                <div className="mt-3 flex items-center gap-2 rounded-xl border border-indigo-500/25 bg-indigo-500/[0.07] px-3 py-2.5 text-indigo-400">
+                    <RefreshCw className="h-4 w-4 animate-spin" aria-hidden="true" />
+                    <p className="text-xs font-medium">Sincronizando cambios pendientes…</p>
+                </div>
+            )}
+
+            {isOnline && !syncingDrafts && draftRecovered && hasDraftChanges && !hasQueuedChanges && (
+                <div className="mt-3 flex items-start gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.05] px-3 py-2.5 text-emerald-500">
+                    <Check className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                    <p className="text-xs leading-5">Recuperamos el borrador que habías dejado en este entrenamiento.</p>
+                </div>
+            )}
 
             {completedSession && (
                 <p className="mt-3 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.05] px-3 py-2 text-xs leading-5 text-emerald-500">
@@ -406,10 +655,10 @@ export default function StudentWorkoutView({
                                                                             type="button"
                                                                             aria-label={`Guardar serie ${setIndex + 1}`}
                                                                             onClick={() => saveOneSet(exerciseIndex, setIndex)}
-                                                                            disabled={savingKey != null || (!set.dirty && set.saved)}
-                                                                            className={`inline-flex h-10 w-full items-center justify-center rounded-lg px-1 text-[10px] font-bold text-white disabled:opacity-55 ${set.saved && !set.dirty ? 'bg-emerald-600' : 'bg-indigo-600'}`}
+                                                                            disabled={savingKey != null || set.queued || (!set.dirty && set.saved)}
+                                                                            className={`inline-flex h-10 w-full items-center justify-center rounded-lg px-1 text-[10px] font-bold text-white disabled:opacity-55 ${set.queued ? 'bg-amber-600' : set.saved && !set.dirty ? 'bg-emerald-600' : 'bg-indigo-600'}`}
                                                                         >
-                                                                            {savingKey === key ? 'Guardando…' : set.saved ? 'Actualizar' : 'Guardar'}
+                                                                            {savingKey === key ? 'Guardando…' : set.queued ? 'Pendiente' : set.saved ? 'Actualizar' : 'Guardar'}
                                                                         </button>
                                                                     </div>
 
@@ -444,8 +693,10 @@ export default function StudentWorkoutView({
                                                                                 </select>
                                                                             </label>
                                                                         </details>
-                                                                        <span className={`shrink-0 text-[9px] font-bold ${set.dirty ? 'text-amber-500' : set.saved ? 'text-emerald-500' : 'text-muted-foreground'}`}>
-                                                                            {set.dirty ? 'Sin guardar' : set.saved ? 'Guardada ✓' : 'Pendiente'}
+                                                                        <span className={`shrink-0 text-[9px] font-bold ${set.queued || set.dirty ? 'text-amber-500' : set.saved ? 'text-emerald-500' : 'text-muted-foreground'}`}>
+                                                                            {set.queued
+                                                                                ? isOnline ? 'Por sincronizar' : 'Sin conexión'
+                                                                                : set.dirty ? 'Borrador guardado' : set.saved ? 'Guardada ✓' : 'Pendiente'}
                                                                         </span>
                                                                     </div>
 

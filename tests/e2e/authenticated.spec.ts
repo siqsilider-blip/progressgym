@@ -84,10 +84,23 @@ test('el alumno entra a su portal y no al panel del entrenador', async ({ page }
     await expect(numberInputs).toHaveCount(2)
     await numberInputs.nth(0).fill('35')
     await numberInputs.nth(1).fill('10')
+    await expect(page.getByText('Borrador guardado', { exact: true })).toBeVisible()
+
+    // Si la app se cierra o recarga antes de guardar, los datos se recuperan.
+    await page.reload()
+    await expect(page.getByText('Recuperamos el borrador que habías dejado en este entrenamiento.')).toBeVisible()
+    await expect(numberInputs.nth(0)).toHaveValue('35')
+    await expect(numberInputs.nth(1)).toHaveValue('10')
+
     await page.getByText('Agregar esfuerzo (opcional)', { exact: true }).click()
     await page.getByRole('combobox', { name: 'Esfuerzo opcional' }).selectOption('7')
+
+    // Sin conexión, el guardado queda en cola y se sincroniza al volver internet.
+    await page.context().setOffline(true)
     await page.getByRole('button', { name: 'Guardar serie' }).click()
-    await expect(page.getByText('Guardada ✓')).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByText('Sin conexión', { exact: true }).last()).toBeVisible()
+    await page.context().setOffline(false)
+    await expect(page.getByText('Guardada ✓')).toBeVisible({ timeout: 20_000 })
     await page.getByRole('button', { name: 'Finalizar entrenamiento' }).click()
 
     await expect(page.getByRole('heading', { name: 'Entrenamiento guardado' })).toBeVisible({ timeout: 15_000 })
