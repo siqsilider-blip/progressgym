@@ -99,7 +99,7 @@ export default function ExerciseDemo({ exerciseName, videoUrl, instructions, mus
                         <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-border bg-background/95 px-4 py-3 backdrop-blur">
                             <div className="min-w-0">
                                 <p className="text-xs font-medium text-indigo-400">Guía del ejercicio</p>
-                                <h2 id={titleId} className="truncate text-lg font-bold text-foreground">
+                                <h2 id={titleId} className="line-clamp-2 break-words text-lg font-bold leading-6 text-foreground">
                                     {exerciseName}
                                 </h2>
                             </div>
@@ -122,29 +122,29 @@ export default function ExerciseDemo({ exerciseName, videoUrl, instructions, mus
 
                             {source?.kind === 'youtube' ? (
                                 <section aria-labelledby="exercise-video-title">
-                                    <h3 id="exercise-video-title" className="mb-2 text-sm font-semibold text-foreground">Cómo se hace</h3>
-                                <div className="aspect-video overflow-hidden rounded-2xl bg-black">
-                                    <iframe
-                                        src={source.url}
-                                        title={`Demostración de ${exerciseName}`}
-                                        className="h-full w-full"
-                                        allow="accelerometer; encrypted-media; gyroscope; picture-in-picture"
-                                        allowFullScreen
-                                    />
-                                </div>
+                                    <h3 id="exercise-video-title" className="mb-2 text-base font-bold text-foreground">Cómo se hace</h3>
+                                    <div className="aspect-video overflow-hidden rounded-2xl bg-black">
+                                        <iframe
+                                            src={source.url}
+                                            title={`Demostración de ${exerciseName}`}
+                                            className="h-full w-full"
+                                            allow="accelerometer; encrypted-media; gyroscope; picture-in-picture"
+                                            allowFullScreen
+                                        />
+                                    </div>
                                 </section>
                             ) : source?.kind === 'file' ? (
                                 <section aria-labelledby="exercise-video-title">
-                                    <h3 id="exercise-video-title" className="mb-2 text-sm font-semibold text-foreground">Cómo se hace</h3>
-                                <video
-                                    src={source.url}
-                                    controls
-                                    playsInline
-                                    preload="metadata"
-                                    className="aspect-video w-full rounded-2xl bg-black object-contain"
-                                >
-                                    Tu dispositivo no puede reproducir este video.
-                                </video>
+                                    <h3 id="exercise-video-title" className="mb-2 text-base font-bold text-foreground">Cómo se hace</h3>
+                                    <video
+                                        src={source.url}
+                                        controls
+                                        playsInline
+                                        preload="metadata"
+                                        className="aspect-video w-full rounded-2xl bg-black object-contain"
+                                    >
+                                        Tu dispositivo no puede reproducir este video.
+                                    </video>
                                 </section>
                             ) : source?.kind === 'external' ? (
                                 <div className="rounded-2xl border border-border bg-card p-4 text-center">

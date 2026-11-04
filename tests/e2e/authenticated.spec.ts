@@ -78,7 +78,7 @@ test('el alumno entra a su portal y no al panel del entrenador', async ({ page }
     await expect(page.getByRole('button', { name: new RegExp(exerciseName) })).toBeVisible()
     await page.getByRole('button', { name: 'Ver ejercicio' }).click()
     await expect(page.getByRole('dialog')).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Qué trabajás' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Músculos trabajados' })).toBeVisible()
     await expect(page.getByText('Glúteos', { exact: true })).toBeVisible()
     await expect(page.getByRole('img', { name: /Mapa corporal.*Glúteos/ })).toBeVisible()
     await expect(page.getByText('Mantené la espalda apoyada y controlá el movimiento.')).toBeVisible()

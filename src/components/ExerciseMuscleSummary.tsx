@@ -12,38 +12,45 @@ export default function ExerciseMuscleSummary({ exerciseName, muscleGroup, categ
     const hasClassification = profile.primary.length > 0
 
     return (
-        <section className="rounded-2xl border border-border bg-card p-4" aria-labelledby="exercise-muscles-title">
+        <section className="overflow-hidden rounded-2xl border border-border bg-card p-4" aria-labelledby="exercise-muscles-title">
             <div>
                 <p className="text-xs font-semibold text-indigo-400">Mapa corporal</p>
-                <h3 id="exercise-muscles-title" className="text-base font-bold text-foreground">Qué trabajás</h3>
+                <h3 id="exercise-muscles-title" className="mt-0.5 text-lg font-bold text-foreground">Músculos trabajados</h3>
             </div>
 
             {hasClassification ? (
-                <div className="mt-3 grid grid-cols-[minmax(7.5rem,9.5rem)_minmax(0,1fr)] items-center gap-3">
-                    <MuscleBodyMap primary={profile.primary} secondary={profile.secondary} />
-                    <div className="min-w-0 space-y-4">
-                        <div>
-                            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-muted-foreground">
-                                <span className="h-2.5 w-2.5 rounded-full bg-violet-600" aria-hidden="true" />
-                                Principal
+                <div className="mt-4">
+                    <div className="rounded-2xl border border-white/[0.06] bg-background/55 px-2 py-3">
+                        <MuscleBodyMap primary={profile.primary} secondary={profile.secondary} />
+                    </div>
+
+                    <div className={`mt-3 grid gap-2 ${profile.secondary.length > 0 ? 'sm:grid-cols-2' : ''}`}>
+                        <div className="min-w-0 rounded-xl border border-violet-500/25 bg-violet-500/[0.08] px-3.5 py-3">
+                            <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+                                <span className="h-3 w-3 shrink-0 rounded-full bg-violet-600 ring-2 ring-violet-300/30" aria-hidden="true" />
+                                Trabajo principal
                             </div>
-                            <p className="mt-1 text-sm font-bold leading-5 text-foreground">
+                            <p className="mt-1.5 break-words text-base font-bold leading-6 text-foreground">
                                 {profile.primary.map(muscleLabel).join(' · ')}
                             </p>
                         </div>
 
                         {profile.secondary.length > 0 && (
-                            <div>
-                                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-muted-foreground">
-                                    <span className="h-2.5 w-2.5 rounded-full bg-violet-300" aria-hidden="true" />
-                                    También participan
+                            <div className="min-w-0 rounded-xl border border-violet-300/15 bg-violet-300/[0.05] px-3.5 py-3">
+                                <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+                                    <span className="h-3 w-3 shrink-0 rounded-full bg-violet-300" aria-hidden="true" />
+                                    Músculos que ayudan
                                 </div>
-                                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                                <p className="mt-1.5 break-words text-sm font-medium leading-6 text-foreground/80">
                                     {profile.secondary.map(muscleLabel).join(' · ')}
                                 </p>
                             </div>
                         )}
                     </div>
+
+                    <p className="mt-3 text-xs leading-5 text-muted-foreground">
+                        Violeta intenso: principal · Violeta claro: músculos de apoyo.
+                    </p>
                 </div>
             ) : (
                 <p className="mt-3 rounded-xl bg-muted/50 px-3 py-3 text-sm leading-6 text-muted-foreground">
@@ -51,9 +58,6 @@ export default function ExerciseMuscleSummary({ exerciseName, muscleGroup, categ
                 </p>
             )}
 
-            <p className="mt-3 text-[11px] leading-5 text-muted-foreground">
-                El color fuerte muestra el trabajo principal; el claro, los músculos que ayudan durante el movimiento.
-            </p>
         </section>
     )
 }
