@@ -24,6 +24,8 @@ type ExerciseMeta = {
     metric_type: 'reps' | 'time' | null
     video_url: string | null
     description: string | null
+    muscle_group: string | null
+    category: string | null
 }
 
 type ExerciseOverride = {
@@ -194,7 +196,7 @@ export default async function AppTrainPage(props: PageProps) {
     if (exerciseIds.length > 0) {
         const { data } = await supabase
             .from('exercises')
-            .select('id, name, metric_type, video_url, description')
+            .select('id, name, metric_type, video_url, description, muscle_group, category')
             .in('id', exerciseIds)
         exercises = (data as ExerciseMeta[] | null) ?? []
     }
@@ -344,6 +346,8 @@ export default async function AppTrainPage(props: PageProps) {
             lastPerformedAt: previousSession?.lastPerformedAt ?? null,
             video_url: override?.video_url ?? meta?.video_url ?? null,
             instructions: override?.instructions ?? meta?.description ?? null,
+            muscleGroup: meta?.muscle_group ?? null,
+            category: meta?.category ?? null,
             block: normalizeBlock(exercise.block),
         }
     })

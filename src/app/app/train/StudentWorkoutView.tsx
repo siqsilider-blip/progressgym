@@ -26,6 +26,8 @@ type ExerciseData = {
     lastPerformedAt?: string | null
     video_url?: string | null
     instructions?: string | null
+    muscleGroup?: string | null
+    category?: string | null
     block: RoutineBlock
 }
 
@@ -603,12 +605,13 @@ export default function StudentWorkoutView({
 
                                             {isOpen && (
                                                 <div className="border-t border-border px-3.5 pb-3.5 pt-3">
-                                                    {exercise.video_url && (
-                                                        <ExerciseDemo exerciseName={exercise.exerciseName} videoUrl={exercise.video_url} instructions={exercise.instructions} />
-                                                    )}
-                                                    {!exercise.video_url && exercise.instructions?.trim() && (
-                                                        <p className="mb-3 rounded-xl bg-muted/50 px-3 py-2 text-xs leading-5 text-muted-foreground">{exercise.instructions}</p>
-                                                    )}
+                                                    <ExerciseDemo
+                                                        exerciseName={exercise.exerciseName}
+                                                        videoUrl={exercise.video_url}
+                                                        instructions={exercise.instructions}
+                                                        muscleGroup={exercise.muscleGroup}
+                                                        category={exercise.category}
+                                                    />
 
                                                     <div className="mt-3">
                                                         <div className={`mb-1.5 grid items-end gap-2 px-2 ${exercise.isCardio ? 'grid-cols-[2rem_minmax(0,1fr)_4.75rem]' : 'grid-cols-[2rem_minmax(0,1fr)_minmax(0,1fr)_4.75rem]'}`}>

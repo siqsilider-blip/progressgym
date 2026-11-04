@@ -1,12 +1,15 @@
 'use client'
 
 import * as React from 'react'
-import { ExternalLink, PlayCircle, X } from 'lucide-react'
+import { Dumbbell, ExternalLink, PlayCircle, X } from 'lucide-react'
+import ExerciseMuscleSummary from '@/components/ExerciseMuscleSummary'
 
 type Props = {
     exerciseName: string
-    videoUrl: string
+    videoUrl?: string | null
     instructions?: string | null
+    muscleGroup?: string | null
+    category?: string | null
 }
 
 type VideoSource =
@@ -46,10 +49,10 @@ function getVideoSource(rawUrl: string): VideoSource {
     }
 }
 
-export default function ExerciseDemo({ exerciseName, videoUrl, instructions }: Props) {
+export default function ExerciseDemo({ exerciseName, videoUrl, instructions, muscleGroup, category }: Props) {
     const [open, setOpen] = React.useState(false)
     const titleId = React.useId()
-    const source = React.useMemo(() => getVideoSource(videoUrl), [videoUrl])
+    const source = React.useMemo(() => videoUrl ? getVideoSource(videoUrl) : null, [videoUrl])
 
     React.useEffect(() => {
         if (!open) return
@@ -76,8 +79,8 @@ export default function ExerciseDemo({ exerciseName, videoUrl, instructions }: P
                 aria-haspopup="dialog"
                 className="mt-2 inline-flex min-h-11 items-center gap-2 rounded-xl border border-indigo-500/30 bg-indigo-500/10 px-4 py-2.5 text-sm font-semibold text-indigo-400 transition active:scale-[0.98] hover:bg-indigo-500/20"
             >
-                <PlayCircle className="h-5 w-5" aria-hidden="true" />
-                Ver cómo se hace
+                <Dumbbell className="h-5 w-5" aria-hidden="true" />
+                Ver ejercicio
             </button>
 
             {open && (
@@ -95,7 +98,7 @@ export default function ExerciseDemo({ exerciseName, videoUrl, instructions }: P
                     >
                         <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-border bg-background/95 px-4 py-3 backdrop-blur">
                             <div className="min-w-0">
-                                <p className="text-xs font-medium text-indigo-400">Demostración</p>
+                                <p className="text-xs font-medium text-indigo-400">Guía del ejercicio</p>
                                 <h2 id={titleId} className="truncate text-lg font-bold text-foreground">
                                     {exerciseName}
                                 </h2>
@@ -103,7 +106,7 @@ export default function ExerciseDemo({ exerciseName, videoUrl, instructions }: P
                             <button
                                 type="button"
                                 onClick={() => setOpen(false)}
-                                aria-label="Cerrar demostración"
+                                aria-label="Cerrar guía del ejercicio"
                                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-secondary text-foreground transition active:scale-95 hover:bg-muted"
                             >
                                 <X className="h-5 w-5" aria-hidden="true" />
@@ -111,7 +114,15 @@ export default function ExerciseDemo({ exerciseName, videoUrl, instructions }: P
                         </div>
 
                         <div className="space-y-4 p-4" style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom, 0px))' }}>
-                            {source.kind === 'youtube' ? (
+                            <ExerciseMuscleSummary
+                                exerciseName={exerciseName}
+                                muscleGroup={muscleGroup}
+                                category={category}
+                            />
+
+                            {source?.kind === 'youtube' ? (
+                                <section aria-labelledby="exercise-video-title">
+                                    <h3 id="exercise-video-title" className="mb-2 text-sm font-semibold text-foreground">Cómo se hace</h3>
                                 <div className="aspect-video overflow-hidden rounded-2xl bg-black">
                                     <iframe
                                         src={source.url}
@@ -121,7 +132,10 @@ export default function ExerciseDemo({ exerciseName, videoUrl, instructions }: P
                                         allowFullScreen
                                     />
                                 </div>
-                            ) : source.kind === 'file' ? (
+                                </section>
+                            ) : source?.kind === 'file' ? (
+                                <section aria-labelledby="exercise-video-title">
+                                    <h3 id="exercise-video-title" className="mb-2 text-sm font-semibold text-foreground">Cómo se hace</h3>
                                 <video
                                     src={source.url}
                                     controls
@@ -131,7 +145,8 @@ export default function ExerciseDemo({ exerciseName, videoUrl, instructions }: P
                                 >
                                     Tu dispositivo no puede reproducir este video.
                                 </video>
-                            ) : (
+                                </section>
+                            ) : source?.kind === 'external' ? (
                                 <div className="rounded-2xl border border-border bg-card p-4 text-center">
                                     <PlayCircle className="mx-auto h-10 w-10 text-indigo-400" aria-hidden="true" />
                                     <p className="mt-2 text-sm text-muted-foreground">
@@ -147,7 +162,7 @@ export default function ExerciseDemo({ exerciseName, videoUrl, instructions }: P
                                         <ExternalLink className="h-4 w-4" aria-hidden="true" />
                                     </a>
                                 </div>
-                            )}
+                            ) : null}
 
                             {instructions?.trim() && (
                                 <div className="rounded-2xl border border-border bg-card p-4">
@@ -159,7 +174,7 @@ export default function ExerciseDemo({ exerciseName, videoUrl, instructions }: P
                             )}
 
                             <p className="text-center text-xs leading-5 text-muted-foreground">
-                                Mirá el movimiento antes de empezar. Podés pausar y volver a verlo cuando lo necesites.
+                                El mapa es orientativo. Si sentís dolor durante el movimiento, frená y consultale a tu entrenador.
                             </p>
                         </div>
                     </section>

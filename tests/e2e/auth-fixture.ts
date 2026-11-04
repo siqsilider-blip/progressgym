@@ -249,7 +249,7 @@ export default async function createAuthFixture() {
                 trainer_id: trainerAuth.user.id,
                 name: `Ejercicio E2E ${runId}`,
                 metric_type: 'reps',
-                muscle_group: 'Prueba E2E',
+                muscle_group: 'Glúteos',
                 description: 'Mantené la espalda apoyada y controlá el movimiento.',
                 video_url: 'https://www.youtube.com/watch?v=M7lc1UVf-VE',
             })

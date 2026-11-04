@@ -34,6 +34,8 @@ type ExerciseData = {
     lastPerformedAt?: string | null
     video_url?: string | null
     instructions?: string | null
+    muscleGroup?: string | null
+    category?: string | null
     block?: string
 }
 
@@ -829,14 +831,14 @@ export default function TrainFocusedView({
                         ? ` · ${exercise.targetReps} ${exercise.isCardio ? 'minutos' : 'repeticiones'}`
                         : ''}
                 </p>
-                {exercise.video_url && (
-                    <ExerciseDemo
-                        key={`${exercise.id}-${exercise.video_url}`}
-                        exerciseName={exercise.exerciseName}
-                        videoUrl={exercise.video_url}
-                        instructions={exercise.instructions}
-                    />
-                )}
+                <ExerciseDemo
+                    key={`${exercise.id}-${exercise.video_url ?? 'guide'}`}
+                    exerciseName={exercise.exerciseName}
+                    videoUrl={exercise.video_url}
+                    instructions={exercise.instructions}
+                    muscleGroup={exercise.muscleGroup}
+                    category={exercise.category}
+                />
                 {exercise.lastPerformedAt && (
                     <p className="mt-0.5 text-[10px] text-muted-foreground">
                         Última vez: {(() => {
