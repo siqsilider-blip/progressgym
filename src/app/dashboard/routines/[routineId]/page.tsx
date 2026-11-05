@@ -328,7 +328,7 @@ export default async function RoutineDetailPage(props: PageProps) {
                         <div className="mt-1 flex min-w-0 items-center gap-2">
                             <p className="min-w-0 flex-1 truncate whitespace-nowrap text-xs text-muted-foreground">
                                 {routine.routine_kind === 'template' ? (
-                                    <span className="rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[10px] font-medium text-indigo-700 dark:border-indigo-500/20 dark:bg-indigo-500/10 dark:text-indigo-300">
+                                    <span className="rounded-full border border-primary bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary dark:border-primary/20 dark:bg-primary/10 dark:text-brand-soft">
                                         Template
                                     </span>
                                 ) : (
@@ -344,7 +344,7 @@ export default async function RoutineDetailPage(props: PageProps) {
                                 <div className="flex shrink-0 items-center gap-1.5">
                                     <Link
                                         href={`/dashboard/routines/${routine.id}/assign-to-student`}
-                                        className="rounded-lg bg-indigo-600 px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-sm transition hover:bg-indigo-500 active:scale-[0.97]"
+                                        className="rounded-lg bg-primary px-2.5 py-1.5 text-[11px] font-semibold text-primary-foreground shadow-sm transition hover:bg-primary active:scale-[0.97]"
                                     >
                                         Asignar
                                     </Link>
@@ -366,7 +366,7 @@ export default async function RoutineDetailPage(props: PageProps) {
                 </div>
 
                 {routine.routine_kind === 'template' && (
-                    <details className="rounded-xl border border-indigo-500/20 bg-indigo-500/[0.045] px-3.5 py-3">
+                    <details className="rounded-xl border border-primary/20 bg-primary/[0.045] px-3.5 py-3">
                         <summary className="cursor-pointer list-none">
                             <div className="flex items-center justify-between gap-3">
                                 <div>
@@ -377,7 +377,7 @@ export default async function RoutineDetailPage(props: PageProps) {
                                             : 'Sin configurar: este template no podrá recomendarse con precisión'}
                                     </p>
                                 </div>
-                                <span className="text-xs font-semibold text-indigo-400">Editar</span>
+                                <span className="text-xs font-semibold text-primary">Editar</span>
                             </div>
                         </summary>
                         <form action={updateTemplateMatchingProfile} className="mt-4 space-y-5 border-t border-border pt-4">
@@ -385,7 +385,7 @@ export default async function RoutineDetailPage(props: PageProps) {
                             <TemplateCriteriaFields defaultValue={templateMatchingProfile} />
                             <button
                                 type="submit"
-                                className="w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500"
+                                className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary"
                             >
                                 Guardar criterios
                             </button>
@@ -440,7 +440,7 @@ export default async function RoutineDetailPage(props: PageProps) {
                                                 title={label}
                                                 href={`/dashboard/routines/${routine.id}?week=${selectedWeek!.id}&day=${day.id}${selectedMonth?.id ? `&month=${selectedMonth.id}` : ''}`}
                                                 className={`relative max-w-[8.5rem] shrink-0 snap-start truncate rounded-lg px-3 py-1.5 text-xs font-semibold transition active:scale-[0.96] ${isActive
-                                                        ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/25'
+                                                        ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/25'
                                                         : 'border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground'
                                                     }`}
                                             >

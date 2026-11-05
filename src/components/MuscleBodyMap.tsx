@@ -47,8 +47,8 @@ function buildBodyData(primary: MuscleId[], secondary: MuscleId[]): ExtendedBody
         for (const slug of BODY_PARTS[muscle]) {
             parts.set(slug, {
                 slug,
-                color: '#c4b5fd',
-                styles: { fill: '#c4b5fd', stroke: '#ede9fe', strokeWidth: 1.5 },
+                color: 'rgba(217, 217, 217, 0.65)',
+                styles: { fill: 'rgba(217, 217, 217, 0.65)', stroke: '#111111', strokeWidth: 1.5 },
             })
         }
     }
@@ -57,8 +57,8 @@ function buildBodyData(primary: MuscleId[], secondary: MuscleId[]): ExtendedBody
         for (const slug of BODY_PARTS[muscle]) {
             parts.set(slug, {
                 slug,
-                color: '#7c3aed',
-                styles: { fill: '#7c3aed', stroke: '#ddd6fe', strokeWidth: 2.2 },
+                color: '#c98796',
+                styles: { fill: '#c98796', stroke: '#111111', strokeWidth: 2.2 },
             })
         }
     }
@@ -89,7 +89,7 @@ export default function MuscleBodyMap({ primary, secondary, className = '' }: Pr
         >
             {views.map((view) => (
                 <div key={view} className="flex min-w-0 flex-col items-center">
-                    <div className="rounded-2xl bg-gradient-to-b from-violet-500/[0.06] to-transparent px-2 pt-2">
+                    <div className="rounded-2xl bg-gradient-to-b from-primary/[0.06] to-transparent px-2 pt-2">
                         <AnatomyBodyModel
                             data={bodyData}
                             view={view}

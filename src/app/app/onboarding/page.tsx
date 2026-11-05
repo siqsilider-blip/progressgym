@@ -26,7 +26,7 @@ export default async function StudentOnboardingPage() {
                 back={Boolean(profile)}
             />
             {!profile && (
-                <div className="rounded-2xl border border-indigo-500/25 bg-indigo-500/10 p-3.5 text-xs leading-5 text-indigo-200">
+                <div className="rounded-2xl border border-primary/25 bg-primary/10 p-3.5 text-xs leading-5 text-brand-soft">
                     Te va a llevar menos de dos minutos. No necesitás conocer términos de entrenamiento.
                 </div>
             )}

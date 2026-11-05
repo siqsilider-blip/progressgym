@@ -116,7 +116,7 @@ export default async function TemplatesListPage(props: PageProps) {
                 action={
                     <Link
                         href="/dashboard/templates/new"
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-indigo-500"
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-xs font-bold text-primary-foreground transition hover:bg-primary"
                     >
                         <Plus className="h-3.5 w-3.5" />
                         Nuevo
@@ -133,7 +133,7 @@ export default async function TemplatesListPage(props: PageProps) {
                         type="search"
                         defaultValue={searchQuery}
                         placeholder="Buscar por nombre…"
-                        className="h-11 w-full rounded-xl border border-border bg-card pl-9 pr-3 text-sm text-foreground outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                        className="h-11 w-full rounded-xl border border-border bg-card pl-9 pr-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
                     />
                 </label>
                 <button
@@ -165,7 +165,7 @@ export default async function TemplatesListPage(props: PageProps) {
                     </p>
                     <Link
                         href="/dashboard/templates"
-                        className="mt-4 inline-block text-sm font-medium text-indigo-500 hover:text-indigo-400"
+                        className="mt-4 inline-block text-sm font-medium text-brand-soft hover:text-primary"
                     >
                         Ver todos
                     </Link>
@@ -178,7 +178,7 @@ export default async function TemplatesListPage(props: PageProps) {
                     </p>
                     <Link
                         href="/dashboard/templates/new"
-                        className="mt-4 inline-block text-sm font-medium text-indigo-500 hover:text-indigo-400"
+                        className="mt-4 inline-block text-sm font-medium text-brand-soft hover:text-primary"
                     >
                         Crear el primero →
                     </Link>
@@ -198,7 +198,7 @@ export default async function TemplatesListPage(props: PageProps) {
                         return (
                             <div
                                 key={template.id}
-                                className="flex items-center gap-3 rounded-xl border border-white/[0.07] bg-white/[0.025] p-3 transition hover:border-indigo-500/30 hover:bg-white/[0.04]"
+                                className="flex items-center gap-3 rounded-xl border border-white/[0.07] bg-white/[0.025] p-3 transition hover:border-primary/30 hover:bg-white/[0.04]"
                             >
                                 <Link href={`/dashboard/routines/${template.id}`} className="min-w-0 flex-1">
                                     <p className="truncate text-base font-semibold text-card-foreground">
@@ -218,7 +218,7 @@ export default async function TemplatesListPage(props: PageProps) {
 
                                 <Link
                                     href={`/dashboard/routines/${template.id}/assign-to-student`}
-                                    className="shrink-0 rounded-xl bg-indigo-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-indigo-500"
+                                    className="shrink-0 rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground transition hover:bg-primary"
                                 >
                                     Asignar
                                 </Link>

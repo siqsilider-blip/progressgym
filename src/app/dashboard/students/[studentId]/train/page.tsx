@@ -120,7 +120,7 @@ export default async function StudentTrainPage(props: PageProps) {
                     <div className="mt-6 flex flex-wrap gap-3">
                         <Link
                             href={`/dashboard/students/${params.studentId}/assign-routine`}
-                            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500"
+                            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary"
                         >
                             Asignar rutina
                         </Link>
@@ -431,7 +431,7 @@ export default async function StudentTrainPage(props: PageProps) {
                                         href={`/dashboard/students/${params.studentId}/train?month=${month.id}`}
                                         className={`shrink-0 rounded-xl px-3 py-2 text-xs font-medium transition ${
                                             isActive
-                                                ? 'bg-indigo-600 text-white'
+                                                ? 'bg-primary text-primary-foreground'
                                                 : 'border border-border bg-secondary text-secondary-foreground hover:bg-muted'
                                         }`}
                                     >
@@ -458,7 +458,7 @@ export default async function StudentTrainPage(props: PageProps) {
                                         href={`/dashboard/students/${params.studentId}/train?week=${week.id}${selectedMonth?.id ? `&month=${selectedMonth.id}` : ''}`}
                                         className={`shrink-0 rounded-xl px-3 py-2 text-xs font-medium transition ${
                                             isActive
-                                                ? 'bg-indigo-500/20 text-indigo-400 ring-1 ring-indigo-500'
+                                                ? 'bg-primary/20 text-primary ring-1 ring-primary'
                                                 : 'border border-border bg-secondary text-secondary-foreground hover:bg-muted'
                                         }`}
                                     >
@@ -484,7 +484,7 @@ export default async function StudentTrainPage(props: PageProps) {
                                         href={`/dashboard/students/${params.studentId}/train?day=${day.id}${selectedWeek?.id ? `&week=${selectedWeek.id}` : ''}${selectedMonth?.id ? `&month=${selectedMonth.id}` : ''}`}
                                         className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition ${
                                             isActive
-                                                ? 'bg-indigo-600 text-white'
+                                                ? 'bg-primary text-primary-foreground'
                                                 : 'border border-border bg-secondary text-secondary-foreground hover:bg-muted'
                                         }`}
                                     >

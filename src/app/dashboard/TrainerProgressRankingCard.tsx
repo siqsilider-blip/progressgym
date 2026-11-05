@@ -31,7 +31,7 @@ export default function TrainerProgressRankingCard({
     return (
         <div className="rounded-2xl border p-4 md:p-6" style={{borderColor: 'rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)'}}>
             <div className="mb-5 flex items-center gap-3 md:mb-6">
-                <div className="rounded-2xl bg-indigo-500/10 p-3 text-indigo-500">
+                <div className="rounded-2xl bg-primary/10 p-3 text-brand-soft">
                     <TrendingUp className="h-5 w-5" />
                 </div>
 
@@ -93,7 +93,7 @@ export default function TrainerProgressRankingCard({
 
                                         <Link
                                             href={`/dashboard/students/${item.studentId}`}
-                                            className="text-xs text-indigo-500"
+                                            className="text-xs text-brand-soft"
                                         >
                                             Ver →
                                         </Link>

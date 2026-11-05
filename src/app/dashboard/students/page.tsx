@@ -191,7 +191,7 @@ export default async function StudentsPage() {
                 action={
                     <Link
                         href="/dashboard/students/new"
-                        className="rounded-xl bg-indigo-600 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-indigo-500"
+                        className="rounded-xl bg-primary px-3.5 py-2 text-xs font-bold text-primary-foreground transition hover:bg-primary"
                     >
                         + Alumno
                     </Link>
@@ -205,8 +205,8 @@ export default async function StudentsPage() {
                     <p className="mt-1 text-xs text-white/30">Agregá tu primer alumno para empezar</p>
                     <Link
                         href="/dashboard/students/new"
-                        className="mt-4 inline-block rounded-xl px-5 py-2.5 text-sm font-bold text-white"
-                        style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)' }}
+                        className="mt-4 inline-block rounded-xl px-5 py-2.5 text-sm font-bold text-[#111111]"
+                        style={{ background: 'linear-gradient(135deg, #c98796, #e9a0ad)' }}
                     >
                         + Agregar alumno
                     </Link>
@@ -240,8 +240,8 @@ export default async function StudentsPage() {
                                 return (
                                     <div key={student.id} className="grid grid-cols-12 gap-4 px-5 py-3.5 text-sm transition hover:bg-white/[0.02]">
                                         <div className="col-span-4 flex items-center gap-3">
-                                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-black text-violet-300"
-                                                style={{ background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.25)' }}>
+                                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-black text-brand-soft"
+                                                style={{ background: 'rgba(201,135,150,0.2)', border: '1px solid rgba(201,135,150,0.25)' }}>
                                                 {initials}
                                             </div>
                                             <span className="font-semibold text-white">{fullName}</span>
@@ -259,7 +259,7 @@ export default async function StudentsPage() {
 
                                         <div className="col-span-3 flex items-center">
                                             {operation?.hasActiveSession ? (
-                                                <span className="text-xs font-semibold text-indigo-400">Sesión en curso</span>
+                                                <span className="text-xs font-semibold text-primary">Sesión en curso</span>
                                             ) : hasProgram ? (
                                                 <div className="min-w-0">
                                                     <p className="truncate text-xs font-medium text-white/60">{operation.routineName}</p>
@@ -284,8 +284,8 @@ export default async function StudentsPage() {
                                                 href={hasProgram
                                                     ? `/dashboard/students/${student.id}/train`
                                                     : `/dashboard/students/${student.id}/assign-routine`}
-                                                className="rounded-lg px-3 py-1.5 text-xs font-bold text-white transition hover:opacity-90"
-                                                style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)' }}
+                                                className="rounded-lg px-3 py-1.5 text-xs font-bold text-[#111111] transition hover:opacity-90"
+                                                style={{ background: 'linear-gradient(135deg, #c98796, #e9a0ad)' }}
                                             >
                                                 {operation?.hasActiveSession ? 'Continuar' : hasProgram ? 'Entrenar' : 'Asignar'}
                                             </Link>

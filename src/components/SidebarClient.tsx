@@ -106,15 +106,15 @@ export default function SidebarClient({
     return (
         <>
             {/* ── Sidebar desktop ── */}
-            <aside className="hidden md:flex md:w-64 md:flex-col md:border-r border-white/[0.06] bg-[#07070a] text-white">
+            <aside className="hidden md:flex md:w-64 md:flex-col md:border-r border-white/[0.06] bg-[#111111] text-white">
                 <div className="border-b border-white/[0.06] px-6 py-6">
                     <Link href="/dashboard" prefetch className="block">
                         <div className="flex items-center gap-2.5">
                             <div
                                 className="flex h-7 w-7 items-center justify-center rounded-lg"
-                                style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)', boxShadow: '0 0 16px rgba(124,58,237,0.4)' }}
+                                style={{ background: 'linear-gradient(135deg, #c98796, #e9a0ad)', boxShadow: '0 0 16px rgba(201,135,150,0.4)' }}
                             >
-                                <svg className="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                <svg className="h-3.5 w-3.5 text-[#111111]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                                 </svg>
                             </div>
@@ -141,17 +141,17 @@ export default function SidebarClient({
                                     onClick={() => setPendingHref(item.href)}
                                     aria-busy={isPending}
                                     className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${isActive || isPending
-                                            ? 'bg-violet-500/15 text-violet-300 border border-violet-500/20'
+                                            ? 'bg-brand/15 text-brand border border-brand/20'
                                             : 'text-white/40 hover:bg-white/[0.04] hover:text-white/80 border border-transparent'
                                         }`}
                                 >
-                                    <Icon className={`h-4 w-4 ${isActive ? 'text-violet-400' : ''}`} />
+                                    <Icon className={`h-4 w-4 ${isActive ? 'text-brand' : ''}`} />
                                     {item.label}
                                     {item.label === 'Mensajes' && unreadMessages > 0 && (
                                         <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-black text-white">{Math.min(unreadMessages, 99)}</span>
                                     )}
                                     {item.label === 'Avisos' && unreadNotifications > 0 && (
-                                        <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-violet-500 px-1 text-[9px] font-black text-white">{Math.min(unreadNotifications, 99)}</span>
+                                        <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-black text-primary-foreground">{Math.min(unreadNotifications, 99)}</span>
                                     )}
                                 </Link>
                             )
@@ -164,7 +164,7 @@ export default function SidebarClient({
                         href="/dashboard/settings"
                         prefetch
                         className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all mb-1 ${pathname === '/dashboard/settings'
-                                ? 'bg-violet-500/15 text-violet-300 border border-violet-500/20'
+                                ? 'bg-brand/15 text-brand border border-brand/20'
                                 : 'text-white/40 hover:bg-white/[0.04] hover:text-white/80 border border-transparent'
                             }`}
                     >
@@ -184,13 +184,13 @@ export default function SidebarClient({
             </aside>
 
             {/* ── Header mobile ── */}
-            <div className="fixed inset-x-0 top-0 z-40 flex h-14 items-center justify-between border-b border-white/[0.06] px-4 md:hidden bg-[#07070a]/95 backdrop-blur">
+            <div className="fixed inset-x-0 top-0 z-40 flex h-14 items-center justify-between border-b border-white/[0.06] px-4 md:hidden bg-[#111111]/95 backdrop-blur">
                 <Link href="/dashboard" prefetch className="flex items-center gap-2">
                     <div
                         className="flex h-6 w-6 items-center justify-center rounded-lg"
-                        style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)' }}
+                        style={{ background: 'linear-gradient(135deg, #c98796, #e9a0ad)' }}
                     >
-                        <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <svg className="h-3 w-3 text-[#111111]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                         </svg>
                     </div>
@@ -206,7 +206,7 @@ export default function SidebarClient({
                     >
                         <Bell className="h-4 w-4" />
                         {unreadNotifications > 0 && (
-                            <span className="absolute right-0.5 top-0.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-violet-500 px-0.5 text-[7px] font-black text-white">
+                            <span className="absolute right-0.5 top-0.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-primary px-0.5 text-[7px] font-black text-primary-foreground">
                                 {Math.min(unreadNotifications, 9)}
                             </span>
                         )}
@@ -223,7 +223,7 @@ export default function SidebarClient({
             </div>
 
             {/* ── Nav mobile bottom ── */}
-            <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-white/[0.06] md:hidden bg-[#07070a]/95 backdrop-blur">
+            <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-white/[0.06] md:hidden bg-[#111111]/95 backdrop-blur">
                 <div className="grid grid-cols-5">
                     {navItems.filter((item) => item.mobile !== false).map((item) => {
                         const Icon = item.icon
@@ -238,7 +238,7 @@ export default function SidebarClient({
                                 onClick={() => setPendingHref(item.href)}
                                 aria-busy={isPending}
                                 className={`flex flex-col items-center justify-center gap-1 py-2.5 text-[10px] font-medium transition-colors ${isActive || isPending
-                                        ? 'text-violet-400'
+                                        ? 'text-brand'
                                         : 'text-white/30 hover:text-white/60'
                                     }`}
                             >

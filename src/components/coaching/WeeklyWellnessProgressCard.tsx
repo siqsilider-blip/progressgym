@@ -25,10 +25,10 @@ export default function WeeklyWellnessProgressCard({ data }: { data: WeeklyWelln
 
     if (!latest) {
         return (
-            <section className="mb-4 rounded-2xl border border-dashed border-indigo-500/25 bg-indigo-500/[0.04] p-4">
+            <section className="mb-4 rounded-2xl border border-dashed border-primary/25 bg-primary/[0.04] p-4">
                 <p className="text-sm font-bold text-foreground">Seguimiento semanal</p>
                 <p className="mt-1 text-xs leading-5 text-muted-foreground">Completá tu primer control para ver acá cómo evolucionan tu energía, descanso y medidas.</p>
-                <Link href="/app/check-in" className="mt-3 inline-flex min-h-9 items-center rounded-xl bg-indigo-600 px-3 text-xs font-bold text-white">Completar control</Link>
+                <Link href="/app/check-in" className="mt-3 inline-flex min-h-9 items-center rounded-xl bg-primary px-3 text-xs font-bold text-primary-foreground">Completar control</Link>
             </section>
         )
     }
@@ -44,7 +44,7 @@ export default function WeeklyWellnessProgressCard({ data }: { data: WeeklyWelln
                     <p className="text-sm font-bold text-foreground">Tu estado semanal</p>
                     <p className="mt-0.5 text-[10px] text-muted-foreground">Último control: {formatWeek(latest.week_start)}</p>
                 </div>
-                <Link href="/app/check-in" className="shrink-0 rounded-lg border border-indigo-500/25 bg-indigo-500/10 px-2.5 py-1.5 text-[10px] font-bold text-indigo-500">Actualizar</Link>
+                <Link href="/app/check-in" className="shrink-0 rounded-lg border border-primary/25 bg-primary/10 px-2.5 py-1.5 text-[10px] font-bold text-brand-soft">Actualizar</Link>
             </div>
 
             <div className="grid grid-cols-4 gap-px border-y border-border bg-border">
@@ -75,8 +75,8 @@ export default function WeeklyWellnessProgressCard({ data }: { data: WeeklyWelln
                                 <CartesianGrid stroke="currentColor" strokeOpacity={0.08} vertical={false} />
                                 <XAxis dataKey="week_start" tickFormatter={formatShortDate} tick={{ fill: '#71717a', fontSize: 9 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
                                 <YAxis domain={['auto', 'auto']} tick={{ fill: '#71717a', fontSize: 9 }} axisLine={false} tickLine={false} tickCount={3} />
-                                <Tooltip contentStyle={{ backgroundColor: '#09090b', border: '1px solid #27272a', borderRadius: 10, fontSize: 11 }} labelFormatter={(label) => formatWeek(String(label))} formatter={(value) => [`${formatNumber(Number(value))} ${measure === 'body_weight' ? 'kg' : 'cm'}`, measure === 'body_weight' ? 'Peso' : 'Cintura']} />
-                                <Line type="monotone" dataKey={measure} stroke="#6366f1" strokeWidth={2.5} dot={{ r: 3, fill: '#6366f1', strokeWidth: 0 }} activeDot={{ r: 5 }} connectNulls />
+                                <Tooltip contentStyle={{ backgroundColor: '#111111', border: '1px solid #27272a', borderRadius: 10, fontSize: 11 }} labelFormatter={(label) => formatWeek(String(label))} formatter={(value) => [`${formatNumber(Number(value))} ${measure === 'body_weight' ? 'kg' : 'cm'}`, measure === 'body_weight' ? 'Peso' : 'Cintura']} />
+                                <Line type="monotone" dataKey={measure} stroke="#c98796" strokeWidth={2.5} dot={{ r: 3, fill: '#c98796', strokeWidth: 0 }} activeDot={{ r: 5 }} connectNulls />
                             </LineChart>
                         </ResponsiveContainer>
                     </div>

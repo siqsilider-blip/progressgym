@@ -16,7 +16,7 @@ export default function StudentAdherenceCard({
                 <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                     Adherencia
                 </p>
-                <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
+                <p className="text-sm font-semibold text-primary dark:text-primary">
                     {adherence.percentage}%
                 </p>
             </div>
@@ -32,7 +32,7 @@ export default function StudentAdherenceCard({
 
             <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
                 <div
-                    className="h-full rounded-full bg-indigo-500 transition-all"
+                    className="h-full rounded-full bg-primary transition-all"
                     style={{ width: `${progress}%` }}
                 />
             </div>

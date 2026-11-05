@@ -104,18 +104,18 @@ export default async function NewRoutinePage(props: PageProps) {
                     </select>
                 </div>
 
-                <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/10 p-3">
+                <div className="rounded-xl border border-primary/20 bg-primary/10 p-3">
                     <p className="text-sm font-medium text-white">
                         Se van a crear automáticamente los días de la rutina.
                     </p>
-                    <p className="mt-1 text-xs text-indigo-200/80">
+                    <p className="mt-1 text-xs text-brand-soft/80">
                         Después vas a poder entrar a cada día y agregar ejercicios.
                     </p>
                 </div>
 
                 <button
                     type="submit"
-                    className="w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-medium text-white transition hover:bg-indigo-500"
+                    className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-medium text-primary-foreground transition hover:bg-primary"
                 >
                     Crear rutina
                 </button>

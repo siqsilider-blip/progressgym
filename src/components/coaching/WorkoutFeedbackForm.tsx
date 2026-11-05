@@ -76,13 +76,13 @@ export default function WorkoutFeedbackForm({
                 onChange={(event) => setComment(event.target.value)}
                 placeholder="Comentario opcional para tu entrenador"
                 rows={2}
-                className="mt-3 w-full resize-none rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none focus:border-indigo-500"
+                className="mt-3 w-full resize-none rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary"
             />
 
             {error && <p className="mt-2 text-xs font-medium text-red-500">{error}</p>}
             {saved && <p className="mt-2 text-xs font-medium text-emerald-500">Evaluación enviada ✓</p>}
 
-            <button type="button" onClick={save} disabled={pending} className="mt-3 min-h-11 w-full rounded-xl bg-indigo-600 px-4 text-sm font-bold text-white disabled:opacity-50">
+            <button type="button" onClick={save} disabled={pending} className="mt-3 min-h-11 w-full rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground disabled:opacity-50">
                 {pending ? 'Guardando…' : saved ? 'Actualizar evaluación' : 'Enviar evaluación'}
             </button>
         </section>
@@ -110,7 +110,7 @@ function ScoreSelector({
             </div>
             <div className="mt-2 grid grid-cols-5 gap-1.5">
                 {SCORE_VALUES.map((score) => (
-                    <button key={score} type="button" onClick={() => onChange(score)} className={`min-h-10 rounded-xl border text-sm font-bold ${value === score ? 'border-indigo-500 bg-indigo-500/15 text-indigo-400' : 'border-border bg-background text-muted-foreground'}`}>
+                    <button key={score} type="button" onClick={() => onChange(score)} className={`min-h-10 rounded-xl border text-sm font-bold ${value === score ? 'border-primary bg-primary/15 text-primary' : 'border-border bg-background text-muted-foreground'}`}>
                         {score}
                     </button>
                 ))}

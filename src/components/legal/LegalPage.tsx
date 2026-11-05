@@ -18,9 +18,9 @@ export default function LegalPage({
     sections: LegalSection[]
 }) {
     return (
-        <main className="min-h-screen bg-[#07070a] px-4 py-8 text-zinc-100 sm:py-12">
+        <main className="min-h-screen bg-[#111111] px-4 py-8 text-zinc-100 sm:py-12">
             <article className="mx-auto max-w-2xl">
-                <Link href="/" className="inline-flex items-center gap-2 text-sm font-semibold text-violet-400 hover:text-violet-300">
+                <Link href="/" className="inline-flex items-center gap-2 text-sm font-semibold text-brand-on-dark hover:text-white">
                     <span aria-hidden>←</span> Progrezzia
                 </Link>
 

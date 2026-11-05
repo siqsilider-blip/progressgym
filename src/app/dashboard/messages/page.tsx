@@ -141,7 +141,7 @@ export default async function TrainerMessagesPage(props: PageProps) {
             <NotificationTypeReadMarker type="workout_feedback" />
 
             <header>
-                <p className="text-xs font-medium text-violet-400">Seguimiento</p>
+                <p className="text-xs font-medium text-primary">Seguimiento</p>
                 <h1 className="mt-1 text-xl font-black text-white md:text-2xl">Mensajes</h1>
                 <p className="mt-1 text-xs text-white/40">Consultas, molestias y respuestas de tus alumnos.</p>
             </header>
@@ -173,7 +173,7 @@ export default async function TrainerMessagesPage(props: PageProps) {
                                             </p>
                                         )}
                                         <div className="mt-2 flex flex-wrap items-center gap-2">
-                                            <Link href={`/dashboard/messages?student=${checkin.student_id}`} className="inline-flex min-h-8 items-center rounded-lg border border-violet-500/25 bg-violet-500/10 px-2.5 text-[10px] font-bold text-violet-300">Conversar</Link>
+                                            <Link href={`/dashboard/messages?student=${checkin.student_id}`} className="inline-flex min-h-8 items-center rounded-lg border border-primary/25 bg-primary/10 px-2.5 text-[10px] font-bold text-brand-soft">Conversar</Link>
                                             <ReviewCheckinButton checkinId={checkin.id} />
                                         </div>
                                     </article>
@@ -212,7 +212,7 @@ export default async function TrainerMessagesPage(props: PageProps) {
 
             {orderedStudents.length === 0 ? (
                 <section className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-8 text-center">
-                    <MessageCircle className="mx-auto h-8 w-8 text-violet-400" />
+                    <MessageCircle className="mx-auto h-8 w-8 text-primary" />
                     <p className="mt-3 text-sm font-bold text-white">Todavía no hay alumnos</p>
                     <p className="mt-1 text-xs text-white/35">Cuando agregues uno, vas a poder conversar desde acá.</p>
                 </section>
@@ -240,10 +240,10 @@ export default async function TrainerMessagesPage(props: PageProps) {
                                 const conversation = conversationByStudent.get(student.id)
                                 const unread = conversation ? unreadByConversation.get(conversation.id) ?? 0 : 0
                                 return (
-                                    <Link key={student.id} href={`/dashboard/messages?student=${student.id}`} className={`flex min-w-0 items-center gap-2 rounded-xl border px-3 py-2.5 transition ${selected ? 'border-violet-500/30 bg-violet-500/10' : 'border-transparent hover:bg-white/[0.04]'}`}>
+                                    <Link key={student.id} href={`/dashboard/messages?student=${student.id}`} className={`flex min-w-0 items-center gap-2 rounded-xl border px-3 py-2.5 transition ${selected ? 'border-primary/30 bg-primary/10' : 'border-transparent hover:bg-white/[0.04]'}`}>
                                         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/[0.06] text-xs font-black text-white/65">{student.first_name.slice(0, 1)}{student.last_name.slice(0, 1)}</span>
                                         <span className="min-w-0 flex-1 truncate text-xs font-semibold text-white/75">{student.first_name} {student.last_name}</span>
-                                        {unread > 0 && <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-violet-500 px-1 text-[9px] font-black text-white">{unread}</span>}
+                                        {unread > 0 && <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-black text-primary-foreground">{unread}</span>}
                                     </Link>
                                 )
                             })}
@@ -261,7 +261,7 @@ export default async function TrainerMessagesPage(props: PageProps) {
                                 const own = message.sender_role === 'trainer'
                                 return (
                                     <article key={message.id} className={`flex min-w-0 ${own ? 'justify-end' : 'justify-start'}`}>
-                                        <div className={`min-w-0 max-w-[86%] rounded-2xl px-3.5 py-2.5 ${own ? 'rounded-br-md bg-violet-600 text-white' : 'rounded-bl-md border border-white/[0.08] bg-[#0d0d12] text-white/85'}`}>
+                                        <div className={`min-w-0 max-w-[86%] rounded-2xl px-3.5 py-2.5 ${own ? 'rounded-br-md bg-primary text-primary-foreground' : 'rounded-bl-md border border-border bg-card text-card-foreground'}`}>
                                             <p className="mb-1 text-[9px] font-bold uppercase tracking-wide opacity-60">{own ? 'Vos' : selectedStudent?.first_name} · {TOPIC_LABELS[message.topic] ?? 'Mensaje'}</p>
                                             <p className="break-words whitespace-pre-wrap text-sm leading-5">{message.body}</p>
                                             <p className="mt-1 text-right text-[9px] opacity-50">{formatMessageDate(message.created_at)}</p>
@@ -270,7 +270,7 @@ export default async function TrainerMessagesPage(props: PageProps) {
                                 )
                             }) : (
                                 <div className="flex min-h-44 flex-col items-center justify-center text-center md:min-h-64">
-                                    <MessageCircle className="h-8 w-8 text-violet-400" />
+                                    <MessageCircle className="h-8 w-8 text-primary" />
                                     <p className="mt-3 text-sm font-bold text-white">Iniciar conversación</p>
                                     <p className="mt-1 max-w-sm text-xs leading-5 text-white/35">Podés enviar una indicación o responder cuando el alumno consulte desde su entrenamiento.</p>
                                 </div>
@@ -278,7 +278,7 @@ export default async function TrainerMessagesPage(props: PageProps) {
                         </div>
 
                         {selectedStudent && (
-                            <div className="border-t border-white/[0.06] pt-3 [--background:#0d0d12] [--border:rgba(255,255,255,0.1)] [--foreground:white] [--muted-foreground:rgba(255,255,255,0.4)]">
+                            <div className="border-t border-white/[0.06] pt-3 [--background:#1a1a1a] [--border:rgba(255,255,255,0.1)] [--foreground:white] [--muted-foreground:rgba(255,255,255,0.4)]">
                                 <MessageComposer
                                     studentId={selectedStudent.id}
                                     placeholder={`Responderle a ${selectedStudent.first_name}…`}

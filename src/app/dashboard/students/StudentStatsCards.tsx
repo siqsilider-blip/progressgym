@@ -87,7 +87,7 @@ export default function StudentStatsCards({ stats }: { stats: StudentStats }) {
                                 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'
                                 : stats.status === 'inactive'
                                     ? 'bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
-                                    : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300'
+                                    : 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-brand-soft'
                             }`}
                     >
                         {formatStatus(stats.status)}

@@ -163,7 +163,7 @@ export default function ExercisesPage() {
     const videosReady = useMemo(() => items.filter((item) => Boolean(item.video_url)).length, [items])
     const videosMissing = items.length - videosReady
 
-    const inputCls = 'h-10 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500'
+    const inputCls = 'h-10 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary'
     const selectCls = 'h-10 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none'
 
     return (
@@ -176,7 +176,7 @@ export default function ExercisesPage() {
                     <button
                         type="button"
                         onClick={() => { setShowForm(true); setError(null) }}
-                        className="rounded-xl bg-indigo-600 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-indigo-500"
+                        className="rounded-xl bg-primary px-3.5 py-2 text-xs font-bold text-primary-foreground transition hover:bg-primary"
                     >
                         + Nuevo
                     </button>
@@ -189,7 +189,7 @@ export default function ExercisesPage() {
                 placeholder="Buscar ejercicio..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full rounded-xl border border-border bg-input px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-indigo-500 transition"
+                className="w-full rounded-xl border border-border bg-input px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary transition"
             />
 
             <div className="flex gap-2 overflow-x-auto pb-1" aria-label="Filtrar por demostración">
@@ -203,7 +203,7 @@ export default function ExercisesPage() {
                         type="button"
                         onClick={() => setVideoFilter(filter.value)}
                         className={`min-h-10 shrink-0 rounded-xl px-3 text-xs font-semibold transition ${videoFilter === filter.value
-                            ? 'bg-indigo-600 text-white'
+                            ? 'bg-primary text-primary-foreground'
                             : 'border border-border bg-secondary text-muted-foreground hover:bg-muted'
                             }`}
                     >
@@ -226,7 +226,7 @@ export default function ExercisesPage() {
                         return (
                             <div key={x.id} className="flex items-center justify-between gap-3 rounded-xl border border-white/[0.07] bg-white/[0.025] px-3 py-2.5 transition hover:bg-white/[0.04]">
                                 <div className="flex min-w-0 items-center gap-3">
-                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-500/15 text-xs font-bold text-indigo-400">
+                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-xs font-bold text-primary">
                                         {initials}
                                     </div>
                                     <div className="min-w-0">
@@ -246,7 +246,7 @@ export default function ExercisesPage() {
                                         type="button"
                                         onClick={() => openEdit(x)}
                                         aria-label={`${x.trainer_id === null ? 'Agregar demostración a' : 'Editar'} ${x.name}`}
-                                        className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-indigo-500/10 hover:text-indigo-400"
+                                        className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-primary/10 hover:text-primary"
                                     >
                                         {x.trainer_id === null
                                             ? <CirclePlay className="h-5 w-5" aria-hidden="true" />
@@ -284,7 +284,7 @@ export default function ExercisesPage() {
                     >
                         <div className="mb-4 flex items-center justify-between">
                             <div>
-                                <p className="text-xs font-medium text-indigo-400">
+                                <p className="text-xs font-medium text-primary">
                                     {editingExercise.trainer_id === null ? 'Ejercicio del catálogo' : 'Ejercicio propio'}
                                 </p>
                                 <h2 className="text-base font-bold text-card-foreground">
@@ -318,7 +318,7 @@ export default function ExercisesPage() {
                             <div className="space-y-1">
                                 <label className="text-xs font-medium text-muted-foreground">Indicaciones simples (opcional)</label>
                                 <textarea
-                                    className="min-h-20 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                                    className="min-h-20 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
                                     placeholder="Ej.: apoyá toda la espalda y empujá sin despegar los talones."
                                     value={editDescription}
                                     onChange={(e) => setEditDescription(e.target.value)}
@@ -350,7 +350,7 @@ export default function ExercisesPage() {
                                     placeholder="Pegá un enlace de YouTube"
                                     value={editVideoUrl}
                                     onChange={(e) => setEditVideoUrl(e.target.value)}
-                                    className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-indigo-500 transition"
+                                    className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary transition"
                                 />
                                 <p className="text-xs leading-5 text-muted-foreground">
                                     Recomendado: video corto de YouTube como “no listado”. El alumno lo verá sin salir de la rutina.
@@ -362,7 +362,7 @@ export default function ExercisesPage() {
                             <button
                                 type="submit"
                                 disabled={editSaving}
-                                className="h-11 w-full rounded-xl bg-indigo-600 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:opacity-50"
+                                className="h-11 w-full rounded-xl bg-primary text-sm font-semibold text-primary-foreground transition hover:bg-primary disabled:opacity-50"
                             >
                                 {editSaving
                                     ? 'Guardando...'
@@ -408,7 +408,7 @@ export default function ExercisesPage() {
                             />
 
                             <textarea
-                                className="min-h-20 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                                className="min-h-20 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
                                 placeholder="Indicaciones simples (opcional). Ej.: mantené la espalda apoyada."
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
@@ -439,7 +439,7 @@ export default function ExercisesPage() {
                                     placeholder="Pegá un enlace de YouTube"
                                     value={videoUrl}
                                     onChange={(e) => setVideoUrl(e.target.value)}
-                                    className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-indigo-500 transition"
+                                    className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary transition"
                                 />
                                 <p className="text-xs leading-5 text-muted-foreground">
                                     Recomendado: video corto de YouTube como “no listado”. El alumno lo verá sin salir de la rutina.
@@ -451,7 +451,7 @@ export default function ExercisesPage() {
                             <button
                                 type="submit"
                                 disabled={saving}
-                                className="h-11 w-full rounded-xl bg-indigo-600 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:opacity-50"
+                                className="h-11 w-full rounded-xl bg-primary text-sm font-semibold text-primary-foreground transition hover:bg-primary disabled:opacity-50"
                             >
                                 {saving ? 'Guardando...' : 'Agregar ejercicio'}
                             </button>

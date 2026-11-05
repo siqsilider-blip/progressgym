@@ -50,7 +50,17 @@ test('los recursos instalables son válidos', async ({ request }) => {
 
     const manifest = await manifestResponse.json()
     expect(manifest.name).toBe('Progrezzia')
-    expect(manifest.icons).toHaveLength(2)
+    expect(manifest.icons).toEqual(expect.arrayContaining([
+        expect.objectContaining({ src: '/icon-192.png', sizes: '192x192' }),
+        expect.objectContaining({ src: '/icon-512.png', sizes: '512x512' }),
+        expect.objectContaining({ src: '/icon-maskable-512.png', sizes: '512x512', purpose: 'maskable' }),
+    ]))
+
+    for (const icon of manifest.icons) {
+        const iconResponse = await request.get(icon.src)
+        expect(iconResponse.ok()).toBe(true)
+        expect(iconResponse.headers()['content-type']).toContain('image/png')
+    }
 
     const serviceWorkerResponse = await request.get('/sw.js')
     expect(serviceWorkerResponse.ok()).toBe(true)

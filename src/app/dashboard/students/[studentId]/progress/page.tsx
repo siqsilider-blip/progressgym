@@ -43,7 +43,7 @@ export default async function StudentProgressPage(props: PageProps) {
                 {/* Stats row */}
                 <div className="grid grid-cols-3 gap-2">
                     <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-2.5 text-center">
-                        <p className="text-xl font-black text-indigo-400">{totalPRs}</p>
+                        <p className="text-xl font-black text-primary">{totalPRs}</p>
                         <p className="text-[10px] text-muted-foreground">Ejercicios</p>
                     </div>
                     <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-2.5 text-center">

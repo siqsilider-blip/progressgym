@@ -45,14 +45,14 @@ function getRiskMeta(alert: TrainerAlert, isLight: boolean) {
             return {
                 label: 'Falta control',
                 badgeClassName: isLight
-                    ? 'bg-indigo-100 text-indigo-700'
-                    : 'bg-indigo-500/10 text-indigo-300',
+                    ? 'bg-primary/10 text-primary'
+                    : 'bg-primary/10 text-brand-soft',
                 icon: ClipboardX,
-                iconClassName: 'text-indigo-500',
-                iconBgClassName: 'bg-indigo-500/10',
+                iconClassName: 'text-brand-soft',
+                iconBgClassName: 'bg-primary/10',
                 cardClassName: isLight
-                    ? 'border-indigo-200 bg-indigo-50'
-                    : 'border-indigo-500/20 bg-indigo-500/5',
+                    ? 'border-primary bg-primary/10'
+                    : 'border-primary/20 bg-primary/5',
             }
         case 'progress_photo_due':
             return {
@@ -123,14 +123,14 @@ function getRiskMeta(alert: TrainerAlert, isLight: boolean) {
             return {
                 label: 'Sesión abierta',
                 badgeClassName: isLight
-                    ? 'bg-violet-100 text-violet-700'
-                    : 'bg-violet-500/10 text-violet-300',
+                    ? 'bg-primary/10 text-primary'
+                    : 'bg-primary/10 text-brand-soft',
                 icon: CircleStop,
-                iconClassName: 'text-violet-500',
-                iconBgClassName: 'bg-violet-500/10',
+                iconClassName: 'text-brand-soft',
+                iconBgClassName: 'bg-primary/10',
                 cardClassName: isLight
-                    ? 'border-violet-200 bg-violet-50'
-                    : 'border-violet-500/20 bg-violet-500/5',
+                    ? 'border-primary bg-primary/10'
+                    : 'border-primary/20 bg-primary/5',
             }
         case 'program_ending':
             return {

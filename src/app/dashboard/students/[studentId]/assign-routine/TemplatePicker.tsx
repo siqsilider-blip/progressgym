@@ -102,7 +102,7 @@ export default function TemplatePicker({
                         value={search}
                         onChange={(event) => setSearch(event.target.value)}
                         placeholder="Buscar template..."
-                        className="h-10 w-full rounded-xl border border-border bg-card pl-9 pr-3 text-sm text-foreground outline-none transition focus:border-indigo-500"
+                        className="h-10 w-full rounded-xl border border-border bg-card pl-9 pr-3 text-sm text-foreground outline-none transition focus:border-primary"
                     />
                 </label>
             )}
@@ -144,7 +144,7 @@ export default function TemplatePicker({
                                 {!match.isClassified && (
                                     <Link
                                         href={`/dashboard/routines/${template.id}`}
-                                        className="mt-1 inline-block text-[10px] font-medium text-indigo-400"
+                                        className="mt-1 inline-block text-[10px] font-medium text-primary"
                                     >
                                         Agregar criterios para mejorar la recomendación →
                                     </Link>
@@ -170,7 +170,7 @@ export default function TemplatePicker({
                                 type="button"
                                 disabled={isPending || isEmpty}
                                 onClick={() => assignTemplate(template)}
-                                className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-indigo-600 px-3 text-xs font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-45"
+                                className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-primary px-3 text-xs font-semibold text-primary-foreground transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-45"
                             >
                                 {isSelected ? (
                                     'Asignando...'

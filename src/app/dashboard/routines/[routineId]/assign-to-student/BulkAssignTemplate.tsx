@@ -105,14 +105,14 @@ export default function BulkAssignTemplate({ templateId, students, assignAction 
                     value={search}
                     onChange={(event) => setSearch(event.target.value)}
                     placeholder="Buscar alumno..."
-                    className="h-10 w-full rounded-xl border border-border bg-card px-3 text-sm text-foreground outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                    className="h-10 w-full rounded-xl border border-border bg-card px-3 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 />
                 <div className="flex items-center justify-between gap-3">
                     <button
                         type="button"
                         disabled={!isReady || isAssigning || filtered.length === 0}
                         onClick={toggleFiltered}
-                        className="text-xs font-medium text-indigo-500 disabled:opacity-50"
+                        className="text-xs font-medium text-brand-soft disabled:opacity-50"
                     >
                         {allFilteredSelected ? 'Quitar visibles' : 'Seleccionar visibles'}
                     </button>
@@ -120,7 +120,7 @@ export default function BulkAssignTemplate({ templateId, students, assignAction 
                         type="button"
                         disabled={!isReady || isAssigning || selectedStudents.length === 0}
                         onClick={assignSelected}
-                        className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         {isAssigning
                             ? `Asignando ${processed}/${selectedStudents.length}...`
@@ -135,7 +135,7 @@ export default function BulkAssignTemplate({ templateId, students, assignAction 
                 {!isAssigning && Object.keys(results).length > 0 && (
                     <div className="flex items-center justify-between gap-3 rounded-xl bg-muted px-3 py-2 text-xs">
                         <span className="font-medium text-foreground">{successCount} asignados · {failureCount} con error</span>
-                        <Link href="/dashboard/students" className="font-semibold text-indigo-500">Ver alumnos</Link>
+                        <Link href="/dashboard/students" className="font-semibold text-brand-soft">Ver alumnos</Link>
                     </div>
                 )}
             </div>
@@ -148,14 +148,14 @@ export default function BulkAssignTemplate({ templateId, students, assignAction 
                 return (
                     <label
                         key={student.id}
-                        className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition ${isSelected ? 'border-indigo-500 bg-indigo-500/5' : 'border-white/[0.07] bg-white/[0.025] hover:bg-white/[0.04]'}`}
+                        className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition ${isSelected ? 'border-primary bg-primary/5' : 'border-white/[0.07] bg-white/[0.025] hover:bg-white/[0.04]'}`}
                     >
                         <input
                             type="checkbox"
                             checked={isSelected}
                             disabled={!isReady || isAssigning || result?.ok}
                             onChange={() => toggleStudent(student.id)}
-                            className="h-5 w-5 shrink-0 accent-indigo-600"
+                            className="h-5 w-5 shrink-0 accent-primary"
                         />
                         <div className="min-w-0 flex-1">
                             <p className="truncate text-sm font-semibold text-card-foreground">{student.name}</p>

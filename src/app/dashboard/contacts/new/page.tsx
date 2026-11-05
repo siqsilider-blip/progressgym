@@ -14,8 +14,8 @@ function SubmitButton() {
             type="submit"
             disabled={pending}
             className={`inline-flex h-11 items-center justify-center rounded-xl px-6 text-sm font-medium text-white transition-all ${pending
-                    ? 'cursor-not-allowed bg-indigo-400'
-                    : 'bg-indigo-600 shadow-lg shadow-indigo-600/20 hover:bg-indigo-500'
+                    ? 'cursor-not-allowed bg-primary'
+                    : 'bg-primary shadow-lg shadow-primary/20 hover:bg-primary'
                 }`}
         >
             {pending ? 'Guardando...' : 'Crear contacto'}
@@ -49,7 +49,7 @@ export default function NewContactPage(
                             <input
                                 name="full_name"
                                 required
-                                className="h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-100"
+                                className="h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none transition focus:border-primary focus:ring-1 focus:ring-primary dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-100"
                                 placeholder="Ej: Juan Pérez"
                             />
                         </div>
@@ -60,7 +60,7 @@ export default function NewContactPage(
                             </label>
                             <input
                                 name="phone"
-                                className="h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-100"
+                                className="h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none transition focus:border-primary focus:ring-1 focus:ring-primary dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-100"
                                 placeholder="Ej: 11 2345 6789"
                             />
                         </div>
@@ -71,7 +71,7 @@ export default function NewContactPage(
                             </label>
                             <input
                                 name="objective"
-                                className="h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-100"
+                                className="h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none transition focus:border-primary focus:ring-1 focus:ring-primary dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-100"
                                 placeholder="Ej: Bajar de peso / ganar músculo"
                             />
                         </div>
@@ -84,7 +84,7 @@ export default function NewContactPage(
                                 <select
                                     name="status"
                                     defaultValue="new"
-                                    className="h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-100"
+                                    className="h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-primary focus:ring-1 focus:ring-primary dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-100"
                                 >
                                     <option value="new">Nuevo</option>
                                     <option value="contacted">Contactado</option>
@@ -102,7 +102,7 @@ export default function NewContactPage(
                                 <select
                                     name="temperature"
                                     defaultValue="warm"
-                                    className="h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-100"
+                                    className="h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-primary focus:ring-1 focus:ring-primary dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-100"
                                 >
                                     <option value="cold">Interés bajo</option>
                                     <option value="warm">Interés medio</option>
@@ -118,7 +118,7 @@ export default function NewContactPage(
                             <input
                                 type="date"
                                 name="next_follow_up_at"
-                                className="h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-100"
+                                className="h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-primary focus:ring-1 focus:ring-primary dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-100"
                             />
                         </div>
 
@@ -129,7 +129,7 @@ export default function NewContactPage(
                             <textarea
                                 name="notes"
                                 rows={3}
-                                className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-100"
+                                className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition focus:border-primary focus:ring-1 focus:ring-primary dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-100"
                                 placeholder="Ej: Viene de Instagram, quiere entrenar 3 veces por semana..."
                             />
                         </div>

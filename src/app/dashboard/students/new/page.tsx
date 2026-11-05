@@ -14,8 +14,8 @@ function SubmitButton() {
             type="submit"
             disabled={pending}
             className={`inline-flex h-11 items-center justify-center rounded-xl px-6 text-sm font-medium text-white transition-all ${pending
-                    ? 'cursor-not-allowed bg-indigo-400'
-                    : 'bg-indigo-600 shadow-lg shadow-indigo-600/20 hover:bg-indigo-500'
+                    ? 'cursor-not-allowed bg-primary'
+                    : 'bg-primary shadow-lg shadow-primary/20 hover:bg-primary'
                 }`}
         >
             {pending ? 'Creando...' : 'Crear alumno'}
@@ -50,7 +50,7 @@ export default function NewStudentPage(
                                 <input
                                     name="first_name"
                                     required
-                                    className="h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+                                    className="h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none transition focus:border-primary focus:ring-1 focus:ring-primary dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-100 dark:placeholder:text-zinc-500"
                                     placeholder="Ej: Juan"
                                 />
                             </div>
@@ -62,7 +62,7 @@ export default function NewStudentPage(
                                 <input
                                     name="last_name"
                                     required
-                                    className="h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+                                    className="h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none transition focus:border-primary focus:ring-1 focus:ring-primary dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-100 dark:placeholder:text-zinc-500"
                                     placeholder="Ej: Pérez"
                                 />
                             </div>
@@ -75,7 +75,7 @@ export default function NewStudentPage(
                             <input
                                 name="email"
                                 type="email"
-                                className="h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+                                className="h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none transition focus:border-primary focus:ring-1 focus:ring-primary dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-100 dark:placeholder:text-zinc-500"
                                 placeholder="ejemplo@mail.com"
                             />
                         </div>
@@ -89,7 +89,7 @@ export default function NewStudentPage(
                                 type="tel"
                                 inputMode="tel"
                                 autoComplete="tel"
-                                className="h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+                                className="h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none transition focus:border-primary focus:ring-1 focus:ring-primary dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-100 dark:placeholder:text-zinc-500"
                                 placeholder="Ej: +54 9 11 2345-6789"
                             />
                             <p className="text-xs text-zinc-500">
@@ -104,7 +104,7 @@ export default function NewStudentPage(
                             <select
                                 name="active_plan"
                                 defaultValue="active"
-                                className="h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-100"
+                                className="h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-primary focus:ring-1 focus:ring-primary dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-100"
                             >
                                 <option value="active">Activo</option>
                                 <option value="inactive">Inactivo</option>

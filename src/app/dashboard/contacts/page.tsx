@@ -17,7 +17,7 @@ export default async function ContactsPage() {
                 action={
                     <Link
                         href="/dashboard/contacts/new"
-                        className="rounded-xl bg-indigo-600 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-indigo-500"
+                        className="rounded-xl bg-primary px-3.5 py-2 text-xs font-bold text-primary-foreground transition hover:bg-primary"
                     >
                         + Nuevo
                     </Link>

@@ -35,9 +35,9 @@ export default function WeeklySummaryCard({
             value: totalPRs,
             helper: 'Detectados en total',
             icon: Trophy,
-            iconClassName: 'text-indigo-500',
-            iconBgClassName: 'bg-indigo-500/10',
-            valueClassName: 'text-indigo-500',
+            iconClassName: 'text-brand-soft',
+            iconBgClassName: 'bg-primary/10',
+            valueClassName: 'text-brand-soft',
         },
         {
             label: 'Actividad',

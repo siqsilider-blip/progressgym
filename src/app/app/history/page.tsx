@@ -68,14 +68,14 @@ export default async function AppHistoryPage() {
                     <StudentPageHeader
                         title="Historial"
                         subtitle="Sesiones completadas"
-                        action={sessions.length > 0 ? <span className="text-sm font-bold text-indigo-400">{sessions.length} sesiones</span> : null}
+                        action={sessions.length > 0 ? <span className="text-sm font-bold text-primary">{sessions.length} sesiones</span> : null}
                     />
                 </div>
 
                 {sessions.length > 0 && (
                     <div className="mb-4 grid grid-cols-3 gap-2">
                         <div className="rounded-xl border border-border bg-card p-2.5 text-center">
-                            <p className="text-base font-black text-indigo-400">{sessions.length}</p>
+                            <p className="text-base font-black text-primary">{sessions.length}</p>
                             <p className="text-[10px] text-muted-foreground">Sesiones</p>
                         </div>
                         <div className="rounded-xl border border-border bg-card p-2.5 text-center">
@@ -114,7 +114,7 @@ export default async function AppHistoryPage() {
                                                             ⏱ {formatDuration(session.durationSeconds)}
                                                         </span>
                                                     )}
-                                                    <span className="rounded-lg bg-indigo-500/10 px-2 py-1 text-[10px] font-semibold text-indigo-500">
+                                                    <span className="rounded-lg bg-primary/10 px-2 py-1 text-[10px] font-semibold text-brand-soft">
                                                         {session.totalSets} series
                                                     </span>
                                                 </div>
@@ -152,7 +152,7 @@ export default async function AppHistoryPage() {
                                             {session.routineDayId && session.routineWeekId && (
                                                 <Link
                                                     href={`/app/train?week=${session.routineWeekId}&day=${session.routineDayId}`}
-                                                    className="mt-3 inline-flex min-h-10 items-center rounded-xl border border-indigo-500/25 bg-indigo-500/10 px-3 text-xs font-bold text-indigo-400"
+                                                    className="mt-3 inline-flex min-h-10 items-center rounded-xl border border-primary/25 bg-primary/10 px-3 text-xs font-bold text-primary"
                                                 >
                                                     Revisar / editar sesión
                                                 </Link>

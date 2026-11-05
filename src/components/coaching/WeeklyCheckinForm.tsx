@@ -253,7 +253,7 @@ export default function WeeklyCheckinForm({
                     rows={3}
                     maxLength={2000}
                     placeholder="Opcional"
-                    className="mt-3 w-full resize-none rounded-xl border border-border bg-background px-3 py-3 text-sm text-foreground outline-none focus:border-indigo-500"
+                    className="mt-3 w-full resize-none rounded-xl border border-border bg-background px-3 py-3 text-sm text-foreground outline-none focus:border-primary"
                 />
             </section>
 
@@ -275,7 +275,7 @@ export default function WeeklyCheckinForm({
                         <p className="text-sm font-bold text-foreground">Foto de progreso (opcional)</p>
                         <p className="mt-1 text-[11px] leading-4 text-muted-foreground">Queda privada entre vos y tu entrenador. No hace falta subirla todas las semanas: lo ideal es cada 4 semanas, con luz, distancia y postura parecidas.</p>
                     </div>
-                    <Camera className="h-5 w-5 shrink-0 text-indigo-500" />
+                    <Camera className="h-5 w-5 shrink-0 text-brand-soft" />
                 </div>
 
                 <p className="mt-3 text-[11px] font-semibold text-foreground">Podés cargar una, dos o las tres posiciones. Las guardadas quedan visibles; tocá una para reemplazarla.</p>
@@ -303,7 +303,7 @@ export default function WeeklyCheckinForm({
                                         <button type="button" onClick={() => removePhoto(value)} aria-label={`Quitar foto de ${label}`} className="absolute right-1.5 top-8 flex h-7 w-7 items-center justify-center rounded-full bg-black/75 text-white">
                                             <X className="h-4 w-4" />
                                         </button>
-                                        <p className="px-1 py-1.5 text-center text-[9px] font-semibold text-indigo-500">Tocá para cambiar</p>
+                                        <p className="px-1 py-1.5 text-center text-[9px] font-semibold text-brand-soft">Tocá para cambiar</p>
                                     </>
                                 ) : saved ? (
                                     <>
@@ -325,7 +325,7 @@ export default function WeeklyCheckinForm({
                                         </p>
                                     </>
                                 ) : (
-                                    <label className="flex aspect-[3/4] cursor-pointer flex-col items-center justify-center gap-2 border-t border-dashed border-indigo-500/25 bg-indigo-500/[0.04] px-1 text-center text-[10px] font-bold text-indigo-500">
+                                    <label className="flex aspect-[3/4] cursor-pointer flex-col items-center justify-center gap-2 border-t border-dashed border-primary/25 bg-primary/[0.04] px-1 text-center text-[10px] font-bold text-brand-soft">
                                         <Camera className="h-5 w-5" />
                                         Agregar
                                         <input
@@ -347,7 +347,7 @@ export default function WeeklyCheckinForm({
                 {selectedPhotoCount > 0 && (
                     <div className="mt-3 space-y-3">
                         <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-border bg-background p-3">
-                            <input type="checkbox" checked={marketingConsent} onChange={(event) => setMarketingConsent(event.target.checked)} className="mt-0.5 h-4 w-4 accent-indigo-600" />
+                            <input type="checkbox" checked={marketingConsent} onChange={(event) => setMarketingConsent(event.target.checked)} className="mt-0.5 h-4 w-4 accent-primary" />
                             <span className="text-[11px] leading-4 text-muted-foreground">
                                 Autorizo voluntariamente a <strong className="text-foreground">{trainerName}</strong> a usar esta foto, junto con otras fotos autorizadas, para mostrar mi progreso en redes sociales. Puedo retirar el permiso cuando quiera.
                             </span>
@@ -365,7 +365,7 @@ export default function WeeklyCheckinForm({
                 </div>
             )}
 
-            <button type="button" onClick={submit} disabled={pending} className="min-h-12 w-full rounded-xl bg-indigo-600 px-4 text-sm font-black text-white transition active:scale-[0.99] disabled:opacity-50">
+            <button type="button" onClick={submit} disabled={pending} className="min-h-12 w-full rounded-xl bg-primary px-4 text-sm font-black text-primary-foreground transition active:scale-[0.99] disabled:opacity-50">
                 {pending ? (selectedPhotoCount > 0 ? `Guardando y subiendo ${selectedPhotoCount === 1 ? 'foto' : 'fotos'}…` : 'Guardando…') : initialValue ? 'Actualizar control' : 'Enviar control semanal'}
             </button>
             <Link href="/app" className="block py-2 text-center text-xs font-semibold text-muted-foreground">Volver al inicio</Link>
@@ -418,7 +418,7 @@ function ScoreQuestion({
                 {labels.map((text, index) => {
                     const score = index + 1
                     return (
-                        <button key={text} type="button" onClick={() => onChange(score)} aria-label={text} className={`min-h-11 rounded-xl border text-sm font-black ${value === score ? 'border-indigo-500 bg-indigo-500/15 text-indigo-500' : 'border-border bg-background text-muted-foreground'}`}>
+                        <button key={text} type="button" onClick={() => onChange(score)} aria-label={text} className={`min-h-11 rounded-xl border text-sm font-black ${value === score ? 'border-primary bg-primary/15 text-brand-soft' : 'border-border bg-background text-muted-foreground'}`}>
                             {score}
                         </button>
                     )

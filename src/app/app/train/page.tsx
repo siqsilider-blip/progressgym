@@ -402,7 +402,7 @@ export default async function AppTrainPage(props: PageProps) {
                                     href={`/app/train?${selectedMonth ? `month=${selectedMonth.id}&` : ''}week=${selectedWeek?.id}&day=${day.id}`}
                                     prefetch={true}
                                     className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition ${isActive
-                                            ? 'bg-indigo-600 text-white'
+                                            ? 'bg-primary text-primary-foreground'
                                             : 'border border-border bg-secondary text-secondary-foreground hover:bg-muted'
                                         }`}
                                 >

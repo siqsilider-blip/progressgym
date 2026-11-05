@@ -14,7 +14,7 @@ export type NotificationRow = {
 
 function notificationVisual(type: string, title: string) {
     if (type === 'coaching_message') {
-        return { Icon: MessageCircle, color: 'text-violet-400', background: 'bg-violet-500/10' }
+        return { Icon: MessageCircle, color: 'text-primary', background: 'bg-primary/10' }
     }
     if (type === 'weekly_checkin') {
         const urgent = title.toLowerCase().includes('atención')
@@ -29,9 +29,9 @@ function notificationVisual(type: string, title: string) {
             : { Icon: Activity, color: 'text-sky-400', background: 'bg-sky-500/10' }
     }
     if (type === 'student_onboarding') {
-        return { Icon: ClipboardCheck, color: 'text-indigo-400', background: 'bg-indigo-500/10' }
+        return { Icon: ClipboardCheck, color: 'text-primary', background: 'bg-primary/10' }
     }
-    return { Icon: Bell, color: 'text-violet-400', background: 'bg-violet-500/10' }
+    return { Icon: Bell, color: 'text-primary', background: 'bg-primary/10' }
 }
 
 function formatNotificationDate(value: string) {
@@ -84,12 +84,12 @@ function NotificationList({ items }: { items: NotificationRow[] }) {
                                         {item.body}
                                     </span>
                                 )}
-                                <span className="mt-1.5 flex items-center gap-1 text-[10px] font-bold text-violet-400">
+                                <span className="mt-1.5 flex items-center gap-1 text-[10px] font-bold text-primary">
                                     Ver detalle <ChevronRight className="h-3 w-3" />
                                 </span>
                             </span>
                             {!item.read_at && (
-                                <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-violet-500" aria-label="Sin leer" />
+                                <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-primary" aria-label="Sin leer" />
                             )}
                         </Link>
                     </div>
@@ -106,7 +106,7 @@ export default function NotificationCenter({ notifications }: { notifications: N
     if (!notifications.length) {
         return (
             <div className="rounded-2xl border border-dashed border-border bg-card/60 px-6 py-12 text-center">
-                <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-500/10 text-violet-400">
+                <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                     <Bell className="h-5 w-5" />
                 </span>
                 <h2 className="mt-3 text-sm font-black text-foreground">Todo al día</h2>
@@ -123,7 +123,7 @@ export default function NotificationCenter({ notifications }: { notifications: N
                 <section>
                     <div className="mb-2 flex items-center justify-between gap-3 px-1">
                         <div>
-                            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-violet-400">Nuevos</p>
+                            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-primary">Nuevos</p>
                             <p className="mt-0.5 text-xs text-muted-foreground">{unread.length} pendiente{unread.length === 1 ? '' : 's'}</p>
                         </div>
                         <form action={markAllInternalNotificationsRead}>

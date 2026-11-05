@@ -58,7 +58,7 @@ export default async function WorkoutsPage() {
                             </div>
                             <div className="flex shrink-0 items-center gap-2 text-right">
                                 <div>
-                                    <p className="text-xs font-semibold text-indigo-400">
+                                    <p className="text-xs font-semibold text-primary">
                                         {formatWeight(item.weight, weightUnit)}
                                     </p>
                                     <p className="text-[10px] text-muted-foreground">

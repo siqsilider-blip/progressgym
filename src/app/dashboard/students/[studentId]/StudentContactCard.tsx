@@ -40,7 +40,7 @@ export default function StudentContactCard({
         <section className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-3">
             <div className="flex items-start justify-between gap-3">
                 <div>
-                    <p className="text-xs font-bold uppercase tracking-widest text-indigo-400">
+                    <p className="text-xs font-bold uppercase tracking-widest text-primary">
                         Contacto
                     </p>
                     <h2 className="mt-1 text-base font-semibold text-foreground">WhatsApp del alumno</h2>
@@ -71,7 +71,7 @@ export default function StudentContactCard({
                         autoComplete="tel"
                         defaultValue={phone ?? ''}
                         placeholder="Ej: +54 9 11 2345-6789"
-                        className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                        className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
                     />
                     {error && <p className="text-xs text-red-400">{error}</p>}
                     <div className="flex justify-end gap-2">
@@ -88,7 +88,7 @@ export default function StudentContactCard({
                         <button
                             type="submit"
                             disabled={isPending}
-                            className="h-9 rounded-xl bg-indigo-600 px-4 text-xs font-semibold text-white disabled:opacity-50"
+                            className="h-9 rounded-xl bg-primary px-4 text-xs font-semibold text-primary-foreground disabled:opacity-50"
                         >
                             {isPending ? 'Guardando...' : 'Guardar teléfono'}
                         </button>

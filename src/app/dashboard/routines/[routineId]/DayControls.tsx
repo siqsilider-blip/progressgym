@@ -140,9 +140,9 @@ export default function DayControls({
                                 setIsEditing(false)
                             }
                         }}
-                        className="min-w-0 flex-1 rounded-xl border border-indigo-500 bg-card px-3 py-2 text-sm font-semibold text-foreground outline-none"
+                        className="min-w-0 flex-1 rounded-xl border border-primary bg-card px-3 py-2 text-sm font-semibold text-foreground outline-none"
                     />
-                    <button disabled={isPending} className="rounded-xl bg-indigo-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">
+                    <button disabled={isPending} className="rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50">
                         {isPending ? 'Guardando...' : 'Guardar'}
                     </button>
                     <button
@@ -205,13 +205,13 @@ export default function DayControls({
             </button>
 
             {confirmCopy ? (
-                <div className="flex items-center gap-1 rounded-lg border border-indigo-500/30 bg-indigo-500/5 p-1">
+                <div className="flex items-center gap-1 rounded-lg border border-primary/30 bg-primary/5 p-1">
                     <span className="px-1 text-[10px] text-muted-foreground">¿Copiar completo?</span>
                     <button
                         type="button"
                         disabled={isPending}
                         onClick={copyDay}
-                        className="rounded-md bg-indigo-600 px-2 py-1 text-[10px] font-semibold text-white disabled:opacity-50"
+                        className="rounded-md bg-primary px-2 py-1 text-[10px] font-semibold text-primary-foreground disabled:opacity-50"
                     >
                         {isPending ? 'Copiando...' : 'Sí'}
                     </button>

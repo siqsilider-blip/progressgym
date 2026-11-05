@@ -62,7 +62,7 @@ const STATUS_LABELS: Record<string, string> = {
 const STATUS_STYLES: Record<string, string> = {
     new: 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300',
     contacted: 'bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400',
-    interested: 'bg-purple-50 text-purple-600 dark:bg-purple-500/15 dark:text-purple-400',
+    interested: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-primary',
     negotiation: 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
     inactive: 'bg-orange-50 text-orange-600 dark:bg-orange-500/15 dark:text-orange-400',
     lost: 'bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-400',
@@ -82,9 +82,9 @@ const TEMP_STYLES: Record<string, string> = {
 }
 
 const INPUT_CLS =
-    'h-11 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 placeholder:text-muted-foreground'
+    'h-11 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-muted-foreground'
 const SELECT_CLS =
-    'h-11 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500'
+    'h-11 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary'
 
 function EditModal({ contact, onClose }: { contact: Contact; onClose: () => void }) {
     const router = useRouter()
@@ -180,7 +180,7 @@ function EditModal({ contact, onClose }: { contact: Contact; onClose: () => void
                                 name="notes"
                                 rows={3}
                                 defaultValue={contact.notes ?? ''}
-                                className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 placeholder:text-muted-foreground"
+                                className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-muted-foreground"
                                 placeholder="Notas sobre el contacto..."
                             />
                         </div>
@@ -198,7 +198,7 @@ function EditModal({ contact, onClose }: { contact: Contact; onClose: () => void
                             <button
                                 type="submit"
                                 disabled={isPending}
-                                className="h-11 flex-1 rounded-xl bg-indigo-600 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:opacity-60"
+                                className="h-11 flex-1 rounded-xl bg-primary text-sm font-semibold text-primary-foreground transition hover:bg-primary disabled:opacity-60"
                             >
                                 {isPending ? 'Guardando...' : 'Guardar'}
                             </button>

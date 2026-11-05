@@ -147,7 +147,7 @@ export default async function TrainerAlertsCard({
 
                                     <Link
                                         href={`/dashboard/students/${alert.studentId}`}
-                                        className="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-indigo-500 transition hover:text-indigo-400"
+                                        className="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-brand-soft transition hover:text-primary"
                                     >
                                         Ver alumno
                                         <ArrowRight className="h-3.5 w-3.5" />

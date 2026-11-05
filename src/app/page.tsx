@@ -4,7 +4,7 @@ import Link from 'next/link'
 
 export default function LandingPage() {
   return (
-    <main className="min-h-screen bg-[#07070a] text-white overflow-x-hidden">
+    <main className="min-h-screen bg-[#111111] text-white overflow-x-hidden">
       <style>{`
         @keyframes breathe {
           0%, 100% { opacity: 0.18; transform: scale(1); }
@@ -27,8 +27,8 @@ export default function LandingPage() {
           to { opacity: 1; transform: translateY(0); }
         }
         @keyframes pulse-dot {
-          0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(167,139,250,0.5); }
-          50% { opacity: 0.6; box-shadow: 0 0 0 4px rgba(167,139,250,0); }
+          0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(201,135,150,0.5); }
+          50% { opacity: 0.6; box-shadow: 0 0 0 4px rgba(201,135,150,0); }
         }
         @keyframes slideIn {
           from { opacity: 0; transform: translateX(20px); }
@@ -46,10 +46,10 @@ export default function LandingPage() {
       `}</style>
 
       {/* ── Navbar ── */}
-      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-5 py-4 border-b border-white/[0.05] bg-[#07070a]/90 backdrop-blur-xl">
+      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-5 py-4 border-b border-white/[0.05] bg-[#111111]/90 backdrop-blur-xl">
         <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)', boxShadow: '0 0 20px rgba(124,58,237,0.5)' }}>
-            <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <div className="h-8 w-8 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #c98796, #e9a0ad)', boxShadow: '0 0 20px rgba(201,135,150,0.5)' }}>
+            <svg className="h-4 w-4 text-[#111111]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
             </svg>
           </div>
@@ -59,8 +59,8 @@ export default function LandingPage() {
           <Link href="/login" className="text-xs font-medium text-white/40 hover:text-white/80 transition-colors px-3 py-2">
             Entrar
           </Link>
-          <Link href="/signup" className="text-xs font-bold px-4 py-2.5 rounded-xl text-white transition-all hover:scale-[1.03]"
-            style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)', boxShadow: '0 4px 16px rgba(124,58,237,0.4)' }}>
+          <Link href="/signup" className="text-xs font-bold px-4 py-2.5 rounded-xl text-[#111111] transition-all hover:scale-[1.03]"
+            style={{ background: 'linear-gradient(135deg, #c98796, #e9a0ad)', boxShadow: '0 4px 16px rgba(201,135,150,0.4)' }}>
             Crear cuenta →
           </Link>
         </div>
@@ -71,8 +71,8 @@ export default function LandingPage() {
 
         {/* Glows animados */}
         <div className="absolute inset-0 pointer-events-none">
-          <div className="glow-breathe absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[400px] rounded-full bg-violet-700/20 blur-[100px]" />
-          <div className="glow-breathe-2 absolute top-10 right-0 w-[250px] h-[250px] rounded-full bg-indigo-600/15 blur-[80px]" />
+          <div className="glow-breathe absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[400px] rounded-full bg-brand/20 blur-[100px]" />
+          <div className="glow-breathe-2 absolute top-10 right-0 w-[250px] h-[250px] rounded-full bg-brand/15 blur-[80px]" />
           <svg className="absolute inset-0 w-full h-full opacity-[0.025]">
             <defs>
               <pattern id="g" width="45" height="45" patternUnits="userSpaceOnUse">
@@ -85,8 +85,8 @@ export default function LandingPage() {
 
         {/* Badge */}
         <div className="anim-fadein relative pt-4 mb-3 flex justify-center">
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-violet-500/20 bg-violet-500/8 px-3 py-1 text-[10px] font-semibold text-violet-300">
-            <span className="h-1.5 w-1.5 rounded-full bg-violet-400" style={{ animation: 'pulse-dot 2s infinite' }} />
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-brand/20 bg-brand/8 px-3 py-1 text-[10px] font-semibold text-brand-on-dark">
+            <span className="h-1.5 w-1.5 rounded-full bg-brand" style={{ animation: 'pulse-dot 2s infinite' }} />
             Para entrenadores personales
           </div>
         </div>
@@ -96,7 +96,7 @@ export default function LandingPage() {
           <h1 className="text-[2.1rem] font-black tracking-[-0.03em] leading-[1.08]">
             El sistema para
             <br />
-            <span style={{ background: 'linear-gradient(135deg, #a78bfa, #818cf8, #67e8f9)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            <span style={{ background: 'linear-gradient(135deg, #e9a0ad, #c98796, #d9d9d9)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
               entrenadores
             </span>
             <br />
@@ -110,8 +110,8 @@ export default function LandingPage() {
         {/* CTAs compactos */}
         <div className="anim-fadein-3 relative flex flex-col gap-2 max-w-[260px] mx-auto mb-5">
           <Link href="/signup"
-            className="w-full rounded-2xl py-3.5 text-sm font-black text-white text-center transition-all hover:scale-[1.02] active:scale-[0.98]"
-            style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)', boxShadow: '0 8px 28px rgba(124,58,237,0.4)' }}>
+            className="w-full rounded-2xl py-3.5 text-sm font-black text-[#111111] text-center transition-all hover:scale-[1.02] active:scale-[0.98]"
+            style={{ background: 'linear-gradient(135deg, #c98796, #e9a0ad)', boxShadow: '0 8px 28px rgba(201,135,150,0.4)' }}>
             Crear mi cuenta →
           </Link>
           <Link href="/login"
@@ -139,7 +139,7 @@ export default function LandingPage() {
         <div className="relative w-full max-w-[320px] mx-auto">
 
           {/* Glow principal detrás del phone */}
-          <div className="absolute inset-x-4 top-6 bottom-0 blur-3xl rounded-3xl" style={{ background: 'radial-gradient(ellipse, rgba(124,58,237,0.3) 0%, transparent 70%)' }} />
+          <div className="absolute inset-x-4 top-6 bottom-0 blur-3xl rounded-3xl" style={{ background: 'radial-gradient(ellipse, rgba(201,135,150,0.3) 0%, transparent 70%)' }} />
 
           {/* Phone frame */}
           <div className="relative rounded-[2.2rem] border overflow-hidden" style={{ borderColor: 'rgba(255,255,255,0.1)', background: '#0f0f15', boxShadow: '0 32px 80px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.05)' }}>
@@ -165,10 +165,10 @@ export default function LandingPage() {
             {/* App header */}
             <div className="px-4 pt-1 pb-3 flex items-center justify-between">
               <div>
-                <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-violet-400">Progrezzia</p>
+                <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-brand-on-dark">Progrezzia</p>
                 <h2 className="text-[15px] font-black text-white mt-0.5">Dashboard</h2>
               </div>
-              <div className="h-8 w-8 rounded-full flex items-center justify-center text-[11px] font-black text-violet-300 border" style={{ background: 'rgba(124,58,237,0.2)', borderColor: 'rgba(124,58,237,0.3)' }}>JP</div>
+              <div className="h-8 w-8 rounded-full flex items-center justify-center text-[11px] font-black text-brand-on-dark border" style={{ background: 'rgba(201,135,150,0.2)', borderColor: 'rgba(201,135,150,0.3)' }}>JP</div>
             </div>
 
             {/* Stats */}
@@ -196,7 +196,7 @@ export default function LandingPage() {
                 ].map((s) => (
                   <div key={s.name} className="flex items-center gap-2.5 rounded-xl px-3 py-2.5" style={{ background: 'rgba(255,255,255,0.04)', border: '0.5px solid rgba(255,255,255,0.06)' }}>
                     <div className="relative shrink-0">
-                      <div className="h-7 w-7 rounded-full flex items-center justify-center text-[9px] font-black text-indigo-300" style={{ background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.3)' }}>
+                      <div className="h-7 w-7 rounded-full flex items-center justify-center text-[9px] font-black text-brand-on-dark" style={{ background: 'rgba(201,135,150,0.2)', border: '1px solid rgba(201,135,150,0.3)' }}>
                         {s.name.split(' ').map(n => n[0]).join('')}
                       </div>
                       <div className={`absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full ${s.dot} border-2`} style={{ borderColor: '#0f0f15' }} />
@@ -215,10 +215,10 @@ export default function LandingPage() {
             </div>
 
             {/* Sesión activa */}
-            <div className="mx-4 mt-2 mb-3 rounded-2xl p-3 border" style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.18), rgba(79,70,229,0.12))', borderColor: 'rgba(124,58,237,0.25)' }}>
+            <div className="mx-4 mt-2 mb-3 rounded-2xl p-3 border" style={{ background: 'linear-gradient(135deg, rgba(201,135,150,0.18), rgba(233,160,173,0.12))', borderColor: 'rgba(201,135,150,0.25)' }}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[8px] font-bold uppercase tracking-[0.15em] text-violet-400">Sesión en curso</p>
+                  <p className="text-[8px] font-bold uppercase tracking-[0.15em] text-brand-on-dark">Sesión en curso</p>
                   <p className="text-[13px] font-black text-white mt-0.5">Lucas M.</p>
                   <p className="text-[9px] text-white/35">Press banca · Serie 3/4</p>
                 </div>
@@ -238,7 +238,7 @@ export default function LandingPage() {
                 { icon: '📋', l: 'Rutinas', a: false },
                 { icon: '📈', l: 'Stats', a: false },
               ].map((n) => (
-                <div key={n.l} className={`flex flex-col items-center gap-0.5 ${n.a ? 'text-violet-400' : 'text-white/20'}`}>
+                <div key={n.l} className={`flex flex-col items-center gap-0.5 ${n.a ? 'text-brand-on-dark' : 'text-white/20'}`}>
                   <span className="text-sm leading-none">{n.icon}</span>
                   <span className="text-[8px] font-medium">{n.l}</span>
                 </div>
@@ -279,7 +279,7 @@ export default function LandingPage() {
           {/* Card volumen */}
           <div className="float-card-2 absolute -left-2 bottom-20 w-30 rounded-2xl p-3 border" style={{ background: 'rgba(15,15,21,0.95)', backdropFilter: 'blur(20px)', borderColor: 'rgba(255,255,255,0.1)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', width: '7rem' }}>
             <p className="text-[8px] font-bold text-white/25 uppercase tracking-wide mb-1">Tonelaje</p>
-            <p className="text-lg font-black text-indigo-400">2.4 t</p>
+            <p className="text-lg font-black text-brand-on-dark">2.4 t</p>
             <p className="text-[8px] text-white/30 mt-0.5">esta semana</p>
           </div>
         </div>
@@ -314,12 +314,12 @@ export default function LandingPage() {
       {/* ── CTA final ── */}
       <section className="px-5 pb-16">
         <div className="max-w-sm mx-auto">
-          <div className="relative overflow-hidden rounded-3xl p-7 text-center border" style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.22), rgba(79,70,229,0.16))', borderColor: 'rgba(124,58,237,0.2)' }}>
-            <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(circle at 20% 80%, rgba(167,139,250,0.15) 0%, transparent 60%)' }} />
+          <div className="relative overflow-hidden rounded-3xl p-7 text-center border" style={{ background: 'linear-gradient(135deg, rgba(201,135,150,0.22), rgba(233,160,173,0.16))', borderColor: 'rgba(201,135,150,0.2)' }}>
+            <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(circle at 20% 80%, rgba(201,135,150,0.15) 0%, transparent 60%)' }} />
             <h2 className="relative text-2xl font-black tracking-tight mb-1">Empezá hoy.</h2>
             <p className="relative text-sm mb-5" style={{ color: 'rgba(255,255,255,0.45)' }}>Organizá alumnos, rutinas y progreso desde un solo lugar.</p>
             <Link href="/signup"
-              className="relative inline-block w-full rounded-2xl bg-white py-4 text-sm font-black text-violet-700 hover:bg-white/95 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              className="relative inline-block w-full rounded-2xl bg-white py-4 text-sm font-black text-primary hover:bg-white/95 transition-all hover:scale-[1.02] active:scale-[0.98]"
               style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.3)' }}>
               Crear cuenta →
             </Link>
@@ -331,8 +331,8 @@ export default function LandingPage() {
       {/* ── Footer ── */}
       <footer className="px-5 pb-8 text-center border-t" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
         <div className="flex items-center justify-center gap-2 py-5">
-          <div className="h-6 w-6 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)' }}>
-            <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <div className="h-6 w-6 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #c98796, #e9a0ad)' }}>
+            <svg className="h-3 w-3 text-[#111111]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
             </svg>
           </div>

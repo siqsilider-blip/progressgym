@@ -43,7 +43,7 @@ export default function TemplateCriteriaFields({ defaultValue }: Props) {
                     id="target_session_minutes"
                     name="target_session_minutes"
                     defaultValue={defaultValue?.target_session_minutes?.toString() ?? ''}
-                    className="h-11 w-full rounded-xl border border-border bg-input px-3 text-sm text-foreground outline-none focus:border-indigo-500"
+                    className="h-11 w-full rounded-xl border border-border bg-input px-3 text-sm text-foreground outline-none focus:border-primary"
                 >
                     <option value="">Sin especificar</option>
                     {[30, 45, 60, 75, 90].map((minutes) => (
@@ -69,14 +69,14 @@ function CheckboxGrid({
             {Object.entries(options).map(([value, label]) => (
                 <label
                     key={value}
-                    className="flex min-h-11 cursor-pointer items-center gap-2.5 rounded-xl border border-border bg-background px-3 py-2.5 text-xs font-medium text-foreground transition has-[:checked]:border-indigo-500/60 has-[:checked]:bg-indigo-500/10 has-[:checked]:text-indigo-300"
+                    className="flex min-h-11 cursor-pointer items-center gap-2.5 rounded-xl border border-border bg-background px-3 py-2.5 text-xs font-medium text-foreground transition has-[:checked]:border-primary/60 has-[:checked]:bg-primary/10 has-[:checked]:text-brand-soft"
                 >
                     <input
                         type="checkbox"
                         name={name}
                         value={value}
                         defaultChecked={selected.includes(value)}
-                        className="h-4 w-4 shrink-0 accent-indigo-600"
+                        className="h-4 w-4 shrink-0 accent-primary"
                     />
                     {label}
                 </label>

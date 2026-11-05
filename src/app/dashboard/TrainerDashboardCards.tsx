@@ -37,9 +37,9 @@ export default async function TrainerDashboardCards({
             helper: `${stats.studentsWithRoutine} con programa`,
             icon: Users,
             valueColor: 'text-white',
-            iconColor: 'text-violet-400',
-            iconBg: 'rgba(124,58,237,0.12)',
-            glow: 'rgba(124,58,237,0.06)',
+            iconColor: 'text-primary',
+            iconBg: 'rgba(201,135,150,0.12)',
+            glow: 'rgba(201,135,150,0.06)',
             border: 'rgba(255,255,255,0.07)',
         },
     ]

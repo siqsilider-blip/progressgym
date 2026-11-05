@@ -98,7 +98,7 @@ export default function StudentsList({ students, operationsByStudentId }: Props)
                 placeholder="Buscar alumno o programa..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full rounded-xl border border-border bg-input px-4 py-2.5 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                className="w-full rounded-xl border border-border bg-input px-4 py-2.5 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary"
             />
 
             {/* Filter chips */}
@@ -111,7 +111,7 @@ export default function StudentsList({ students, operationsByStudentId }: Props)
                             type="button"
                             onClick={() => setFilter(opt.value)}
                             className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition ${isActive
-                                    ? 'bg-indigo-600 text-white'
+                                    ? 'bg-primary text-primary-foreground'
                                     : 'border border-border bg-secondary text-secondary-foreground hover:bg-muted'
                                 }`}
                         >
@@ -156,7 +156,7 @@ export default function StudentsList({ students, operationsByStudentId }: Props)
                         const status = !hasProgram
                             ? { label: 'Sin programa', cls: 'border-rose-500/25 bg-rose-500/10 text-rose-300' }
                             : operation?.hasActiveSession
-                                ? { label: 'Sesión en curso', cls: 'border-indigo-500/30 bg-indigo-500/10 text-indigo-300' }
+                                ? { label: 'Sesión en curso', cls: 'border-primary/30 bg-primary/10 text-brand-soft' }
                                 : operation?.isFinalWeek
                                     ? { label: 'Última semana', cls: 'border-amber-500/30 bg-amber-500/10 text-amber-300' }
                                     : {
@@ -173,7 +173,7 @@ export default function StudentsList({ students, operationsByStudentId }: Props)
                                 {/* Header de la card */}
                                 <div className="flex items-start justify-between gap-3">
                                     <div className="flex min-w-0 items-center gap-3">
-                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-500/15 text-xs font-bold text-indigo-400">
+                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-xs font-bold text-primary">
                                             {initials}
                                         </div>
                                         <div className="min-w-0">
@@ -204,7 +204,7 @@ export default function StudentsList({ students, operationsByStudentId }: Props)
                                         </Link>
                                         <Link
                                             href={primaryHref}
-                                            className="rounded-lg bg-indigo-600 px-3 py-1.5 text-center text-[11px] font-semibold text-white transition hover:bg-indigo-500"
+                                            className="rounded-lg bg-primary px-3 py-1.5 text-center text-[11px] font-semibold text-primary-foreground transition hover:bg-primary"
                                         >
                                             {operation?.hasActiveSession ? 'Continuar' : hasProgram ? 'Entrenar' : 'Asignar'}
                                         </Link>

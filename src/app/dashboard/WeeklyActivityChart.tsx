@@ -28,7 +28,7 @@ export default function WeeklyActivityChart({
                         return (
                             <div
                                 key={d.date}
-                                className="flex-1 bg-indigo-500 rounded"
+                                className="flex-1 bg-primary rounded"
                                 style={{ height: `${height}%` }}
                             />
                         )

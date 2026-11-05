@@ -63,7 +63,7 @@ export default async function StudentMessagesPage() {
             {conversationId && <ReadMarker conversationId={conversationId} />}
 
             <header>
-                <p className="text-xs font-medium text-indigo-500">Seguimiento</p>
+                <p className="text-xs font-medium text-brand-soft">Seguimiento</p>
                 <h1 className="mt-1 text-2xl font-black text-foreground">Mensajes</h1>
                 <p className="mt-1 text-xs text-muted-foreground">Conversación privada con {trainerName}.</p>
             </header>
@@ -80,7 +80,7 @@ export default async function StudentMessagesPage() {
                         const own = message.sender_role === 'student'
                         return (
                             <article key={message.id} className={`flex ${own ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`max-w-[86%] rounded-2xl px-3.5 py-2.5 ${own ? 'rounded-br-md bg-indigo-600 text-white' : 'rounded-bl-md border border-border bg-background text-foreground'}`}>
+                                <div className={`max-w-[86%] rounded-2xl px-3.5 py-2.5 ${own ? 'rounded-br-md bg-primary text-primary-foreground' : 'rounded-bl-md border border-border bg-background text-foreground'}`}>
                                     <div className="mb-1 flex items-center gap-2 text-[9px] font-bold uppercase tracking-wide opacity-70">
                                         <span>{own ? 'Vos' : trainerName}</span>
                                         <span>·</span>
@@ -94,7 +94,7 @@ export default async function StudentMessagesPage() {
                     })
                 ) : (
                     <div className="flex min-h-56 flex-col items-center justify-center px-6 text-center">
-                        <MessageCircle className="h-8 w-8 text-indigo-400" />
+                        <MessageCircle className="h-8 w-8 text-primary" />
                         <p className="mt-3 text-sm font-bold text-foreground">Consultá cuando lo necesites</p>
                         <p className="mt-1 text-xs leading-5 text-muted-foreground">Podés preguntar por un ejercicio, informar una molestia o pedir una alternativa.</p>
                     </div>

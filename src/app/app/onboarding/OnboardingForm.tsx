@@ -19,7 +19,7 @@ function SubmitButton({ editing }: { editing: boolean }) {
         <button
             type="submit"
             disabled={pending}
-            className="flex h-13 w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 text-sm font-black text-white shadow-lg shadow-indigo-600/20 transition active:scale-[0.99] disabled:opacity-60"
+            className="flex h-13 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 text-sm font-black text-primary-foreground shadow-lg shadow-primary/20 transition active:scale-[0.99] disabled:opacity-60"
         >
             {pending ? 'Guardando…' : editing ? 'Guardar cambios' : 'Guardar y empezar'}
             {!pending && <ChevronRight className="h-4 w-4" />}
@@ -30,7 +30,7 @@ function SubmitButton({ editing }: { editing: boolean }) {
 function SectionTitle({ icon: Icon, title, helper }: { icon: typeof Target; title: string; helper?: string }) {
     return (
         <div className="mb-3 flex items-start gap-2.5">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-500">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-brand-soft">
                 <Icon className="h-4 w-4" />
             </span>
             <div>
@@ -58,7 +58,7 @@ export default function OnboardingForm({ profile }: { profile: StudentOnboarding
                                 defaultChecked={profile?.goals.includes(value)}
                                 className="peer sr-only"
                             />
-                            <span className="flex min-h-12 items-center rounded-xl border border-border bg-background px-3 text-xs font-bold text-foreground transition peer-checked:border-indigo-500 peer-checked:bg-indigo-500/10 peer-checked:text-indigo-400">
+                            <span className="flex min-h-12 items-center rounded-xl border border-border bg-background px-3 text-xs font-bold text-foreground transition peer-checked:border-primary peer-checked:bg-primary/10 peer-checked:text-primary">
                                 {label}
                             </span>
                         </label>
@@ -78,7 +78,7 @@ export default function OnboardingForm({ profile }: { profile: StudentOnboarding
                                 defaultChecked={profile?.experience_level === value}
                                 className="peer sr-only"
                             />
-                            <span className="flex min-h-12 items-center rounded-xl border border-border bg-background px-3 text-xs font-bold text-foreground transition peer-checked:border-indigo-500 peer-checked:bg-indigo-500/10 peer-checked:text-indigo-400">
+                            <span className="flex min-h-12 items-center rounded-xl border border-border bg-background px-3 text-xs font-bold text-foreground transition peer-checked:border-primary peer-checked:bg-primary/10 peer-checked:text-primary">
                                 {label}
                             </span>
                         </label>
@@ -91,13 +91,13 @@ export default function OnboardingForm({ profile }: { profile: StudentOnboarding
                 <div className="grid grid-cols-2 gap-3">
                     <label className="space-y-1.5 text-[11px] font-bold text-muted-foreground">
                         Días por semana
-                        <select name="days" defaultValue={profile?.training_days_per_week ?? 3} className="h-12 w-full rounded-xl border border-border bg-background px-3 text-sm font-bold text-foreground outline-none focus:border-indigo-500">
+                        <select name="days" defaultValue={profile?.training_days_per_week ?? 3} className="h-12 w-full rounded-xl border border-border bg-background px-3 text-sm font-bold text-foreground outline-none focus:border-primary">
                             {[1, 2, 3, 4, 5, 6, 7].map((day) => <option key={day} value={day}>{day} {day === 1 ? 'día' : 'días'}</option>)}
                         </select>
                     </label>
                     <label className="space-y-1.5 text-[11px] font-bold text-muted-foreground">
                         Minutos por sesión
-                        <select name="duration" defaultValue={profile?.session_minutes ?? 60} className="h-12 w-full rounded-xl border border-border bg-background px-3 text-sm font-bold text-foreground outline-none focus:border-indigo-500">
+                        <select name="duration" defaultValue={profile?.session_minutes ?? 60} className="h-12 w-full rounded-xl border border-border bg-background px-3 text-sm font-bold text-foreground outline-none focus:border-primary">
                             {[30, 45, 60, 75, 90].map((minutes) => <option key={minutes} value={minutes}>{minutes} min</option>)}
                         </select>
                     </label>
@@ -116,7 +116,7 @@ export default function OnboardingForm({ profile }: { profile: StudentOnboarding
                                 defaultChecked={profile?.training_location === value}
                                 className="peer sr-only"
                             />
-                            <span className="flex h-12 items-center justify-center rounded-xl border border-border bg-background px-2 text-center text-xs font-bold text-foreground transition peer-checked:border-indigo-500 peer-checked:bg-indigo-500/10 peer-checked:text-indigo-400">
+                            <span className="flex h-12 items-center justify-center rounded-xl border border-border bg-background px-2 text-center text-xs font-bold text-foreground transition peer-checked:border-primary peer-checked:bg-primary/10 peer-checked:text-primary">
                                 {label}
                             </span>
                         </label>
@@ -133,7 +133,7 @@ export default function OnboardingForm({ profile }: { profile: StudentOnboarding
                                 defaultChecked={profile?.available_equipment.includes(value)}
                                 className="peer sr-only"
                             />
-                            <span className="flex h-10 items-center rounded-full border border-border bg-background px-3 text-[11px] font-bold text-foreground transition peer-checked:border-indigo-500 peer-checked:bg-indigo-500/10 peer-checked:text-indigo-400">
+                            <span className="flex h-10 items-center rounded-full border border-border bg-background px-3 text-[11px] font-bold text-foreground transition peer-checked:border-primary peer-checked:bg-primary/10 peer-checked:text-primary">
                                 {label}
                             </span>
                         </label>
@@ -151,7 +151,7 @@ export default function OnboardingForm({ profile }: { profile: StudentOnboarding
                         maxLength={1000}
                         rows={3}
                         placeholder="Ej: me molesta la rodilla al bajar escaleras…"
-                        className="mt-1.5 w-full resize-none rounded-xl border border-border bg-background p-3 text-sm font-normal leading-5 text-foreground outline-none placeholder:text-muted-foreground focus:border-indigo-500"
+                        className="mt-1.5 w-full resize-none rounded-xl border border-border bg-background p-3 text-sm font-normal leading-5 text-foreground outline-none placeholder:text-muted-foreground focus:border-primary"
                     />
                 </label>
                 <label className="mt-3 block text-[11px] font-bold text-muted-foreground">
@@ -162,7 +162,7 @@ export default function OnboardingForm({ profile }: { profile: StudentOnboarding
                         maxLength={1000}
                         rows={3}
                         placeholder="Opcional"
-                        className="mt-1.5 w-full resize-none rounded-xl border border-border bg-background p-3 text-sm font-normal leading-5 text-foreground outline-none placeholder:text-muted-foreground focus:border-indigo-500"
+                        className="mt-1.5 w-full resize-none rounded-xl border border-border bg-background p-3 text-sm font-normal leading-5 text-foreground outline-none placeholder:text-muted-foreground focus:border-primary"
                     />
                 </label>
             </section>

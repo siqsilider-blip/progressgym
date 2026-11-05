@@ -33,7 +33,7 @@ export default async function NewTemplatePage() {
                         name="name"
                         required
                         placeholder="Ej: Fuerza 4 días — nivel intermedio"
-                        className="w-full rounded-xl border border-border bg-input px-3 py-2 text-sm text-foreground outline-none focus:border-indigo-500"
+                        className="w-full rounded-xl border border-border bg-input px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
                     />
                 </div>
 
@@ -49,7 +49,7 @@ export default async function NewTemplatePage() {
                         max={6}
                         defaultValue={4}
                         required
-                        className="w-full rounded-xl border border-border bg-input px-3 py-2 text-sm text-foreground outline-none focus:border-indigo-500"
+                        className="w-full rounded-xl border border-border bg-input px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
                     />
                     <p className="mt-1 text-xs text-muted-foreground">
                         Se usa como default al agregar la primera semana. Se puede
@@ -58,7 +58,7 @@ export default async function NewTemplatePage() {
                 </div>
 
                 <div className="border-t border-border pt-5">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Criterios de recomendación</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-primary">Criterios de recomendación</p>
                     <p className="mb-4 mt-1 text-xs leading-5 text-muted-foreground">
                         Esto permite sugerir el template correcto cuando el alumno complete su ficha. La app nunca lo asignará sola.
                     </p>
@@ -67,7 +67,7 @@ export default async function NewTemplatePage() {
 
                 <button
                     type="submit"
-                    className="w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500"
+                    className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary"
                 >
                     Crear template
                 </button>

@@ -46,7 +46,7 @@ export default function StudentMonthlySummaryCard({
         <section className="rounded-2xl border border-border bg-card p-4">
             <div className="flex items-start justify-between gap-3">
                 <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-400">Resumen de seguimiento</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Resumen de seguimiento</p>
                     <h2 className="mt-1 text-sm font-bold text-foreground">Últimos 28 días</h2>
                 </div>
                 <span className={`rounded-full px-2 py-1 text-[9px] font-bold ${painReports > 0 ? 'bg-amber-500/10 text-amber-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
@@ -92,21 +92,21 @@ export default function StudentMonthlySummaryCard({
                     Ver historial
                 </Link>
                 {whatsappUrl ? (
-                    <button type="button" onClick={() => setShowSharePreview((current) => !current)} className="flex min-h-9 items-center justify-center gap-1.5 rounded-xl bg-indigo-600 text-[10px] font-bold text-white">
+                    <button type="button" onClick={() => setShowSharePreview((current) => !current)} className="flex min-h-9 items-center justify-center gap-1.5 rounded-xl bg-primary text-[10px] font-bold text-primary-foreground">
                         <MessageCircle className="h-3.5 w-3.5" /> Preparar resumen
                     </button>
                 ) : (
-                    <Link href={`/dashboard/messages?student=${studentId}`} className="flex min-h-9 items-center justify-center gap-1.5 rounded-xl bg-indigo-600 text-[10px] font-bold text-white">
+                    <Link href={`/dashboard/messages?student=${studentId}`} className="flex min-h-9 items-center justify-center gap-1.5 rounded-xl bg-primary text-[10px] font-bold text-primary-foreground">
                         <MessageCircle className="h-3.5 w-3.5" /> Seguimiento
                     </Link>
                 )}
             </div>
 
             {showSharePreview && whatsappUrl && (
-                <div className="mt-3 rounded-xl border border-indigo-500/25 bg-indigo-500/[0.05] p-3">
+                <div className="mt-3 rounded-xl border border-primary/25 bg-primary/[0.05] p-3">
                     <div className="flex items-start justify-between gap-3">
                         <div>
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-400">Vista previa</p>
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Vista previa</p>
                             <p className="mt-1 text-[10px] leading-4 text-muted-foreground">Nada se envía automáticamente. Podés revisarlo y editarlo también en WhatsApp.</p>
                         </div>
                         <button type="button" onClick={() => setShowSharePreview(false)} aria-label="Cerrar vista previa" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground">
@@ -151,7 +151,7 @@ function SummaryMetric({
 }) {
     return (
         <div className="rounded-xl border border-border/70 bg-background/60 p-3">
-            <div className="flex items-center gap-1.5 text-indigo-400">
+            <div className="flex items-center gap-1.5 text-primary">
                 {icon}
                 <p className="text-[9px] font-bold uppercase tracking-wide text-muted-foreground">{label}</p>
             </div>
@@ -178,7 +178,7 @@ function ShareOption({
 }) {
     return (
         <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-border bg-background px-2.5 py-2 text-[10px] font-semibold text-foreground">
-            <span className={`flex h-4 w-4 items-center justify-center rounded border ${checked ? 'border-indigo-500 bg-indigo-600 text-white' : 'border-border'}`}>
+            <span className={`flex h-4 w-4 items-center justify-center rounded border ${checked ? 'border-primary bg-primary text-primary-foreground' : 'border-border'}`}>
                 {checked && <Check className="h-3 w-3" />}
             </span>
             <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="sr-only" />

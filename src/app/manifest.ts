@@ -4,11 +4,13 @@ export default function manifest(): MetadataRoute.Manifest {
     return {
         name: 'Progrezzia',
         short_name: 'Progrezzia',
-        description: 'App de entrenamiento para entrenadores personales',
+        description: 'Entrenamiento, seguimiento y progreso para alumnos y entrenadores personales.',
+        id: '/',
+        scope: '/',
         start_url: '/dashboard',
         display: 'standalone',
-        background_color: '#09090b',
-        theme_color: '#09090b',
+        background_color: '#111111',
+        theme_color: '#111111',
         orientation: 'portrait',
         icons: [
             {
@@ -20,6 +22,12 @@ export default function manifest(): MetadataRoute.Manifest {
                 src: '/icon-512.png',
                 sizes: '512x512',
                 type: 'image/png',
+            },
+            {
+                src: '/icon-maskable-512.png',
+                sizes: '512x512',
+                type: 'image/png',
+                purpose: 'maskable',
             },
         ],
     }

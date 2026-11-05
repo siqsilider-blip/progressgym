@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "icons:generate": "node scripts/generate-brand-icons.mjs",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -39,6 +40,7 @@
     "eslint": "^8.57.1",
     "eslint-config-next": "15.5.24",
     "postcss": "^8.5.6",
+    "sharp": "^0.35.4",
     "tailwindcss": "^4.2.0",
     "typescript": "^5"
   },

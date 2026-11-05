@@ -46,7 +46,7 @@ export default async function AppRutinePage(props: PageProps) {
                                 : 'Así puede conocer tus objetivos, disponibilidad y cuidados antes de elegir la rutina.'}
                         </p>
                         {!onboarding?.completed_at && (
-                            <Link href="/app/onboarding" className="mt-4 inline-flex rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white">
+                            <Link href="/app/onboarding" className="mt-4 inline-flex rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground">
                                 Completar ficha
                             </Link>
                         )}
@@ -166,13 +166,13 @@ export default async function AppRutinePage(props: PageProps) {
                                     {completedDays} de {trainingDayIds.length} entrenamientos completados
                                 </p>
                             </div>
-                            <span className={`text-lg font-black ${progressPercent === 100 ? 'text-emerald-500' : 'text-indigo-500'}`}>
+                            <span className={`text-lg font-black ${progressPercent === 100 ? 'text-emerald-500' : 'text-brand-soft'}`}>
                                 {progressPercent}%
                             </span>
                         </div>
                         <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
                             <div
-                                className={`h-full rounded-full transition-all ${progressPercent === 100 ? 'bg-emerald-500' : 'bg-indigo-500'}`}
+                                className={`h-full rounded-full transition-all ${progressPercent === 100 ? 'bg-emerald-500' : 'bg-primary'}`}
                                 style={{ width: `${progressPercent}%` }}
                             />
                         </div>
@@ -193,7 +193,7 @@ export default async function AppRutinePage(props: PageProps) {
                                         key={month.id}
                                         href={`/app/rutina?month=${month.id}`}
                                         className={`shrink-0 rounded-xl px-4 py-2 text-xs font-semibold transition ${isActive
-                                                ? 'bg-indigo-600 text-white shadow-sm'
+                                                ? 'bg-primary text-primary-foreground shadow-sm'
                                                 : 'border border-border bg-card text-muted-foreground hover:text-foreground'
                                             }`}
                                     >
@@ -219,7 +219,7 @@ export default async function AppRutinePage(props: PageProps) {
                                         key={week.id}
                                         href={`/app/rutina?${selectedMonth ? `month=${selectedMonth.id}&` : ''}week=${week.id}`}
                                         className={`shrink-0 rounded-xl px-4 py-2 text-xs font-semibold transition ${isActive
-                                                ? 'bg-indigo-500/20 text-indigo-400 ring-1 ring-indigo-500'
+                                                ? 'bg-primary/20 text-primary ring-1 ring-primary'
                                                 : 'border border-border bg-card text-muted-foreground hover:text-foreground'
                                             }`}
                                     >
@@ -254,7 +254,7 @@ export default async function AppRutinePage(props: PageProps) {
                                             ? isCompleted
                                                 ? 'border-emerald-500/30 bg-emerald-500/[0.04] shadow-sm'
                                                 : isInProgress
-                                                    ? 'border-indigo-500/40 bg-indigo-500/[0.04] shadow-sm'
+                                                    ? 'border-primary/40 bg-primary/[0.04] shadow-sm'
                                                     : 'border-border bg-card shadow-sm'
                                             : 'border-dashed border-border bg-card/50 opacity-60'
                                         }`}
@@ -274,14 +274,14 @@ export default async function AppRutinePage(props: PageProps) {
                                                     <p className="mt-1.5 text-xs font-bold text-emerald-500">✓ Completado esta semana</p>
                                                 )}
                                                 {isInProgress && (
-                                                    <p className="mt-1.5 text-xs font-bold text-indigo-500">Sesión en curso</p>
+                                                    <p className="mt-1.5 text-xs font-bold text-brand-soft">Sesión en curso</p>
                                                 )}
                                             </div>
 
                                             {hasExercises && !isCompleted && (
                                                 <Link
                                                     href={`/app/train?${selectedMonth ? `month=${selectedMonth.id}&` : ''}week=${selectedWeek?.id}&day=${day.id}`}
-                                                    className="shrink-0 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-indigo-500 active:scale-[0.97]"
+                                                    className="shrink-0 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground transition hover:bg-primary active:scale-[0.97]"
                                                 >
                                                     {isInProgress ? 'Continuar →' : 'Entrenar →'}
                                                 </Link>
@@ -304,7 +304,7 @@ export default async function AppRutinePage(props: PageProps) {
                                                         className="flex items-center justify-between rounded-lg bg-muted/40 px-2.5 py-1.5"
                                                     >
                                                         <div className="flex items-center gap-2">
-                                                            <span className="flex h-5 w-5 items-center justify-center rounded-md bg-indigo-500/10 text-[9px] font-bold text-indigo-500">
+                                                            <span className="flex h-5 w-5 items-center justify-center rounded-md bg-primary/10 text-[9px] font-bold text-brand-soft">
                                                                 {idx + 1}
                                                             </span>
                                                             <p className="text-xs font-medium text-card-foreground">

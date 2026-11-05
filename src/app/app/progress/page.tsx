@@ -78,7 +78,7 @@ export default async function AppProgressPage() {
 
                 <div className="mb-4 grid grid-cols-3 gap-2">
                     <div className="rounded-xl border border-border bg-card p-2.5 text-center">
-                        <p className="text-base font-black text-indigo-400">{totalExercises}</p>
+                        <p className="text-base font-black text-primary">{totalExercises}</p>
                         <p className="text-[10px] text-muted-foreground">Ejercicios</p>
                     </div>
                     <div className="rounded-xl border border-border bg-card p-2.5 text-center">

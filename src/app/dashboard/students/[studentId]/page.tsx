@@ -186,17 +186,17 @@ export default async function StudentProfilePage(props: PageProps) {
             )}
 
             {onboardingCompleted && onboarding ? (
-                <section className="rounded-2xl border border-indigo-500/25 bg-indigo-500/[0.06] p-4">
+                <section className="rounded-2xl border border-primary/25 bg-primary/[0.06] p-4">
                     <div className="flex items-start justify-between gap-3">
                         <div>
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-400">Ficha inicial</p>
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Ficha inicial</p>
                             <h2 className="mt-1 text-sm font-black text-foreground">Objetivos y disponibilidad</h2>
                         </div>
                         <span className="rounded-full bg-emerald-500/10 px-2 py-1 text-[9px] font-bold text-emerald-400">Completada</span>
                     </div>
                     <div className="mt-3 flex flex-wrap gap-1.5">
                         {onboarding.goals.map((goal) => (
-                            <span key={goal} className="rounded-full border border-indigo-500/20 bg-indigo-500/10 px-2.5 py-1 text-[10px] font-bold text-indigo-300">
+                            <span key={goal} className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[10px] font-bold text-brand-soft">
                                 {labelFor(ONBOARDING_GOALS, goal)}
                             </span>
                         ))}
@@ -213,7 +213,7 @@ export default async function StudentProfilePage(props: PageProps) {
                         />
                     </div>
                     {(onboarding.limitations || onboarding.preferences) && (
-                        <div className="mt-3 space-y-2 border-t border-indigo-500/15 pt-3 text-xs leading-5">
+                        <div className="mt-3 space-y-2 border-t border-primary/15 pt-3 text-xs leading-5">
                             {onboarding.limitations && (
                                 <p><span className="font-bold text-amber-400">Cuidados: </span><span className="text-muted-foreground">{onboarding.limitations}</span></p>
                             )}
@@ -331,7 +331,7 @@ export default async function StudentProfilePage(props: PageProps) {
                 <div className="mx-auto grid max-w-xl grid-cols-2 gap-2 px-4 py-3">
                     <Link
                         href={`/dashboard/messages?student=${studentId}`}
-                        className="col-span-2 rounded-xl border border-violet-500/30 bg-violet-500/10 px-3 py-2.5 text-center text-xs font-semibold text-violet-400 transition hover:bg-violet-500/20"
+                        className="col-span-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2.5 text-center text-xs font-semibold text-primary transition hover:bg-primary/20"
                     >
                         💬 Mensajes y seguimiento
                     </Link>
@@ -363,13 +363,13 @@ export default async function StudentProfilePage(props: PageProps) {
                     )}
                     <Link
                         href={`/dashboard/students/${params.studentId}/progress`}
-                        className="rounded-xl border border-indigo-300/40 bg-indigo-500/10 px-3 py-2.5 text-center text-xs font-semibold text-indigo-400 transition hover:bg-indigo-500/20"
+                        className="rounded-xl border border-primary/40 bg-primary/10 px-3 py-2.5 text-center text-xs font-semibold text-primary transition hover:bg-primary/20"
                     >
                         📊 Progreso
                     </Link>
                     <Link
                         href={trainHref}
-                        className="rounded-xl bg-indigo-600 px-3 py-2.5 text-center text-xs font-semibold text-white transition hover:bg-indigo-500"
+                        className="rounded-xl bg-primary px-3 py-2.5 text-center text-xs font-semibold text-primary-foreground transition hover:bg-primary"
                     >
                         Entrenar
                     </Link>

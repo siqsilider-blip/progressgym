@@ -21,7 +21,7 @@ const RANK_STYLES = [
 ]
 
 export default function ExerciseProgressCard({ exercise, weightUnit, rank }: Props) {
-    const style = RANK_STYLES[rank] ?? { border: 'border-border', glow: '', badge: 'bg-indigo-600', icon: '💪' }
+    const style = RANK_STYLES[rank] ?? { border: 'border-border', glow: '', badge: 'bg-primary', icon: '💪' }
     const lastIndex = exercise.logs.length - 1
 
     const trendUp = exercise.logs.length >= 2 &&
@@ -74,7 +74,7 @@ export default function ExerciseProgressCard({ exercise, weightUnit, rank }: Pro
                         />
                         <Tooltip
                             contentStyle={{
-                                backgroundColor: '#09090b',
+                                backgroundColor: '#111111',
                                 border: '1px solid #27272a',
                                 borderRadius: 8,
                                 fontSize: 11,
@@ -85,7 +85,7 @@ export default function ExerciseProgressCard({ exercise, weightUnit, rank }: Pro
                         <Line
                             type="monotone"
                             dataKey="weight"
-                            stroke="#6366f1"
+                            stroke="#c98796"
                             strokeWidth={exercise.logs.length > 1 ? 2 : 0}
                             dot={(props) => {
                                 const { cx, cy, index } = props
@@ -95,7 +95,7 @@ export default function ExerciseProgressCard({ exercise, weightUnit, rank }: Pro
                                         key={index}
                                         cx={cx} cy={cy}
                                         r={isLast ? 6 : 3}
-                                        fill={isLast ? '#10b981' : '#6366f1'}
+                                        fill={isLast ? '#10b981' : '#c98796'}
                                         stroke="#fff"
                                         strokeWidth={2}
                                     />

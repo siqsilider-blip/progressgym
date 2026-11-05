@@ -29,7 +29,7 @@ export default function StudentAppShell({
     if (!studentId) {
         return (
             <div className="flex min-h-screen flex-col items-center justify-center bg-background p-6 text-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-500/10 text-3xl">🏋️</div>
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-3xl">🏋️</div>
                 <h1 className="mt-4 text-xl font-bold text-foreground">Cuenta no vinculada</h1>
                 <p className="mt-2 max-w-xs text-sm text-muted-foreground">
                     Tu cuenta todavía no está vinculada a ningún alumno. Pedile a tu entrenador que la vincule desde tu perfil.
@@ -54,7 +54,7 @@ export default function StudentAppShell({
             {children}
 
             <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/95 backdrop-blur">
-                <div className="mx-auto grid max-w-lg grid-cols-6 items-center px-1 py-2">
+                <div className="mx-auto grid max-w-lg grid-cols-6 items-center px-1 pt-2" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
                     {navItems.map(({ href, icon: Icon, label, exact }) => {
                         const isActive = exact ? pathname === href : pathname.startsWith(href)
                         return (
@@ -64,7 +64,7 @@ export default function StudentAppShell({
                                 prefetch={true}
                                 className={`flex min-w-0 flex-col items-center gap-0.5 rounded-xl px-1 py-2 transition ${
                                     isActive
-                                        ? 'text-indigo-500'
+                                        ? 'text-brand-soft'
                                         : 'text-muted-foreground hover:text-foreground'
                                 }`}
                             >
@@ -76,7 +76,7 @@ export default function StudentAppShell({
                                         </span>
                                     )}
                                 </span>
-                                <span className={`max-w-full truncate text-[8px] font-medium ${isActive ? 'font-bold' : ''}`}>
+                                <span className={`max-w-full truncate text-[10px] font-medium ${isActive ? 'font-bold' : ''}`}>
                                     {label}
                                 </span>
                             </Link>

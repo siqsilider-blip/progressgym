@@ -235,7 +235,7 @@ export default function TrainExerciseTable({
                             className={`flex items-center gap-2 rounded-xl border p-2 transition ${isDone
                                 ? 'border-green-300 bg-green-50 dark:bg-green-500/10'
                                 : isActive
-                                    ? 'border-indigo-400 bg-indigo-50 dark:border-indigo-500 dark:bg-indigo-500/10'
+                                    ? 'border-primary bg-primary/10 dark:border-primary dark:bg-primary/10'
                                     : 'border-border bg-muted/30'
                                 }`}
                         >

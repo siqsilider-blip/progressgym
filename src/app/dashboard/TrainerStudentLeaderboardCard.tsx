@@ -88,7 +88,7 @@ export default async function TrainerStudentLeaderboardCard({
 
                                         <Link
                                             href={`/dashboard/students/${item.studentId}`}
-                                            className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-indigo-500 transition hover:text-indigo-400"
+                                            className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-brand-soft transition hover:text-primary"
                                         >
                                             Ver perfil
                                             <ArrowRight className="h-3.5 w-3.5" />

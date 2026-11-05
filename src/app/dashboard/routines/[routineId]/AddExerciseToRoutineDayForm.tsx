@@ -90,7 +90,7 @@ export default function AddExerciseToRoutineDayForm({
             <button
                 type="button"
                 onClick={() => setExpanded(true)}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-indigo-300 py-2.5 text-sm font-medium text-indigo-600 transition hover:border-indigo-400 hover:bg-indigo-50/50 dark:border-indigo-500/40 dark:text-indigo-400 dark:hover:bg-indigo-500/10"
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-primary py-2.5 text-sm font-medium text-primary transition hover:border-primary hover:bg-primary/10 dark:border-primary/40 dark:text-primary dark:hover:bg-primary/10"
             >
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -107,7 +107,7 @@ export default function AddExerciseToRoutineDayForm({
             <input type="hidden" name="exercise_name" value={selectedExerciseName} />
 
             <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">
+                <p className="text-xs font-semibold text-primary dark:text-primary">
                     Nuevo ejercicio
                 </p>
                 <button
@@ -123,7 +123,7 @@ export default function AddExerciseToRoutineDayForm({
                 <button
                     type="button"
                     onClick={() => setOpen((prev) => !prev)}
-                    className="w-full rounded-xl border border-border bg-background px-4 py-3 text-left text-sm font-medium text-foreground outline-none transition hover:border-indigo-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                    className="w-full rounded-xl border border-border bg-background px-4 py-3 text-left text-sm font-medium text-foreground outline-none transition hover:border-primary focus:border-primary focus:ring-1 focus:ring-primary"
                 >
                     {selectedExerciseName || <span className="text-muted-foreground">Seleccionar ejercicio</span>}
                 </button>
@@ -137,7 +137,7 @@ export default function AddExerciseToRoutineDayForm({
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                                 placeholder="Buscar por nombre o categoría..."
-                                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 placeholder:text-muted-foreground"
+                                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-muted-foreground"
                             />
                         </div>
                         <div className="max-h-64 overflow-y-auto p-1.5">
@@ -155,13 +155,13 @@ export default function AddExerciseToRoutineDayForm({
                                             }}
                                             className={`flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2.5 text-left text-sm transition ${
                                                 isSelected
-                                                    ? 'bg-indigo-600 text-white'
+                                                    ? 'bg-primary text-primary-foreground'
                                                     : 'text-foreground hover:bg-muted'
                                             }`}
                                         >
                                             <span className="font-medium">{ex.name}</span>
                                             {tag && (
-                                                <span className={`shrink-0 text-xs ${isSelected ? 'text-indigo-200' : 'text-muted-foreground'}`}>
+                                                <span className={`shrink-0 text-xs ${isSelected ? 'text-brand-soft' : 'text-muted-foreground'}`}>
                                                     {tag}
                                                 </span>
                                             )}
@@ -187,7 +187,7 @@ export default function AddExerciseToRoutineDayForm({
                         required
                         value={sets}
                         onChange={(e) => setSets(e.target.value)}
-                        className="h-11 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                        className="h-11 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
                     />
                 </div>
                 <div>
@@ -202,7 +202,7 @@ export default function AddExerciseToRoutineDayForm({
                         required
                         value={reps}
                         onChange={(e) => setReps(e.target.value)}
-                        className="h-11 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                        className="h-11 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
                     />
                 </div>
                 <div>
@@ -214,14 +214,14 @@ export default function AddExerciseToRoutineDayForm({
                         step="15"
                         value={restSeconds}
                         onChange={(e) => setRestSeconds(e.target.value)}
-                        className="h-11 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                        className="h-11 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
                     />
                 </div>
             </div>
 
             <button
                 type="submit"
-                className="h-11 w-full rounded-xl bg-indigo-600 text-sm font-semibold text-white transition hover:bg-indigo-500 active:scale-[0.98]"
+                className="h-11 w-full rounded-xl bg-primary text-sm font-semibold text-primary-foreground transition hover:bg-primary active:scale-[0.98]"
             >
                 Agregar
             </button>

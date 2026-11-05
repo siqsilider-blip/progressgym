@@ -32,11 +32,11 @@ function getToneClasses(tone: InsightTone) {
         case 'info':
             return {
                 wrapper:
-                    'border-indigo-200 bg-indigo-50 dark:border-indigo-500/20 dark:bg-indigo-500/10',
+                    'border-primary bg-primary/10 dark:border-primary/20 dark:bg-primary/10',
                 badge:
-                    'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300',
-                title: 'text-indigo-800 dark:text-indigo-300',
-                description: 'text-indigo-700/90 dark:text-indigo-200/80',
+                    'bg-primary/10 text-primary dark:bg-primary/15 dark:text-brand-soft',
+                title: 'text-primary dark:text-brand-soft',
+                description: 'text-primary/90 dark:text-brand-soft/80',
             }
 
         default:

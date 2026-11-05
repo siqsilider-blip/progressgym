@@ -90,7 +90,7 @@ export default function ProgressPhotoGallery({
         return role === 'student' ? (
             <section className="mb-4 rounded-2xl border border-dashed border-border p-4">
                 <div className="flex items-center gap-2">
-                    <Images className="h-4 w-4 text-indigo-500" />
+                    <Images className="h-4 w-4 text-brand-soft" />
                     <p className="text-sm font-bold text-foreground">Fotos de progreso</p>
                 </div>
                 <p className="mt-1 text-xs leading-5 text-muted-foreground">Todavía no cargaste fotos. Podés agregar una desde el control semanal.</p>
@@ -103,7 +103,7 @@ export default function ProgressPhotoGallery({
             <div className="flex items-start justify-between gap-3 p-4 pb-3">
                 <div>
                     <div className="flex items-center gap-2">
-                        <Images className="h-4 w-4 text-indigo-500" />
+                        <Images className="h-4 w-4 text-brand-soft" />
                         <p className="text-sm font-bold text-foreground">Fotos de progreso</p>
                     </div>
                     <p className="mt-1 text-[10px] leading-4 text-muted-foreground">
@@ -153,7 +153,7 @@ export default function ProgressPhotoGallery({
                             <PhotoSelect label="Antes" value={beforeId} onChange={setBeforeId} photos={eligiblePhotos} />
                             <PhotoSelect label="Ahora" value={afterId} onChange={setAfterId} photos={eligiblePhotos} />
                         </div>
-                        <button type="button" onClick={exportComparison} disabled={exporting} className="mt-2 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-3 text-xs font-bold text-white disabled:opacity-50">
+                        <button type="button" onClick={exportComparison} disabled={exporting} className="mt-2 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-primary px-3 text-xs font-bold text-primary-foreground disabled:opacity-50">
                             <Download className="h-4 w-4" />
                             {exporting ? 'Creando imagen…' : 'Descargar comparativa'}
                         </button>
@@ -189,13 +189,13 @@ async function createComparison(before: ProgressPhotoItem, after: ProgressPhotoI
     const context = canvas.getContext('2d')
     if (!context) throw new Error('Canvas no disponible')
 
-    context.fillStyle = '#07070a'
+    context.fillStyle = '#111111'
     context.fillRect(0, 0, canvas.width, canvas.height)
     context.fillStyle = '#ffffff'
     context.font = '700 42px system-ui, sans-serif'
     context.textAlign = 'center'
     context.fillText('PROGRESO', 540, 65)
-    context.fillStyle = '#8b5cf6'
+    context.fillStyle = '#c98796'
     context.font = '700 24px system-ui, sans-serif'
     context.fillText('PROGREZZIA', 540, 104)
 

@@ -500,7 +500,7 @@ export default function StudentWorkoutView({
                 <WorkoutFeedbackForm sessionId={sessionId} studentId={studentId} />
 
                 <div className="mt-4 grid grid-cols-2 gap-2">
-                    <button type="button" onClick={() => router.push(routineHref)} className="min-h-12 rounded-xl bg-indigo-600 px-4 text-sm font-bold text-white">Ver rutina</button>
+                    <button type="button" onClick={() => router.push(routineHref)} className="min-h-12 rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground">Ver rutina</button>
                     <button type="button" onClick={() => router.push(progressHref)} className="min-h-12 rounded-xl border border-border bg-secondary px-4 text-sm font-bold text-foreground">Ver progreso</button>
                 </div>
             </main>
@@ -511,7 +511,7 @@ export default function StudentWorkoutView({
         <main className="mx-auto max-w-lg px-4 pb-40 pt-4">
             <div className="flex items-start justify-between gap-3">
                 <div>
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-indigo-400">Entrenamiento</p>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-primary">Entrenamiento</p>
                     <h1 className="mt-0.5 text-xl font-black text-foreground">{dayLabel}</h1>
                 </div>
                 {completedSession && (
@@ -525,7 +525,7 @@ export default function StudentWorkoutView({
                     <span>{progress}%</span>
                 </div>
                 <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
-                    <div className="h-full rounded-full bg-indigo-500 transition-all" style={{ width: `${progress}%` }} />
+                    <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${progress}%` }} />
                 </div>
             </div>
 
@@ -537,7 +537,7 @@ export default function StudentWorkoutView({
             )}
 
             {isOnline && syncingDrafts && (
-                <div className="mt-3 flex items-center gap-2 rounded-xl border border-indigo-500/25 bg-indigo-500/[0.07] px-3 py-2.5 text-indigo-400">
+                <div className="mt-3 flex items-center gap-2 rounded-xl border border-primary/25 bg-primary/[0.07] px-3 py-2.5 text-primary">
                     <RefreshCw className="h-4 w-4 animate-spin" aria-hidden="true" />
                     <p className="text-xs font-medium">Sincronizando cambios pendientes…</p>
                 </div>
@@ -557,8 +557,8 @@ export default function StudentWorkoutView({
             )}
 
             {restTimeLeft > 0 && (
-                <div className="sticky top-[86px] z-20 mt-3 flex items-center gap-3 rounded-xl border border-indigo-500/25 bg-background/95 px-3 py-2.5 shadow-lg backdrop-blur">
-                    <Clock3 className="h-5 w-5 text-indigo-400" aria-hidden="true" />
+                <div className="sticky top-[86px] z-20 mt-3 flex items-center gap-3 rounded-xl border border-primary/25 bg-background/95 px-3 py-2.5 shadow-lg backdrop-blur">
+                    <Clock3 className="h-5 w-5 text-primary" aria-hidden="true" />
                     <div className="min-w-0 flex-1">
                         <p className="text-xs font-bold text-foreground">Descanso · {restTimeLeft}s</p>
                         <p className="truncate text-[10px] text-muted-foreground">{restExerciseName}</p>
@@ -584,14 +584,14 @@ export default function StudentWorkoutView({
                                     const isOpen = openExerciseId === exercise.id
 
                                     return (
-                                        <article key={exercise.id} className={`overflow-hidden rounded-2xl border bg-card ${isOpen ? 'border-indigo-500/35' : 'border-border'}`}>
+                                        <article key={exercise.id} className={`overflow-hidden rounded-2xl border bg-card ${isOpen ? 'border-primary/35' : 'border-border'}`}>
                                             <button
                                                 type="button"
                                                 onClick={() => setOpenExerciseId(isOpen ? null : exercise.id)}
                                                 className="flex min-h-16 w-full items-center gap-3 px-3.5 py-3 text-left"
                                                 aria-expanded={isOpen}
                                             >
-                                                <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-black ${completed === exercise.setsCount ? 'bg-emerald-500 text-white' : 'bg-indigo-500/10 text-indigo-400'}`}>
+                                                <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-black ${completed === exercise.setsCount ? 'bg-emerald-500 text-white' : 'bg-primary/10 text-primary'}`}>
                                                     {completed === exercise.setsCount ? '✓' : exerciseIndex + 1}
                                                 </span>
                                                     <span className="min-w-0 flex-1">
@@ -627,7 +627,7 @@ export default function StudentWorkoutView({
                                                             return (
                                                                 <div key={setIndex} className={`rounded-xl border px-2 py-2 ${set.dirty ? 'border-amber-500/35 bg-amber-500/[0.04]' : set.saved ? 'border-emerald-500/20 bg-emerald-500/[0.03]' : 'border-border bg-background/50'}`}>
                                                                     <div className={`grid items-center gap-2 ${exercise.isCardio ? 'grid-cols-[2rem_minmax(0,1fr)_4.75rem]' : 'grid-cols-[2rem_minmax(0,1fr)_minmax(0,1fr)_4.75rem]'}`}>
-                                                                        <span className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-black ${set.saved && !set.dirty ? 'bg-emerald-500/15 text-emerald-500' : 'bg-indigo-500/10 text-indigo-400'}`}>
+                                                                        <span className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-black ${set.saved && !set.dirty ? 'bg-emerald-500/15 text-emerald-500' : 'bg-primary/10 text-primary'}`}>
                                                                             {setIndex + 1}
                                                                         </span>
 
@@ -640,7 +640,7 @@ export default function StudentWorkoutView({
                                                                                 placeholder="—"
                                                                                 value={set.weight}
                                                                                 onChange={(event) => updateField(exerciseIndex, setIndex, 'weight', event.target.value)}
-                                                                                className="h-10 min-w-0 w-full rounded-lg border border-border bg-background px-2 text-center text-base font-bold text-foreground outline-none focus:border-indigo-500"
+                                                                                className="h-10 min-w-0 w-full rounded-lg border border-border bg-background px-2 text-center text-base font-bold text-foreground outline-none focus:border-primary"
                                                                             />
                                                                         )}
 
@@ -651,7 +651,7 @@ export default function StudentWorkoutView({
                                                                             placeholder="—"
                                                                             value={set.reps}
                                                                             onChange={(event) => updateField(exerciseIndex, setIndex, 'reps', event.target.value)}
-                                                                            className="h-10 min-w-0 w-full rounded-lg border border-border bg-background px-2 text-center text-base font-bold text-foreground outline-none focus:border-indigo-500"
+                                                                            className="h-10 min-w-0 w-full rounded-lg border border-border bg-background px-2 text-center text-base font-bold text-foreground outline-none focus:border-primary"
                                                                         />
 
                                                                         <button
@@ -659,7 +659,7 @@ export default function StudentWorkoutView({
                                                                             aria-label={`Guardar serie ${setIndex + 1}`}
                                                                             onClick={() => saveOneSet(exerciseIndex, setIndex)}
                                                                             disabled={savingKey != null || set.queued || (!set.dirty && set.saved)}
-                                                                            className={`inline-flex h-10 w-full items-center justify-center rounded-lg px-1 text-[10px] font-bold text-white disabled:opacity-55 ${set.queued ? 'bg-amber-600' : set.saved && !set.dirty ? 'bg-emerald-600' : 'bg-indigo-600'}`}
+                                                                            className={`inline-flex h-10 w-full items-center justify-center rounded-lg px-1 text-xs font-bold disabled:opacity-55 ${set.queued ? 'bg-amber-700 text-white' : set.saved && !set.dirty ? 'bg-emerald-700 text-white' : 'bg-primary text-primary-foreground'}`}
                                                                         >
                                                                             {savingKey === key ? 'Guardando…' : set.queued ? 'Pendiente' : set.saved ? 'Actualizar' : 'Guardar'}
                                                                         </button>
@@ -667,11 +667,11 @@ export default function StudentWorkoutView({
 
                                                                     <div className={`mt-1 grid gap-2 pl-10 pr-[5.25rem] ${exercise.isCardio ? 'grid-cols-1' : 'grid-cols-2'}`}>
                                                                         {!exercise.isCardio && (
-                                                                            <span className="truncate text-center text-[9px] text-muted-foreground">
+                                                                            <span className="truncate text-center text-[11px] text-muted-foreground">
                                                                                 {exercise.previousWeights[setIndex] != null ? `Anterior ${exercise.previousWeights[setIndex]} ${weightUnit}` : 'Sin peso anterior'}
                                                                             </span>
                                                                         )}
-                                                                        <span className="truncate text-center text-[9px] text-muted-foreground">
+                                                                        <span className="truncate text-center text-[11px] text-muted-foreground">
                                                                             {exercise.previousReps[setIndex] != null
                                                                                 ? `Anterior ${exercise.previousReps[setIndex]} ${exercise.isCardio ? 'min' : 'reps'}`
                                                                                 : exercise.targetReps ? `Objetivo ${exercise.targetReps}` : 'Sin registro anterior'}
@@ -689,7 +689,7 @@ export default function StudentWorkoutView({
                                                                                     aria-label="Esfuerzo opcional"
                                                                                     value={set.rpe}
                                                                                     onChange={(event) => updateField(exerciseIndex, setIndex, 'rpe', event.target.value)}
-                                                                                    className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none focus:border-indigo-500"
+                                                                                    className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none focus:border-primary"
                                                                                 >
                                                                                     <option value="">Sin indicar</option>
                                                                                     {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => <option key={value} value={value}>{value}/10</option>)}
@@ -712,7 +712,7 @@ export default function StudentWorkoutView({
                                                     </div>
 
                                                     <details className="mt-3 rounded-xl border border-border bg-background/60">
-                                                        <summary className="flex min-h-10 cursor-pointer list-none items-center gap-2 px-3 text-xs font-semibold text-indigo-400">
+                                                        <summary className="flex min-h-10 cursor-pointer list-none items-center gap-2 px-3 text-xs font-semibold text-primary">
                                                             <MessageCircle className="h-4 w-4" />
                                                             Tengo una duda sobre este ejercicio
                                                         </summary>
@@ -745,7 +745,7 @@ export default function StudentWorkoutView({
                 <div className="mx-auto flex max-w-lg gap-2 px-4 py-3">
                     <button type="button" onClick={() => router.push(returnHref)} className={`min-h-12 rounded-xl border border-border bg-secondary px-4 text-sm font-semibold text-foreground ${completedSession ? 'flex-1' : ''}`}>{returnLabel}</button>
                     {!completedSession && (
-                        <button type="button" onClick={finishWorkout} disabled={finishing} className="min-h-12 flex-1 rounded-xl bg-indigo-600 px-4 text-sm font-bold text-white disabled:opacity-50">
+                        <button type="button" onClick={finishWorkout} disabled={finishing} className="min-h-12 flex-1 rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground disabled:opacity-50">
                             {finishing ? 'Finalizando…' : 'Finalizar entrenamiento'}
                         </button>
                     )}

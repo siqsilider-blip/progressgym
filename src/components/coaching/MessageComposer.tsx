@@ -63,7 +63,7 @@ export default function MessageComposer({
                 <select
                     value={topic}
                     onChange={(event) => setTopic(event.target.value as CoachingTopic)}
-                    className="h-10 w-full rounded-xl border border-border bg-background px-3 text-xs font-semibold text-foreground outline-none focus:border-indigo-500"
+                    className="h-10 w-full rounded-xl border border-border bg-background px-3 text-xs font-semibold text-foreground outline-none focus:border-primary"
                 >
                     {TOPICS.map((item) => (
                         <option key={item.value} value={item.value}>{item.label}</option>
@@ -76,7 +76,7 @@ export default function MessageComposer({
                 placeholder={placeholder}
                 maxLength={4000}
                 rows={compact ? 2 : 3}
-                className="w-full resize-none rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-indigo-500"
+                className="w-full resize-none rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary"
             />
             <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0 text-[11px]">
@@ -87,7 +87,7 @@ export default function MessageComposer({
                     type="button"
                     onClick={submit}
                     disabled={pending || !body.trim()}
-                    className="inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 text-xs font-bold text-white disabled:opacity-45 sm:w-auto"
+                    className="inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-xs font-bold text-primary-foreground disabled:opacity-45 sm:w-auto"
                 >
                     <Send className="h-3.5 w-3.5" />
                     {pending ? 'Enviando…' : 'Enviar'}

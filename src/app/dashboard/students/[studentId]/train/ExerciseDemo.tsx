@@ -77,7 +77,7 @@ export default function ExerciseDemo({ exerciseName, videoUrl, instructions, mus
                 type="button"
                 onClick={() => setOpen(true)}
                 aria-haspopup="dialog"
-                className="mt-2 inline-flex min-h-11 items-center gap-2 rounded-xl border border-indigo-500/30 bg-indigo-500/10 px-4 py-2.5 text-sm font-semibold text-indigo-400 transition active:scale-[0.98] hover:bg-indigo-500/20"
+                className="mt-2 inline-flex min-h-11 items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-4 py-2.5 text-sm font-semibold text-primary transition active:scale-[0.98] hover:bg-primary/20"
             >
                 <Dumbbell className="h-5 w-5" aria-hidden="true" />
                 Ver ejercicio
@@ -98,7 +98,7 @@ export default function ExerciseDemo({ exerciseName, videoUrl, instructions, mus
                     >
                         <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-border bg-background/95 px-4 py-3 backdrop-blur">
                             <div className="min-w-0">
-                                <p className="text-xs font-medium text-indigo-400">Guía del ejercicio</p>
+                                <p className="text-xs font-medium text-primary">Guía del ejercicio</p>
                                 <h2 id={titleId} className="line-clamp-2 break-words text-lg font-bold leading-6 text-foreground">
                                     {exerciseName}
                                 </h2>
@@ -148,7 +148,7 @@ export default function ExerciseDemo({ exerciseName, videoUrl, instructions, mus
                                 </section>
                             ) : source?.kind === 'external' ? (
                                 <div className="rounded-2xl border border-border bg-card p-4 text-center">
-                                    <PlayCircle className="mx-auto h-10 w-10 text-indigo-400" aria-hidden="true" />
+                                    <PlayCircle className="mx-auto h-10 w-10 text-primary" aria-hidden="true" />
                                     <p className="mt-2 text-sm text-muted-foreground">
                                         Este video se abre en su sitio original.
                                     </p>
@@ -156,7 +156,7 @@ export default function ExerciseDemo({ exerciseName, videoUrl, instructions, mus
                                         href={source.url}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white"
+                                        className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground"
                                     >
                                         Abrir demostración
                                         <ExternalLink className="h-4 w-4" aria-hidden="true" />

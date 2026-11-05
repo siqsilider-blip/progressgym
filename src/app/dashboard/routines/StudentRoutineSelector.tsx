@@ -21,12 +21,12 @@ function getInitials(first: string, last: string): string {
 }
 
 const AVATAR_COLORS = [
-    'bg-indigo-500',
+    'bg-primary',
     'bg-emerald-500',
     'bg-amber-500',
     'bg-rose-500',
     'bg-cyan-500',
-    'bg-violet-500',
+    'bg-primary',
     'bg-orange-500',
     'bg-teal-500',
 ]
@@ -172,7 +172,7 @@ export default function StudentRoutineSelector({
                                         placeholder="Buscar alumno..."
                                         value={search}
                                         onChange={(e) => setSearch(e.target.value)}
-                                        className="w-full rounded-xl border border-border bg-secondary px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                                        className="w-full rounded-xl border border-border bg-secondary px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
                                     />
                                 </div>
                             )}
@@ -198,7 +198,7 @@ export default function StudentRoutineSelector({
                                                 type="button"
                                                 onClick={() => handleSelect(student.id)}
                                                 className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition ${isSelected
-                                                        ? 'bg-indigo-500/10 ring-1 ring-indigo-500/30'
+                                                        ? 'bg-primary/10 ring-1 ring-primary/30'
                                                         : 'hover:bg-muted/60'
                                                     }`}
                                             >
@@ -208,7 +208,7 @@ export default function StudentRoutineSelector({
 
                                                 <div className="min-w-0 flex-1">
                                                     <p className={`truncate text-sm font-semibold ${isSelected
-                                                            ? 'text-indigo-600 dark:text-indigo-400'
+                                                            ? 'text-primary dark:text-primary'
                                                             : 'text-card-foreground'
                                                         }`}>
                                                         {name}
@@ -216,8 +216,8 @@ export default function StudentRoutineSelector({
                                                 </div>
 
                                                 {isSelected && (
-                                                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-500">
-                                                        <svg className="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary">
+                                                        <svg className="h-3.5 w-3.5 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                                                             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                                                         </svg>
                                                     </div>

@@ -93,7 +93,7 @@ export default async function StudentHistoryPage(props: PageProps) {
                 {totalSessions > 0 && (
                     <div className="grid grid-cols-3 gap-2">
                         <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-2.5 text-center">
-                            <p className="text-xl font-black text-indigo-400">{totalSessions}</p>
+                            <p className="text-xl font-black text-primary">{totalSessions}</p>
                             <p className="text-[10px] text-muted-foreground">Sesiones</p>
                         </div>
                         <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-2.5 text-center">
@@ -121,7 +121,7 @@ export default async function StudentHistoryPage(props: PageProps) {
                         </p>
                         <Link
                             href={`/dashboard/students/${params.studentId}/train`}
-                            className="mt-4 inline-block rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500"
+                            className="mt-4 inline-block rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary"
                         >
                             Ir a entrenar
                         </Link>
@@ -156,7 +156,7 @@ export default async function StudentHistoryPage(props: PageProps) {
                                                             ⏱ {formatDuration(session.durationSeconds)}
                                                         </span>
                                                     )}
-                                                    <span className="rounded-lg bg-indigo-500/10 px-2 py-1 text-[10px] font-semibold text-indigo-500">
+                                                    <span className="rounded-lg bg-primary/10 px-2 py-1 text-[10px] font-semibold text-brand-soft">
                                                         {session.totalSets} series
                                                     </span>
                                                 </div>

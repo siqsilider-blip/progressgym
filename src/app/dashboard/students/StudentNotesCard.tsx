@@ -22,7 +22,7 @@ function SaveButton() {
         <button
             type="submit"
             disabled={pending}
-            className="rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-2xl bg-primary px-4 py-3 text-sm font-medium text-primary-foreground transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60"
         >
             {pending ? 'Guardando...' : 'Guardar nota'}
         </button>
@@ -47,7 +47,7 @@ export default function StudentNotesCard({
                 defaultValue={initialNote}
                 rows={4}
                 placeholder="Escribí observaciones del alumno..."
-                className="w-full rounded-2xl border border-zinc-300 bg-zinc-50 px-4 py-3 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-500 focus:border-indigo-500 dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-100"
+                className="w-full rounded-2xl border border-zinc-300 bg-zinc-50 px-4 py-3 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-500 focus:border-primary dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-100"
             />
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

@@ -34,7 +34,7 @@ export default function RecentWorkoutActivityCard({
         <section className="rounded-2xl border p-4" style={{ borderColor: 'rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)' }}>
             <div className="mb-3 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5">
-                    <div className="rounded-xl bg-indigo-500/10 p-2 text-indigo-400">
+                    <div className="rounded-xl bg-primary/10 p-2 text-primary">
                         <Clock className="h-4 w-4" />
                     </div>
 
@@ -50,7 +50,7 @@ export default function RecentWorkoutActivityCard({
 
                 <Link
                     href="/dashboard/workouts"
-                    className="text-[11px] font-medium text-indigo-400 transition hover:text-indigo-300"
+                    className="text-[11px] font-medium text-primary transition hover:text-brand-soft"
                 >
                     Ver historial
                 </Link>
@@ -79,7 +79,7 @@ export default function RecentWorkoutActivityCard({
 
                             <div className="flex shrink-0 items-center gap-2 text-right">
                                 <div>
-                                    <p className="text-xs font-semibold text-indigo-400">
+                                    <p className="text-xs font-semibold text-primary">
                                         {formatWeight(item.weight, weightUnit)}
                                     </p>
                                     <p className="text-[10px] text-muted-foreground">

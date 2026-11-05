@@ -66,7 +66,7 @@ export default function FollowUpActions({ alert }: { alert: TrainerAlert }) {
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
             <Link
                 href={alert.actionHref}
-                className="inline-flex items-center gap-1 rounded-lg border border-indigo-500/20 bg-indigo-500/10 px-2 py-1 text-[10px] font-semibold text-indigo-400 transition hover:bg-indigo-500/15"
+                className="inline-flex items-center gap-1 rounded-lg border border-primary/20 bg-primary/10 px-2 py-1 text-[10px] font-semibold text-primary transition hover:bg-primary/15"
             >
                 {alert.actionLabel ?? 'Resolver'}
                 <ArrowRight className="h-3 w-3" />

@@ -146,7 +146,7 @@ export default function RoutineNameEditor({
                     onBlur={handleBlur}
                     onKeyDown={handleKeyDown}
                     placeholder="Nombre de la rutina"
-                    className="w-full min-w-0 border-b border-zinc-700 bg-transparent pb-1 pr-20 text-xl font-bold text-card-foreground outline-none transition focus:border-indigo-500 md:text-2xl"
+                    className="w-full min-w-0 border-b border-zinc-700 bg-transparent pb-1 pr-20 text-xl font-bold text-card-foreground outline-none transition focus:border-primary md:text-2xl"
                 />
 
                 <div className="absolute bottom-1.5 right-0 text-right">

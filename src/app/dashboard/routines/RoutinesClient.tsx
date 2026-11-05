@@ -91,7 +91,7 @@ export default function RoutinesClient({ students, routines, error }: Props) {
                     action={
                         <Link
                             href="/dashboard/templates"
-                            className="rounded-lg border border-indigo-500/20 bg-indigo-500/10 px-3 py-1.5 text-[11px] font-semibold text-indigo-400 transition hover:bg-indigo-500/15"
+                            className="rounded-lg border border-primary/20 bg-primary/10 px-3 py-1.5 text-[11px] font-semibold text-primary transition hover:bg-primary/15"
                         >
                             Templates
                         </Link>
@@ -106,7 +106,7 @@ export default function RoutinesClient({ students, routines, error }: Props) {
                         placeholder="Buscar por nombre..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="h-9 w-full rounded-lg border border-white/[0.07] bg-white/[0.025] pl-9 pr-3 text-xs text-foreground placeholder:text-muted-foreground/60 outline-none transition focus:border-indigo-500/60 focus:bg-white/[0.04]"
+                        className="h-9 w-full rounded-lg border border-white/[0.07] bg-white/[0.025] pl-9 pr-3 text-xs text-foreground placeholder:text-muted-foreground/60 outline-none transition focus:border-primary/60 focus:bg-white/[0.04]"
                     />
                 </div>
 
@@ -133,7 +133,7 @@ export default function RoutinesClient({ students, routines, error }: Props) {
                                 return (
                                     <div key={student.id} className="flex min-h-14 items-center gap-2 px-2.5 py-2 transition hover:bg-white/[0.035]">
                                         <Link href={`/dashboard/routines/${routine.id}`} className="flex min-w-0 flex-1 items-center gap-2.5">
-                                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-500/12 text-[10px] font-bold text-indigo-400">
+                                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/12 text-[10px] font-bold text-primary">
                                                     {getInitials(student)}
                                                 </div>
                                                 <div className="min-w-0">
@@ -150,7 +150,7 @@ export default function RoutinesClient({ students, routines, error }: Props) {
                                         <Link
                                             href={`/dashboard/students/${student.id}/train`}
                                             aria-label={`Entrenar a ${name}`}
-                                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-white transition hover:bg-indigo-500"
+                                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground transition hover:bg-primary"
                                         >
                                             <Dumbbell className="h-3.5 w-3.5" />
                                         </Link>

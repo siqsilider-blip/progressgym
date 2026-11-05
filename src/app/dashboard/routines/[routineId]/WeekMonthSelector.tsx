@@ -131,9 +131,9 @@ export default function WeekMonthSelector({
                                     onBlur={() => setEditingMonthId(null)}
                                     onKeyDown={e => e.key === 'Escape' && setEditingMonthId(null)}
                                     placeholder={`Mes ${month.month_number}`}
-                                    className="h-7 w-24 rounded-lg border border-indigo-500 bg-background px-2 text-xs text-foreground outline-none"
+                                    className="h-7 w-24 rounded-lg border border-primary bg-background px-2 text-xs text-foreground outline-none"
                                 />
-                                <button type="submit" className="rounded-lg bg-indigo-600 px-2 py-1 text-[10px] text-white">✓</button>
+                                <button type="submit" className="rounded-lg bg-primary px-2 py-1 text-[10px] text-primary-foreground">✓</button>
                             </form>
                         )
                     }
@@ -151,7 +151,7 @@ export default function WeekMonthSelector({
                             title={label}
                             className={`max-w-[9rem] shrink-0 truncate rounded-lg px-2.5 py-1.5 text-xs font-medium transition select-none ${
                                 isActive
-                                    ? 'bg-indigo-600 text-white shadow-sm'
+                                    ? 'bg-primary text-primary-foreground shadow-sm'
                                     : 'border border-border bg-secondary text-secondary-foreground hover:bg-muted'
                             }`}
                         >
@@ -231,9 +231,9 @@ export default function WeekMonthSelector({
                                         onBlur={() => setEditingWeekId(null)}
                                         onKeyDown={e => e.key === 'Escape' && setEditingWeekId(null)}
                                         placeholder={`Sem. ${week.week_number}`}
-                                        className="w-20 rounded-lg border border-indigo-500 bg-background px-2 py-1 text-xs text-foreground outline-none"
+                                        className="w-20 rounded-lg border border-primary bg-background px-2 py-1 text-xs text-foreground outline-none"
                                     />
-                                    <button type="submit" className="rounded-lg bg-indigo-600 px-2 py-1 text-[10px] text-white">✓</button>
+                                    <button type="submit" className="rounded-lg bg-primary px-2 py-1 text-[10px] text-primary-foreground">✓</button>
                                 </form>
                             )
                         }
@@ -251,7 +251,7 @@ export default function WeekMonthSelector({
                                 }}
                                 className={`max-w-[8rem] shrink-0 truncate rounded-lg px-2.5 py-1.5 text-xs font-medium transition select-none ${
                                     isActive
-                                        ? 'bg-secondary text-foreground ring-1 ring-inset ring-indigo-500'
+                                        ? 'bg-secondary text-foreground ring-1 ring-inset ring-primary'
                                         : 'border border-border bg-secondary text-secondary-foreground hover:bg-muted'
                                 }`}
                             >
@@ -341,7 +341,7 @@ export default function WeekMonthSelector({
                         }}
                         className={`w-full rounded-lg border py-1.5 text-[10px] transition ${
                             isPending
-                                ? 'border-indigo-300 bg-indigo-50 text-indigo-500 dark:border-indigo-500/30 dark:bg-indigo-500/10 cursor-not-allowed'
+                                ? 'border-primary bg-primary/10 text-brand-soft dark:border-primary/30 dark:bg-primary/10 cursor-not-allowed'
                                 : 'border-border bg-secondary text-secondary-foreground hover:bg-muted'
                         }`}
                     >

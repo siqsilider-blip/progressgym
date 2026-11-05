@@ -1,8 +1,8 @@
-const CACHE_VERSION = 'v2'
+const CACHE_VERSION = 'v3-brand'
 const STATIC_CACHE = `progrezzia-static-${CACHE_VERSION}`
 const OFFLINE_URL = '/offline.html'
 
-const PRECACHE_URLS = [OFFLINE_URL, '/icon-192.png', '/icon-512.png']
+const PRECACHE_URLS = [OFFLINE_URL, '/icon-192.png', '/icon-512.png', '/icon-maskable-512.png', '/badge-72.png']
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -76,7 +76,7 @@ self.addEventListener('push', (event) => {
     self.registration.showNotification(data.title || 'Progrezzia', {
       body: data.body || '',
       icon: '/icon-192.png',
-      badge: '/icon-192.png',
+      badge: '/badge-72.png',
       data: data.url ? { url: data.url } : undefined,
     })
   )

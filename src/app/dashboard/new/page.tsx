@@ -15,10 +15,10 @@ export default function NewDashboardPage() {
                 <div className="space-y-2">
                     <Link
                         href="/dashboard/students/new"
-                        className="group flex items-center justify-between rounded-xl border border-white/[0.07] bg-white/[0.025] p-3 transition hover:border-indigo-500/30 hover:bg-white/[0.04]"
+                        className="group flex items-center justify-between rounded-xl border border-white/[0.07] bg-white/[0.025] p-3 transition hover:border-primary/30 hover:bg-white/[0.04]"
                     >
                         <div className="flex items-center gap-3">
-                            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-400">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
                                 <UserPlus className="h-5 w-5" />
                             </div>
 
@@ -32,7 +32,7 @@ export default function NewDashboardPage() {
                             </div>
                         </div>
 
-                        <ChevronRight className="h-5 w-5 text-zinc-400 transition group-hover:text-indigo-500" />
+                        <ChevronRight className="h-5 w-5 text-zinc-400 transition group-hover:text-brand-soft" />
                     </Link>
 
                     <Link
@@ -81,10 +81,10 @@ export default function NewDashboardPage() {
 
                     <Link
                         href="/dashboard/templates/new"
-                        className="group flex items-center justify-between rounded-xl border border-white/[0.07] bg-white/[0.025] p-3 transition hover:border-violet-500/30 hover:bg-white/[0.04]"
+                        className="group flex items-center justify-between rounded-xl border border-white/[0.07] bg-white/[0.025] p-3 transition hover:border-primary/30 hover:bg-white/[0.04]"
                     >
                         <div className="flex items-center gap-3">
-                            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-500/10 text-violet-400">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
                                 <ClipboardList className="h-5 w-5" />
                             </div>
 
@@ -98,7 +98,7 @@ export default function NewDashboardPage() {
                             </div>
                         </div>
 
-                        <ChevronRight className="h-5 w-5 text-zinc-400 transition group-hover:text-purple-500" />
+                        <ChevronRight className="h-5 w-5 text-zinc-400 transition group-hover:text-brand-soft" />
                     </Link>
                 </div>
             </div>

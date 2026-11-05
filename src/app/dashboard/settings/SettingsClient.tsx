@@ -300,7 +300,7 @@ function ToggleRow({
                 <p className={`text-xs ${isLight ? 'text-zinc-500' : 'text-zinc-500'}`}>{description}</p>
             </div>
             <div className="relative shrink-0">
-                <div className={`h-6 w-11 rounded-full transition-colors ${checked ? 'bg-indigo-600' : isLight ? 'bg-zinc-200' : 'bg-zinc-700'}`} />
+                <div className={`h-6 w-11 rounded-full transition-colors ${checked ? 'bg-primary' : isLight ? 'bg-zinc-200' : 'bg-zinc-700'}`} />
                 <div className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${checked ? 'left-[22px]' : 'left-0.5'}`} />
             </div>
         </button>

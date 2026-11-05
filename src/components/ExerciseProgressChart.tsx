@@ -110,7 +110,7 @@ export default function ExerciseProgressChart({ logs }: Props) {
                         />
                         <Tooltip
                             contentStyle={{
-                                backgroundColor: '#09090b',
+                                backgroundColor: '#111111',
                                 border: '1px solid #27272a',
                                 borderRadius: 10,
                                 color: '#fafafa',
@@ -125,7 +125,7 @@ export default function ExerciseProgressChart({ logs }: Props) {
                         <Line
                             type="monotone"
                             dataKey="weight"
-                            stroke="#6366f1"
+                            stroke="#c98796"
                             strokeWidth={2.5}
                             dot={(props) => {
                                 const { cx, cy, index } = props
@@ -136,13 +136,13 @@ export default function ExerciseProgressChart({ logs }: Props) {
                                         cx={cx}
                                         cy={cy}
                                         r={isLast ? 5 : 3}
-                                        fill={isLast ? '#10b981' : '#6366f1'}
-                                        stroke={isLast ? '#ffffff' : '#6366f1'}
+                                        fill={isLast ? '#10b981' : '#c98796'}
+                                        stroke={isLast ? '#ffffff' : '#c98796'}
                                         strokeWidth={isLast ? 2 : 1}
                                     />
                                 )
                             }}
-                            activeDot={{ r: 6, fill: '#a5b4fc', stroke: '#6366f1', strokeWidth: 2 }}
+                            activeDot={{ r: 6, fill: '#e9a0ad', stroke: '#c98796', strokeWidth: 2 }}
                         />
                     </LineChart>
                 ) : (

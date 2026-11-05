@@ -207,7 +207,7 @@ export default async function AppHomePage() {
                 {/* ── Header ── */}
                 <div className="flex items-start justify-between gap-3 pt-2">
                     <div className="min-w-0">
-                        <p className="text-xs font-medium text-indigo-500">Progrezzia</p>
+                        <p className="text-xs font-medium text-brand-soft">Progrezzia</p>
                         <h1 className="mt-1 truncate text-2xl font-black text-foreground">
                             {greeting}, {firstName} 👋
                         </h1>
@@ -223,7 +223,7 @@ export default async function AppHomePage() {
                     >
                         <Bell className="h-4.5 w-4.5" />
                         {unreadNotifications > 0 && (
-                            <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-violet-500 px-1 text-[8px] font-black text-white">
+                            <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[8px] font-black text-primary-foreground">
                                 {Math.min(unreadNotifications, 9)}
                             </span>
                         )}
@@ -233,16 +233,16 @@ export default async function AppHomePage() {
                 {!onboardingCompleted && (
                     <Link
                         href="/app/onboarding"
-                        className="flex items-center gap-3 rounded-2xl border border-indigo-500/25 bg-indigo-500/[0.08] p-3.5 transition active:scale-[0.99]"
+                        className="flex items-center gap-3 rounded-2xl border border-primary/25 bg-primary/[0.08] p-3.5 transition active:scale-[0.99]"
                     >
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-500/15 text-indigo-400">
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
                             <ClipboardCheck className="h-4.5 w-4.5" />
                         </span>
                         <span className="min-w-0 flex-1">
                             <span className="block text-sm font-black text-foreground">Completá tu ficha inicial</span>
                             <span className="mt-0.5 block text-[11px] leading-4 text-muted-foreground">Objetivos, tiempo disponible y cuidados importantes.</span>
                         </span>
-                        <span className="text-indigo-400">→</span>
+                        <span className="text-primary">→</span>
                     </Link>
                 )}
 
@@ -270,38 +270,38 @@ export default async function AppHomePage() {
                 ) : assignedRoutineId ? (
                     <Link
                         href={trainHref}
-                        className="block overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 to-violet-600 shadow-lg shadow-indigo-500/20 transition active:scale-[0.98]"
+                        className="block overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-brand-soft shadow-lg shadow-primary/20 transition active:scale-[0.98]"
                     >
                         <div className="p-5">
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-200">
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-primary-foreground">
                                 {selectedDayStatus === 'in_progress' ? 'Sesión en curso' : 'Próximo entrenamiento'}
                             </p>
-                            <h2 className="mt-1.5 text-xl font-black text-white">
+                            <h2 className="mt-1.5 text-xl font-black text-primary-foreground">
                                 {selectedDayStatus === 'in_progress' ? 'Continuar sesión →' : `${selectedDayLabel ?? 'Entrenar'} →`}
                             </h2>
-                            <p className="mt-0.5 text-xs text-indigo-200">
+                            <p className="mt-0.5 text-xs text-primary-foreground">
                                 {todayExercises.length > 0
                                     ? `${todayExercises.length} ejercicios · ${todayExercises.reduce((a, e) => a + e.sets, 0)} series`
                                     : 'Tocá para abrir tu rutina'}
                             </p>
                             <div className="mt-3 flex items-center gap-2">
-                                <span className="rounded-full bg-white/15 px-3 py-1 text-[10px] font-medium text-white backdrop-blur">
+                                <span className="rounded-full bg-black/10 px-3 py-1 text-[10px] font-medium text-primary-foreground backdrop-blur">
                                     {routineName}
                                 </span>
                                 {totalTrainingDays > 0 && (
-                                    <span className="text-[10px] font-medium text-indigo-100">
+                                    <span className="text-[10px] font-medium text-primary-foreground">
                                         {completedDays} de {totalTrainingDays} completados
                                     </span>
                                 )}
                                 {totalProgramWeeks > 1 && (
-                                    <span className="text-[10px] font-medium text-indigo-100">
+                                    <span className="text-[10px] font-medium text-primary-foreground">
                                         Semana {programWeekNumber} de {totalProgramWeeks}
                                     </span>
                                 )}
                             </div>
                         </div>
-                        <div className="border-t border-white/10 bg-white/5 px-5 py-3">
-                            <p className="text-xs font-semibold text-white">
+                        <div className="border-t border-black/10 bg-black/5 px-5 py-3">
+                            <p className="text-xs font-semibold text-primary-foreground">
                                 {selectedDayStatus === 'in_progress' ? 'Retomar donde lo dejaste' : 'Tocar para comenzar'}
                             </p>
                         </div>
@@ -327,7 +327,7 @@ export default async function AppHomePage() {
                         ? 'border-emerald-500/20 bg-emerald-500/[0.05]'
                         : progressPhotoDue
                             ? 'border-cyan-500/25 bg-cyan-500/[0.07]'
-                        : 'border-indigo-500/25 bg-indigo-500/[0.07]'
+                        : 'border-primary/25 bg-primary/[0.07]'
                         }`}
                 >
                     <div>
@@ -348,7 +348,7 @@ export default async function AppHomePage() {
                                     : 'Energía, descanso, estrés y molestias'}
                         </p>
                     </div>
-                    <span className={`text-lg ${weeklyCheckinCompleted && !progressPhotoDue ? 'text-emerald-500' : progressPhotoDue ? 'text-cyan-500' : 'text-indigo-500'}`}>→</span>
+                    <span className={`text-lg ${weeklyCheckinCompleted && !progressPhotoDue ? 'text-emerald-500' : progressPhotoDue ? 'text-cyan-500' : 'text-brand-soft'}`}>→</span>
                 </Link>
 
                 {/* ── Ejercicios de hoy ── */}
@@ -364,7 +364,7 @@ export default async function AppHomePage() {
                                     className="flex items-center justify-between rounded-xl bg-muted/40 px-3 py-2.5"
                                 >
                                     <div className="flex items-center gap-2.5">
-                                        <span className="flex h-6 w-6 items-center justify-center rounded-md bg-indigo-500/10 text-[10px] font-bold text-indigo-500">
+                                        <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 text-[10px] font-bold text-brand-soft">
                                             {idx + 1}
                                         </span>
                                         <p className="text-xs font-medium text-card-foreground">{ex.name}</p>

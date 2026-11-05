@@ -26,7 +26,7 @@ export default function StudentWeeklyVolumeCard({
                             {item.muscle}
                         </span>
 
-                        <span className="font-semibold text-indigo-400">
+                        <span className="font-semibold text-primary">
                             {item.sets} series
                         </span>
                     </div>

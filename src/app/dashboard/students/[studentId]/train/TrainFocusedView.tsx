@@ -591,14 +591,14 @@ export default function TrainFocusedView({
                                 onChange={(e) => { setSessionNote(e.target.value); setNoteSaved(false) }}
                                 placeholder="Ej: Subí el peso en press, me costó la última serie..."
                                 rows={2}
-                                className="mt-1.5 w-full resize-none rounded-2xl border border-border bg-input px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 placeholder:text-muted-foreground"
+                                className="mt-1.5 w-full resize-none rounded-2xl border border-border bg-input px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-muted-foreground"
                             />
                             {sessionNote.trim() && (
                                 <button
                                     type="button"
                                     onClick={saveNote}
                                     disabled={savingNote}
-                                    className="mt-1.5 rounded-xl bg-indigo-600/10 px-3 py-1.5 text-xs font-medium text-indigo-500 transition hover:bg-indigo-600/20 disabled:opacity-50"
+                                    className="mt-1.5 rounded-xl bg-primary/10 px-3 py-1.5 text-xs font-medium text-brand-soft transition hover:bg-primary/20 disabled:opacity-50"
                                 >
                                     {savingNote ? 'Guardando...' : noteSaved ? '✓ Guardado' : 'Guardar nota'}
                                 </button>
@@ -653,7 +653,7 @@ export default function TrainFocusedView({
                 }}
             >
                 <div className="w-full rounded-3xl border border-border bg-card p-6 text-center shadow-sm">
-                    <p className="text-xs font-medium uppercase tracking-widest text-indigo-500">
+                    <p className="text-xs font-medium uppercase tracking-widest text-brand-soft">
                         Descanso
                     </p>
 
@@ -663,7 +663,7 @@ export default function TrainFocusedView({
 
                     <div className="mt-5 h-2 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700">
                         <div
-                            className={`h-full rounded-full transition-all duration-1000 ease-linear ${restTimeLeft <= 5 ? 'bg-emerald-500' : 'bg-indigo-500'}`}
+                            className={`h-full rounded-full transition-all duration-1000 ease-linear ${restTimeLeft <= 5 ? 'bg-emerald-500' : 'bg-primary'}`}
                             style={{ width: `${progress}%` }}
                         />
                     </div>
@@ -688,7 +688,7 @@ export default function TrainFocusedView({
                         <button
                             type="button"
                             onClick={skipRest}
-                            className="rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500 active:scale-[0.97]"
+                            className="rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary active:scale-[0.97]"
                         >
                             Saltar
                         </button>
@@ -758,7 +758,7 @@ export default function TrainFocusedView({
                             <button
                                 type="button"
                                 onClick={goToNextExercise}
-                                className="flex-1 rounded-2xl bg-indigo-600 px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-indigo-500 active:scale-[0.97]"
+                                className="flex-1 rounded-2xl bg-primary px-4 py-3.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary active:scale-[0.97]"
                             >
                                 Siguiente ejercicio
                             </button>
@@ -809,7 +809,7 @@ export default function TrainFocusedView({
                 </div>
                 <div className="h-1 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
                     <div
-                        className="h-full rounded-full bg-indigo-500 transition-all duration-300"
+                        className="h-full rounded-full bg-primary transition-all duration-300"
                         style={{ width: totalSetsSession > 0 ? `${Math.round((completedSetsTotal / totalSetsSession) * 100)}%` : '0%' }}
                     />
                 </div>
@@ -817,7 +817,7 @@ export default function TrainFocusedView({
 
             {/* ── Header ── */}
             <div className="min-w-0">
-                <p className="text-xs font-medium text-indigo-500">
+                <p className="text-xs font-medium text-brand-soft">
                     {dayLabel} · {exercise.block === 'activation' ? 'Activación' : exercise.block === 'closing' ? 'Cierre' : 'Principal'} · {currentExerciseIndex + 1}/{totalExercises}
                 </p>
                 <h2 className="mt-0.5 truncate text-xl font-bold text-card-foreground">
@@ -884,7 +884,7 @@ export default function TrainFocusedView({
                                 onClick={() => goToExercise(idx)}
                                 className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-medium transition active:scale-90 ${
                                     isCurrent
-                                        ? 'bg-indigo-50 text-indigo-600 ring-1 ring-inset ring-indigo-500 dark:bg-indigo-500/15 dark:text-indigo-400 dark:ring-indigo-400'
+                                        ? 'bg-primary/10 text-primary ring-1 ring-inset ring-primary dark:bg-primary/15 dark:text-primary dark:ring-primary'
                                         : allDone
                                             ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400'
                                             : 'bg-muted text-muted-foreground'
@@ -908,7 +908,7 @@ export default function TrainFocusedView({
 
                     if (isActive) {
                         return (
-                            <section key={idx} className="rounded-xl border border-indigo-500/40 bg-indigo-500/[0.06] p-3">
+                            <section key={idx} className="rounded-xl border border-primary/40 bg-primary/[0.06] p-3">
                                 <div className={`grid gap-2 ${exercise.isCardio ? 'grid-cols-1' : 'grid-cols-2'}`}>
                                     {!exercise.isCardio && (
                                         <label className="min-w-0">
@@ -923,7 +923,7 @@ export default function TrainFocusedView({
                                                 value={set.weight}
                                                 onChange={(e) => updateSetField(idx, 'weight', e.target.value)}
                                                 onKeyDown={(e) => handleWeightKeyDown(e, idx)}
-                                                className="h-11 w-full rounded-lg border border-indigo-500/35 bg-background px-3 text-center text-lg font-bold text-foreground outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/25"
+                                                className="h-11 w-full rounded-lg border border-primary/35 bg-background px-3 text-center text-lg font-bold text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/25"
                                             />
                                             <span className="mt-1 block text-[10px] text-muted-foreground">
                                                 {exercise.previousWeights[idx] != null ? `Anterior: ${exercise.previousWeights[idx]} ${weightUnit}` : 'Ingresá el peso usado'}
@@ -944,7 +944,7 @@ export default function TrainFocusedView({
                                             value={set.reps}
                                             onChange={(e) => updateSetField(idx, 'reps', e.target.value)}
                                             onKeyDown={(e) => handleRepsKeyDown(e, idx)}
-                                            className="h-11 w-full rounded-lg border border-indigo-500/35 bg-background px-3 text-center text-lg font-bold text-foreground outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/25"
+                                            className="h-11 w-full rounded-lg border border-primary/35 bg-background px-3 text-center text-lg font-bold text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/25"
                                         />
                                         <span className="mt-1 block text-[10px] text-muted-foreground">
                                             {exercise.previousReps[idx] != null
@@ -956,7 +956,7 @@ export default function TrainFocusedView({
                                     </label>
                                 </div>
 
-                                <div className="mt-2.5 border-t border-indigo-500/20 pt-2">
+                                <div className="mt-2.5 border-t border-primary/20 pt-2">
                                     <button
                                         type="button"
                                         aria-expanded={showRpeInfo}
@@ -980,7 +980,7 @@ export default function TrainFocusedView({
                                                         onClick={() => updateSetRpe(idx, set.rpe === String(n) ? '' : String(n))}
                                                         className={`h-7 min-w-0 flex-1 rounded-md text-[11px] font-medium transition active:scale-90 ${
                                                             set.rpe === String(n)
-                                                                ? 'bg-indigo-600 text-white'
+                                                                ? 'bg-primary text-primary-foreground'
                                                                 : 'border border-border bg-secondary text-secondary-foreground hover:bg-muted'
                                                         }`}
                                                     >
@@ -1006,12 +1006,12 @@ export default function TrainFocusedView({
                                     {!exercise.isCardio && (
                                         <label>
                                             <span className="mb-1 block text-[11px] text-muted-foreground">Peso ({weightUnit})</span>
-                                            <input type="number" inputMode="decimal" step="0.5" value={set.weight} onChange={(e) => updateSetField(idx, 'weight', e.target.value)} className="h-10 w-full rounded-lg border border-border bg-background px-2 text-center text-sm font-semibold text-foreground outline-none focus:border-indigo-500" />
+                                            <input type="number" inputMode="decimal" step="0.5" value={set.weight} onChange={(e) => updateSetField(idx, 'weight', e.target.value)} className="h-10 w-full rounded-lg border border-border bg-background px-2 text-center text-sm font-semibold text-foreground outline-none focus:border-primary" />
                                         </label>
                                     )}
                                     <label>
                                         <span className="mb-1 block text-[11px] text-muted-foreground">{exercise.isCardio ? 'Tiempo (min)' : 'Repeticiones'}</span>
-                                        <input type="number" inputMode="numeric" value={set.reps} onChange={(e) => updateSetField(idx, 'reps', e.target.value)} className="h-10 w-full rounded-lg border border-border bg-background px-2 text-center text-sm font-semibold text-foreground outline-none focus:border-indigo-500" />
+                                        <input type="number" inputMode="numeric" value={set.reps} onChange={(e) => updateSetField(idx, 'reps', e.target.value)} className="h-10 w-full rounded-lg border border-border bg-background px-2 text-center text-sm font-semibold text-foreground outline-none focus:border-primary" />
                                     </label>
                                 </div>
                                 <button type="button" onClick={() => confirmSet(idx)} disabled={saving} className="mt-2 h-10 w-full rounded-lg bg-emerald-600 text-xs font-semibold text-white disabled:opacity-50">
@@ -1044,7 +1044,7 @@ export default function TrainFocusedView({
                             </div>
                             {showPrs && isCompleted && set.isPR && <span aria-label="Récord personal">🏆</span>}
                             {isCompleted && (
-                                <button type="button" onClick={() => setEditingCompletedSetIndex(idx)} className="rounded-lg px-2 py-1.5 text-xs font-medium text-indigo-400 hover:bg-indigo-500/10">
+                                <button type="button" onClick={() => setEditingCompletedSetIndex(idx)} className="rounded-lg px-2 py-1.5 text-xs font-medium text-primary hover:bg-primary/10">
                                     Editar
                                 </button>
                             )}
@@ -1100,7 +1100,7 @@ export default function TrainFocusedView({
                                 type="button"
                                 onClick={() => confirmSet()}
                                 disabled={saving}
-                                className="flex-1 min-h-[48px] rounded-xl bg-indigo-600 px-4 py-3.5 text-center text-sm font-semibold text-white shadow transition hover:bg-indigo-500 disabled:opacity-50 active:scale-[0.97]"
+                                className="flex-1 min-h-[48px] rounded-xl bg-primary px-4 py-3.5 text-center text-sm font-semibold text-primary-foreground shadow transition hover:bg-primary disabled:opacity-50 active:scale-[0.97]"
                             >
                                 {saving ? 'Guardando...' : `Guardar serie ${activeSetIndex + 1}`}
                             </button>
@@ -1111,7 +1111,7 @@ export default function TrainFocusedView({
                                 <button
                                     type="button"
                                     onClick={goToNextExercise}
-                                    className="flex-1 min-h-[48px] rounded-xl bg-indigo-600 px-4 py-3.5 text-center text-sm font-semibold text-white transition hover:bg-indigo-500 active:scale-[0.97]"
+                                    className="flex-1 min-h-[48px] rounded-xl bg-primary px-4 py-3.5 text-center text-sm font-semibold text-primary-foreground transition hover:bg-primary active:scale-[0.97]"
                                 >
                                     Siguiente ejercicio
                                 </button>

@@ -49,7 +49,7 @@ export default function ProgramScheduleCard({
         <section className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-3">
             <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-500">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-brand-soft">
                         Programa activo
                     </p>
                     <h2 className="mt-1 truncate text-base font-bold text-card-foreground">{routineName}</h2>
@@ -84,12 +84,12 @@ export default function ProgramScheduleCard({
                             setDate(event.target.value)
                             setSaved(false)
                         }}
-                        className="h-11 min-w-0 flex-1 rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-indigo-500"
+                        className="h-11 min-w-0 flex-1 rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary"
                     />
                     <button
                         type="submit"
                         disabled={isPending || !date || date === programStartedOn}
-                        className="h-11 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="h-11 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         {isPending ? 'Guardando…' : 'Actualizar inicio'}
                     </button>

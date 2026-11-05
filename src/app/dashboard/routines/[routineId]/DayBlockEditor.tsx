@@ -161,7 +161,7 @@ export default function DayBlockEditor({
                                         setOpenAddBlock(meta.id)
                                         setOpenBlocks(prev => ({ ...prev, [meta.id]: true }))
                                     }}
-                                    className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-indigo-300 py-2 text-xs font-medium text-indigo-600 transition hover:border-indigo-400 hover:bg-indigo-50/50 dark:border-indigo-500/40 dark:text-indigo-400 dark:hover:bg-indigo-500/10"
+                                    className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-primary py-2 text-xs font-medium text-primary transition hover:border-primary hover:bg-primary/10 dark:border-primary/40 dark:text-primary dark:hover:bg-primary/10"
                                 >
                                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -246,7 +246,7 @@ function ExerciseRow({
 
     if (isEditing) {
         return (
-            <div className="rounded-xl border border-indigo-500/30 bg-indigo-50/30 p-3 dark:bg-indigo-950/20">
+            <div className="rounded-xl border border-primary/30 bg-primary/10 p-3 dark:bg-primary/10">
                 <form action={(fd) => {
                     setErrorMsg(null)
                     startTransition(async () => {
@@ -284,7 +284,7 @@ function ExerciseRow({
                             value={replacementName}
                             onChange={(event) => setReplacementName(event.target.value)}
                             placeholder="Buscar por nombre..."
-                            className="h-9 w-full rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                            className="h-9 w-full rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                         />
                         <datalist id={`exercise-options-${exercise.id}`}>
                             {exerciseOptions.map((option) => (
@@ -299,7 +299,7 @@ function ExerciseRow({
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         <div>
                             <label className="mb-1 block text-[10px] font-medium text-muted-foreground">Bloque</label>
-                            <select name="block" defaultValue={exercise.block} className="h-9 w-full rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                            <select name="block" defaultValue={exercise.block} className="h-9 w-full rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary">
                                 {BLOCK_META.map(b => (
                                     <option key={b.id} value={b.id}>{b.label}</option>
                                 ))}
@@ -307,15 +307,15 @@ function ExerciseRow({
                         </div>
                         <div>
                             <label className="mb-1 block text-[10px] font-medium text-muted-foreground">Series</label>
-                            <input name="sets" type="number" min="1" step="1" defaultValue={exercise.sets ?? ''} required className="h-9 w-full rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" />
+                            <input name="sets" type="number" min="1" step="1" defaultValue={exercise.sets ?? ''} required className="h-9 w-full rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary" />
                         </div>
                         <div>
                             <label className="mb-1 block text-[10px] font-medium text-muted-foreground">{isTime ? 'Min' : 'Reps'}</label>
-                            <input name="reps" type="number" min="1" step="1" defaultValue={exercise.reps ?? ''} required className="h-9 w-full rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" />
+                            <input name="reps" type="number" min="1" step="1" defaultValue={exercise.reps ?? ''} required className="h-9 w-full rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary" />
                         </div>
                         <div>
                             <label className="mb-1 block text-[10px] font-medium text-muted-foreground">Desc (s)</label>
-                            <input name="rest_seconds" type="number" min="0" step="15" defaultValue={exercise.rest_seconds ?? ''} className="h-9 w-full rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" />
+                            <input name="rest_seconds" type="number" min="0" step="15" defaultValue={exercise.rest_seconds ?? ''} className="h-9 w-full rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary" />
                         </div>
                     </div>
 
@@ -324,7 +324,7 @@ function ExerciseRow({
                     )}
 
                     <div className="flex gap-2">
-                        <button type="submit" disabled={isPending || !replacementExercise} className="h-9 flex-1 rounded-lg bg-indigo-600 text-xs font-semibold text-white hover:bg-indigo-500 disabled:opacity-50">
+                        <button type="submit" disabled={isPending || !replacementExercise} className="h-9 flex-1 rounded-lg bg-primary text-xs font-semibold text-primary-foreground hover:bg-primary disabled:opacity-50">
                             Guardar
                         </button>
                         <button formAction={(fd) => {
@@ -375,7 +375,7 @@ function ExerciseRow({
             onClick={onEdit}
             className="flex items-center gap-2 rounded-lg border border-transparent p-2 transition hover:border-border hover:bg-muted/50 cursor-pointer group"
           >
-            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-indigo-500/10 text-[10px] font-bold text-indigo-500">
+            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-primary/10 text-[10px] font-bold text-brand-soft">
                 {index + 1}
             </div>
             <div className="min-w-0 flex-1 flex items-center justify-between gap-2">
@@ -543,7 +543,7 @@ function AddExerciseForm({
             <input type="hidden" name="block" value={block} />
 
             <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">Nuevo ejercicio</p>
+                <p className="text-xs font-semibold text-primary dark:text-primary">Nuevo ejercicio</p>
                 <button type="button" onClick={onCancel} className="text-xs text-muted-foreground hover:text-foreground">Cancelar</button>
             </div>
 
@@ -559,13 +559,13 @@ function AddExerciseForm({
                         }}
                         placeholder="Buscar ejercicio..."
                         aria-label="Buscar ejercicio"
-                        className="w-full rounded-lg border border-indigo-500 bg-background px-3 py-2 text-xs font-medium text-foreground outline-none ring-1 ring-indigo-500 placeholder:text-muted-foreground"
+                        className="w-full rounded-lg border border-primary bg-background px-3 py-2 text-xs font-medium text-foreground outline-none ring-1 ring-primary placeholder:text-muted-foreground"
                     />
                 ) : (
                     <button
                         type="button"
                         onClick={() => setOpen(true)}
-                        className="w-full rounded-lg border border-border bg-background px-3 py-2 text-left text-xs font-medium text-foreground outline-none transition hover:border-indigo-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                        className="w-full rounded-lg border border-border bg-background px-3 py-2 text-left text-xs font-medium text-foreground outline-none transition hover:border-primary focus:border-primary focus:ring-1 focus:ring-primary"
                     >
                         {selectedExerciseName || <span className="text-muted-foreground">Seleccionar ejercicio</span>}
                     </button>
@@ -578,7 +578,7 @@ function AddExerciseForm({
                                 <select
                                     value={categoryFilter}
                                     onChange={(event) => setCategoryFilter(event.target.value)}
-                                    className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs text-foreground outline-none focus:border-indigo-500"
+                                    className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs text-foreground outline-none focus:border-primary"
                                 >
                                     <option value="all">Todos los grupos</option>
                                     {categories.map((category) => (
@@ -601,11 +601,11 @@ function AddExerciseForm({
                                                 setOpen(false)
                                             }}
                                             className={`flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-xs transition ${
-                                                isSelected ? 'bg-indigo-600 text-white' : 'text-foreground hover:bg-muted'
+                                                isSelected ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-muted'
                                             }`}
                                         >
                                             <span className="font-medium">{ex.name}</span>
-                                            {tag && <span className={`shrink-0 text-[10px] ${isSelected ? 'text-indigo-200' : 'text-muted-foreground'}`}>{tag}</span>}
+                                            {tag && <span className={`shrink-0 text-[10px] ${isSelected ? 'text-brand-soft' : 'text-muted-foreground'}`}>{tag}</span>}
                                         </button>
                                     )
                                 })
@@ -620,13 +620,13 @@ function AddExerciseForm({
                                         setCreateError(null)
                                         setTimeout(() => containerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 0)
                                     }}
-                                    className="mt-1 w-full rounded-md border border-dashed border-indigo-500/50 px-2 py-2 text-left text-xs font-semibold text-indigo-500 hover:bg-indigo-500/10"
+                                    className="mt-1 w-full rounded-md border border-dashed border-primary/50 px-2 py-2 text-left text-xs font-semibold text-brand-soft hover:bg-primary/10"
                                 >
                                     + Crear &ldquo;{search.trim()}&rdquo;
                                 </button>
                             )}
                             {showQuickCreate && (
-                                <div className="mt-1 space-y-2 rounded-md border border-indigo-500/30 bg-indigo-500/5 p-2">
+                                <div className="mt-1 space-y-2 rounded-md border border-primary/30 bg-primary/5 p-2">
                                     <p className="truncate text-xs font-semibold text-foreground">Nuevo: {search.trim()}</p>
                                     <div className="grid grid-cols-2 gap-2">
                                         <select
@@ -673,7 +673,7 @@ function AddExerciseForm({
                                                     setOpen(false)
                                                 })
                                             }}
-                                            className="h-8 flex-1 rounded-md bg-indigo-600 text-[11px] font-semibold text-white disabled:opacity-50"
+                                            className="h-8 flex-1 rounded-md bg-primary text-[11px] font-semibold text-primary-foreground disabled:opacity-50"
                                         >
                                             {isPending ? 'Creando...' : 'Crear y seleccionar'}
                                         </button>
@@ -689,15 +689,15 @@ function AddExerciseForm({
             <div className="grid grid-cols-3 gap-2">
                 <div>
                     <label className="mb-1 block text-[10px] font-medium text-muted-foreground">Series</label>
-                    <input name="sets" type="number" min="1" step="1" required value={sets} onChange={(e) => setSets(e.target.value)} className="h-9 w-full rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" />
+                    <input name="sets" type="number" min="1" step="1" required value={sets} onChange={(e) => setSets(e.target.value)} className="h-9 w-full rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary" />
                 </div>
                 <div>
                     <label className="mb-1 block text-[10px] font-medium text-muted-foreground">{isTimeExercise ? 'Min' : 'Reps'}</label>
-                    <input name="reps" type="number" min="1" step="1" required value={reps} onChange={(e) => setReps(e.target.value)} className="h-9 w-full rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" />
+                    <input name="reps" type="number" min="1" step="1" required value={reps} onChange={(e) => setReps(e.target.value)} className="h-9 w-full rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary" />
                 </div>
                 <div>
                     <label className="mb-1 block text-[10px] font-medium text-muted-foreground">Descanso (s)</label>
-                    <input name="rest_seconds" type="number" min="0" step="15" value={restSeconds} onChange={(e) => setRestSeconds(e.target.value)} className="h-9 w-full rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" />
+                    <input name="rest_seconds" type="number" min="0" step="15" value={restSeconds} onChange={(e) => setRestSeconds(e.target.value)} className="h-9 w-full rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary" />
                 </div>
             </div>
 
@@ -705,7 +705,7 @@ function AddExerciseForm({
                 <p className="text-xs font-medium text-red-500">{errorMsg}</p>
             )}
 
-            <button type="submit" disabled={isPending || !selectedExerciseName} className="h-9 w-full rounded-lg bg-indigo-600 text-xs font-semibold text-white transition hover:bg-indigo-500 disabled:opacity-50">
+            <button type="submit" disabled={isPending || !selectedExerciseName} className="h-9 w-full rounded-lg bg-primary text-xs font-semibold text-primary-foreground transition hover:bg-primary disabled:opacity-50">
                 Agregar al bloque
             </button>
         </form>
@@ -735,7 +735,7 @@ function ExerciseLogs({ logs, weightUnit, relation }: { logs: ExerciseLog[], wei
     ).slice(0, 3)
 
     return (
-        <div className="mt-3 border-t border-indigo-500/10 pt-3">
+        <div className="mt-3 border-t border-primary/10 pt-3">
             <div className="flex items-center gap-2 rounded-lg bg-background/50 px-2.5 py-1.5">
                 <span className="text-[10px] text-muted-foreground">Última vez:</span>
                 <span className="text-[11px] font-medium text-foreground">

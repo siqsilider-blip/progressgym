@@ -114,13 +114,13 @@ export default async function AppLogrosPage() {
                                                         {badge.progressLabel}
                                                     </p>
                                                 )}
-                                                <p className="ml-auto text-[10px] font-medium text-indigo-400">
+                                                <p className="ml-auto text-[10px] font-medium text-primary">
                                                     {Math.round(badge.progress)}%
                                                 </p>
                                             </div>
                                             <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
                                                 <div
-                                                    className="h-full rounded-full bg-indigo-500 transition-all duration-500"
+                                                    className="h-full rounded-full bg-primary transition-all duration-500"
                                                     style={{ width: `${badge.progress}%` }}
                                                 />
                                             </div>

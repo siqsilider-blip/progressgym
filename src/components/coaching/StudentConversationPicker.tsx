@@ -23,7 +23,7 @@ export default function StudentConversationPicker({
             <select
                 value={selectedStudentId}
                 onChange={(event) => router.push(`/dashboard/messages?student=${event.target.value}`)}
-                className="h-12 w-full rounded-xl border border-violet-500/25 bg-[#0d0d12] px-3 text-sm font-bold text-white outline-none focus:border-violet-500"
+                className="h-12 w-full rounded-xl border border-primary/25 bg-[#1a1a1a] px-3 text-sm font-bold text-white outline-none focus:border-primary"
             >
                 {students.map((student) => (
                     <option key={student.id} value={student.id}>

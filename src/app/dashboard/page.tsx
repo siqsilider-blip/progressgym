@@ -40,7 +40,7 @@ export default async function DashboardPage() {
 
                 <Link
                     href="/dashboard/new"
-                    className="shrink-0 rounded-xl bg-indigo-600 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-indigo-500"
+                    className="shrink-0 rounded-xl bg-primary px-3.5 py-2 text-xs font-bold text-primary-foreground transition hover:bg-primary"
                 >
                     + Nuevo
                 </Link>
@@ -49,8 +49,8 @@ export default async function DashboardPage() {
             <nav className="grid grid-cols-4 gap-2" aria-label="Accesos rápidos">
                 {[
                     { href: '/dashboard/train', icon: Zap, label: 'Entrenar', color: 'text-emerald-400' },
-                    { href: '/dashboard/students', icon: Users, label: 'Alumnos', color: 'text-violet-400' },
-                    { href: '/dashboard/routines', icon: ClipboardList, label: 'Rutinas', color: 'text-indigo-400' },
+                    { href: '/dashboard/students', icon: Users, label: 'Alumnos', color: 'text-primary' },
+                    { href: '/dashboard/routines', icon: ClipboardList, label: 'Rutinas', color: 'text-primary' },
                     { href: '/dashboard/messages', icon: MessageSquare, label: 'Mensajes', color: 'text-amber-400' },
                 ].map((item) => {
                     const Icon = item.icon

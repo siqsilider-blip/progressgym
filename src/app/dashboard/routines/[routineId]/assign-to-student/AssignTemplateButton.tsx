@@ -11,7 +11,7 @@ function SubmitButton() {
         <button
             type="submit"
             disabled={pending}
-            className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50"
         >
             {pending ? 'Asignando…' : 'Asignar'}
         </button>

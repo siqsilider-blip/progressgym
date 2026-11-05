@@ -71,7 +71,7 @@ export default async function WeeklyCheckinPage() {
     return (
         <main className="mx-auto w-full max-w-lg p-4 pb-28 md:p-6">
             <header className="mb-4 pt-2">
-                <p className="text-xs font-semibold text-indigo-500">Seguimiento semanal</p>
+                <p className="text-xs font-semibold text-brand-soft">Seguimiento semanal</p>
                 <h1 className="mt-1 text-2xl font-black text-foreground">¿Cómo estuvo tu semana?</h1>
                 <p className="mt-1 text-xs leading-5 text-muted-foreground">Te lleva cerca de un minuto y ayuda a tu entrenador a ajustar el plan a tiempo.</p>
             </header>

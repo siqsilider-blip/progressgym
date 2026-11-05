@@ -61,7 +61,7 @@ export default async function AppProfilePage() {
                 {/* ── Card principal ── */}
                 <div className="rounded-xl border border-border bg-card p-3.5">
                     <div className="flex items-center gap-3">
-                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-500/15 text-sm font-black text-indigo-400">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/15 text-sm font-black text-primary">
                             {initials}
                         </div>
                         <div>
@@ -83,7 +83,7 @@ export default async function AppProfilePage() {
                             Mi entrenador
                         </p>
                         <div className="mt-2 flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/10 text-sm font-bold text-indigo-500">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-sm font-bold text-brand-soft">
                                 {trainer.name.charAt(0).toUpperCase()}
                             </div>
                             <div>
@@ -107,20 +107,20 @@ export default async function AppProfilePage() {
 
                 <Link href="/app/logros" prefetch={true} className="flex items-center justify-between rounded-xl border border-border bg-card px-3.5 py-3 text-sm font-semibold text-foreground">
                     <span>Ver mis logros</span>
-                    <span className="text-indigo-400">→</span>
+                    <span className="text-primary">→</span>
                 </Link>
 
                 <Link href="/app/notifications" prefetch={true} className="flex items-center justify-between rounded-xl border border-border bg-card px-3.5 py-3 text-sm font-semibold text-foreground">
                     <span className="flex items-center gap-2">
-                        <Bell className="h-4 w-4 text-indigo-400" />
+                        <Bell className="h-4 w-4 text-primary" />
                         Avisos
                     </span>
-                    <span className="text-indigo-400">→</span>
+                    <span className="text-primary">→</span>
                 </Link>
 
                 <Link href="/app/onboarding" prefetch={true} className="flex items-center justify-between rounded-xl border border-border bg-card px-3.5 py-3 text-sm font-semibold text-foreground">
                     <span>Mis objetivos y disponibilidad</span>
-                    <span className="text-indigo-400">→</span>
+                    <span className="text-primary">→</span>
                 </Link>
 
                 <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 py-1 text-[11px] text-muted-foreground">

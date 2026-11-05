@@ -8,10 +8,11 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'Progrezzia',
-  description: 'La herramienta para entrenadores personales que quieren gestionar alumnos, registrar sesiones y ver el progreso real.',
+  description: 'Entrenamiento, seguimiento y progreso para alumnos y entrenadores personales.',
   manifest: '/manifest.webmanifest',
   icons: {
-    apple: '/icon-192.png',
+    icon: '/icon-192.png',
+    apple: '/apple-touch-icon.png',
   },
   appleWebApp: {
     capable: true,
@@ -24,7 +25,7 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#6366f1',
+  themeColor: '#111111',
 }
 
 export default async function RootLayout({

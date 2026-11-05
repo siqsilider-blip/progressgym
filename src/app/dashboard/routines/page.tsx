@@ -38,7 +38,7 @@ export default async function RoutinesPage() {
                         </p>
                         <Link
                             href="/dashboard/students/new"
-                            className="mt-4 inline-flex rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500"
+                            className="mt-4 inline-flex rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary"
                         >
                             Agregar alumno
                         </Link>

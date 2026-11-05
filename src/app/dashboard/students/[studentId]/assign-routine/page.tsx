@@ -188,11 +188,11 @@ export default async function AssignRoutinePage(props: PageProps) {
             />
 
             {onboardingCompleted && onboarding ? (
-                <section className="rounded-2xl border border-indigo-500/25 bg-indigo-500/[0.06] p-4">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Información para elegir</p>
+                <section className="rounded-2xl border border-primary/25 bg-primary/[0.06] p-4">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-primary">Información para elegir</p>
                     <div className="mt-2 flex flex-wrap gap-1.5">
                         {onboarding.goals.map((goal) => (
-                            <span key={goal} className="rounded-full bg-indigo-500/15 px-2.5 py-1 text-[10px] font-bold text-indigo-300">
+                            <span key={goal} className="rounded-full bg-primary/15 px-2.5 py-1 text-[10px] font-bold text-brand-soft">
                                 {labelFor(ONBOARDING_GOALS, goal)}
                             </span>
                         ))}
@@ -242,7 +242,7 @@ export default async function AssignRoutinePage(props: PageProps) {
                     </p>
                     <Link
                         href="/dashboard/templates/new"
-                        className="mt-3 inline-flex rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-indigo-500"
+                        className="mt-3 inline-flex rounded-xl bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground transition hover:bg-primary"
                     >
                         Crear primer template
                     </Link>

@@ -10,15 +10,15 @@ export const metadata: Metadata = {
 
 export default function SupportPage() {
     return (
-        <main className="min-h-screen bg-[#07070a] px-4 py-8 text-zinc-100 sm:py-12">
+        <main className="min-h-screen bg-[#111111] px-4 py-8 text-zinc-100 sm:py-12">
             <div className="mx-auto max-w-xl">
-                <Link href="/" className="text-sm font-semibold text-violet-400 hover:text-violet-300">← Progrezzia</Link>
+                <Link href="/" className="text-sm font-semibold text-brand-on-dark hover:text-white">← Progrezzia</Link>
                 <h1 className="mt-8 text-3xl font-black tracking-tight">Soporte</h1>
                 <p className="mt-3 text-sm leading-6 text-zinc-400">Si algo no funciona o necesitás ayuda con tu cuenta, escribinos. Respondemos en español.</p>
 
                 <div className="mt-8 space-y-3">
-                    <a href={`mailto:${SUPPORT_EMAIL}?subject=Soporte%20Progrezzia`} className="flex items-center gap-3 rounded-2xl border border-violet-500/20 bg-violet-500/10 p-4 hover:bg-violet-500/15">
-                        <Mail className="h-5 w-5 text-violet-400" />
+                    <a href={`mailto:${SUPPORT_EMAIL}?subject=Soporte%20Progrezzia`} className="flex items-center gap-3 rounded-2xl border border-primary/20 bg-primary/10 p-4 hover:bg-primary/15">
+                        <Mail className="h-5 w-5 text-brand-on-dark" />
                         <div><p className="text-sm font-bold">Contactar soporte</p><p className="text-xs text-zinc-400">{SUPPORT_EMAIL}</p></div>
                     </a>
                     <div className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4">

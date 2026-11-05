@@ -117,7 +117,7 @@ export default function WorkoutRestTimer() {
                 if ('Notification' in window && Notification.permission === 'granted') {
                     new Notification('¡Descanso terminado!', {
                         body: 'Es hora de la próxima serie 💪',
-                        icon: '/icon.png',
+                        icon: '/icon-192.png',
                     })
                 }
 
@@ -207,7 +207,7 @@ export default function WorkoutRestTimer() {
                             if (next) startSilentAudio()
                             return next
                         })}
-                        className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-indigo-500"
+                        className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground transition hover:bg-primary"
                     >
                         {isRunning ? 'Pausar' : 'Seguir'}
                     </button>
