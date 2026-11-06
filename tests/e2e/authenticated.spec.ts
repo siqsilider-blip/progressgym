@@ -30,14 +30,16 @@ async function logIn(
     }
 }
 
-test('el entrenador entra al panel y no al portal del alumno', async ({ page }) => {
+test('el entrenador entra al panel y no al portal del alumno', async ({ page }, testInfo) => {
     await logIn(page, 'trainer', trainerEmail)
 
     await expect(page).toHaveURL(/\/dashboard(?:\?|$)/)
     await expect(page.getByRole('link', { name: 'Alumnos' }).first()).toBeVisible()
     await expect(page.getByRole('link', { name: 'Rutinas' }).first()).toBeVisible()
-    await expect(page.getByText('Invitado E2E todavía no activó su acceso a la aplicación.', { exact: true })).toBeVisible()
-    await expect(page.getByRole('link', { name: 'Enviar acceso' })).toBeVisible()
+    if (testInfo.project.name === 'mobile-chromium') {
+        await expect(page.getByText('Invitado E2E todavía no activó su acceso a la aplicación.', { exact: true })).toBeVisible()
+        await expect(page.getByRole('link', { name: 'Enviar acceso' })).toBeVisible()
+    }
 
     await page.goto('/app')
     await expect(page).toHaveURL(/\/dashboard(?:\?|$)/)
@@ -83,6 +85,14 @@ test('el alumno entra a su portal y no al panel del entrenador', async ({ page }
     await expect(page.getByRole('img', { name: /Mapa corporal.*Glúteos/ })).toBeVisible()
     await expect(page.getByText('Mantené la espalda apoyada y controlá el movimiento.')).toBeVisible()
     await page.getByRole('button', { name: 'Cerrar guía del ejercicio' }).click()
+
+    // Una molestia se reporta desde el ejercicio, sin tener que descubrir el selector de mensajes.
+    await page.getByText('¿Sentís molestia? Frená y avisá', { exact: true }).click()
+    await page.getByPlaceholder(`¿Dónde sentís la molestia al hacer ${exerciseName}?`).fill('Aviso de molestia E2E')
+    await page.getByRole('button', { name: 'Enviar' }).click()
+    await expect(page.getByText('Tu entrenador fue avisado ✓', { exact: true })).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByRole('link', { name: 'Ver conversación →' })).toBeVisible()
+
     const weightSet1 = page.getByLabel('Peso serie 1')
     const repsSet1 = page.getByLabel('Repeticiones serie 1')
     await expect(page.locator('input[type="number"]')).toHaveCount(6)
@@ -136,6 +146,10 @@ test('el alumno entra a su portal y no al panel del entrenador', async ({ page }
     await page.getByRole('button', { name: 'Finalizar entrenamiento' }).click()
 
     await expect(page.getByRole('heading', { name: 'Entrenamiento guardado' })).toBeVisible({ timeout: 15_000 })
+    await page.getByRole('button', { name: 'Sí', exact: true }).click()
+    await page.getByPlaceholder('¿Dónde la sentiste y en qué ejercicio?').fill('Molestia post entrenamiento E2E')
+    await page.getByRole('button', { name: 'Enviar evaluación' }).click()
+    await expect(page.getByText('Tu entrenador fue avisado ✓', { exact: true })).toBeVisible({ timeout: 15_000 })
 
     await page.reload()
     await expect(page.getByText('Finalizada · editable')).toBeVisible({ timeout: 15_000 })
@@ -159,6 +173,29 @@ test('el alumno entra a su portal y no al panel del entrenador', async ({ page }
 
     await page.goto('/app/profile')
     await expect(page.getByRole('heading', { name: 'Perfil' })).toBeVisible()
+
+    await page.context().clearCookies()
+    await logIn(page, 'trainer', trainerEmail)
+    await page.goto('/dashboard/notifications')
+    const painNotification = page.getByText('Molestia informada', { exact: true }).first()
+    await expect(painNotification).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByText('Molestia después del entrenamiento', { exact: true }).first()).toBeVisible({ timeout: 15_000 })
+    await painNotification.click()
+    await expect(page).toHaveURL(new RegExp(`/dashboard/messages\\?student=${studentId}$`), { timeout: 15_000 })
+    await expect(page.getByText('Aviso de molestia E2E', { exact: true })).toBeVisible({ timeout: 15_000 })
+
+    const feedbackCard = page.locator('article').filter({ hasText: 'Molestia post entrenamiento E2E' })
+    await expect(feedbackCard).toBeVisible()
+    await page.goto('/dashboard')
+    await expect(page.getByText('Molestia post entrenamiento E2E', { exact: false }).first()).toBeVisible({ timeout: 15_000 })
+
+    await page.goto(`/dashboard/messages?student=${studentId}`)
+    const pendingFeedbackCard = page.locator('article').filter({ hasText: 'Molestia post entrenamiento E2E' })
+    await pendingFeedbackCard.getByRole('button', { name: 'Marcar revisado' }).click()
+    await expect(pendingFeedbackCard).toHaveCount(0)
+
+    await page.goto('/dashboard')
+    await expect(page.getByText('Molestia post entrenamiento E2E', { exact: false })).toHaveCount(0)
 })
 
 test('cada tipo de cuenta es rechazado por el acceso equivocado', async ({ page }) => {

@@ -80,6 +80,15 @@ function getRiskMeta(alert: TrainerAlert, isLight: boolean) {
                     ? 'border-orange-200 bg-orange-50'
                     : 'border-orange-500/20 bg-orange-500/5',
             }
+        case 'workout_pain':
+            return {
+                label: 'Molestia',
+                badgeClassName: isLight ? 'bg-red-100 text-red-700' : 'bg-red-500/10 text-red-300',
+                icon: HeartPulse,
+                iconClassName: 'text-red-500',
+                iconBgClassName: 'bg-red-500/10',
+                cardClassName: isLight ? 'border-red-200 bg-red-50' : 'border-red-500/20 bg-red-500/5',
+            }
         case 'inactive':
             return {
                 label: 'Inactivo',

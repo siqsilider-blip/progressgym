@@ -18,6 +18,8 @@ function getFollowUpMessage(alert: TrainerAlert) {
             return `Hola ${firstName}, cuando puedas actualizá tus fotos de progreso desde el control semanal. Tratá de usar una luz, distancia y postura parecidas a las anteriores para comparar mejor.`
         case 'weekly_checkin':
             return `Hola ${firstName}, vi tu control semanal y quería saber un poco más para ajustar el entrenamiento. ¿Cómo te estás sintiendo hoy?`
+        case 'workout_pain':
+            return `Hola ${firstName}, vi que informaste una molestia después de entrenar. No repitas el ejercicio que te provocó dolor hasta que lo revisemos. ¿Cómo te sentís ahora y dónde la notaste?`
         case 'inactive':
             return `Hola ${firstName}, ¿cómo estás? Vi que esta semana no pudiste entrenar. ¿Hubo algo que te haya complicado? Si querés, ajustamos el plan para que puedas retomarlo.`
         case 'unfinished_session':

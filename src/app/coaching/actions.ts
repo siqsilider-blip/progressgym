@@ -461,6 +461,28 @@ export async function markWeeklyCheckinReviewed(
     return { ok: true, error: null }
 }
 
+export async function markWorkoutFeedbackReviewed(
+    feedbackId: string
+): Promise<{ ok: boolean; error: string | null }> {
+    const user = await getServerUser()
+    if (!user || !feedbackId) return { ok: false, error: 'No autenticado.' }
+
+    const supabase = await createClient()
+    const { data, error } = await supabase.rpc('mark_workout_feedback_reviewed', {
+        p_feedback_id: feedbackId,
+    })
+
+    if (error || data !== true) {
+        console.error('[markWorkoutFeedbackReviewed]', error)
+        return { ok: false, error: 'No pudimos marcar la evaluación como revisada.' }
+    }
+
+    revalidatePath('/dashboard')
+    revalidatePath('/dashboard/messages')
+    revalidatePath('/dashboard/notifications')
+    return { ok: true, error: null }
+}
+
 function parseOptionalNumber(value: string) {
     const normalized = value.trim().replace(',', '.')
     if (!normalized) return null

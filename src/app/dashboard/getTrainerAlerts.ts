@@ -4,7 +4,7 @@ import { getBuenosAiresDateString, getElapsedProgramWeekIndex } from '@/lib/buen
 import { getTrainerStudents } from './getTrainerStudents'
 
 export type TrainerAlert = {
-    type: 'inactive' | 'no_routine' | 'new_student' | 'unfinished_session' | 'program_ending' | 'weekly_checkin' | 'missing_checkin' | 'progress_photo_due'
+    type: 'inactive' | 'no_routine' | 'new_student' | 'unfinished_session' | 'program_ending' | 'weekly_checkin' | 'missing_checkin' | 'progress_photo_due' | 'workout_pain'
     stage?: 'access_pending' | 'onboarding_pending' | 'ready_for_program'
     studentId: string
     studentName: string
@@ -34,6 +34,9 @@ type WeeklyCheckinRow = {
     reviewed_at: string | null
 }
 type ProgressPhotoRow = { student_id: string; captured_on: string }
+type WorkoutPainRow = { student_id: string; pain_details: string | null; created_at: string }
+type ConversationRow = { id: string; student_id: string }
+type PainMessageRow = { conversation_id: string; body: string; created_at: string }
 type LinkedProfileRow = { id: string; student_id: string | null }
 type OnboardingRow = { student_id: string; completed_at: string | null }
 
@@ -50,7 +53,7 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
     const now = new Date()
     const today = getBuenosAiresDateString(now)
 
-    const [workoutsResult, routinesResult, activeSessionsResult, followUpsResult, weeklyCheckinsResult, progressPhotosResult, linkedProfilesResult, onboardingResult] = await Promise.all([
+    const [workoutsResult, routinesResult, activeSessionsResult, followUpsResult, weeklyCheckinsResult, workoutPainResult, conversationsResult, progressPhotosResult, linkedProfilesResult, onboardingResult] = await Promise.all([
         supabase
             .from('exercise_logs')
             .select('student_id, performed_at')
@@ -81,6 +84,19 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
             .select('student_id, week_start, energy, sleep_quality, stress, training_difficulty, had_pain, reviewed_at')
             .in('student_id', studentIds)
             .order('week_start', { ascending: false }),
+
+        supabase
+            .from('workout_feedback')
+            .select('student_id, pain_details, created_at')
+            .in('student_id', studentIds)
+            .eq('had_pain', true)
+            .is('reviewed_at', null)
+            .order('created_at', { ascending: false }),
+
+        supabase
+            .from('coaching_conversations')
+            .select('id, student_id')
+            .in('student_id', studentIds),
 
         supabase
             .from('student_progress_photos')
@@ -118,6 +134,14 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
 
     if (weeklyCheckinsResult.error) {
         console.error('Error fetching weekly check-ins for alerts:', weeklyCheckinsResult.error)
+    }
+
+    if (workoutPainResult.error) {
+        console.error('Error fetching workout pain alerts:', workoutPainResult.error)
+    }
+
+    if (conversationsResult.error) {
+        console.error('Error fetching coaching conversations for alerts:', conversationsResult.error)
     }
 
     if (progressPhotosResult.error) {
@@ -166,6 +190,36 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
         suppressedAlertKeys.has(`${studentId}:${type}`)
     )
     const attentionCheckinByStudent = new Map<string, WeeklyCheckinRow>()
+    const workoutPainByStudent = new Map<string, WorkoutPainRow>()
+    for (const feedback of ((workoutPainResult.data as WorkoutPainRow[] | null) ?? [])) {
+        if (!workoutPainByStudent.has(feedback.student_id)) {
+            workoutPainByStudent.set(feedback.student_id, feedback)
+        }
+    }
+    const conversations = (conversationsResult.data as ConversationRow[] | null) ?? []
+    const conversationStudentMap = new Map(conversations.map((conversation) => [conversation.id, conversation.student_id]))
+    const painMessageByStudent = new Map<string, PainMessageRow>()
+    if (conversations.length > 0) {
+        const { data: painMessages, error: painMessagesError } = await supabase
+            .from('coaching_messages')
+            .select('conversation_id, body, created_at')
+            .in('conversation_id', conversations.map((conversation) => conversation.id))
+            .eq('sender_role', 'student')
+            .eq('topic', 'pain')
+            .is('read_at', null)
+            .order('created_at', { ascending: false })
+
+        if (painMessagesError) {
+            console.error('Error fetching pain messages for alerts:', painMessagesError)
+        }
+
+        for (const message of ((painMessages as PainMessageRow[] | null) ?? [])) {
+            const studentId = conversationStudentMap.get(message.conversation_id)
+            if (studentId && !painMessageByStudent.has(studentId)) {
+                painMessageByStudent.set(studentId, message)
+            }
+        }
+    }
     const lastCheckinByStudent = new Map<string, WeeklyCheckinRow>()
     for (const checkin of ((weeklyCheckinsResult.data as WeeklyCheckinRow[] | null) ?? [])) {
         const isLatestCheckin = !lastCheckinByStudent.has(checkin.student_id)
@@ -238,8 +292,27 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
         const lastWorkoutAt = lastWorkoutByStudent.get(student.id)
         const assignment = assignmentByStudent.get(student.id)
         const attentionCheckin = attentionCheckinByStudent.get(student.id)
+        const workoutPain = workoutPainByStudent.get(student.id)
+        const painMessage = painMessageByStudent.get(student.id)
 
         // Una sola prioridad por alumno: siempre queda arriba la acción más urgente.
+        if (workoutPain || painMessage) {
+            if (!isSuppressed(student.id, 'workout_pain')) {
+                alerts.push({
+                    type: 'workout_pain',
+                    studentId: student.id,
+                    studentName: fullName,
+                    studentPhone: student.phone ?? null,
+                    message: workoutPain
+                        ? `${fullName} informó una molestia después de entrenar${workoutPain.pain_details ? `: ${workoutPain.pain_details}` : '.'}`
+                        : `${fullName} informó una molestia durante el entrenamiento${painMessage?.body ? `: ${painMessage.body}` : '.'}`,
+                    actionHref: `/dashboard/messages?student=${student.id}`,
+                    actionLabel: 'Revisar molestia',
+                })
+            }
+            continue
+        }
+
         if (attentionCheckin) {
             if (!isSuppressed(student.id, 'weekly_checkin')) {
                 alerts.push({
@@ -393,21 +466,22 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
     }
 
     const priority: Record<TrainerAlert['type'], number> = {
-        weekly_checkin: 0,
-        no_routine: 1,
-        unfinished_session: 2,
-        inactive: 3,
-        new_student: 6,
-        missing_checkin: 7,
-        program_ending: 8,
-        progress_photo_due: 9,
+        workout_pain: 0,
+        weekly_checkin: 1,
+        no_routine: 2,
+        unfinished_session: 3,
+        inactive: 4,
+        new_student: 7,
+        missing_checkin: 8,
+        program_ending: 9,
+        progress_photo_due: 10,
     }
 
     const getPriority = (alert: TrainerAlert) => {
         if (alert.type !== 'no_routine') return priority[alert.type]
-        if (alert.stage === 'ready_for_program') return 1
-        if (alert.stage === 'onboarding_pending') return 4
-        return 5
+        if (alert.stage === 'ready_for_program') return 2
+        if (alert.stage === 'onboarding_pending') return 5
+        return 6
     }
 
     return alerts.sort((a, b) => getPriority(a) - getPriority(b))

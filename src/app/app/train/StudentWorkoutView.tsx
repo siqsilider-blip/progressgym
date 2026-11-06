@@ -953,6 +953,31 @@ export default function StudentWorkoutView({
                                                         </div>
                                                     </div>
 
+                                                    <details className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/[0.05]">
+                                                        <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-3 text-xs font-bold text-amber-500">
+                                                            <AlertTriangle className="h-4 w-4" aria-hidden="true" />
+                                                            ¿Sentís molestia? Frená y avisá
+                                                        </summary>
+                                                        <div className="border-t border-amber-500/20 p-3">
+                                                            <p className="mb-3 text-xs leading-5 text-muted-foreground">
+                                                                Si el dolor es agudo, apareció de golpe o empeora, no continúes este ejercicio. Contale a tu entrenador qué sentís para que pueda adaptar la rutina.
+                                                            </p>
+                                                            <MessageComposer
+                                                                routineDayExerciseId={exercise.id}
+                                                                workoutSessionId={sessionId}
+                                                                defaultTopic="pain"
+                                                                placeholder={`¿Dónde sentís la molestia al hacer ${exercise.exerciseName}?`}
+                                                                compact
+                                                                showTopic={false}
+                                                                successMessage="Tu entrenador fue avisado ✓"
+                                                                successHref="/app/messages"
+                                                            />
+                                                            <p className="mt-2 text-[10px] leading-4 text-muted-foreground">
+                                                                Si el dolor es intenso o necesitás atención, consultá a un profesional de salud o a un servicio de emergencias.
+                                                            </p>
+                                                        </div>
+                                                    </details>
+
                                                     <details className="mt-3 rounded-xl border border-border bg-background/60">
                                                         <summary className="flex min-h-10 cursor-pointer list-none items-center gap-2 px-3 text-xs font-semibold text-primary">
                                                             <MessageCircle className="h-4 w-4" />

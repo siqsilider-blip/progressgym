@@ -13,6 +13,7 @@ const ALERT_TYPES: TrainerAlert['type'][] = [
     'weekly_checkin',
     'missing_checkin',
     'progress_photo_due',
+    'workout_pain',
 ]
 
 type FollowUpAction = 'whatsapp_opened' | 'snoozed'

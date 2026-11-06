@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import Link from 'next/link'
 import { Send } from 'lucide-react'
 import { sendCoachingMessage, type CoachingTopic } from '@/app/coaching/actions'
 
@@ -21,6 +22,9 @@ export default function MessageComposer({
     placeholder = 'Escribí tu mensaje…',
     compact = false,
     showTopic = true,
+    successMessage = 'Mensaje enviado ✓',
+    successHref,
+    successLinkLabel = 'Ver conversación',
 }: {
     studentId?: string
     routineDayExerciseId?: string | null
@@ -29,6 +33,9 @@ export default function MessageComposer({
     placeholder?: string
     compact?: boolean
     showTopic?: boolean
+    successMessage?: string
+    successHref?: string
+    successLinkLabel?: string
 }) {
     const [topic, setTopic] = useState<CoachingTopic>(defaultTopic)
     const [body, setBody] = useState('')
@@ -81,7 +88,16 @@ export default function MessageComposer({
             <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0 text-[11px]">
                     {error && <p className="text-red-500">{error}</p>}
-                    {sent && <p className="text-emerald-500">Mensaje enviado ✓</p>}
+                    {sent && (
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-emerald-500">
+                            <p className="font-semibold">{successMessage}</p>
+                            {successHref && (
+                                <Link href={successHref} className="font-bold underline underline-offset-2">
+                                    {successLinkLabel} →
+                                </Link>
+                            )}
+                        </div>
+                    )}
                 </div>
                 <button
                     type="button"

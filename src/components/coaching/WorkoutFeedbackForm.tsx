@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import Link from 'next/link'
+import { AlertTriangle } from 'lucide-react'
 import { saveWorkoutFeedback } from '@/app/coaching/actions'
 
 const SCORE_VALUES = [1, 2, 3, 4, 5]
@@ -56,8 +58,8 @@ export default function WorkoutFeedbackForm({
                 <p className="mt-0.5 text-[11px] text-muted-foreground">Son tres datos rápidos para que tu entrenador pueda acompañarte mejor.</p>
             </div>
 
-            <ScoreSelector label="Energía" value={energy} onChange={setEnergy} lowLabel="Baja" highLabel="Alta" />
-            <ScoreSelector label="Dificultad" value={difficulty} onChange={setDifficulty} lowLabel="Fácil" highLabel="Muy difícil" />
+            <ScoreSelector label="Energía" value={energy} onChange={(value) => { setEnergy(value); setSaved(false) }} lowLabel="Baja" highLabel="Alta" />
+            <ScoreSelector label="Dificultad" value={difficulty} onChange={(value) => { setDifficulty(value); setSaved(false) }} lowLabel="Fácil" highLabel="Muy difícil" />
 
             <div className="mt-4">
                 <p className="text-xs font-semibold text-foreground">¿Sentiste dolor o una molestia?</p>
@@ -69,6 +71,7 @@ export default function WorkoutFeedbackForm({
                             setHadPain(false)
                             setPainDetails('')
                             setError(null)
+                            setSaved(false)
                         }}
                         className={`min-h-10 rounded-xl border text-xs font-bold ${hadPain === false ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-500' : 'border-border bg-background text-muted-foreground'}`}
                     >
@@ -80,6 +83,7 @@ export default function WorkoutFeedbackForm({
                         onClick={() => {
                             setHadPain(true)
                             setError(null)
+                            setSaved(false)
                         }}
                         className={`min-h-10 rounded-xl border text-xs font-bold ${hadPain === true ? 'border-amber-500/40 bg-amber-500/10 text-amber-500' : 'border-border bg-background text-muted-foreground'}`}
                     >
@@ -89,25 +93,37 @@ export default function WorkoutFeedbackForm({
             </div>
 
             {hadPain === true && (
-                <textarea
-                    value={painDetails}
-                    onChange={(event) => setPainDetails(event.target.value)}
-                    placeholder="¿Dónde la sentiste y en qué ejercicio?"
-                    rows={2}
-                    className="mt-2 w-full resize-none rounded-xl border border-amber-500/25 bg-background px-3 py-2.5 text-sm text-foreground outline-none focus:border-amber-500"
-                />
+                <div className="mt-2 rounded-xl border border-amber-500/25 bg-amber-500/[0.05] p-3">
+                    <div className="flex items-start gap-2 text-xs leading-5 text-amber-500">
+                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                        <p className="font-semibold">No sigas un ejercicio si el dolor es agudo, apareció de golpe o empeora.</p>
+                    </div>
+                    <textarea
+                        value={painDetails}
+                        onChange={(event) => { setPainDetails(event.target.value); setSaved(false) }}
+                        placeholder="¿Dónde la sentiste y en qué ejercicio?"
+                        rows={2}
+                        className="mt-2 w-full resize-none rounded-xl border border-amber-500/25 bg-background px-3 py-2.5 text-sm text-foreground outline-none focus:border-amber-500"
+                    />
+                    <p className="mt-2 text-[10px] leading-4 text-muted-foreground">Si es intenso o necesitás atención, consultá a un profesional de salud o a un servicio de emergencias.</p>
+                </div>
             )}
 
             <textarea
                 value={comment}
-                onChange={(event) => setComment(event.target.value)}
+                onChange={(event) => { setComment(event.target.value); setSaved(false) }}
                 placeholder="Comentario opcional para tu entrenador"
                 rows={2}
                 className="mt-3 w-full resize-none rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary"
             />
 
             {error && <p className="mt-2 text-xs font-medium text-red-500">{error}</p>}
-            {saved && <p className="mt-2 text-xs font-medium text-emerald-500">Evaluación enviada ✓</p>}
+            {saved && (
+                <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-emerald-500">
+                    <p className="font-semibold">{hadPain ? 'Tu entrenador fue avisado ✓' : 'Evaluación enviada ✓'}</p>
+                    {hadPain && <Link href="/app/messages" className="font-bold underline underline-offset-2">Ver conversación →</Link>}
+                </div>
+            )}
 
             <button type="button" onClick={save} disabled={pending} className="mt-3 min-h-11 w-full rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground disabled:opacity-50">
                 {pending ? 'Guardando…' : saved ? 'Actualizar evaluación' : 'Enviar evaluación'}

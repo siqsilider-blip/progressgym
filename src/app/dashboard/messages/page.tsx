@@ -5,9 +5,9 @@ import { createClient } from '@/lib/supabase/server'
 import { getServerUser } from '@/lib/auth/server'
 import MessageComposer from '@/components/coaching/MessageComposer'
 import ReadMarker from '@/components/coaching/ReadMarker'
-import NotificationTypeReadMarker from '@/components/coaching/NotificationTypeReadMarker'
 import StudentConversationPicker from '@/components/coaching/StudentConversationPicker'
 import ReviewCheckinButton from '@/components/coaching/ReviewCheckinButton'
+import ReviewWorkoutFeedbackButton from '@/components/coaching/ReviewWorkoutFeedbackButton'
 
 type PageProps = { searchParams?: Promise<{ student?: string }> }
 type StudentRow = { id: string; first_name: string; last_name: string }
@@ -58,6 +58,19 @@ export default async function TrainerMessagesPage(props: PageProps) {
     if (!user) redirect('/login')
 
     const supabase = await createClient()
+    let pendingFeedbackQuery = supabase
+        .from('workout_feedback')
+        .select('id, student_id, energy, difficulty, had_pain, pain_details, comment, created_at')
+        .eq('trainer_id', user.id)
+        .is('reviewed_at', null)
+        .order('had_pain', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(searchParams?.student ? 12 : 5)
+
+    if (searchParams?.student) {
+        pendingFeedbackQuery = pendingFeedbackQuery.eq('student_id', searchParams.student)
+    }
+
     const [{ data: studentsData }, { data: conversationsData }, { data: feedbackData }, { data: weeklyCheckinsData }] = await Promise.all([
         supabase
             .from('students')
@@ -69,12 +82,7 @@ export default async function TrainerMessagesPage(props: PageProps) {
             .select('id, student_id, last_message_at')
             .eq('trainer_id', user.id)
             .order('last_message_at', { ascending: false, nullsFirst: false }),
-        supabase
-            .from('workout_feedback')
-            .select('id, student_id, energy, difficulty, had_pain, pain_details, comment, created_at')
-            .eq('trainer_id', user.id)
-            .order('created_at', { ascending: false })
-            .limit(8),
+        pendingFeedbackQuery,
         supabase
             .from('student_weekly_checkins')
             .select('id, student_id, energy, sleep_quality, stress, training_difficulty, had_pain, pain_details, comment, week_start')
@@ -138,7 +146,6 @@ export default async function TrainerMessagesPage(props: PageProps) {
     return (
         <main className="mx-auto w-full min-w-0 max-w-6xl space-y-4 overflow-x-hidden p-4 pb-28 md:p-6">
             {conversationId && <ReadMarker conversationId={conversationId} />}
-            <NotificationTypeReadMarker type="workout_feedback" />
 
             <header>
                 <p className="text-xs font-medium text-primary">Seguimiento</p>
@@ -186,14 +193,14 @@ export default async function TrainerMessagesPage(props: PageProps) {
             {(feedbackData as FeedbackRow[] | null)?.length ? (
                 <section className="min-w-0 max-w-full">
                     <div className="mb-2 flex items-center justify-between">
-                        <h2 className="text-xs font-black uppercase tracking-widest text-white/40">Controles recientes</h2>
+                        <h2 className="text-xs font-black uppercase tracking-widest text-white/40">Controles por revisar</h2>
                         <span className="text-[10px] text-white/25">Después de entrenar</span>
                     </div>
-                    <div className="flex w-full max-w-full gap-2 overflow-x-auto overscroll-x-contain pb-1">
+                    <div className="grid w-full max-w-full gap-2 md:grid-cols-2 xl:grid-cols-3">
                         {(feedbackData as FeedbackRow[]).map((feedback) => {
                             const student = studentMap.get(feedback.student_id)
                             return (
-                                <Link key={feedback.id} href={`/dashboard/students/${feedback.student_id}`} className={`w-64 shrink-0 rounded-2xl border p-3 ${feedback.had_pain ? 'border-amber-500/30 bg-amber-500/[0.07]' : 'border-white/[0.07] bg-white/[0.03]'}`}>
+                                <article key={feedback.id} className={`min-w-0 rounded-2xl border p-3 ${feedback.had_pain ? 'border-amber-500/30 bg-amber-500/[0.07]' : 'border-white/[0.07] bg-white/[0.03]'}`}>
                                     <div className="flex items-center gap-2">
                                         {feedback.had_pain && <AlertTriangle className="h-4 w-4 text-amber-400" />}
                                         <p className="text-xs font-bold text-white">{student ? `${student.first_name} ${student.last_name}` : 'Alumno'}</p>
@@ -203,7 +210,11 @@ export default async function TrainerMessagesPage(props: PageProps) {
                                             ? feedback.pain_details || 'Informó una molestia.'
                                             : `Energía ${feedback.energy ?? '—'}/5 · Dificultad ${feedback.difficulty ?? '—'}/5${feedback.comment ? ` · ${feedback.comment}` : ''}`}
                                     </p>
-                                </Link>
+                                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                                        <Link href={`/dashboard/messages?student=${feedback.student_id}`} className="inline-flex min-h-8 items-center rounded-lg border border-primary/25 bg-primary/10 px-2.5 text-[10px] font-bold text-brand-soft">Conversar</Link>
+                                        <ReviewWorkoutFeedbackButton feedbackId={feedback.id} />
+                                    </div>
+                                </article>
                             )
                         })}
                     </div>
