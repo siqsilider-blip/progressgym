@@ -83,27 +83,56 @@ test('el alumno entra a su portal y no al panel del entrenador', async ({ page }
     await expect(page.getByRole('img', { name: /Mapa corporal.*Glúteos/ })).toBeVisible()
     await expect(page.getByText('Mantené la espalda apoyada y controlá el movimiento.')).toBeVisible()
     await page.getByRole('button', { name: 'Cerrar guía del ejercicio' }).click()
-    const numberInputs = page.locator('input[type="number"]')
-    await expect(numberInputs).toHaveCount(2)
-    await numberInputs.nth(0).fill('35')
-    await numberInputs.nth(1).fill('10')
+    const weightSet1 = page.getByLabel('Peso serie 1')
+    const repsSet1 = page.getByLabel('Repeticiones serie 1')
+    await expect(page.locator('input[type="number"]')).toHaveCount(6)
+    await weightSet1.fill('35')
+    await repsSet1.fill('10')
     await expect(page.getByText('Borrador guardado', { exact: true })).toBeVisible()
 
-    // Si la app se cierra o recarga antes de guardar, los datos se recuperan.
+    // Si la app se cierra o recarga, los datos persisten tanto si alcanzó a
+    // sincronizar como si todavía estaban solamente en el borrador local.
     await page.reload()
-    await expect(page.getByText('Recuperamos el borrador que habías dejado en este entrenamiento.')).toBeVisible()
-    await expect(numberInputs.nth(0)).toHaveValue('35')
-    await expect(numberInputs.nth(1)).toHaveValue('10')
-
-    await page.getByText('Agregar esfuerzo (opcional)', { exact: true }).click()
-    await page.getByRole('combobox', { name: 'Esfuerzo opcional' }).selectOption('7')
-
-    // Sin conexión, el guardado queda en cola y se sincroniza al volver internet.
     await page.context().setOffline(true)
-    await page.getByRole('button', { name: 'Guardar serie' }).click()
-    await expect(page.getByText('Sin conexión', { exact: true }).last()).toBeVisible()
+    await expect(weightSet1).toHaveValue('35')
+    await expect(repsSet1).toHaveValue('10')
+
+    await page.getByText('Agregar esfuerzo (opcional)', { exact: true }).first().click()
+    await page.getByRole('combobox', { name: 'Esfuerzo opcional' }).first().selectOption('7')
+
+    // Sin conexión, el autoguardado queda en cola y se sincroniza al volver internet.
+    await expect(page.getByText('Sin conexión', { exact: true }).last()).toBeVisible({ timeout: 5_000 })
     await page.context().setOffline(false)
-    await expect(page.getByText('Guardada ✓')).toBeVisible({ timeout: 20_000 })
+    await expect(page.getByRole('button', { name: 'Guardar serie 1' })).toContainText('Actualizar', { timeout: 20_000 })
+
+    // No se puede marcar el día completo por accidente si todavía faltan series.
+    await page.getByRole('button', { name: 'Finalizar entrenamiento' }).click()
+    const incompleteDialog = page.getByRole('dialog')
+    await expect(incompleteDialog.getByRole('heading', { name: '¿Finalizar entrenamiento incompleto?' })).toBeVisible()
+    await expect(incompleteDialog.getByText('Te quedan 2 de 3 series sin registrar.', { exact: false })).toBeVisible()
+    await incompleteDialog.getByRole('button', { name: 'Seguir entrenando' }).click()
+    await expect(page.getByRole('heading', { name: 'Entrenamiento guardado' })).toHaveCount(0)
+
+    // Si decide terminar, persiste como incompleto y no completa falsamente la semana.
+    await page.getByRole('button', { name: 'Finalizar entrenamiento' }).click()
+    await page.getByRole('dialog').getByRole('button', { name: 'Finalizar incompleto' }).click()
+    await expect(page.getByRole('heading', { name: 'Entrenamiento finalizado con pendientes' })).toBeVisible({ timeout: 15_000 })
+    await page.getByRole('button', { name: 'Volver a rutina' }).click()
+    await expect(page.getByText('Semana completada ✓')).toHaveCount(0)
+    await expect(page.getByText('Series pendientes · todavía no cuenta como completado')).toBeVisible()
+    await page.getByRole('link', { name: 'Completar →' }).click()
+    await expect(page.getByText('Incompleta · editable')).toBeVisible({ timeout: 15_000 })
+
+    // El peso solo no alcanza: las repeticiones son obligatorias.
+    await page.getByLabel('Peso serie 2').fill('37.5')
+    await page.getByRole('button', { name: 'Guardar serie 2' }).click()
+    await expect(page.getByText('Ingresá las repeticiones realizadas.', { exact: true })).toBeVisible()
+    await page.getByLabel('Repeticiones serie 2').fill('10')
+    await expect(page.getByRole('button', { name: 'Guardar serie 2' })).toContainText('Actualizar', { timeout: 20_000 })
+    await page.getByLabel('Repeticiones serie 3').fill('9')
+    await expect(page.getByRole('button', { name: 'Guardar serie 3' })).toContainText('Actualizar', { timeout: 20_000 })
+    await expect(page.getByText('3 de 3 series', { exact: true }).first()).toBeVisible({ timeout: 20_000 })
+
     await page.getByRole('button', { name: 'Finalizar entrenamiento' }).click()
 
     await expect(page.getByRole('heading', { name: 'Entrenamiento guardado' })).toBeVisible({ timeout: 15_000 })
@@ -190,6 +219,9 @@ test('el check-in y la conversación privada llegan de alumno a entrenador y vue
     await expect(photoInputs).toHaveCount(3)
     await photoInputs.first().setInputFiles('public/icon-192.png')
     await expect(page.getByAltText('Vista previa: Frente')).toBeVisible()
+    await page.getByRole('button', { name: 'Enviar control semanal' }).click()
+    await expect(page.getByText('Indicá si tuviste dolor o alguna molestia.', { exact: true })).toBeVisible()
+    await page.getByRole('button', { name: 'No', exact: true }).click()
     await page.getByRole('button', { name: 'Enviar control semanal' }).click()
     await expect(page.getByText('Control enviado a tu entrenador.')).toBeVisible({ timeout: 15_000 })
     await page.reload()

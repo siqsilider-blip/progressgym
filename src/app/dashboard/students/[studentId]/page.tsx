@@ -86,6 +86,7 @@ export default async function StudentProfilePage(props: PageProps) {
             .eq('student_id', studentId)
             .eq('status', 'completed')
             .eq('completed_manually', true)
+            .eq('completion_status', 'complete')
             .gte('performed_date', previousPeriodStart)
             .lte('performed_date', today),
         supabase

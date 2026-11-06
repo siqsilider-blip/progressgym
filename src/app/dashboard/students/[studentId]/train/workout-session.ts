@@ -7,11 +7,16 @@ export async function startWorkoutSession(payload: {
     routineDayId: string
     performedDate?: string
     allowCompleted?: boolean
-}): Promise<{ sessionId: string | null; resumed: boolean; justCompleted: boolean }> {
+}): Promise<{
+    sessionId: string | null
+    resumed: boolean
+    justCompleted: boolean
+    completionStatus: 'complete' | 'incomplete' | null
+}> {
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-        return { sessionId: null, resumed: false, justCompleted: false }
+        return { sessionId: null, resumed: false, justCompleted: false, completionStatus: null }
     }
 
     const rpcPayload = {
@@ -26,10 +31,11 @@ export async function startWorkoutSession(payload: {
     // Una sesión cerrada automáticamente no equivale a un entrenamiento
     // terminado. Si el alumno vuelve a ese día, comienza una sesión nueva.
     const firstResult = data?.[0]
+    let completionStatus: 'complete' | 'incomplete' | null = null
     if (!error && payload.allowCompleted && firstResult?.just_completed && firstResult.session_id) {
         const { data: completedSession } = await supabase
             .from('workout_sessions')
-            .select('completed_manually')
+            .select('completed_manually, completion_status')
             .eq('id', firstResult.session_id)
             .maybeSingle()
 
@@ -40,18 +46,23 @@ export async function startWorkoutSession(payload: {
             })
             data = retry.data
             error = retry.error
+        } else {
+            completionStatus = completedSession.completion_status === 'incomplete'
+                ? 'incomplete'
+                : 'complete'
         }
     }
 
     const session = data?.[0]
     if (error || !session?.session_id) {
         console.error('Error creando workout_session:', error)
-        return { sessionId: null, resumed: false, justCompleted: false }
+        return { sessionId: null, resumed: false, justCompleted: false, completionStatus: null }
     }
 
     return {
         sessionId: session.session_id,
         resumed: Boolean(session.resumed),
-        justCompleted: Boolean(session.just_completed),
+        justCompleted: Boolean(session.just_completed) && completionStatus !== 'incomplete',
+        completionStatus,
     }
 }

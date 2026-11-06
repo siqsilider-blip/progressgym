@@ -274,10 +274,18 @@ export default async function AppHomePage() {
                     >
                         <div className="p-5">
                             <p className="text-[10px] font-bold uppercase tracking-widest text-primary-foreground">
-                                {selectedDayStatus === 'in_progress' ? 'Sesión en curso' : 'Próximo entrenamiento'}
+                                {selectedDayStatus === 'in_progress'
+                                    ? 'Sesión en curso'
+                                    : selectedDayStatus === 'incomplete'
+                                        ? 'Entrenamiento pendiente'
+                                        : 'Próximo entrenamiento'}
                             </p>
                             <h2 className="mt-1.5 text-xl font-black text-primary-foreground">
-                                {selectedDayStatus === 'in_progress' ? 'Continuar sesión →' : `${selectedDayLabel ?? 'Entrenar'} →`}
+                                {selectedDayStatus === 'in_progress'
+                                    ? 'Continuar sesión →'
+                                    : selectedDayStatus === 'incomplete'
+                                        ? `Completar ${selectedDayLabel ?? 'entrenamiento'} →`
+                                        : `${selectedDayLabel ?? 'Entrenar'} →`}
                             </h2>
                             <p className="mt-0.5 text-xs text-primary-foreground">
                                 {todayExercises.length > 0
@@ -302,7 +310,11 @@ export default async function AppHomePage() {
                         </div>
                         <div className="border-t border-black/10 bg-black/5 px-5 py-3">
                             <p className="text-xs font-semibold text-primary-foreground">
-                                {selectedDayStatus === 'in_progress' ? 'Retomar donde lo dejaste' : 'Tocar para comenzar'}
+                                {selectedDayStatus === 'in_progress'
+                                    ? 'Retomar donde lo dejaste'
+                                    : selectedDayStatus === 'incomplete'
+                                        ? 'Faltan series para completar este día'
+                                        : 'Tocar para comenzar'}
                             </p>
                         </div>
                     </Link>
@@ -355,7 +367,11 @@ export default async function AppHomePage() {
                 {todayExercises.length > 0 && !weekCompleted && (
                     <div className="rounded-2xl border border-border bg-card p-4">
                         <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                            {selectedDayStatus === 'in_progress' ? 'Sesión pendiente' : 'Próxima sesión'}
+                            {selectedDayStatus === 'in_progress'
+                                ? 'Sesión pendiente'
+                                : selectedDayStatus === 'incomplete'
+                                    ? 'Series pendientes'
+                                    : 'Próxima sesión'}
                         </p>
                         <div className="mt-3 space-y-2">
                             {todayExercises.map((ex, idx) => (

@@ -16,6 +16,7 @@ export type SessionHistoryItem = {
     performedDate: string
     startedAt: string
     durationSeconds: number | null
+    completionStatus: 'complete' | 'incomplete'
     dayLabel: string
     totalSets: number
     note: string | null
@@ -33,7 +34,7 @@ export async function getStudentSessionHistory(
     // que crecía el historial del alumno.
     const { data: sessions, error: sessionsError } = await supabase
         .from('workout_sessions')
-        .select('id, performed_date, started_at, finished_at, duration_seconds, routine_day_id, notes')
+        .select('id, performed_date, started_at, finished_at, duration_seconds, routine_day_id, notes, completion_status')
         .eq('student_id', studentId)
         .eq('status', 'completed')
         .eq('completed_manually', true)
@@ -179,6 +180,7 @@ export async function getStudentSessionHistory(
             performedDate: session.performed_date ?? String(session.started_at ?? '').split('T')[0],
             startedAt: session.started_at ?? '',
             durationSeconds: session.duration_seconds ?? null,
+            completionStatus: session.completion_status === 'incomplete' ? 'incomplete' : 'complete',
             dayLabel: session.routine_day_id
                 ? (dayLabelMap.get(session.routine_day_id) ?? 'Sesión')
                 : 'Sesión',

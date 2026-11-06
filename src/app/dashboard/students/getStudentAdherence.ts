@@ -14,11 +14,14 @@ export async function getStudentAdherence(
     const fourWeeksAgo = new Date()
     fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28)
 
-    const { data: logs, error } = await supabase
-        .from('exercise_logs')
-        .select('performed_at')
+    const { count: completedSessionsCount, error } = await supabase
+        .from('workout_sessions')
+        .select('id', { count: 'exact', head: true })
         .eq('student_id', studentId)
-        .gte('performed_at', fourWeeksAgo.toISOString().split('T')[0])
+        .eq('status', 'completed')
+        .eq('completed_manually', true)
+        .eq('completion_status', 'complete')
+        .gte('performed_date', fourWeeksAgo.toISOString().split('T')[0])
 
     if (error) {
         console.error('Error fetching student adherence:', error)
@@ -29,16 +32,7 @@ export async function getStudentAdherence(
         }
     }
 
-    const uniqueDays = new Set(
-        (logs || [])
-            .map((log) => {
-                if (!log.performed_at) return null
-                return new Date(log.performed_at).toISOString().split('T')[0]
-            })
-            .filter(Boolean)
-    )
-
-    const completedSessions = uniqueDays.size
+    const completedSessions = completedSessionsCount ?? 0
 
     // Calcular sesiones planificadas basado en días por semana de la rutina
     const { data: assignment } = await supabase

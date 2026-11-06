@@ -14,7 +14,7 @@ export default function WorkoutFeedbackForm({
 }) {
     const [energy, setEnergy] = useState<number | null>(null)
     const [difficulty, setDifficulty] = useState<number | null>(null)
-    const [hadPain, setHadPain] = useState(false)
+    const [hadPain, setHadPain] = useState<boolean | null>(null)
     const [painDetails, setPainDetails] = useState('')
     const [comment, setComment] = useState('')
     const [error, setError] = useState<string | null>(null)
@@ -25,6 +25,12 @@ export default function WorkoutFeedbackForm({
         if (pending) return
         setError(null)
         setSaved(false)
+
+        if (hadPain === null) {
+            setError('Indicá si sentiste dolor o alguna molestia.')
+            return
+        }
+
         startTransition(async () => {
             const result = await saveWorkoutFeedback({
                 sessionId,
@@ -56,12 +62,33 @@ export default function WorkoutFeedbackForm({
             <div className="mt-4">
                 <p className="text-xs font-semibold text-foreground">¿Sentiste dolor o una molestia?</p>
                 <div className="mt-2 grid grid-cols-2 gap-2">
-                    <button type="button" onClick={() => setHadPain(false)} className={`min-h-10 rounded-xl border text-xs font-bold ${!hadPain ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-500' : 'border-border bg-background text-muted-foreground'}`}>No</button>
-                    <button type="button" onClick={() => setHadPain(true)} className={`min-h-10 rounded-xl border text-xs font-bold ${hadPain ? 'border-amber-500/40 bg-amber-500/10 text-amber-500' : 'border-border bg-background text-muted-foreground'}`}>Sí</button>
+                    <button
+                        type="button"
+                        aria-pressed={hadPain === false}
+                        onClick={() => {
+                            setHadPain(false)
+                            setPainDetails('')
+                            setError(null)
+                        }}
+                        className={`min-h-10 rounded-xl border text-xs font-bold ${hadPain === false ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-500' : 'border-border bg-background text-muted-foreground'}`}
+                    >
+                        No
+                    </button>
+                    <button
+                        type="button"
+                        aria-pressed={hadPain === true}
+                        onClick={() => {
+                            setHadPain(true)
+                            setError(null)
+                        }}
+                        className={`min-h-10 rounded-xl border text-xs font-bold ${hadPain === true ? 'border-amber-500/40 bg-amber-500/10 text-amber-500' : 'border-border bg-background text-muted-foreground'}`}
+                    >
+                        Sí
+                    </button>
                 </div>
             </div>
 
-            {hadPain && (
+            {hadPain === true && (
                 <textarea
                     value={painDetails}
                     onChange={(event) => setPainDetails(event.target.value)}

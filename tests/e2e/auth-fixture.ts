@@ -338,7 +338,7 @@ export default async function createAuthFixture() {
             .insert({
                 routine_day_id: day.id,
                 exercise_id: exercise.id,
-                sets: 1,
+                sets: 3,
                 reps: 10,
                 rest_seconds: 0,
                 position: 1,

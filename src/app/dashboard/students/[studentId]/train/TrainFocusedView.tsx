@@ -114,7 +114,10 @@ export default function TrainFocusedView({
     const [summaryData, setSummaryData] = React.useState<{
         durationSeconds: number | null
         totalSets: number
+        plannedSets: number
+        completionStatus: 'complete' | 'incomplete'
     } | null>(null)
+    const [finishConfirmation, setFinishConfirmation] = React.useState<{ completedSets: number; plannedSets: number } | null>(null)
     const [sessionNote, setSessionNote] = React.useState('')
     const [savingNote, setSavingNote] = React.useState(false)
     const [noteSaved, setNoteSaved] = React.useState(false)
@@ -128,6 +131,7 @@ export default function TrainFocusedView({
     // ── Refs para inputs ──
     const weightInputRef = React.useRef<HTMLInputElement>(null)
     const repsInputRef = React.useRef<HTMLInputElement>(null)
+    const continueTrainingButtonRef = React.useRef<HTMLButtonElement>(null)
 
     const exercise = exercises[currentExerciseIndex]
     const exerciseSets = sets[currentExerciseIndex] ?? []
@@ -139,6 +143,25 @@ export default function TrainFocusedView({
     const allExercisesDone = sets.every((exSets) =>
         exSets.every((s) => s.status === 'completed' || s.status === 'skipped')
     )
+
+    React.useEffect(() => {
+        if (!finishConfirmation) return
+
+        const previousFocus = document.activeElement instanceof HTMLElement
+            ? document.activeElement
+            : null
+        continueTrainingButtonRef.current?.focus()
+
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') setFinishConfirmation(null)
+        }
+        document.addEventListener('keydown', handleKeyDown)
+
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown)
+            previousFocus?.focus()
+        }
+    }, [finishConfirmation])
 
     React.useEffect(() => {
         if (phase !== 'rest' || restTimeLeft <= 0) return
@@ -211,10 +234,18 @@ export default function TrainFocusedView({
         const repsVal = targetSet.reps.trim() !== '' ? Number(targetSet.reps) : null
         const rpeVal = targetSet.rpe.trim() !== '' ? Number(targetSet.rpe) : null
 
-        if (weightVal === null && repsVal === null) {
+        if (repsVal === null || !Number.isInteger(repsVal) || repsVal <= 0) {
             setSaveError(exercise.isCardio
-                ? 'Ingresá el tiempo realizado antes de guardar.'
-                : 'Ingresá el peso o las repeticiones antes de guardar.')
+                ? 'Ingresá los minutos realizados antes de guardar.'
+                : 'Ingresá las repeticiones realizadas antes de guardar.')
+            return
+        }
+        if (weightVal !== null && (!Number.isFinite(weightVal) || weightVal < 0)) {
+            setSaveError('El peso no puede ser negativo.')
+            return
+        }
+        if (rpeVal !== null && (!Number.isFinite(rpeVal) || rpeVal < 1 || rpeVal > 10)) {
+            setSaveError('El esfuerzo debe estar entre 1 y 10.')
             return
         }
 
@@ -475,19 +506,30 @@ export default function TrainFocusedView({
         }
     }
 
-    async function finishSession() {
+    async function finishSession(allowIncomplete = false) {
         setSaving(true)
-        const result = await completeSession({ sessionId, studentId })
+        setSaveError(null)
+        const result = await completeSession({ sessionId, studentId, allowIncomplete })
         setSaving(false)
 
+        if (result.requiresConfirmation) {
+            setFinishConfirmation({ completedSets: result.completedSets, plannedSets: result.plannedSets })
+            setPhase('training')
+            return
+        }
+
         if (result.ok) {
+            setFinishConfirmation(null)
             setSummaryData({
                 durationSeconds: result.durationSeconds,
                 totalSets: result.totalSets,
+                plannedSets: result.plannedSets,
+                completionStatus: result.completionStatus ?? 'complete',
             })
             setPhase('summary')
         } else {
             console.error('Error completing session:', result.error)
+            setSaveError(result.error || 'No pudimos finalizar la sesión.')
         }
     }
 
@@ -545,7 +587,9 @@ export default function TrainFocusedView({
                             💪
                         </div>
                         <h2 className="mt-4 text-2xl font-bold text-card-foreground">
-                            Sesión completada
+                            {summaryData?.completionStatus === 'incomplete'
+                                ? 'Sesión finalizada con pendientes'
+                                : 'Sesión completada'}
                         </h2>
                         <p className="mt-1 text-sm text-muted-foreground">
                             {studentName} · {dayLabel}
@@ -555,7 +599,9 @@ export default function TrainFocusedView({
                     <div className="mt-6 grid grid-cols-3 gap-3">
                         <div className="rounded-2xl bg-secondary p-3 text-center">
                             <p className="text-2xl font-bold text-card-foreground">
-                                {summaryData?.totalSets ?? completedSetsTotal}
+                                {summaryData
+                                    ? `${summaryData.totalSets}/${summaryData.plannedSets}`
+                                    : completedSetsTotal}
                             </p>
                             <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                                 Series
@@ -766,7 +812,7 @@ export default function TrainFocusedView({
 
                         <button
                             type="button"
-                            onClick={finishSession}
+                            onClick={() => finishSession(false)}
                             disabled={saving}
                             className={`rounded-2xl border border-border px-4 py-3.5 text-sm font-medium transition active:scale-[0.97] hover:bg-muted ${allExercisesDone || !nextExercise
                                 ? 'flex-1 border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-500'
@@ -1118,7 +1164,7 @@ export default function TrainFocusedView({
                             ) : (
                                 <button
                                     type="button"
-                                    onClick={finishSession}
+                                    onClick={() => finishSession(false)}
                                     disabled={saving}
                                     className="flex-1 min-h-[48px] rounded-xl bg-emerald-600 px-4 py-3.5 text-center text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-50 active:scale-[0.97]"
                                 >
@@ -1138,6 +1184,25 @@ export default function TrainFocusedView({
                     )}
                 </div>
             </div>
+
+            {finishConfirmation && (
+                <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/70 p-4 sm:items-center">
+                    <section role="dialog" aria-modal="true" aria-labelledby="trainer-incomplete-title" className="w-full max-w-md rounded-2xl border border-border bg-card p-5 shadow-2xl">
+                        <h2 id="trainer-incomplete-title" className="text-lg font-black text-card-foreground">¿Finalizar esta sesión incompleta?</h2>
+                        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                            Faltan {finishConfirmation.plannedSets - finishConfirmation.completedSets} de {finishConfirmation.plannedSets} series. El día quedará pendiente y no contará como entrenamiento completado.
+                        </p>
+                        <div className="mt-5 grid grid-cols-2 gap-2">
+                            <button ref={continueTrainingButtonRef} type="button" onClick={() => setFinishConfirmation(null)} className="min-h-12 rounded-xl border border-border bg-secondary px-3 text-sm font-bold text-secondary-foreground">
+                                Seguir entrenando
+                            </button>
+                            <button type="button" onClick={() => finishSession(true)} disabled={saving} className="min-h-12 rounded-xl bg-amber-500 px-3 text-sm font-black text-black disabled:opacity-50">
+                                {saving ? 'Finalizando…' : 'Finalizar incompleta'}
+                            </button>
+                        </div>
+                    </section>
+                </div>
+            )}
         </div>
     )
 }

@@ -137,7 +137,7 @@ export async function saveWorkoutFeedback(payload: {
     studentId: string
     energy: number | null
     difficulty: number | null
-    hadPain: boolean
+    hadPain: boolean | null
     painDetails: string
     comment: string
 }): Promise<{ ok: boolean; error: string | null }> {
@@ -151,6 +151,9 @@ export async function saveWorkoutFeedback(payload: {
     }
     if (difficulty != null && (difficulty < 1 || difficulty > 5)) {
         return { ok: false, error: 'La dificultad debe estar entre 1 y 5.' }
+    }
+    if (typeof payload.hadPain !== 'boolean') {
+        return { ok: false, error: 'Indicá si sentiste dolor o alguna molestia.' }
     }
     if (payload.hadPain && !payload.painDetails.trim()) {
         return { ok: false, error: 'Contanos dónde sentiste la molestia.' }
@@ -215,7 +218,7 @@ export type WeeklyCheckinPayload = {
     sleepQuality: number
     stress: number
     trainingDifficulty: number
-    hadPain: boolean
+    hadPain: boolean | null
     painDetails: string
     bodyWeight: string
     waistCm: string
@@ -232,6 +235,9 @@ export async function saveWeeklyCheckin(
         .map(Number)
     if (scores.some((value) => !Number.isInteger(value) || value < 1 || value > 5)) {
         return { ok: false, error: 'Completá las cuatro preguntas del control.' }
+    }
+    if (typeof payload.hadPain !== 'boolean') {
+        return { ok: false, error: 'Indicá si tuviste dolor o alguna molestia.' }
     }
     if (payload.hadPain && !payload.painDetails.trim()) {
         return { ok: false, error: 'Contanos dónde sentiste la molestia.' }

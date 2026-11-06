@@ -223,6 +223,7 @@ export default async function AppTrainPage(props: PageProps) {
     // separar lo hecho hoy de la sesión anterior y evitar precargar referencias.
     let workoutSessionId: string | null = null
     let sessionJustCompleted = false
+    let sessionCompletionStatus: 'complete' | 'incomplete' | null = null
     if (selectedDayId && exercisesForDay.length > 0) {
         const sessionResult = await startWorkoutSession({
             studentId,
@@ -232,6 +233,7 @@ export default async function AppTrainPage(props: PageProps) {
         })
         workoutSessionId = sessionResult.sessionId
         sessionJustCompleted = sessionResult.justCompleted
+        sessionCompletionStatus = sessionResult.completionStatus
     }
 
     const logsByExerciseId = new Map<string, {
@@ -430,6 +432,7 @@ export default async function AppTrainPage(props: PageProps) {
                 progressHref="/app/progress"
                 showPrs={true}
                 initialSummary={sessionJustCompleted}
+                initialIncomplete={sessionCompletionStatus === 'incomplete'}
             />
         </div>
     )

@@ -56,9 +56,10 @@ export default async function AppHistoryPage() {
 
     const weightUnit = (trainerProfile?.weight_unit ?? 'kg') as WeightUnit
     const grouped = groupByMonth(sessions)
+    const completedSessions = sessions.filter((session) => session.completionStatus === 'complete')
     const totalSets = sessions.reduce((acc, s) => acc + s.totalSets, 0)
-    const avgDuration = sessions.filter(s => s.durationSeconds).length > 0
-        ? Math.round(sessions.filter(s => s.durationSeconds).reduce((acc, s) => acc + (s.durationSeconds ?? 0), 0) / sessions.filter(s => s.durationSeconds).length / 60)
+    const avgDuration = completedSessions.filter(s => s.durationSeconds).length > 0
+        ? Math.round(completedSessions.filter(s => s.durationSeconds).reduce((acc, s) => acc + (s.durationSeconds ?? 0), 0) / completedSessions.filter(s => s.durationSeconds).length / 60)
         : null
 
     return (
@@ -67,16 +68,16 @@ export default async function AppHistoryPage() {
                 <div className="mb-4">
                     <StudentPageHeader
                         title="Historial"
-                        subtitle="Sesiones completadas"
-                        action={sessions.length > 0 ? <span className="text-sm font-bold text-primary">{sessions.length} sesiones</span> : null}
+                        subtitle="Entrenamientos registrados"
+                        action={sessions.length > 0 ? <span className="text-sm font-bold text-primary">{completedSessions.length} completos</span> : null}
                     />
                 </div>
 
                 {sessions.length > 0 && (
                     <div className="mb-4 grid grid-cols-3 gap-2">
                         <div className="rounded-xl border border-border bg-card p-2.5 text-center">
-                            <p className="text-base font-black text-primary">{sessions.length}</p>
-                            <p className="text-[10px] text-muted-foreground">Sesiones</p>
+                            <p className="text-base font-black text-primary">{completedSessions.length}</p>
+                            <p className="text-[10px] text-muted-foreground">Completos</p>
                         </div>
                         <div className="rounded-xl border border-border bg-card p-2.5 text-center">
                             <p className="text-base font-black text-emerald-400">{totalSets}</p>
@@ -107,6 +108,9 @@ export default async function AppHistoryPage() {
                                                 <div>
                                                     <p className="text-sm font-bold text-card-foreground">{session.dayLabel}</p>
                                                     <p className="mt-0.5 text-xs text-muted-foreground">{formatDate(session.performedDate)}</p>
+                                                    {session.completionStatus === 'incomplete' && (
+                                                        <p className="mt-1 text-[10px] font-bold text-amber-500">Finalizado con series pendientes</p>
+                                                    )}
                                                 </div>
                                                 <div className="flex shrink-0 items-center gap-2">
                                                     {session.durationSeconds && (

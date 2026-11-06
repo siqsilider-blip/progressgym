@@ -12,11 +12,23 @@ export type StudentStats = {
 export async function getStudentStats(studentId: string): Promise<StudentStats> {
     const supabase = await createClient()
 
-    const { data: logs, error: logsError } = await supabase
-        .from('exercise_logs')
-        .select('id, routine_day_exercise_id, weight, reps, created_at, performed_at')
-        .eq('student_id', studentId)
-        .order('created_at', { ascending: true })
+    const [logsResult, sessionsResult] = await Promise.all([
+        supabase
+            .from('exercise_logs')
+            .select('id, routine_day_exercise_id, weight, reps, created_at, performed_at')
+            .eq('student_id', studentId)
+            .order('created_at', { ascending: true }),
+        supabase
+            .from('workout_sessions')
+            .select('performed_date, started_at, finished_at')
+            .eq('student_id', studentId)
+            .eq('status', 'completed')
+            .eq('completed_manually', true)
+            .eq('completion_status', 'complete')
+            .order('performed_date', { ascending: false }),
+    ])
+
+    const { data: logs, error: logsError } = logsResult
 
     if (logsError) {
         console.error('Error fetching exercise logs:', logsError)
@@ -24,27 +36,14 @@ export async function getStudentStats(studentId: string): Promise<StudentStats> 
 
     const safeLogs = logs ?? []
 
-    // Calcular días únicos de entrenamiento desde exercise_logs
-    const uniqueTrainingDays = new Set(
-        safeLogs
-            .map((log) => {
-                const date = log.performed_at ?? log.created_at
-                if (!date) return null
-                return String(date).split('T')[0]
-            })
-            .filter(Boolean)
-    )
+    if (sessionsResult.error) {
+        console.error('Error fetching completed workout sessions:', sessionsResult.error)
+    }
 
-    const totalSessions = uniqueTrainingDays.size
-
-    // Último entrenamiento: el más reciente de los logs
-    const sortedLogs = [...safeLogs].sort((a, b) => {
-        const dateA = new Date(a.performed_at ?? a.created_at ?? 0).getTime()
-        const dateB = new Date(b.performed_at ?? b.created_at ?? 0).getTime()
-        return dateB - dateA
-    })
-    const lastWorkoutAt = sortedLogs.length > 0
-        ? (sortedLogs[0].performed_at ?? sortedLogs[0].created_at ?? null)
+    const completedSessions = sessionsResult.data ?? []
+    const totalSessions = completedSessions.length
+    const lastWorkoutAt = completedSessions[0]
+        ? (completedSessions[0].finished_at ?? completedSessions[0].performed_date ?? completedSessions[0].started_at ?? null)
         : null
 
     const logsByExercise = new Map<

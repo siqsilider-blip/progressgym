@@ -56,7 +56,7 @@ export default function WeeklyCheckinForm({
     const [sleepQuality, setSleepQuality] = useState(initialValue?.sleep_quality ?? 0)
     const [stress, setStress] = useState(initialValue?.stress ?? 0)
     const [trainingDifficulty, setTrainingDifficulty] = useState(initialValue?.training_difficulty ?? 0)
-    const [hadPain, setHadPain] = useState(initialValue?.had_pain ?? false)
+    const [hadPain, setHadPain] = useState<boolean | null>(initialValue?.had_pain ?? null)
     const [painDetails, setPainDetails] = useState(initialValue?.pain_details ?? '')
     const [bodyWeight, setBodyWeight] = useState(initialValue?.body_weight?.toString() ?? '')
     const [waistCm, setWaistCm] = useState(initialValue?.waist_cm?.toString() ?? '')
@@ -115,6 +115,12 @@ export default function WeeklyCheckinForm({
         if (pending) return
         setError('')
         setSaved(false)
+
+        if (hadPain === null) {
+            setError('Indicá si tuviste dolor o alguna molestia.')
+            return
+        }
+
         startTransition(async () => {
             const result = await saveWeeklyCheckin({
                 energy,
@@ -229,10 +235,31 @@ export default function WeeklyCheckinForm({
             <section className="rounded-2xl border border-border bg-card p-4">
                 <p className="text-sm font-bold text-foreground">¿Tuviste dolor o alguna molestia?</p>
                 <div className="mt-3 grid grid-cols-2 gap-2">
-                    <button type="button" onClick={() => setHadPain(false)} className={`min-h-11 rounded-xl border text-sm font-bold ${!hadPain ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-500' : 'border-border bg-background text-muted-foreground'}`}>No</button>
-                    <button type="button" onClick={() => setHadPain(true)} className={`min-h-11 rounded-xl border text-sm font-bold ${hadPain ? 'border-amber-500/40 bg-amber-500/10 text-amber-500' : 'border-border bg-background text-muted-foreground'}`}>Sí</button>
+                    <button
+                        type="button"
+                        aria-pressed={hadPain === false}
+                        onClick={() => {
+                            setHadPain(false)
+                            setPainDetails('')
+                            setError('')
+                        }}
+                        className={`min-h-11 rounded-xl border text-sm font-bold ${hadPain === false ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-500' : 'border-border bg-background text-muted-foreground'}`}
+                    >
+                        No
+                    </button>
+                    <button
+                        type="button"
+                        aria-pressed={hadPain === true}
+                        onClick={() => {
+                            setHadPain(true)
+                            setError('')
+                        }}
+                        className={`min-h-11 rounded-xl border text-sm font-bold ${hadPain === true ? 'border-amber-500/40 bg-amber-500/10 text-amber-500' : 'border-border bg-background text-muted-foreground'}`}
+                    >
+                        Sí
+                    </button>
                 </div>
-                {hadPain && (
+                {hadPain === true && (
                     <textarea
                         value={painDetails}
                         onChange={(event) => setPainDetails(event.target.value)}

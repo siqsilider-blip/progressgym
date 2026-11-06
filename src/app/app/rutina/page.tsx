@@ -246,6 +246,7 @@ export default async function AppRutinePage(props: PageProps) {
                             const status = weekProgress.statusByDayId.get(day.id) ?? 'pending'
                             const isCompleted = status === 'completed'
                             const isInProgress = status === 'in_progress'
+                            const isIncomplete = status === 'incomplete'
 
                             return (
                                 <div
@@ -255,6 +256,8 @@ export default async function AppRutinePage(props: PageProps) {
                                                 ? 'border-emerald-500/30 bg-emerald-500/[0.04] shadow-sm'
                                                 : isInProgress
                                                     ? 'border-primary/40 bg-primary/[0.04] shadow-sm'
+                                                    : isIncomplete
+                                                        ? 'border-amber-500/35 bg-amber-500/[0.05] shadow-sm'
                                                     : 'border-border bg-card shadow-sm'
                                             : 'border-dashed border-border bg-card/50 opacity-60'
                                         }`}
@@ -276,6 +279,9 @@ export default async function AppRutinePage(props: PageProps) {
                                                 {isInProgress && (
                                                     <p className="mt-1.5 text-xs font-bold text-brand-soft">Sesión en curso</p>
                                                 )}
+                                                {isIncomplete && (
+                                                    <p className="mt-1.5 text-xs font-bold text-amber-500">Series pendientes · todavía no cuenta como completado</p>
+                                                )}
                                             </div>
 
                                             {hasExercises && !isCompleted && (
@@ -283,7 +289,7 @@ export default async function AppRutinePage(props: PageProps) {
                                                     href={`/app/train?${selectedMonth ? `month=${selectedMonth.id}&` : ''}week=${selectedWeek?.id}&day=${day.id}`}
                                                     className="shrink-0 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground transition hover:bg-primary active:scale-[0.97]"
                                                 >
-                                                    {isInProgress ? 'Continuar →' : 'Entrenar →'}
+                                                    {isInProgress ? 'Continuar →' : isIncomplete ? 'Completar →' : 'Entrenar →'}
                                                 </Link>
                                             )}
                                             {hasExercises && isCompleted && (

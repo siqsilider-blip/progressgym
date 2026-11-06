@@ -67,14 +67,15 @@ export default async function StudentHistoryPage(props: PageProps) {
 
     const grouped = groupByMonth(sessions)
 
-    const totalSessions = sessions.length
+    const completedSessions = sessions.filter((session) => session.completionStatus === 'complete')
+    const totalSessions = completedSessions.length
     const totalSets = sessions.reduce((acc, s) => acc + s.totalSets, 0)
-    const avgDuration = sessions.filter(s => s.durationSeconds).length > 0
+    const avgDuration = completedSessions.filter(s => s.durationSeconds).length > 0
         ? Math.round(
-            sessions
+            completedSessions
                 .filter(s => s.durationSeconds)
                 .reduce((acc, s) => acc + (s.durationSeconds ?? 0), 0) /
-            sessions.filter(s => s.durationSeconds).length / 60
+            completedSessions.filter(s => s.durationSeconds).length / 60
         )
         : null
 
@@ -85,7 +86,7 @@ export default async function StudentHistoryPage(props: PageProps) {
                 {/* ── Header ── */}
                 <DashboardPageHeader
                     title="Historial"
-                    subtitle={`${fullName} · ${totalSessions} ${totalSessions === 1 ? 'sesión' : 'sesiones'}`}
+                    subtitle={`${fullName} · ${totalSessions} ${totalSessions === 1 ? 'sesión completa' : 'sesiones completas'}`}
                     backHref={`/dashboard/students/${params.studentId}`}
                 />
 
@@ -148,6 +149,9 @@ export default async function StudentHistoryPage(props: PageProps) {
                                                     <p className="mt-0.5 text-xs text-muted-foreground">
                                                         {formatDate(session.performedDate)}
                                                     </p>
+                                                    {session.completionStatus === 'incomplete' && (
+                                                        <p className="mt-1 text-[10px] font-bold text-amber-500">Finalizada con series pendientes</p>
+                                                    )}
                                                 </div>
 
                                                 <div className="flex shrink-0 items-center gap-2">

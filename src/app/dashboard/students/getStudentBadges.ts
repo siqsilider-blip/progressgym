@@ -16,10 +16,11 @@ export type Badge = {
 export async function getStudentBadges(studentId: string): Promise<Badge[]> {
     const supabase = await createClient()
 
-    const [progressData, sessions] = await Promise.all([
+    const [progressData, sessionHistory] = await Promise.all([
         getStudentExerciseProgress(studentId),
         getStudentSessionHistory(studentId, 100),
     ])
+    const sessions = sessionHistory.filter((session) => session.completionStatus === 'complete')
 
     const totalSessions = sessions.length
     const totalSets = sessions.reduce((acc, s) => acc + s.totalSets, 0)
@@ -53,11 +54,12 @@ export async function getStudentBadges(studentId: string): Promise<Badge[]> {
     // Ejercicios únicos entrenados
     const { data: rawLogs } = await supabase
         .from('exercise_logs')
-        .select('routine_day_exercise_id, workout_sessions!inner(student_id, status, completed_manually)')
+        .select('routine_day_exercise_id, workout_sessions!inner(student_id, status, completed_manually, completion_status)')
         .eq('student_id', studentId)
         .eq('workout_sessions.student_id', studentId)
         .eq('workout_sessions.status', 'completed')
         .eq('workout_sessions.completed_manually', true)
+        .eq('workout_sessions.completion_status', 'complete')
     const uniqueRDEs = new Set((rawLogs ?? []).map(l => l.routine_day_exercise_id)).size
 
     // Variables adicionales necesarias

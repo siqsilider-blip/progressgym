@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, ChevronDown, ChevronUp, Clock3, MessageCircle, RefreshCw, Trophy, WifiOff } from 'lucide-react'
+import { AlertTriangle, Check, ChevronDown, ChevronUp, Clock3, MessageCircle, RefreshCw, Trophy, WifiOff } from 'lucide-react'
 import { completeSession, saveSet } from '@/app/dashboard/students/[studentId]/train/train-focused-actions'
 import ExerciseDemo from '@/app/dashboard/students/[studentId]/train/ExerciseDemo'
 import MessageComposer from '@/components/coaching/MessageComposer'
@@ -72,6 +72,7 @@ type Props = {
     progressHref: string
     showPrs?: boolean
     initialSummary?: boolean
+    initialIncomplete?: boolean
 }
 
 const BLOCKS: { id: RoutineBlock; label: string; emoji: string }[] = [
@@ -114,6 +115,28 @@ function formatDuration(seconds: number | null) {
     return rest > 0 ? `${hours} h ${rest} min` : `${hours} h`
 }
 
+function validateSet(exercise: ExerciseData, set: SetState) {
+    const repsText = set.reps.trim()
+    const weightText = set.weight.trim()
+    const rpeText = set.rpe.trim()
+    const reps = repsText === '' ? null : Number(repsText)
+    const weight = weightText === '' ? null : Number(weightText)
+    const rpe = rpeText === '' ? null : Number(rpeText)
+
+    if (reps === null || !Number.isInteger(reps) || reps <= 0) {
+        return exercise.isCardio
+            ? 'Ingresá los minutos realizados.'
+            : 'Ingresá las repeticiones realizadas.'
+    }
+    if (weight !== null && (!Number.isFinite(weight) || weight < 0)) {
+        return 'El peso no puede ser negativo.'
+    }
+    if (rpe !== null && (!Number.isFinite(rpe) || rpe < 1 || rpe > 10)) {
+        return 'El esfuerzo debe estar entre 1 y 10.'
+    }
+    return null
+}
+
 export default function StudentWorkoutView({
     sessionId,
     studentId,
@@ -128,6 +151,7 @@ export default function StudentWorkoutView({
     progressHref,
     showPrs = true,
     initialSummary = false,
+    initialIncomplete = false,
 }: Props) {
     const router = useRouter()
     const [sets, setSets] = React.useState<SetState[][]>(() => createInitialSets(exercises))
@@ -143,7 +167,14 @@ export default function StudentWorkoutView({
     const [restTimeLeft, setRestTimeLeft] = React.useState(0)
     const [restExerciseName, setRestExerciseName] = React.useState('')
     const [completedSession, setCompletedSession] = React.useState(initialSummary)
-    const [summary, setSummary] = React.useState<{ durationSeconds: number | null; totalSets: number } | null>(null)
+    const [incompleteSession, setIncompleteSession] = React.useState(initialIncomplete)
+    const [finishConfirmation, setFinishConfirmation] = React.useState<{ completedSets: number; plannedSets: number } | null>(null)
+    const [summary, setSummary] = React.useState<{
+        durationSeconds: number | null
+        totalSets: number
+        plannedSets: number
+        completionStatus: 'complete' | 'incomplete'
+    } | null>(null)
     const [localMaxWeights, setLocalMaxWeights] = React.useState({ ...maxWeights })
     const [isOnline, setIsOnline] = React.useState(true)
     const [draftReady, setDraftReady] = React.useState(false)
@@ -152,7 +183,19 @@ export default function StudentWorkoutView({
     const setsRef = React.useRef(sets)
     const syncingDraftsRef = React.useRef(false)
     const syncQueuedSetsRef = React.useRef<() => void>(() => undefined)
+    const autoSaveSetRef = React.useRef<(exerciseIndex: number, setIndex: number) => void>(() => undefined)
+    const autoSaveTimerRef = React.useRef<number | null>(null)
+    const recoveredDraftKeysRef = React.useRef(new Set<string>())
+    const continueTrainingButtonRef = React.useRef<HTMLButtonElement | null>(null)
     const draftStorageKey = `progrezzia:workout-draft:${studentId}:${sessionId}`
+
+    const updateSets = React.useCallback((updater: (previous: SetState[][]) => SetState[][]) => {
+        setSets((previous) => {
+            const next = updater(previous)
+            setsRef.current = next
+            return next
+        })
+    }, [])
 
     const totalPlannedSets = exercises.reduce((total, exercise) => total + exercise.setsCount, 0)
     const savedSets = sets.reduce((total, exerciseSets) => total + exerciseSets.filter((set) => set.saved).length, 0)
@@ -206,8 +249,9 @@ export default function StudentWorkoutView({
             const entryMap = new Map(
                 draft.entries.map((entry) => [`${entry.exerciseId}:${entry.setIndex}`, entry])
             )
+            recoveredDraftKeysRef.current = new Set(entryMap.keys())
 
-            setSets((previous) => previous.map((exerciseSets, exerciseIndex) =>
+            updateSets((previous) => previous.map((exerciseSets, exerciseIndex) =>
                 exerciseSets.map((set, setIndex) => {
                     const exercise = exercises[exerciseIndex]
                     const entry = exercise ? entryMap.get(`${exercise.id}:${setIndex}`) : null
@@ -234,7 +278,7 @@ export default function StudentWorkoutView({
         } finally {
             setDraftReady(true)
         }
-    }, [draftStorageKey, exercises])
+    }, [draftStorageKey, exercises, updateSets])
 
     React.useEffect(() => {
         if (!draftReady) return
@@ -276,7 +320,7 @@ export default function StudentWorkoutView({
     }, [draftReady, draftStorageKey, exercises, sets])
 
     function updateField(exerciseIndex: number, setIndex: number, field: 'weight' | 'reps' | 'rpe', value: string) {
-        setSets((previous) => previous.map((exerciseSets, currentExerciseIndex) =>
+        updateSets((previous) => previous.map((exerciseSets, currentExerciseIndex) =>
             currentExerciseIndex !== exerciseIndex
                 ? exerciseSets
                 : exerciseSets.map((set, currentSetIndex) =>
@@ -288,21 +332,24 @@ export default function StudentWorkoutView({
         setGlobalError(null)
     }
 
-    async function saveOneSet(exerciseIndex: number, setIndex: number) {
+    async function saveOneSet(exerciseIndex: number, setIndex: number, automatic = false) {
         const exercise = exercises[exerciseIndex]
         const set = setsRef.current[exerciseIndex]?.[setIndex]
         if (!exercise || !set || savingKey || syncingDraftsRef.current) return
 
-        const weight = set.weight.trim() === '' ? null : Number(set.weight)
-        const reps = set.reps.trim() === '' ? null : Number(set.reps)
+        if (!automatic && autoSaveTimerRef.current !== null) {
+            window.clearTimeout(autoSaveTimerRef.current)
+            autoSaveTimerRef.current = null
+        }
 
-        if (weight === null && reps === null) {
-            setSets((previous) => previous.map((exerciseSets, currentExerciseIndex) =>
+        const validationError = validateSet(exercise, set)
+        if (validationError) {
+            updateSets((previous) => previous.map((exerciseSets, currentExerciseIndex) =>
                 currentExerciseIndex !== exerciseIndex
                     ? exerciseSets
                     : exerciseSets.map((item, currentSetIndex) =>
                         currentSetIndex === setIndex
-                            ? { ...item, error: exercise.isCardio ? 'Ingresá el tiempo realizado.' : 'Ingresá peso o repeticiones.' }
+                            ? { ...item, error: validationError }
                             : item
                     )
             ))
@@ -311,7 +358,7 @@ export default function StudentWorkoutView({
 
         if (!window.navigator.onLine) {
             setIsOnline(false)
-            setSets((previous) => previous.map((exerciseSets, currentExerciseIndex) =>
+            updateSets((previous) => previous.map((exerciseSets, currentExerciseIndex) =>
                 currentExerciseIndex !== exerciseIndex
                     ? exerciseSets
                     : exerciseSets.map((item, currentSetIndex) =>
@@ -324,23 +371,43 @@ export default function StudentWorkoutView({
             return
         }
 
-        await persistSet(exerciseIndex, setIndex, set, false)
+        // El autoguardado debe ser transparente: iniciar el descanso mientras la
+        // persona todavía está escribiendo resulta sorpresivo. El descanso se
+        // inicia únicamente cuando confirma la serie con el botón.
+        await persistSet(exerciseIndex, setIndex, set, automatic, !automatic)
     }
 
     async function persistSet(
         exerciseIndex: number,
         setIndex: number,
         set: SetState,
-        automatic: boolean
+        automatic: boolean,
+        startRest: boolean
     ) {
         const exercise = exercises[exerciseIndex]
         if (!exercise) return false
+
+        const validationError = validateSet(exercise, set)
+        if (validationError) {
+            updateSets((previous) => previous.map((exerciseSets, currentExerciseIndex) =>
+                currentExerciseIndex !== exerciseIndex
+                    ? exerciseSets
+                    : exerciseSets.map((item, currentSetIndex) =>
+                        currentSetIndex === setIndex
+                            ? { ...item, error: validationError }
+                            : item
+                    )
+            ))
+            return false
+        }
 
         const weight = set.weight.trim() === '' ? null : Number(set.weight)
         const reps = set.reps.trim() === '' ? null : Number(set.reps)
         const rpe = set.rpe.trim() === '' ? null : Number(set.rpe)
 
         const key = `${exerciseIndex}-${setIndex}`
+        const draftKey = `${exercise.id}:${setIndex}`
+        const cameFromRecoveredDraft = recoveredDraftKeysRef.current.has(draftKey)
         setSavingKey(key)
         setGlobalError(null)
 
@@ -357,17 +424,17 @@ export default function StudentWorkoutView({
             })
 
             if (!result.ok) {
-                setSets((previous) => previous.map((exerciseSets, currentExerciseIndex) =>
+                updateSets((previous) => previous.map((exerciseSets, currentExerciseIndex) =>
                     currentExerciseIndex !== exerciseIndex
                         ? exerciseSets
                         : exerciseSets.map((item, currentSetIndex) =>
                             currentSetIndex === setIndex
-                                ? { ...item, dirty: true, queued: automatic || item.queued, error: automatic ? null : result.error || 'No se pudo guardar.' }
+                                ? { ...item, dirty: true, queued: false, error: result.error || 'No se pudo guardar.' }
                                 : item
                         )
                 ))
                 if (automatic) {
-                    setGlobalError('No pudimos sincronizar todavía. Tus datos siguen guardados en este teléfono.')
+                    setGlobalError(result.error || 'No pudimos guardar esta serie. Revisala y volvé a intentar.')
                 }
                 return false
             }
@@ -378,37 +445,88 @@ export default function StudentWorkoutView({
                 setLocalMaxWeights((previous) => ({ ...previous, [exercise.id]: weight }))
             }
 
-            setSets((previous) => previous.map((exerciseSets, currentExerciseIndex) =>
+            const latestSet = setsRef.current[exerciseIndex]?.[setIndex]
+            const valuesUnchanged = Boolean(
+                latestSet
+                && latestSet.weight === set.weight
+                && latestSet.reps === set.reps
+                && latestSet.rpe === set.rpe
+            )
+
+            updateSets((previous) => previous.map((exerciseSets, currentExerciseIndex) =>
                 currentExerciseIndex !== exerciseIndex
                     ? exerciseSets
                     : exerciseSets.map((item, currentSetIndex) =>
                         currentSetIndex === setIndex
-                            ? { ...item, saved: true, dirty: false, queued: false, isPr, error: null }
+                            ? valuesUnchanged
+                                ? { ...item, saved: true, dirty: false, queued: false, isPr, error: null }
+                                : { ...item, saved: true, dirty: true, queued: false, error: null }
                             : item
                     )
             ))
+            if (valuesUnchanged) recoveredDraftKeysRef.current.delete(draftKey)
 
-            if (!automatic && !completedSession && !set.saved && exercise.restSeconds > 0) {
+            if (valuesUnchanged && startRest && !cameFromRecoveredDraft && !completedSession && !incompleteSession && !set.saved && exercise.restSeconds > 0) {
                 setRestExerciseName(exercise.exerciseName)
                 setRestTimeLeft(exercise.restSeconds)
             }
-            return true
+            return valuesUnchanged
         } catch {
-            setSets((previous) => previous.map((exerciseSets, currentExerciseIndex) =>
+            const offline = !window.navigator.onLine
+            if (offline) setIsOnline(false)
+            updateSets((previous) => previous.map((exerciseSets, currentExerciseIndex) =>
                 currentExerciseIndex !== exerciseIndex
                     ? exerciseSets
                     : exerciseSets.map((item, currentSetIndex) =>
                         currentSetIndex === setIndex
-                            ? { ...item, dirty: true, queued: true, error: null }
+                            ? {
+                                ...item,
+                                dirty: true,
+                                queued: offline,
+                                error: offline ? null : 'No pudimos conectar. Tocá guardar para reintentar.',
+                            }
                             : item
                     )
             ))
-            setGlobalError('No pudimos conectar. Tus datos quedaron guardados en este teléfono.')
+            setGlobalError(offline
+                ? 'No pudimos conectar. Tus datos quedaron guardados en este teléfono.'
+                : 'No pudimos conectar con el servidor. Tus datos siguen en este teléfono.')
             return false
         } finally {
             setSavingKey(null)
         }
     }
+
+    React.useEffect(() => {
+        autoSaveSetRef.current = (exerciseIndex, setIndex) => {
+            void saveOneSet(exerciseIndex, setIndex, true)
+        }
+    })
+
+    React.useEffect(() => {
+        if (!draftReady || savingKey || syncingDrafts || finishing) return
+
+        const candidate = sets.flatMap((exerciseSets, exerciseIndex) =>
+            exerciseSets.map((set, setIndex) => ({ exerciseIndex, setIndex, set }))
+        ).find(({ exerciseIndex, set }) => {
+            const exercise = exercises[exerciseIndex]
+            return Boolean(exercise && set.dirty && !set.queued && !set.error && validateSet(exercise, set) === null)
+        })
+
+        if (!candidate) return
+
+        autoSaveTimerRef.current = window.setTimeout(() => {
+            autoSaveTimerRef.current = null
+            autoSaveSetRef.current(candidate.exerciseIndex, candidate.setIndex)
+        }, 900)
+
+        return () => {
+            if (autoSaveTimerRef.current !== null) {
+                window.clearTimeout(autoSaveTimerRef.current)
+                autoSaveTimerRef.current = null
+            }
+        }
+    }, [draftReady, exercises, finishing, savingKey, sets, syncingDrafts])
 
     async function syncQueuedSets() {
         if (syncingDraftsRef.current || !window.navigator.onLine) return
@@ -427,7 +545,7 @@ export default function StudentWorkoutView({
         try {
             for (const item of pending) {
                 if (!window.navigator.onLine) break
-                await persistSet(item.exerciseIndex, item.setIndex, item.set, true)
+                await persistSet(item.exerciseIndex, item.setIndex, item.set, true, false)
             }
         } finally {
             syncingDraftsRef.current = false
@@ -447,35 +565,122 @@ export default function StudentWorkoutView({
         return () => window.clearTimeout(timeout)
     }, [draftReady, isOnline])
 
-    async function finishWorkout() {
+    React.useEffect(() => {
+        if (!finishConfirmation) return
+
+        const previousFocus = document.activeElement instanceof HTMLElement
+            ? document.activeElement
+            : null
+        continueTrainingButtonRef.current?.focus()
+
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') setFinishConfirmation(null)
+        }
+        document.addEventListener('keydown', handleKeyDown)
+
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown)
+            previousFocus?.focus()
+        }
+    }, [finishConfirmation])
+
+    async function persistDirtySetsBeforeFinish() {
+        const pending = setsRef.current.flatMap((exerciseSets, exerciseIndex) =>
+            exerciseSets
+                .map((set, setIndex) => ({ exerciseIndex, setIndex, set }))
+                .filter(({ set }) => set.dirty)
+        )
+
+        const invalid = pending.find(({ exerciseIndex, set }) => {
+            const exercise = exercises[exerciseIndex]
+            return !exercise || validateSet(exercise, set) !== null
+        })
+
+        if (invalid) {
+            const exercise = exercises[invalid.exerciseIndex]
+            const validationError = exercise ? validateSet(exercise, invalid.set) : 'Revisá esta serie.'
+            updateSets((previous) => previous.map((exerciseSets, exerciseIndex) =>
+                exerciseIndex !== invalid.exerciseIndex
+                    ? exerciseSets
+                    : exerciseSets.map((set, setIndex) =>
+                        setIndex === invalid.setIndex
+                            ? { ...set, error: validationError }
+                            : set
+                    )
+            ))
+            if (exercise) setOpenExerciseId(exercise.id)
+            setGlobalError('Revisá la serie marcada antes de finalizar.')
+            return false
+        }
+
+        for (const item of pending) {
+            const saved = await persistSet(item.exerciseIndex, item.setIndex, item.set, true, false)
+            if (!saved) {
+                setGlobalError('No pudimos guardar todos los cambios. Revisá la serie marcada y volvé a finalizar.')
+                return false
+            }
+        }
+
+        if (setsRef.current.some((exerciseSets) => exerciseSets.some((set) => set.dirty))) {
+            setGlobalError('Detectamos un cambio pendiente. Esperá a que figure “Guardada ✓” y volvé a finalizar.')
+            return false
+        }
+
+        return true
+    }
+
+    async function finishWorkout(allowIncomplete = false) {
         if (finishing) return
         if (!window.navigator.onLine) {
             setIsOnline(false)
             setGlobalError('Necesitás conexión para finalizar. El borrador está guardado en este teléfono.')
             return
         }
-        const hasUnsavedValues = sets.some((exerciseSets) => exerciseSets.some((set) => set.dirty))
-        if (hasUnsavedValues) {
-            setGlobalError('Hay cambios sin guardar. Guardá las series marcadas antes de finalizar.')
+        if (savingKey || syncingDraftsRef.current) {
+            setGlobalError('Estamos guardando tus últimos cambios. Esperá un momento y volvé a intentar.')
             return
         }
-        if (savedSets === 0) {
-            setGlobalError('Guardá al menos una serie antes de finalizar el entrenamiento.')
-            return
+
+        if (autoSaveTimerRef.current !== null) {
+            window.clearTimeout(autoSaveTimerRef.current)
+            autoSaveTimerRef.current = null
         }
 
         setFinishing(true)
         setGlobalError(null)
-        const result = await completeSession({ sessionId, studentId })
+
+        const pendingSaved = await persistDirtySetsBeforeFinish()
+        if (!pendingSaved) {
+            setFinishing(false)
+            return
+        }
+
+        const result = await completeSession({ sessionId, studentId, allowIncomplete })
         setFinishing(false)
+
+        if (result.requiresConfirmation) {
+            setFinishConfirmation({
+                completedSets: result.completedSets,
+                plannedSets: result.plannedSets,
+            })
+            return
+        }
 
         if (!result.ok) {
             setGlobalError(result.error || 'No pudimos finalizar el entrenamiento.')
             return
         }
 
-        setCompletedSession(true)
-        setSummary({ durationSeconds: result.durationSeconds, totalSets: result.totalSets })
+        const completionStatus = result.completionStatus ?? 'complete'
+        setCompletedSession(completionStatus === 'complete')
+        setIncompleteSession(completionStatus === 'incomplete')
+        setFinishConfirmation(null)
+        setSummary({
+            durationSeconds: result.durationSeconds,
+            totalSets: result.totalSets,
+            plannedSets: result.plannedSets,
+            completionStatus,
+        })
         setRestTimeLeft(0)
         try {
             window.localStorage.removeItem(draftStorageKey)
@@ -486,23 +691,52 @@ export default function StudentWorkoutView({
     }
 
     if (summary) {
+        const isIncomplete = summary.completionStatus === 'incomplete'
         return (
             <main className="mx-auto max-w-lg px-4 py-6">
-                <section className="rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.06] p-5 text-center">
-                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500 text-white">
-                        <Check className="h-7 w-7" aria-hidden="true" />
+                <section className={`rounded-2xl border p-5 text-center ${isIncomplete ? 'border-amber-500/30 bg-amber-500/[0.07]' : 'border-emerald-500/25 bg-emerald-500/[0.06]'}`}>
+                    <div className={`mx-auto flex h-12 w-12 items-center justify-center rounded-2xl text-white ${isIncomplete ? 'bg-amber-500' : 'bg-emerald-500'}`}>
+                        {isIncomplete
+                            ? <AlertTriangle className="h-7 w-7" aria-hidden="true" />
+                            : <Check className="h-7 w-7" aria-hidden="true" />}
                     </div>
-                    <h1 className="mt-3 text-xl font-black text-foreground">Entrenamiento guardado</h1>
-                    <p className="mt-1 text-sm text-muted-foreground">{dayLabel} · {summary.totalSets} series · {formatDuration(summary.durationSeconds)}</p>
-                    <p className="mt-2 text-xs text-muted-foreground">Si necesitás corregir un peso, podés volver a abrir este día.</p>
+                    <h1 className="mt-3 text-xl font-black text-foreground">
+                        {isIncomplete ? 'Entrenamiento finalizado con pendientes' : 'Entrenamiento guardado'}
+                    </h1>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                        {dayLabel} · {summary.totalSets} de {summary.plannedSets} series · {formatDuration(summary.durationSeconds)}
+                    </p>
+                    <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                        {isIncomplete
+                            ? 'Este día no cuenta como completado todavía. Podés volver ahora o más adelante para registrar las series pendientes.'
+                            : 'Si necesitás corregir un peso, podés volver a abrir este día.'}
+                    </p>
                 </section>
 
-                <WorkoutFeedbackForm sessionId={sessionId} studentId={studentId} />
+                {!isIncomplete && (
+                    <WorkoutFeedbackForm sessionId={sessionId} studentId={studentId} />
+                )}
 
-                <div className="mt-4 grid grid-cols-2 gap-2">
-                    <button type="button" onClick={() => router.push(routineHref)} className="min-h-12 rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground">Ver rutina</button>
-                    <button type="button" onClick={() => router.push(progressHref)} className="min-h-12 rounded-xl border border-border bg-secondary px-4 text-sm font-bold text-foreground">Ver progreso</button>
-                </div>
+                {isIncomplete ? (
+                    <div className="mt-4 grid grid-cols-2 gap-2">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setSummary(null)
+                                window.scrollTo({ top: 0, behavior: 'smooth' })
+                            }}
+                            className="min-h-12 rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground"
+                        >
+                            Completar pendientes
+                        </button>
+                        <button type="button" onClick={() => router.push(routineHref)} className="min-h-12 rounded-xl border border-border bg-secondary px-4 text-sm font-bold text-foreground">Volver a rutina</button>
+                    </div>
+                ) : (
+                    <div className="mt-4 grid grid-cols-2 gap-2">
+                        <button type="button" onClick={() => router.push(routineHref)} className="min-h-12 rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground">Ver rutina</button>
+                        <button type="button" onClick={() => router.push(progressHref)} className="min-h-12 rounded-xl border border-border bg-secondary px-4 text-sm font-bold text-foreground">Ver progreso</button>
+                    </div>
+                )}
             </main>
         )
     }
@@ -514,9 +748,8 @@ export default function StudentWorkoutView({
                     <p className="text-[11px] font-bold uppercase tracking-wider text-primary">Entrenamiento</p>
                     <h1 className="mt-0.5 text-xl font-black text-foreground">{dayLabel}</h1>
                 </div>
-                {completedSession && (
-                    <span className="rounded-full bg-emerald-500/10 px-3 py-1.5 text-[11px] font-bold text-emerald-500">Finalizada · editable</span>
-                )}
+                {completedSession && <span className="rounded-full bg-emerald-500/10 px-3 py-1.5 text-[11px] font-bold text-emerald-500">Finalizada · editable</span>}
+                {incompleteSession && <span className="rounded-full bg-amber-500/10 px-3 py-1.5 text-[11px] font-bold text-amber-500">Incompleta · editable</span>}
             </div>
 
             <div className="mt-3">
@@ -553,6 +786,12 @@ export default function StudentWorkoutView({
             {completedSession && (
                 <p className="mt-3 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.05] px-3 py-2 text-xs leading-5 text-emerald-500">
                     Esta sesión ya terminó. Podés corregir cualquier peso o repetición y guardar la serie nuevamente; la duración original no cambia.
+                </p>
+            )}
+
+            {incompleteSession && (
+                <p className="mt-3 rounded-xl border border-amber-500/25 bg-amber-500/[0.06] px-3 py-2 text-xs leading-5 text-amber-500">
+                    Este día quedó incompleto y todavía no suma como entrenamiento realizado. Completá las series pendientes y volvé a finalizarlo.
                 </p>
             )}
 
@@ -639,6 +878,7 @@ export default function StudentWorkoutView({
                                                                                 step="0.5"
                                                                                 placeholder="—"
                                                                                 value={set.weight}
+                                                                                disabled={finishing}
                                                                                 onChange={(event) => updateField(exerciseIndex, setIndex, 'weight', event.target.value)}
                                                                                 className="h-10 min-w-0 w-full rounded-lg border border-border bg-background px-2 text-center text-base font-bold text-foreground outline-none focus:border-primary"
                                                                             />
@@ -650,6 +890,7 @@ export default function StudentWorkoutView({
                                                                             inputMode="numeric"
                                                                             placeholder="—"
                                                                             value={set.reps}
+                                                                            disabled={finishing}
                                                                             onChange={(event) => updateField(exerciseIndex, setIndex, 'reps', event.target.value)}
                                                                             className="h-10 min-w-0 w-full rounded-lg border border-border bg-background px-2 text-center text-base font-bold text-foreground outline-none focus:border-primary"
                                                                         />
@@ -658,7 +899,7 @@ export default function StudentWorkoutView({
                                                                             type="button"
                                                                             aria-label={`Guardar serie ${setIndex + 1}`}
                                                                             onClick={() => saveOneSet(exerciseIndex, setIndex)}
-                                                                            disabled={savingKey != null || set.queued || (!set.dirty && set.saved)}
+                                                                            disabled={finishing || savingKey != null || set.queued || (!set.dirty && set.saved)}
                                                                             className={`inline-flex h-10 w-full items-center justify-center rounded-lg px-1 text-xs font-bold disabled:opacity-55 ${set.queued ? 'bg-amber-700 text-white' : set.saved && !set.dirty ? 'bg-emerald-700 text-white' : 'bg-primary text-primary-foreground'}`}
                                                                         >
                                                                             {savingKey === key ? 'Guardando…' : set.queued ? 'Pendiente' : set.saved ? 'Actualizar' : 'Guardar'}
@@ -688,6 +929,7 @@ export default function StudentWorkoutView({
                                                                                 <select
                                                                                     aria-label="Esfuerzo opcional"
                                                                                     value={set.rpe}
+                                                                                    disabled={finishing}
                                                                                     onChange={(event) => updateField(exerciseIndex, setIndex, 'rpe', event.target.value)}
                                                                                     className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none focus:border-primary"
                                                                                 >
@@ -745,12 +987,51 @@ export default function StudentWorkoutView({
                 <div className="mx-auto flex max-w-lg gap-2 px-4 py-3">
                     <button type="button" onClick={() => router.push(returnHref)} className={`min-h-12 rounded-xl border border-border bg-secondary px-4 text-sm font-semibold text-foreground ${completedSession ? 'flex-1' : ''}`}>{returnLabel}</button>
                     {!completedSession && (
-                        <button type="button" onClick={finishWorkout} disabled={finishing} className="min-h-12 flex-1 rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground disabled:opacity-50">
+                        <button type="button" onClick={() => finishWorkout(false)} disabled={finishing} className="min-h-12 flex-1 rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground disabled:opacity-50">
                             {finishing ? 'Finalizando…' : 'Finalizar entrenamiento'}
                         </button>
                     )}
                 </div>
             </div>
+
+            {finishConfirmation && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto bg-black/70 p-4 pb-24" role="presentation">
+                    <section
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="incomplete-workout-title"
+                        aria-describedby="incomplete-workout-description"
+                        className="max-h-[calc(100dvh-7rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-border bg-card p-5 shadow-2xl"
+                    >
+                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-500/15 text-amber-500">
+                            <AlertTriangle className="h-6 w-6" aria-hidden="true" />
+                        </div>
+                        <h2 id="incomplete-workout-title" className="mt-3 text-lg font-black text-foreground">¿Finalizar entrenamiento incompleto?</h2>
+                        <p id="incomplete-workout-description" className="mt-2 text-sm leading-6 text-muted-foreground">
+                            Te quedan {finishConfirmation.plannedSets - finishConfirmation.completedSets} de {finishConfirmation.plannedSets} series sin registrar.
+                            Si terminás ahora, el día quedará incompleto y no contará como entrenamiento completado.
+                        </p>
+                        <div className="mt-5 grid grid-cols-2 gap-2">
+                            <button
+                                type="button"
+                                ref={continueTrainingButtonRef}
+                                onClick={() => setFinishConfirmation(null)}
+                                className="min-h-12 rounded-xl border border-border bg-secondary px-3 text-sm font-bold text-foreground"
+                            >
+                                Seguir entrenando
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => finishWorkout(true)}
+                                disabled={finishing}
+                                className="min-h-12 rounded-xl bg-amber-500 px-3 text-sm font-black text-black disabled:opacity-50"
+                            >
+                                {finishing ? 'Finalizando…' : 'Finalizar incompleto'}
+                            </button>
+                        </div>
+                    </section>
+                </div>
+            )}
         </main>
     )
 }
