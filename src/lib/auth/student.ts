@@ -7,11 +7,13 @@ export const getStudentAppContext = cache(async () => {
     if (!user) return null
 
     const supabase = await createClient()
-    const { data: profile } = await supabase
+    const { data: profile, error } = await supabase
         .from('profiles')
         .select('id, name, email, role, student_id, created_at')
         .eq('id', user.id)
         .maybeSingle()
+
+    if (error) throw error
 
     return profile ? { user, profile } : null
 })

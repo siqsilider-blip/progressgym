@@ -96,6 +96,31 @@ test('el alumno entra a su portal y no al panel del entrenador', async ({ page }
     const weightSet1 = page.getByLabel('Peso serie 1')
     const repsSet1 = page.getByLabel('Repeticiones serie 1')
     await expect(page.locator('input[type="number"]')).toHaveCount(6)
+
+    // Si el teléfono bloquea localStorage, la app no debe afirmar que el
+    // borrador quedó guardado. Al recuperarse storage, vuelve a confirmarlo.
+    await page.evaluate(() => {
+        const testWindow = window as Window & { __draftSetItem?: typeof Storage.prototype.setItem }
+        const originalSetItem = Storage.prototype.setItem
+        testWindow.__draftSetItem = originalSetItem
+        Storage.prototype.setItem = function setItem(key, value) {
+            if (key.startsWith('progrezzia:workout-draft:')) {
+                throw new DOMException('Storage bloqueado para E2E', 'QuotaExceededError')
+            }
+            return originalSetItem.call(this, key, value)
+        }
+    })
+    await weightSet1.fill('35')
+    await expect(page.getByText('No cierres la app', { exact: true })).toBeVisible()
+    await expect(page.getByText('Borrador guardado', { exact: true })).toHaveCount(0)
+
+    await page.evaluate(() => {
+        const testWindow = window as Window & { __draftSetItem?: typeof Storage.prototype.setItem }
+        if (testWindow.__draftSetItem) Storage.prototype.setItem = testWindow.__draftSetItem
+        delete testWindow.__draftSetItem
+    })
+    await weightSet1.fill('35.5')
+    await expect(page.getByText('Borrador guardado', { exact: true })).toBeVisible()
     await weightSet1.fill('35')
     await repsSet1.fill('10')
     await expect(page.getByText('Borrador guardado', { exact: true })).toBeVisible()
@@ -111,7 +136,7 @@ test('el alumno entra a su portal y no al panel del entrenador', async ({ page }
     await page.getByRole('combobox', { name: 'Esfuerzo opcional' }).first().selectOption('7')
 
     // Sin conexión, el autoguardado queda en cola y se sincroniza al volver internet.
-    await expect(page.getByText('Sin conexión', { exact: true }).last()).toBeVisible({ timeout: 5_000 })
+    await expect(page.getByText('Sin conexión · guardado', { exact: true })).toBeVisible({ timeout: 5_000 })
     await page.context().setOffline(false)
     await expect(page.getByRole('button', { name: 'Guardar serie 1' })).toContainText('Actualizar', { timeout: 20_000 })
 

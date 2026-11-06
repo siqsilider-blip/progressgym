@@ -227,13 +227,19 @@ export async function getExerciseMaxWeights(payload: {
 
     const {
         data: { user },
+        error: authError,
     } = await supabase.auth.getUser()
 
-    if (!user || payload.routineDayExerciseIds.length === 0) {
+    if (authError || !user) {
+        console.error('[getExerciseMaxWeights] auth', authError)
+        throw new Error('EXERCISE_MAX_WEIGHTS_AUTH_FAILED')
+    }
+
+    if (payload.routineDayExerciseIds.length === 0) {
         return {}
     }
 
-    const { data: logs } = await supabase
+    const { data: logs, error: logsError } = await supabase
         .from('exercise_logs')
         .select('routine_day_exercise_id, weight, workout_sessions!inner(student_id, status, completed_manually)')
         .eq('student_id', payload.studentId)
@@ -242,6 +248,11 @@ export async function getExerciseMaxWeights(payload: {
         .eq('workout_sessions.completed_manually', true)
         .in('routine_day_exercise_id', payload.routineDayExerciseIds)
         .not('weight', 'is', null)
+
+    if (logsError) {
+        console.error('[getExerciseMaxWeights] logs', logsError)
+        throw new Error('EXERCISE_MAX_WEIGHTS_LOAD_FAILED')
+    }
 
     const maxWeights: Record<string, number> = {}
 

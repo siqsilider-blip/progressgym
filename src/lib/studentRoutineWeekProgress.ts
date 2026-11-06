@@ -62,6 +62,9 @@ export async function getStudentRoutineWeekProgress(
             .in('routine_day_id', routineDayIds),
     ])
 
+    if (activeResult.error) throw activeResult.error
+    if (completedResult.error) throw completedResult.error
+
     const completedSessions = (completedResult.data as WorkoutSessionRow[] | null) ?? []
 
     for (const session of completedSessions) {

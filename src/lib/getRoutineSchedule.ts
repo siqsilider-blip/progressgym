@@ -58,6 +58,9 @@ export async function getRoutineSchedule(
             .order('week_number', { ascending: true }),
     ])
 
+    if (monthsResult.error) throw monthsResult.error
+    if (weeksResult.error) throw weeksResult.error
+
     const months = (monthsResult.data ?? []) as RoutineScheduleMonth[]
     const allWeeks = (weeksResult.data ?? []) as RoutineScheduleWeek[]
     const requestedWeek = allWeeks.find((week) => week.id === options.requestedWeekId) ?? null

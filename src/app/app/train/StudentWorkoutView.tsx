@@ -57,6 +57,8 @@ type WorkoutDraft = {
     entries: WorkoutDraftEntry[]
 }
 
+type DraftStorageStatus = 'checking' | 'available' | 'unavailable'
+
 type Props = {
     sessionId: string
     studentId: string
@@ -179,6 +181,8 @@ export default function StudentWorkoutView({
     const [isOnline, setIsOnline] = React.useState(true)
     const [draftReady, setDraftReady] = React.useState(false)
     const [draftRecovered, setDraftRecovered] = React.useState(false)
+    const [draftStorageStatus, setDraftStorageStatus] = React.useState<DraftStorageStatus>('checking')
+    const [draftPersisted, setDraftPersisted] = React.useState(false)
     const [syncingDrafts, setSyncingDrafts] = React.useState(false)
     const setsRef = React.useRef(sets)
     const syncingDraftsRef = React.useRef(false)
@@ -190,6 +194,7 @@ export default function StudentWorkoutView({
     const draftStorageKey = `progrezzia:workout-draft:${studentId}:${sessionId}`
 
     const updateSets = React.useCallback((updater: (previous: SetState[][]) => SetState[][]) => {
+        setDraftPersisted(false)
         setSets((previous) => {
             const next = updater(previous)
             setsRef.current = next
@@ -202,6 +207,7 @@ export default function StudentWorkoutView({
     const progress = totalPlannedSets > 0 ? Math.round((savedSets / totalPlannedSets) * 100) : 0
     const hasDraftChanges = sets.some((exerciseSets) => exerciseSets.some((set) => set.dirty))
     const hasQueuedChanges = sets.some((exerciseSets) => exerciseSets.some((set) => set.queued))
+    const hasSafeLocalDraft = draftStorageStatus === 'available' && draftPersisted
 
     React.useEffect(() => {
         if (restTimeLeft <= 0) return
@@ -232,7 +238,11 @@ export default function StudentWorkoutView({
     React.useEffect(() => {
         try {
             const stored = window.localStorage.getItem(draftStorageKey)
-            if (!stored) return
+            setDraftStorageStatus('available')
+            if (!stored) {
+                setDraftPersisted(true)
+                return
+            }
 
             const draft = JSON.parse(stored) as WorkoutDraft
             const updatedAt = new Date(draft.updatedAt).getTime()
@@ -243,6 +253,7 @@ export default function StudentWorkoutView({
                 || Date.now() - updatedAt > WORKOUT_DRAFT_MAX_AGE_MS
             ) {
                 window.localStorage.removeItem(draftStorageKey)
+                setDraftPersisted(true)
                 return
             }
 
@@ -272,8 +283,11 @@ export default function StudentWorkoutView({
         } catch {
             try {
                 window.localStorage.removeItem(draftStorageKey)
+                setDraftStorageStatus('available')
+                setDraftPersisted(true)
             } catch {
-                // La app sigue funcionando aunque el navegador bloquee storage.
+                setDraftStorageStatus('unavailable')
+                setDraftPersisted(false)
             }
         } finally {
             setDraftReady(true)
@@ -304,6 +318,8 @@ export default function StudentWorkoutView({
         try {
             if (entries.length === 0) {
                 window.localStorage.removeItem(draftStorageKey)
+                setDraftStorageStatus('available')
+                setDraftPersisted(true)
                 return
             }
 
@@ -313,9 +329,11 @@ export default function StudentWorkoutView({
                 entries,
             }
             window.localStorage.setItem(draftStorageKey, JSON.stringify(draft))
+            setDraftStorageStatus('available')
+            setDraftPersisted(true)
         } catch {
-            // Algunos modos privados restringen localStorage. El guardado online
-            // continúa disponible y la interfaz no debe interrumpirse.
+            setDraftStorageStatus('unavailable')
+            setDraftPersisted(false)
         }
     }, [draftReady, draftStorageKey, exercises, sets])
 
@@ -489,8 +507,8 @@ export default function StudentWorkoutView({
                     )
             ))
             setGlobalError(offline
-                ? 'No pudimos conectar. Tus datos quedaron guardados en este teléfono.'
-                : 'No pudimos conectar con el servidor. Tus datos siguen en este teléfono.')
+                ? 'No pudimos conectar. Conservá esta pantalla abierta mientras reintentamos.'
+                : 'No pudimos conectar con el servidor. Conservá esta pantalla abierta y volvé a intentar.')
             return false
         } finally {
             setSavingKey(null)
@@ -633,7 +651,12 @@ export default function StudentWorkoutView({
         if (finishing) return
         if (!window.navigator.onLine) {
             setIsOnline(false)
-            setGlobalError('Necesitás conexión para finalizar. El borrador está guardado en este teléfono.')
+            const hasPendingChanges = hasDraftChanges || hasQueuedChanges
+            setGlobalError(hasPendingChanges
+                ? hasSafeLocalDraft
+                    ? 'Necesitás conexión para finalizar. Tus cambios pendientes están guardados en este teléfono.'
+                    : 'Necesitás conexión para finalizar. No cierres la app: este dispositivo no pudo guardar el borrador.'
+                : 'Necesitás conexión para finalizar el entrenamiento.')
             return
         }
         if (savingKey || syncingDraftsRef.current) {
@@ -765,7 +788,13 @@ export default function StudentWorkoutView({
             {!isOnline && (
                 <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-500/25 bg-amber-500/[0.07] px-3 py-2.5 text-amber-400">
                     <WifiOff className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-                    <p className="text-xs leading-5">Sin conexión. Podés seguir completando: guardamos el borrador en este teléfono.</p>
+                    <p className="text-xs leading-5">
+                        {hasSafeLocalDraft
+                            ? 'Sin conexión. Podés seguir completando: guardamos el borrador en este teléfono.'
+                            : draftStorageStatus === 'unavailable'
+                                ? 'Sin conexión. Este dispositivo no pudo guardar el borrador. No cierres la app.'
+                                : 'Sin conexión. Estamos guardando tus cambios; no cierres la app.'}
+                    </p>
                 </div>
             )}
 
@@ -940,8 +969,14 @@ export default function StudentWorkoutView({
                                                                         </details>
                                                                         <span className={`shrink-0 text-[9px] font-bold ${set.queued || set.dirty ? 'text-amber-500' : set.saved ? 'text-emerald-500' : 'text-muted-foreground'}`}>
                                                                             {set.queued
-                                                                                ? isOnline ? 'Por sincronizar' : 'Sin conexión'
-                                                                                : set.dirty ? 'Borrador guardado' : set.saved ? 'Guardada ✓' : 'Pendiente'}
+                                                                                ? isOnline
+                                                                                    ? 'Por sincronizar'
+                                                                                    : hasSafeLocalDraft ? 'Sin conexión · guardado' : 'No cierres la app'
+                                                                                : set.dirty
+                                                                                    ? draftStorageStatus === 'unavailable'
+                                                                                        ? 'No cierres la app'
+                                                                                        : hasSafeLocalDraft ? 'Borrador guardado' : 'Guardando borrador…'
+                                                                                    : set.saved ? 'Guardada ✓' : 'Pendiente'}
                                                                         </span>
                                                                     </div>
 

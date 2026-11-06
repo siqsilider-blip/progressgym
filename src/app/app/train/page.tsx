@@ -47,7 +47,10 @@ type ExerciseLog = {
     workout_sessions: {
         status: string | null
         completed_manually: boolean | null
-    } | null
+    } | {
+        status: string | null
+        completed_manually: boolean | null
+    }[] | null
 }
 
 type RoutineBlock = 'activation' | 'main' | 'closing'
@@ -62,6 +65,17 @@ function normalizeBlock(block: string | null): RoutineBlock {
     return block === 'activation' || block === 'closing' ? block : 'main'
 }
 
+function getWorkoutSessionMeta(log: ExerciseLog) {
+    return Array.isArray(log.workout_sessions)
+        ? log.workout_sessions[0] ?? null
+        : log.workout_sessions
+}
+
+function throwWorkoutLoadError(stage: string, error: unknown): never {
+    console.error(`[AppTrainPage] ${stage}`, error)
+    throw new Error('STUDENT_WORKOUT_LOAD_FAILED')
+}
+
 export default async function AppTrainPage(props: PageProps) {
     const searchParams = await props.searchParams;
     const supabase = await createClient()
@@ -70,13 +84,13 @@ export default async function AppTrainPage(props: PageProps) {
     const studentId = context.profile.student_id
     if (!studentId) redirect('/app')
 
-    const { data: student } = await supabase
+    const { data: student, error: studentError } = await supabase
         .from('students')
         .select('id, first_name, last_name, trainer_id')
         .eq('id', studentId)
         .single()
 
-    if (!student) redirect('/app')
+    if (studentError || !student) throwWorkoutLoadError('student', studentError)
 
     // Traer rutina asignada
     const assignment = await getActiveStudentRoutine(supabase, studentId)
@@ -95,11 +109,13 @@ export default async function AppTrainPage(props: PageProps) {
         )
     }
 
-    const { data: routine } = await supabase
+    const { data: routine, error: routineError } = await supabase
         .from('routines')
         .select('id, name')
         .eq('id', assignment.routineId)
         .single()
+
+    if (routineError || !routine) throwWorkoutLoadError('routine', routineError)
 
     const { selectedMonth, selectedWeek, selectedWeekStart, selectedWeekEnd } = await getRoutineSchedule(
         supabase,
@@ -112,31 +128,40 @@ export default async function AppTrainPage(props: PageProps) {
     )
 
     // Días de la semana activa
-    const { data: routineDays } = selectedWeek ? await supabase
-        .from('routine_days')
-        .select('id, name, day_index')
-        .eq('routine_week_id', selectedWeek.id)
-        .order('day_index', { ascending: true })
-        : { data: [] }
+    let routineDays: { id: string; name: string | null; day_index: number | null }[] = []
+    if (selectedWeek) {
+        const { data, error } = await supabase
+            .from('routine_days')
+            .select('id, name, day_index')
+            .eq('routine_week_id', selectedWeek.id)
+            .order('day_index', { ascending: true })
+
+        if (error) throwWorkoutLoadError('routine days', error)
+        routineDays = data ?? []
+    }
 
     // Elegir automáticamente una sesión en curso o el próximo día pendiente.
     let selectedDayId: string | null = null
 
-    if (searchParams?.day && (routineDays ?? []).some(d => d.id === searchParams.day)) {
+    if (searchParams?.day && routineDays.some(d => d.id === searchParams.day)) {
         selectedDayId = searchParams.day
     } else {
-        const routineDayIds = (routineDays ?? []).map((day) => day.id)
-        const { data: routineExerciseRows } = routineDayIds.length > 0
-            ? await supabase
+        const routineDayIds = routineDays.map((day) => day.id)
+        let routineExerciseRows: { routine_day_id: string | null }[] = []
+        if (routineDayIds.length > 0) {
+            const { data, error } = await supabase
                 .from('routine_day_exercises')
                 .select('routine_day_id')
                 .in('routine_day_id', routineDayIds)
-            : { data: [] }
+
+            if (error) throwWorkoutLoadError('routine exercise days', error)
+            routineExerciseRows = data ?? []
+        }
 
         const daysWithExercises = new Set(
-            (routineExerciseRows ?? []).map((exercise) => exercise.routine_day_id).filter(Boolean)
+            routineExerciseRows.map((exercise) => exercise.routine_day_id).filter(Boolean)
         )
-        const trainingDays = (routineDays ?? []).filter((day) => daysWithExercises.has(day.id))
+        const trainingDays = routineDays.filter((day) => daysWithExercises.has(day.id))
 
         if (trainingDays.length > 0) {
             const progress = await getStudentRoutineWeekProgress(
@@ -160,10 +185,10 @@ export default async function AppTrainPage(props: PageProps) {
             selectedDayId = nextDay.id
         }
 
-        if (!selectedDayId) selectedDayId = (routineDays ?? [])[0]?.id ?? null
+        if (!selectedDayId) selectedDayId = routineDays[0]?.id ?? null
     }
 
-    const selectedDay = (routineDays ?? []).find(d => d.id === selectedDayId) ?? null
+    const selectedDay = routineDays.find(d => d.id === selectedDayId) ?? null
 
     // Ejercicios del día
     let exercisesForDay: {
@@ -177,11 +202,13 @@ export default async function AppTrainPage(props: PageProps) {
     }[] = []
 
     if (selectedDayId) {
-        const { data: rde } = await supabase
+        const { data: rde, error: routineExercisesError } = await supabase
             .from('routine_day_exercises')
             .select('id, exercise_id, sets, reps, rest_seconds, position, block')
             .eq('routine_day_id', selectedDayId)
             .order('position', { ascending: true, nullsFirst: false })
+
+        if (routineExercisesError) throwWorkoutLoadError('routine day exercises', routineExercisesError)
 
         exercisesForDay = (rde ?? []).sort((a, b) => {
             const blockDifference = BLOCK_ORDER[normalizeBlock(a.block)] - BLOCK_ORDER[normalizeBlock(b.block)]
@@ -190,26 +217,43 @@ export default async function AppTrainPage(props: PageProps) {
         })
     }
 
+    const exercisesWithoutMetadataReference = exercisesForDay
+        .filter((exercise) => !exercise.exercise_id)
+        .map((exercise) => exercise.id)
+
+    if (exercisesWithoutMetadataReference.length > 0) {
+        throwWorkoutLoadError('routine exercises without exercise reference', {
+            routineDayExerciseIds: exercisesWithoutMetadataReference,
+        })
+    }
+
     const exerciseIds = [...new Set(exercisesForDay.map(e => e.exercise_id).filter((id): id is string => Boolean(id)))]
     let exercises: ExerciseMeta[] = []
 
     if (exerciseIds.length > 0) {
-        const { data } = await supabase
+        const { data, error } = await supabase
             .from('exercises')
             .select('id, name, metric_type, video_url, description, muscle_group, category')
             .in('id', exerciseIds)
+
+        if (error) throwWorkoutLoadError('exercise metadata', error)
         exercises = (data as ExerciseMeta[] | null) ?? []
     }
 
     const exerciseMap = new Map(exercises.map(e => [e.id, e]))
+    if (exerciseIds.some((exerciseId) => !exerciseMap.has(exerciseId))) {
+        throwWorkoutLoadError('incomplete exercise metadata', { exerciseIds })
+    }
 
     const exerciseOverrideMap = new Map<string, ExerciseOverride>()
     if (exerciseIds.length > 0) {
-        const { data: exerciseOverrides } = await supabase
+        const { data: exerciseOverrides, error: overridesError } = await supabase
             .from('trainer_exercise_overrides')
             .select('exercise_id, video_url, instructions')
             .eq('trainer_id', student.trainer_id)
             .in('exercise_id', exerciseIds)
+
+        if (overridesError) throwWorkoutLoadError('exercise overrides', overridesError)
 
         for (const override of (exerciseOverrides as ExerciseOverride[] | null) ?? []) {
             exerciseOverrideMap.set(override.exercise_id, override)
@@ -246,13 +290,15 @@ export default async function AppTrainPage(props: PageProps) {
     }>()
 
     if (routineDayExerciseIds.length > 0) {
-        const { data: allLogs } = await supabase
+        const { data: allLogs, error: logsError } = await supabase
             .from('exercise_logs')
             .select('id, routine_day_exercise_id, weight, reps, rpe, performed_at, created_at, set_index, workout_session_id, workout_sessions(status, completed_manually)')
             .eq('student_id', studentId)
             .in('routine_day_exercise_id', routineDayExerciseIds)
             .order('created_at', { ascending: false })
             .order('set_index', { ascending: true })
+
+        if (logsError) throwWorkoutLoadError('exercise logs', logsError)
 
         const typedLogs = (allLogs as ExerciseLog[] | null) ?? []
 
@@ -265,12 +311,12 @@ export default async function AppTrainPage(props: PageProps) {
             const historicLogs = workoutSessionId
                 ? logsForExercise.filter(l =>
                     l.workout_session_id !== workoutSessionId
-                    && l.workout_sessions?.status === 'completed'
-                    && l.workout_sessions.completed_manually === true
+                    && getWorkoutSessionMeta(l)?.status === 'completed'
+                    && getWorkoutSessionMeta(l)?.completed_manually === true
                 )
                 : logsForExercise.filter(l =>
-                    l.workout_sessions?.status === 'completed'
-                    && l.workout_sessions.completed_manually === true
+                    getWorkoutSessionMeta(l)?.status === 'completed'
+                    && getWorkoutSessionMeta(l)?.completed_manually === true
                 )
 
             const currentWeights: (number | null)[] = Array(setsCount).fill(null)
@@ -395,7 +441,7 @@ export default async function AppTrainPage(props: PageProps) {
                         {selectedWeek ? ` · ${selectedWeek.name || `Sem. ${selectedWeek.week_number}`}` : ''}
                     </p>
                     <div className="flex gap-1.5 overflow-x-auto pb-1">
-                        {(routineDays ?? []).map((day, idx) => {
+                        {routineDays.map((day, idx) => {
                             const label = day.name?.trim() || `Día ${day.day_index ?? idx + 1}`
                             const isActive = day.id === selectedDayId
                             return (

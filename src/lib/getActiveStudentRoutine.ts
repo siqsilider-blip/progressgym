@@ -2,10 +2,27 @@ import type { createClient } from '@/lib/supabase/server'
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>
 
+type SupabaseErrorLike = {
+    code?: string
+    message?: string
+    details?: string
+    hint?: string
+}
+
 export type ActiveStudentRoutine = {
     assignmentId: string
     routineId: string
     programStartedOn: string | null
+}
+
+function isMissingProgramStartedOn(error: SupabaseErrorLike) {
+    const description = [error.message, error.details, error.hint]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+
+    return (error.code === '42703' || error.code === 'PGRST204')
+        && description.includes('program_started_on')
 }
 
 /**
@@ -34,14 +51,18 @@ export async function getActiveStudentRoutine(
         }
     }
 
-    // Compatibilidad temporal con instalaciones que aún no tengan la
-    // columna de progresión. Producción usa la consulta única de arriba.
-    const { data: legacyAssignment } = await supabase
+    // El fallback solo corresponde a bases antiguas sin esta columna. Un error
+    // de red, permisos o duplicados no debe convertirse en “sin rutina”.
+    if (!isMissingProgramStartedOn(error)) throw error
+
+    const { data: legacyAssignment, error: legacyError } = await supabase
         .from('student_routines')
         .select('id, routine_id')
         .eq('student_id', studentId)
         .eq('status', 'active')
         .maybeSingle()
+
+    if (legacyError) throw legacyError
 
     if (!legacyAssignment?.id || !legacyAssignment.routine_id) return null
 

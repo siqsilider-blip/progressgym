@@ -16,7 +16,8 @@ export async function startWorkoutSession(payload: {
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-        return { sessionId: null, resumed: false, justCompleted: false, completionStatus: null }
+        console.error('[startWorkoutSession] auth', authError)
+        throw new Error('WORKOUT_SESSION_AUTH_FAILED')
     }
 
     const rpcPayload = {
@@ -33,11 +34,16 @@ export async function startWorkoutSession(payload: {
     const firstResult = data?.[0]
     let completionStatus: 'complete' | 'incomplete' | null = null
     if (!error && payload.allowCompleted && firstResult?.just_completed && firstResult.session_id) {
-        const { data: completedSession } = await supabase
+        const { data: completedSession, error: completedSessionError } = await supabase
             .from('workout_sessions')
             .select('completed_manually, completion_status')
             .eq('id', firstResult.session_id)
             .maybeSingle()
+
+        if (completedSessionError) {
+            console.error('[startWorkoutSession] completed session', completedSessionError)
+            throw new Error('WORKOUT_SESSION_LOAD_FAILED')
+        }
 
         if (completedSession?.completed_manually !== true) {
             const retry = await supabase.rpc('start_workout_session_safe', {
@@ -56,7 +62,7 @@ export async function startWorkoutSession(payload: {
     const session = data?.[0]
     if (error || !session?.session_id) {
         console.error('Error creando workout_session:', error)
-        return { sessionId: null, resumed: false, justCompleted: false, completionStatus: null }
+        throw new Error('WORKOUT_SESSION_START_FAILED')
     }
 
     return {
