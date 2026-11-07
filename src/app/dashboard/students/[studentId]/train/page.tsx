@@ -217,14 +217,18 @@ export default async function StudentTrainPage(props: PageProps) {
 
     const exerciseOverrideMap = new Map<string, ExerciseOverride>()
     if (exerciseIds.length > 0) {
-        const { data: exerciseOverrides } = await supabase
+        const { data: exerciseOverrides, error: exerciseOverridesError } = await supabase
             .from('trainer_exercise_overrides')
             .select('exercise_id, video_url, instructions')
             .eq('trainer_id', user.id)
             .in('exercise_id', exerciseIds)
 
-        for (const override of (exerciseOverrides as ExerciseOverride[] | null) ?? []) {
-            exerciseOverrideMap.set(override.exercise_id, override)
+        if (exerciseOverridesError) {
+            console.error('[StudentTrainPage] optional exercise overrides', exerciseOverridesError)
+        } else {
+            for (const override of (exerciseOverrides as ExerciseOverride[] | null) ?? []) {
+                exerciseOverrideMap.set(override.exercise_id, override)
+            }
         }
     }
 
@@ -526,7 +530,8 @@ export default async function StudentTrainPage(props: PageProps) {
                         routineName={routine?.name ?? routineName}
                         performedAt={today}
                         exercises={focusedExercises}
-                        maxWeights={focusedMaxWeights}
+                        maxWeights={focusedMaxWeights.values}
+                        prDetectionAvailable={focusedMaxWeights.available}
                         weightUnit={weightUnit}
                         returnHref={`/dashboard/students/${params.studentId}`}
                         progressHref={`/dashboard/students/${params.studentId}/progress`}

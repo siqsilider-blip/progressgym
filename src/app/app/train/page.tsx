@@ -253,10 +253,12 @@ export default async function AppTrainPage(props: PageProps) {
             .eq('trainer_id', student.trainer_id)
             .in('exercise_id', exerciseIds)
 
-        if (overridesError) throwWorkoutLoadError('exercise overrides', overridesError)
-
-        for (const override of (exerciseOverrides as ExerciseOverride[] | null) ?? []) {
-            exerciseOverrideMap.set(override.exercise_id, override)
+        if (overridesError) {
+            console.error('[AppTrainPage] optional exercise overrides', overridesError)
+        } else {
+            for (const override of (exerciseOverrides as ExerciseOverride[] | null) ?? []) {
+                exerciseOverrideMap.set(override.exercise_id, override)
+            }
         }
     }
 
@@ -470,7 +472,8 @@ export default async function AppTrainPage(props: PageProps) {
                 dayLabel={selectedDayLabel}
                 performedAt={today}
                 exercises={focusedExercises}
-                maxWeights={maxWeights}
+                maxWeights={maxWeights.values}
+                prDetectionAvailable={maxWeights.available}
                 weightUnit="kg"
                 returnHref={`/app/rutina?${selectedMonth ? `month=${selectedMonth.id}&` : ''}week=${selectedWeek?.id}`}
                 returnLabel="Volver a la rutina"

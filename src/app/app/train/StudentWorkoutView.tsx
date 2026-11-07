@@ -67,6 +67,7 @@ type Props = {
     performedAt: string
     exercises: ExerciseData[]
     maxWeights: Record<string, number>
+    prDetectionAvailable: boolean
     weightUnit: string
     returnHref: string
     returnLabel?: string
@@ -146,6 +147,7 @@ export default function StudentWorkoutView({
     performedAt,
     exercises,
     maxWeights,
+    prDetectionAvailable,
     weightUnit,
     returnHref,
     returnLabel = 'Volver a la rutina',
@@ -458,7 +460,7 @@ export default function StudentWorkoutView({
             }
 
             const oldMax = localMaxWeights[exercise.id] ?? 0
-            const isPr = showPrs && weight != null && weight > oldMax
+            const isPr = showPrs && prDetectionAvailable && weight != null && weight > oldMax
             if (isPr && weight != null) {
                 setLocalMaxWeights((previous) => ({ ...previous, [exercise.id]: weight }))
             }

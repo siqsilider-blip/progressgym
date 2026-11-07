@@ -48,6 +48,7 @@ type Props = {
     performedAt: string
     exercises: ExerciseData[]
     maxWeights: Record<string, number>
+    prDetectionAvailable: boolean
     weightUnit: string
     returnHref: string
     returnLabel?: string
@@ -80,6 +81,7 @@ export default function TrainFocusedView({
     performedAt,
     exercises,
     maxWeights: initialMaxWeights,
+    prDetectionAvailable,
     weightUnit,
     returnHref,
     returnLabel = 'Ir al perfil',
@@ -279,7 +281,7 @@ export default function TrainFocusedView({
         }
 
         const currentMax = localMaxWeights[exercise.id] ?? 0
-        const isPR = weightVal !== null && weightVal > currentMax
+        const isPR = showPrs && prDetectionAvailable && weightVal !== null && weightVal > currentMax
 
         if (isPR) {
             setLocalMaxWeights((prev) => ({

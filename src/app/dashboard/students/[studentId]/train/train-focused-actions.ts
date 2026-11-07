@@ -222,7 +222,7 @@ export async function completeSession(payload: {
 export async function getExerciseMaxWeights(payload: {
     studentId: string
     routineDayExerciseIds: string[]
-}): Promise<Record<string, number>> {
+}): Promise<{ values: Record<string, number>; available: boolean }> {
     const supabase = await createClient()
 
     const {
@@ -236,7 +236,7 @@ export async function getExerciseMaxWeights(payload: {
     }
 
     if (payload.routineDayExerciseIds.length === 0) {
-        return {}
+        return { values: {}, available: true }
     }
 
     const { data: logs, error: logsError } = await supabase
@@ -251,7 +251,7 @@ export async function getExerciseMaxWeights(payload: {
 
     if (logsError) {
         console.error('[getExerciseMaxWeights] logs', logsError)
-        throw new Error('EXERCISE_MAX_WEIGHTS_LOAD_FAILED')
+        return { values: {}, available: false }
     }
 
     const maxWeights: Record<string, number> = {}
@@ -265,7 +265,7 @@ export async function getExerciseMaxWeights(payload: {
         }
     }
 
-    return maxWeights
+    return { values: maxWeights, available: true }
 }
 
 export async function saveSessionNote(payload: {
