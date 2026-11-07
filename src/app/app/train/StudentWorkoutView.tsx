@@ -754,11 +754,11 @@ export default function StudentWorkoutView({
                         >
                             Completar pendientes
                         </button>
-                        <button type="button" onClick={() => router.push(routineHref)} className="min-h-12 rounded-xl border border-border bg-secondary px-4 text-sm font-bold text-foreground">Volver a rutina</button>
+                        <button type="button" onClick={() => router.push(routineHref)} className="min-h-12 rounded-xl border border-border bg-secondary px-4 text-sm font-bold text-foreground">{returnLabel}</button>
                     </div>
                 ) : (
                     <div className="mt-4 grid grid-cols-2 gap-2">
-                        <button type="button" onClick={() => router.push(routineHref)} className="min-h-12 rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground">Ver rutina</button>
+                        <button type="button" onClick={() => router.push(routineHref)} className="min-h-12 rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground">{returnLabel}</button>
                         <button type="button" onClick={() => router.push(progressHref)} className="min-h-12 rounded-xl border border-border bg-secondary px-4 text-sm font-bold text-foreground">Ver progreso</button>
                     </div>
                 )}

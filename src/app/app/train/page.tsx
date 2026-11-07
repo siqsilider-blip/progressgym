@@ -15,6 +15,7 @@ type PageProps = {
         day?: string
         week?: string
         month?: string
+        session?: string
     }>
 }
 
@@ -47,19 +48,30 @@ type ExerciseLog = {
     workout_sessions: {
         status: string | null
         completed_manually: boolean | null
+        performed_date: string | null
     } | {
         status: string | null
         completed_manually: boolean | null
+        performed_date: string | null
     }[] | null
 }
 
 type RoutineBlock = 'activation' | 'main' | 'closing'
+
+type HistoricalSessionSelection = {
+    id: string
+    routineDayId: string
+    performedDate: string
+    completionStatus: 'complete' | 'incomplete'
+}
 
 const BLOCK_ORDER: Record<RoutineBlock, number> = {
     activation: 0,
     main: 1,
     closing: 2,
 }
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 function normalizeBlock(block: string | null): RoutineBlock {
     return block === 'activation' || block === 'closing' ? block : 'main'
@@ -74,6 +86,23 @@ function getWorkoutSessionMeta(log: ExerciseLog) {
 function throwWorkoutLoadError(stage: string, error: unknown): never {
     console.error(`[AppTrainPage] ${stage}`, error)
     throw new Error('STUDENT_WORKOUT_LOAD_FAILED')
+}
+
+function HistoricalSessionUnavailable() {
+    return (
+        <div className="mx-auto max-w-lg p-6 pb-24 text-center">
+            <p className="text-4xl">🕘</p>
+            <p className="mt-3 text-sm font-semibold text-foreground">
+                Esta sesión ya no está disponible
+            </p>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                No modificamos ningún registro. Volvé al historial y elegí otra sesión.
+            </p>
+            <Link href="/app/history" className="mt-4 inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground">
+                Volver al historial
+            </Link>
+        </div>
+    )
 }
 
 export default async function AppTrainPage(props: PageProps) {
@@ -92,38 +121,105 @@ export default async function AppTrainPage(props: PageProps) {
 
     if (studentError || !student) throwWorkoutLoadError('student', studentError)
 
-    // Traer rutina asignada
-    const assignment = await getActiveStudentRoutine(supabase, studentId)
+    const requestedSessionId = searchParams?.session?.trim() || null
+    let historicalSession: HistoricalSessionSelection | null = null
+    let routineId: string
+    let programStartedOn: string | null = null
+    let requestedWeekId = searchParams?.week
+    let requestedMonthId = searchParams?.month
 
-    if (!assignment?.routineId) {
-        return (
-            <div className="p-6 pb-24 text-center">
-                <p className="text-4xl">📋</p>
-                <p className="mt-3 text-sm font-semibold text-foreground">
-                    Sin rutina asignada
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                    Tu entrenador todavía no te asignó una rutina.
-                </p>
-            </div>
-        )
+    if (requestedSessionId) {
+        if (!UUID_PATTERN.test(requestedSessionId)) return <HistoricalSessionUnavailable />
+
+        const { data: session, error: sessionError } = await supabase
+            .from('workout_sessions')
+            .select('id, routine_day_id, performed_date, started_at, status, completed_manually, completion_status')
+            .eq('id', requestedSessionId)
+            .eq('student_id', studentId)
+            .maybeSingle()
+
+        if (sessionError) throwWorkoutLoadError('historical session', sessionError)
+
+        const performedDate = session?.performed_date
+            ?? String(session?.started_at ?? '').split('T')[0]
+
+        if (
+            !session
+            || session.status !== 'completed'
+            || session.completed_manually !== true
+            || !session.routine_day_id
+            || !/^\d{4}-\d{2}-\d{2}$/.test(performedDate)
+        ) {
+            return <HistoricalSessionUnavailable />
+        }
+
+        const { data: sessionDay, error: sessionDayError } = await supabase
+            .from('routine_days')
+            .select('id, routine_week_id')
+            .eq('id', session.routine_day_id)
+            .maybeSingle()
+
+        if (sessionDayError) throwWorkoutLoadError('historical routine day', sessionDayError)
+        if (!sessionDay?.routine_week_id) return <HistoricalSessionUnavailable />
+
+        const { data: sessionWeek, error: sessionWeekError } = await supabase
+            .from('routine_weeks')
+            .select('id, routine_id, routine_month_id')
+            .eq('id', sessionDay.routine_week_id)
+            .maybeSingle()
+
+        if (sessionWeekError) throwWorkoutLoadError('historical routine week', sessionWeekError)
+        if (!sessionWeek?.routine_id) return <HistoricalSessionUnavailable />
+
+        routineId = sessionWeek.routine_id
+        requestedWeekId = sessionWeek.id
+        requestedMonthId = sessionWeek.routine_month_id ?? undefined
+        historicalSession = {
+            id: session.id,
+            routineDayId: session.routine_day_id,
+            performedDate,
+            completionStatus: session.completion_status === 'incomplete' ? 'incomplete' : 'complete',
+        }
+    } else {
+        const assignment = await getActiveStudentRoutine(supabase, studentId)
+
+        if (!assignment?.routineId) {
+            return (
+                <div className="p-6 pb-24 text-center">
+                    <p className="text-4xl">📋</p>
+                    <p className="mt-3 text-sm font-semibold text-foreground">
+                        Sin rutina asignada
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                        Tu entrenador todavía no te asignó una rutina.
+                    </p>
+                </div>
+            )
+        }
+
+        routineId = assignment.routineId
+        programStartedOn = assignment.programStartedOn
     }
 
     const { data: routine, error: routineError } = await supabase
         .from('routines')
         .select('id, name')
-        .eq('id', assignment.routineId)
-        .single()
+        .eq('id', routineId)
+        .maybeSingle()
 
-    if (routineError || !routine) throwWorkoutLoadError('routine', routineError)
+    if (routineError) throwWorkoutLoadError('routine', routineError)
+    if (!routine) {
+        if (historicalSession) return <HistoricalSessionUnavailable />
+        throwWorkoutLoadError('routine', { routineId })
+    }
 
     const { selectedMonth, selectedWeek, selectedWeekStart, selectedWeekEnd } = await getRoutineSchedule(
         supabase,
-        assignment.routineId,
+        routineId,
         {
-            requestedMonthId: searchParams?.month,
-            requestedWeekId: searchParams?.week,
-            programStartedOn: assignment.programStartedOn,
+            requestedMonthId,
+            requestedWeekId,
+            programStartedOn,
         }
     )
 
@@ -143,7 +239,9 @@ export default async function AppTrainPage(props: PageProps) {
     // Elegir automáticamente una sesión en curso o el próximo día pendiente.
     let selectedDayId: string | null = null
 
-    if (searchParams?.day && routineDays.some(d => d.id === searchParams.day)) {
+    if (historicalSession) {
+        selectedDayId = historicalSession.routineDayId
+    } else if (searchParams?.day && routineDays.some(d => d.id === searchParams.day)) {
         selectedDayId = searchParams.day
     } else {
         const routineDayIds = routineDays.map((day) => day.id)
@@ -189,6 +287,7 @@ export default async function AppTrainPage(props: PageProps) {
     }
 
     const selectedDay = routineDays.find(d => d.id === selectedDayId) ?? null
+    if (historicalSession && !selectedDay) return <HistoricalSessionUnavailable />
 
     // Ejercicios del día
     let exercisesForDay: {
@@ -263,6 +362,7 @@ export default async function AppTrainPage(props: PageProps) {
     }
 
     const today = getBuenosAiresDateString()
+    const performedAt = historicalSession?.performedDate ?? today
     const routineDayExerciseIds = exercisesForDay.map(e => e.id)
 
     // Iniciar o recuperar la sesión antes de leer los registros. Así podemos
@@ -270,7 +370,11 @@ export default async function AppTrainPage(props: PageProps) {
     let workoutSessionId: string | null = null
     let sessionJustCompleted = false
     let sessionCompletionStatus: 'complete' | 'incomplete' | null = null
-    if (selectedDayId && exercisesForDay.length > 0) {
+    if (historicalSession && selectedDayId && exercisesForDay.length > 0) {
+        workoutSessionId = historicalSession.id
+        sessionJustCompleted = historicalSession.completionStatus === 'complete'
+        sessionCompletionStatus = historicalSession.completionStatus
+    } else if (selectedDayId && exercisesForDay.length > 0) {
         const sessionResult = await startWorkoutSession({
             studentId,
             trainerId: student.trainer_id,
@@ -289,12 +393,14 @@ export default async function AppTrainPage(props: PageProps) {
         currentReps: (number | null)[]
         currentRpes: (number | null)[]
         lastPerformedAt: string | null
+        setsCount: number
+        hasCurrentLogs: boolean
     }>()
 
     if (routineDayExerciseIds.length > 0) {
         const { data: allLogs, error: logsError } = await supabase
             .from('exercise_logs')
-            .select('id, routine_day_exercise_id, weight, reps, rpe, performed_at, created_at, set_index, workout_session_id, workout_sessions(status, completed_manually)')
+            .select('id, routine_day_exercise_id, weight, reps, rpe, performed_at, created_at, set_index, workout_session_id, workout_sessions(status, completed_manually, performed_date)')
             .eq('student_id', studentId)
             .in('routine_day_exercise_id', routineDayExerciseIds)
             .order('created_at', { ascending: false })
@@ -305,16 +411,24 @@ export default async function AppTrainPage(props: PageProps) {
         const typedLogs = (allLogs as ExerciseLog[] | null) ?? []
 
         for (const exerciseRow of exercisesForDay) {
-            const setsCount = Math.max(1, Number(exerciseRow.sets ?? 1))
             const logsForExercise = typedLogs.filter(l => l.routine_day_exercise_id === exerciseRow.id)
             const currentLogs = workoutSessionId
                 ? logsForExercise.filter(l => l.workout_session_id === workoutSessionId)
                 : []
+            const configuredSetsCount = Math.max(1, Number(exerciseRow.sets ?? 1))
+            const loggedSetsCount = currentLogs.reduce((maximum, log, fallbackIndex) =>
+                Math.max(maximum, (log.set_index ?? fallbackIndex) + 1), 0)
+            const setsCount = Math.max(configuredSetsCount, loggedSetsCount)
             const historicLogs = workoutSessionId
                 ? logsForExercise.filter(l =>
                     l.workout_session_id !== workoutSessionId
                     && getWorkoutSessionMeta(l)?.status === 'completed'
                     && getWorkoutSessionMeta(l)?.completed_manually === true
+                    && (!historicalSession
+                        || Boolean(
+                            getWorkoutSessionMeta(l)?.performed_date
+                            && getWorkoutSessionMeta(l)!.performed_date! < historicalSession.performedDate
+                        ))
                 )
                 : logsForExercise.filter(l =>
                     getWorkoutSessionMeta(l)?.status === 'completed'
@@ -340,6 +454,8 @@ export default async function AppTrainPage(props: PageProps) {
                     currentReps,
                     currentRpes,
                     lastPerformedAt: null,
+                    setsCount,
+                    hasCurrentLogs: currentLogs.length > 0,
                 })
                 continue
             }
@@ -364,15 +480,22 @@ export default async function AppTrainPage(props: PageProps) {
                 currentReps,
                 currentRpes,
                 lastPerformedAt: latestSessionLogs[0]?.performed_at ?? String(latestSessionLogs[0]?.created_at ?? '').split('T')[0] ?? null,
+                setsCount,
+                hasCurrentLogs: currentLogs.length > 0,
             })
         }
     }
 
-    const focusedExercises = exercisesForDay.map((exercise) => {
+    const focusedExercises = exercisesForDay
+        .filter((exercise) =>
+            historicalSession?.completionStatus !== 'complete'
+            || logsByExerciseId.get(exercise.id)?.hasCurrentLogs === true
+        )
+        .map((exercise) => {
         const meta = exercise.exercise_id ? exerciseMap.get(exercise.exercise_id) ?? null : null
         const override = exercise.exercise_id ? exerciseOverrideMap.get(exercise.exercise_id) ?? null : null
-        const setsCount = Math.max(1, Number(exercise.sets ?? 1))
         const previousSession = logsByExerciseId.get(exercise.id)
+        const setsCount = previousSession?.setsCount ?? Math.max(1, Number(exercise.sets ?? 1))
 
         const previousWeights: (number | null)[] = Array.from({ length: setsCount }, (_, i) => previousSession?.weights[i] ?? null)
         const previousReps: (number | null)[] = Array.from({ length: setsCount }, (_, i) => previousSession?.reps[i] ?? null)
@@ -402,13 +525,24 @@ export default async function AppTrainPage(props: PageProps) {
         }
     })
 
-    const maxWeights = await getExerciseMaxWeights({ studentId, routineDayExerciseIds })
+    if (historicalSession && focusedExercises.length === 0) {
+        return <HistoricalSessionUnavailable />
+    }
+
+    const visibleRoutineDayExerciseIds = focusedExercises.map((exercise) => exercise.id)
+    const maxWeights = await getExerciseMaxWeights({
+        studentId,
+        routineDayExerciseIds: visibleRoutineDayExerciseIds,
+    })
 
     const selectedDayLabel = selectedDay?.name?.trim()
         ? selectedDay.name.trim()
         : selectedDay?.day_index ? `Día ${selectedDay.day_index}` : 'Hoy'
 
     const fullName = `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim()
+    const routineReturnHref = `/app/rutina?${selectedMonth ? `month=${selectedMonth.id}&` : ''}week=${selectedWeek?.id}`
+    const returnHref = historicalSession ? '/app/history' : routineReturnHref
+    const returnLabel = historicalSession ? 'Volver al historial' : 'Volver a la rutina'
 
     if (!selectedDay || exercisesForDay.length === 0) {
         return (
@@ -437,30 +571,49 @@ export default async function AppTrainPage(props: PageProps) {
             {/* Day selector */}
             <div className="sticky top-0 z-20 border-b border-border bg-background/95 px-4 py-3 backdrop-blur">
                 <div className="mx-auto max-w-lg">
-                    <p className="mb-2 text-xs text-muted-foreground">
-                        {routine?.name}
-                        {selectedMonth ? ` · ${selectedMonth.name || `Mes ${selectedMonth.month_number}`}` : ''}
-                        {selectedWeek ? ` · ${selectedWeek.name || `Sem. ${selectedWeek.week_number}`}` : ''}
-                    </p>
-                    <div className="flex gap-1.5 overflow-x-auto pb-1">
-                        {routineDays.map((day, idx) => {
-                            const label = day.name?.trim() || `Día ${day.day_index ?? idx + 1}`
-                            const isActive = day.id === selectedDayId
-                            return (
-                                <Link
-                                    key={day.id}
-                                    href={`/app/train?${selectedMonth ? `month=${selectedMonth.id}&` : ''}week=${selectedWeek?.id}&day=${day.id}`}
-                                    prefetch={true}
-                                    className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition ${isActive
-                                            ? 'bg-primary text-primary-foreground'
-                                            : 'border border-border bg-secondary text-secondary-foreground hover:bg-muted'
-                                        }`}
-                                >
-                                    {label}
-                                </Link>
-                            )
-                        })}
-                    </div>
+                    {historicalSession ? (
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="min-w-0">
+                                <p className="truncate text-xs text-muted-foreground">
+                                    {routine?.name}
+                                    {selectedWeek ? ` · ${selectedWeek.name || `Sem. ${selectedWeek.week_number}`}` : ''}
+                                </p>
+                                <p className="mt-0.5 text-xs font-bold text-foreground">
+                                    Sesión del {historicalSession.performedDate.split('-').reverse().join('/')}
+                                </p>
+                            </div>
+                            <Link href="/app/history" className="shrink-0 rounded-lg border border-border bg-secondary px-3 py-2 text-xs font-semibold text-foreground">
+                                Historial
+                            </Link>
+                        </div>
+                    ) : (
+                        <>
+                            <p className="mb-2 text-xs text-muted-foreground">
+                                {routine?.name}
+                                {selectedMonth ? ` · ${selectedMonth.name || `Mes ${selectedMonth.month_number}`}` : ''}
+                                {selectedWeek ? ` · ${selectedWeek.name || `Sem. ${selectedWeek.week_number}`}` : ''}
+                            </p>
+                            <div className="flex gap-1.5 overflow-x-auto pb-1">
+                                {routineDays.map((day, idx) => {
+                                    const label = day.name?.trim() || `Día ${day.day_index ?? idx + 1}`
+                                    const isActive = day.id === selectedDayId
+                                    return (
+                                        <Link
+                                            key={day.id}
+                                            href={`/app/train?${selectedMonth ? `month=${selectedMonth.id}&` : ''}week=${selectedWeek?.id}&day=${day.id}`}
+                                            prefetch={true}
+                                            className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition ${isActive
+                                                    ? 'bg-primary text-primary-foreground'
+                                                    : 'border border-border bg-secondary text-secondary-foreground hover:bg-muted'
+                                                }`}
+                                        >
+                                            {label}
+                                        </Link>
+                                    )
+                                })}
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
 
@@ -470,14 +623,14 @@ export default async function AppTrainPage(props: PageProps) {
                 studentId={studentId}
                 studentName={fullName}
                 dayLabel={selectedDayLabel}
-                performedAt={today}
+                performedAt={performedAt}
                 exercises={focusedExercises}
                 maxWeights={maxWeights.values}
                 prDetectionAvailable={maxWeights.available}
                 weightUnit="kg"
-                returnHref={`/app/rutina?${selectedMonth ? `month=${selectedMonth.id}&` : ''}week=${selectedWeek?.id}`}
-                returnLabel="Volver a la rutina"
-                routineHref={`/app/rutina?${selectedMonth ? `month=${selectedMonth.id}&` : ''}week=${selectedWeek?.id}`}
+                returnHref={returnHref}
+                returnLabel={returnLabel}
+                routineHref={returnHref}
                 progressHref="/app/progress"
                 showPrs={true}
                 initialSummary={sessionJustCompleted}

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 
 const trainerEmail = process.env.E2E_TRAINER_EMAIL!
 const otherTrainerEmail = process.env.E2E_OTHER_TRAINER_EMAIL!
@@ -11,6 +12,15 @@ const templateId = process.env.E2E_TEMPLATE_ID!
 const templateName = process.env.E2E_TEMPLATE_NAME!
 const studentId = process.env.E2E_STUDENT_ID!
 const inviteStudentId = process.env.E2E_INVITE_STUDENT_ID!
+const trainerUserId = process.env.E2E_TRAINER_USER_ID!
+const routineDayId = process.env.E2E_ROUTINE_DAY_ID!
+const routineDayExerciseId = process.env.E2E_ROUTINE_DAY_EXERCISE_ID!
+
+const admin = createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+)
 
 async function logIn(
     page: import('@playwright/test').Page,
@@ -59,6 +69,7 @@ test('un entrenador no puede abrir ni usar alumnos de otro entrenador', async ({
 })
 
 test('el alumno entra a su portal y no al panel del entrenador', async ({ page }, testInfo) => {
+    test.setTimeout(180_000)
     await logIn(page, 'student', studentEmail)
 
     await expect(page).toHaveURL(/\/app(?:\?|$)/)
@@ -152,7 +163,7 @@ test('el alumno entra a su portal y no al panel del entrenador', async ({ page }
     await page.getByRole('button', { name: 'Finalizar entrenamiento' }).click()
     await page.getByRole('dialog').getByRole('button', { name: 'Finalizar incompleto' }).click()
     await expect(page.getByRole('heading', { name: 'Entrenamiento finalizado con pendientes' })).toBeVisible({ timeout: 15_000 })
-    await page.getByRole('button', { name: 'Volver a rutina' }).click()
+    await page.getByRole('button', { name: 'Volver a la rutina' }).click()
     await expect(page.getByText('Semana completada ✓')).toHaveCount(0)
     await expect(page.getByText('Series pendientes · todavía no cuenta como completado')).toBeVisible()
     await page.getByRole('link', { name: 'Completar →' }).click()
@@ -189,9 +200,121 @@ test('el alumno entra a su portal y no al panel del entrenador', async ({ page }
     await expect(page.getByText('Semana completada', { exact: true })).toBeVisible()
     await expect(page.getByText('¡Excelente trabajo! ✓')).toBeVisible()
 
+    const { data: currentSession, error: currentSessionError } = await admin
+        .from('workout_sessions')
+        .select('id')
+        .eq('student_id', studentId)
+        .eq('routine_day_id', routineDayId)
+        .eq('status', 'completed')
+        .eq('completed_manually', true)
+        .order('performed_date', { ascending: false })
+        .limit(1)
+        .single()
+    expect(currentSessionError).toBeNull()
+    expect(currentSession?.id).toBeTruthy()
+
+    const historicalDate = '2025-01-15'
+    const { data: historicalSession, error: historicalSessionError } = await admin
+        .from('workout_sessions')
+        .insert({
+            student_id: studentId,
+            trainer_id: trainerUserId,
+            routine_day_id: routineDayId,
+            status: 'completed',
+            performed_date: historicalDate,
+            started_at: `${historicalDate}T12:00:00.000Z`,
+            finished_at: `${historicalDate}T12:10:00.000Z`,
+            duration_seconds: 600,
+            completed_manually: true,
+            completion_status: 'complete',
+        })
+        .select('id')
+        .single()
+    expect(historicalSessionError).toBeNull()
+    expect(historicalSession?.id).toBeTruthy()
+
+    const { error: historicalLogError } = await admin
+        .from('exercise_logs')
+        .insert({
+            student_id: studentId,
+            routine_day_exercise_id: routineDayExerciseId,
+            workout_session_id: historicalSession!.id,
+            weight: 12,
+            reps: 8,
+            performed_at: historicalDate,
+            set_index: 0,
+        })
+    expect(historicalLogError).toBeNull()
+
     await page.goto('/app/history')
     await expect(page.getByRole('heading', { name: 'Historial' })).toBeVisible()
-    await expect(page.getByText(exerciseName, { exact: false })).toBeVisible()
+    await expect(page.getByText(exerciseName, { exact: true }).first()).toBeVisible()
+
+    const historicalSessionLink = page.locator(`a[href="/app/train?session=${historicalSession!.id}"]`)
+    await expect(historicalSessionLink).toBeVisible()
+    await historicalSessionLink.click()
+    await expect(page).toHaveURL(new RegExp(`/app/train\\?session=${historicalSession!.id}$`))
+    await expect(page.getByText('Sesión del 15/01/2025', { exact: true })).toBeVisible()
+    await expect(page.getByText('Finalizada · editable', { exact: true })).toBeVisible()
+    await expect(page.getByLabel('Peso serie 1')).toHaveValue('12')
+    await expect(page.getByLabel('Repeticiones serie 1')).toHaveValue('8')
+    await expect(page.getByText('Sin peso anterior', { exact: true }).first()).toBeVisible()
+    await expect(page.getByText('Anterior 35 kg', { exact: true })).toHaveCount(0)
+
+    await page.getByLabel('Peso serie 1').fill('13')
+    const historicalSaveButton = page.getByRole('button', { name: 'Guardar serie 1' })
+    await expect(historicalSaveButton).toBeEnabled()
+    await historicalSaveButton.click()
+    await expect.poll(async () => {
+        const result = await admin
+            .from('exercise_logs')
+            .select('weight')
+            .eq('workout_session_id', historicalSession!.id)
+            .eq('routine_day_exercise_id', routineDayExerciseId)
+            .eq('set_index', 0)
+            .single()
+        return Number(result.data?.weight)
+    }, { timeout: 20_000 }).toBe(13)
+
+    const { data: correctedHistoricalLog, error: correctedHistoricalLogError } = await admin
+        .from('exercise_logs')
+        .select('weight, performed_at')
+        .eq('workout_session_id', historicalSession!.id)
+        .eq('routine_day_exercise_id', routineDayExerciseId)
+        .eq('set_index', 0)
+        .single()
+    expect(correctedHistoricalLogError).toBeNull()
+    expect(Number(correctedHistoricalLog?.weight)).toBe(13)
+    expect(correctedHistoricalLog?.performed_at).toBe(historicalDate)
+
+    const { data: unchangedHistoricalSession, error: unchangedHistoricalSessionError } = await admin
+        .from('workout_sessions')
+        .select('performed_date')
+        .eq('id', historicalSession!.id)
+        .single()
+    expect(unchangedHistoricalSessionError).toBeNull()
+    expect(unchangedHistoricalSession?.performed_date).toBe(historicalDate)
+
+    const { data: untouchedCurrentLog, error: untouchedCurrentLogError } = await admin
+        .from('exercise_logs')
+        .select('weight')
+        .eq('workout_session_id', currentSession!.id)
+        .eq('routine_day_exercise_id', routineDayExerciseId)
+        .eq('set_index', 0)
+        .single()
+    expect(untouchedCurrentLogError).toBeNull()
+    expect(Number(untouchedCurrentLog?.weight)).toBe(35)
+
+    const historicalLogsCleanup = await admin
+        .from('exercise_logs')
+        .delete()
+        .eq('workout_session_id', historicalSession!.id)
+    expect(historicalLogsCleanup.error).toBeNull()
+    const historicalSessionCleanup = await admin
+        .from('workout_sessions')
+        .delete()
+        .eq('id', historicalSession!.id)
+    expect(historicalSessionCleanup.error).toBeNull()
 
     await page.goto('/app/progress')
     await expect(page.getByRole('heading', { name: 'Progreso' })).toBeVisible()

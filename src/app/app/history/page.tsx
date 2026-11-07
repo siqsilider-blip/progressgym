@@ -155,7 +155,7 @@ export default async function AppHistoryPage() {
                                             )}
                                             {session.routineDayId && session.routineWeekId && (
                                                 <Link
-                                                    href={`/app/train?week=${session.routineWeekId}&day=${session.routineDayId}`}
+                                                    href={`/app/train?session=${session.sessionId}`}
                                                     className="mt-3 inline-flex min-h-10 items-center rounded-xl border border-primary/25 bg-primary/10 px-3 text-xs font-bold text-primary"
                                                 >
                                                     Revisar / editar sesión
