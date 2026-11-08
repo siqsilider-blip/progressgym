@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { Download, Images, ShieldCheck, Trash2 } from 'lucide-react'
 import { deleteProgressPhoto, getProgressPhotoComparisonExport, setProgressPhotoMarketingConsent } from '@/app/coaching/actions'
+import { shareNativeImage } from '@/lib/native/share-file'
 
 export type ProgressPhotoItem = {
     id: string
@@ -155,7 +156,7 @@ export default function ProgressPhotoGallery({
                         </div>
                         <button type="button" onClick={exportComparison} disabled={exporting} className="mt-2 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-primary px-3 text-xs font-bold text-primary-foreground disabled:opacity-50">
                             <Download className="h-4 w-4" />
-                            {exporting ? 'Creando imagen…' : 'Descargar comparativa'}
+                            {exporting ? 'Creando imagen…' : 'Crear comparativa'}
                         </button>
                         <p className="mt-2 text-[9px] leading-4 text-muted-foreground">La exportación no agrega el nombre del alumno. Antes de publicar, confirmá que el permiso siga vigente.</p>
                     </>
@@ -224,7 +225,9 @@ async function createComparison(before: ProgressPhotoItem, after: ProgressPhotoI
     afterImage.close()
 
     const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((value) => value ? resolve(value) : reject(new Error('No se pudo exportar')), 'image/jpeg', 0.92))
-    downloadBlob(blob, `progrezzia-antes-despues-${after.capturedOn}.jpg`)
+    const filename = `progrezzia-antes-despues-${after.capturedOn}.jpg`
+    const shared = await shareNativeImage(blob, filename)
+    if (!shared) downloadBlob(blob, filename)
 }
 
 async function loadImage(url: string) {

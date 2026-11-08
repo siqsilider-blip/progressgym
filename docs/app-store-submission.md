@@ -66,7 +66,9 @@ Preparar de 3 a 6 capturas reales, sin datos personales, para el tamaño princip
 - [ ] Confirmar que el correo de soporte recibe mensajes.
 - [ ] Revisar textos y datos de demostración.
 - [ ] Confirmar que no hay errores de consola ni enlaces rotos.
-- [ ] Crear el proyecto nativo y definir el identificador de paquete definitivo.
+- [x] Crear los proyectos nativos Android/iOS con el identificador provisional `app.progrezzia.mobile`.
+- [ ] Confirmar que `app.progrezzia.mobile` será el identificador definitivo antes de crear las fichas en las tiendas.
+- [ ] Completar Universal Links/App Links con Team ID y huellas SHA-256 de las firmas de publicación.
 - [ ] Configurar firma, equipo y perfiles desde una Mac con Xcode.
 - [ ] Generar el ícono final de 1024 × 1024 sin transparencia desde `assets/app-store/app-icon-source.svg`.
 - [ ] Hacer una prueba en iPhone real, incluyendo red lenta, cámara/video, teclado y regreso desde segundo plano.
@@ -75,7 +77,8 @@ Preparar de 3 a 6 capturas reales, sin datos personales, para el tamaño princip
 ## Pendientes que requieren decisiones externas
 
 - Membresía activa de Apple Developer.
-- Identificador de paquete (sugerencia: `app.progrezzia.mobile`, sujeto a disponibilidad).
+- Confirmación de disponibilidad del identificador `app.progrezzia.mobile` en ambas tiendas.
+- Team ID de Apple y huellas SHA-256 de Google Play App Signing para activar los enlaces verificados.
 - Nombre legal del vendedor y datos fiscales en App Store Connect.
 - Política comercial definitiva de la aplicación.
 - Revisión legal final de privacidad y términos antes de publicar.

@@ -486,20 +486,18 @@ test('el flujo de un alumno pendiente prioriza reutilizar un template', async ({
     await expect(page.getByText('Crear una rutina desde cero')).toBeHidden()
 })
 
-test('el entrenador prepara un acceso personal para enviar por WhatsApp', async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name === 'desktop-chromium', 'La generación del enlace se prueba una sola vez.')
+test('la recuperación de una cuenta existente no expone enlaces al entrenador', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name === 'desktop-chromium', 'La interfaz segura se prueba una sola vez.')
 
     await logIn(page, 'trainer', trainerEmail)
     await page.goto(`/dashboard/students/${studentId}`)
 
-    await page.getByRole('button', { name: 'Preparar nuevo acceso' }).click()
-    await expect(page.getByText('Invitación lista', { exact: true })).toBeVisible({ timeout: 15_000 })
-
-    const whatsappLink = page.getByRole('link', { name: 'Enviar por WhatsApp' })
-    await expect(whatsappLink).toHaveAttribute('href', /^https:\/\/wa\.me\//)
-
-    const accessLink = page.getByRole('link', { name: /Probar enlace de acceso/ })
-    await expect(accessLink).toHaveAttribute('href', /\/auth\/invitation\?token_hash=/)
+    // La entrega real se hace por email y no se dispara con direcciones
+    // example.com del fixture. Esta prueba garantiza que la UI nunca ofrece
+    // crear ni copiar un token de recuperación para una cuenta vinculada.
+    await expect(page.getByRole('button', { name: 'Enviar acceso por email' })).toBeVisible()
+    await expect(page.getByRole('link', { name: /Probar enlace de acceso/ })).toHaveCount(0)
+    await expect(page.locator('a[href*="token_hash"]')).toHaveCount(0)
 })
 
 test('un alumno nuevo activa la invitación y completa su ficha antes de recibir rutina', async ({ page }, testInfo) => {

@@ -2,7 +2,6 @@
 
 import { randomBytes } from 'node:crypto'
 import { headers } from 'next/headers'
-import { revalidatePath } from 'next/cache'
 import { createClient as createSupabaseClient, type User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import { getServerUser } from '@/lib/auth/server'
@@ -11,11 +10,12 @@ import { buildWhatsAppUrl } from '@/lib/whatsapp'
 type InvitationResult =
     | {
         ok: true
-        inviteUrl: string
+        inviteUrl: string | null
         whatsappUrl: string | null
         message: string
         email: string
         accountWasCreated: boolean
+        delivery: 'direct_link' | 'email'
     }
     | { ok: false; error: string }
 
@@ -74,6 +74,7 @@ async function linkExistingUser(params: {
     studentId: string
     fullName: string
     email: string
+    persist?: boolean
 }) {
     const { data: profile, error: profileError } = await admin
         .from('profiles')
@@ -100,6 +101,8 @@ async function linkExistingUser(params: {
     if ((profilesForStudent ?? []).some((linked) => linked.id !== params.user.id)) {
         return { ok: false as const, error: 'Este alumno ya tiene otra cuenta vinculada.' }
     }
+
+    if (params.persist === false) return { ok: true as const }
 
     const profilePayload = {
         email: params.email,
@@ -169,8 +172,7 @@ export async function createStudentAccessInvitation(input: {
     try {
         let authUser = await findUserByEmail(email)
         let accountWasCreated = false
-        let tokenHash: string
-        let verificationType: 'signup' | 'recovery'
+        let tokenHash: string | null = null
 
         if (!authUser) {
             const temporaryPassword = `${randomBytes(32).toString('base64url')}Aa1!`
@@ -189,20 +191,28 @@ export async function createStudentAccessInvitation(input: {
 
             authUser = data.user
             tokenHash = data.properties.hashed_token
-            verificationType = 'signup'
             accountWasCreated = true
-        } else {
-            const { data, error } = await admin.auth.admin.generateLink({
-                type: 'recovery',
+        }
+
+        const origin = await getApplicationOrigin()
+
+        if (!accountWasCreated) {
+            const validation = await linkExistingUser({
+                user: authUser,
+                studentId: student.id,
+                fullName,
                 email,
+                persist: false,
             })
+            if (!validation.ok) return validation
 
-            if (error || !data.properties.hashed_token) {
-                throw error ?? new Error('No se pudo renovar el acceso.')
-            }
-
-            tokenHash = data.properties.hashed_token
-            verificationType = 'recovery'
+            // El correo se envía antes de modificar el vínculo. Si el proveedor
+            // rechaza o limita el envío, el alumno conserva su estado anterior.
+            const resetNext = encodeURIComponent('/reset-password?invite=1')
+            const { error: resetError } = await admin.auth.resetPasswordForEmail(email, {
+                redirectTo: `${origin}/auth/confirm?next=${resetNext}`,
+            })
+            if (resetError) throw resetError
         }
 
         const linked = await linkExistingUser({
@@ -227,25 +237,39 @@ export async function createStudentAccessInvitation(input: {
             if (updateStudentError) throw updateStudentError
         }
 
-        const origin = await getApplicationOrigin()
-        const confirmParams = new URLSearchParams({
-            token_hash: tokenHash,
-            type: verificationType,
-            next: '/reset-password?invite=1',
-        })
-        // WhatsApp y otras aplicaciones pueden abrir el enlace para generar una
-        // vista previa. La pantalla intermedia no consume el token hasta que la
-        // persona confirma explícitamente que quiere continuar.
-        const inviteUrl = `${origin}/auth/invitation?${confirmParams.toString()}`
-        const message = [
-            `Hola ${student.first_name ?? ''} 👋`,
-            'Te envío el acceso a Progrezzia. Primero vas a completar una ficha breve con tus objetivos, disponibilidad y cualquier cuidado importante.',
-            'Con esa información voy a preparar la rutina más adecuada para vos.',
-            'Abrí este enlace y elegí tu contraseña:',
-            inviteUrl,
-        ].join('\n\n')
+        let inviteUrl: string | null = null
+        let delivery: 'direct_link' | 'email'
+        let message: string
 
-        revalidatePath(`/dashboard/students/${student.id}`)
+        if (accountWasCreated && tokenHash) {
+            const confirmParams = new URLSearchParams({
+                token_hash: tokenHash,
+                type: 'signup',
+                next: '/reset-password?invite=1',
+            })
+            // WhatsApp y otras aplicaciones pueden abrir el enlace para generar una
+            // vista previa. La pantalla intermedia no consume el token hasta que la
+            // persona confirma explícitamente que quiere continuar.
+            inviteUrl = `${origin}/auth/invitation?${confirmParams.toString()}`
+            delivery = 'direct_link'
+            message = [
+                `Hola ${student.first_name ?? ''} 👋`,
+                'Te envío el acceso a Progrezzia. Primero vas a completar una ficha breve con tus objetivos, disponibilidad y cualquier cuidado importante.',
+                'Con esa información voy a preparar la rutina más adecuada para vos.',
+                'Abrí este enlace y elegí tu contraseña:',
+                inviteUrl,
+            ].join('\n\n')
+        } else {
+            // Una cuenta existente ya tiene credenciales privadas. Nunca exponemos
+            // un token de recuperación al entrenador: Supabase envía el acceso
+            // directamente al correo del titular de la cuenta.
+            delivery = 'email'
+            message = [
+                `Hola ${student.first_name ?? ''} 👋`,
+                'Te envié un correo para recuperar tu acceso a Progrezzia.',
+                `Revisá la bandeja de entrada y spam de ${email}. El enlace de seguridad llega únicamente a tu email.`,
+            ].join('\n\n')
+        }
 
         return {
             ok: true,
@@ -254,6 +278,7 @@ export async function createStudentAccessInvitation(input: {
             message,
             email,
             accountWasCreated,
+            delivery,
         }
     } catch (error) {
         console.error('[createStudentAccessInvitation] error:', error)

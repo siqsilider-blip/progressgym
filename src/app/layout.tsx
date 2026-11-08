@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import { cookies } from 'next/headers'
 import PWARegister from '@/components/PWARegister'
+import NativeAppBridge from '@/components/mobile/NativeAppBridge'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -41,6 +42,7 @@ export default async function RootLayout({
     <html lang="es" className={theme} suppressHydrationWarning>
       <body className={`${inter.className} min-h-screen bg-background text-foreground antialiased`}>
         <PWARegister />
+        <NativeAppBridge />
         {children}
       </body>
     </html>

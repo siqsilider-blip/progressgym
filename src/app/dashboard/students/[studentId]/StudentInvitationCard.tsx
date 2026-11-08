@@ -5,10 +5,11 @@ import { Check, Copy, ExternalLink, MessageCircle, Send } from 'lucide-react'
 import { createStudentAccessInvitation } from './invite-actions'
 
 type PreparedInvitation = {
-    inviteUrl: string
+    inviteUrl: string | null
     whatsappUrl: string | null
     message: string
     email: string
+    delivery: 'direct_link' | 'email'
 }
 
 export default function StudentInvitationCard({
@@ -114,7 +115,7 @@ export default function StudentInvitationCard({
                     {isPending
                         ? 'Preparando...'
                         : linkedEmail
-                            ? 'Preparar nuevo acceso'
+                            ? 'Enviar acceso por email'
                             : 'Preparar invitación'}
                 </button>
             </form>
@@ -123,10 +124,12 @@ export default function StudentInvitationCard({
                 <div className="mt-3 space-y-2 rounded-xl border border-emerald-500/20 bg-background/70 p-3">
                     <div className="flex items-center gap-2 text-xs font-semibold text-emerald-400">
                         <Check className="h-4 w-4" />
-                        Invitación lista
+                        {prepared.delivery === 'email' ? 'Correo de acceso enviado' : 'Invitación lista'}
                     </div>
                     <p className="text-xs leading-relaxed text-muted-foreground">
-                        El enlace es personal y de un solo uso. Si vence, prepará uno nuevo desde acá.
+                        {prepared.delivery === 'email'
+                            ? `El enlace de seguridad se envió directamente a ${prepared.email}. El entrenador no puede verlo ni copiarlo.`
+                            : 'El enlace es personal y de un solo uso. Si vence, prepará uno nuevo desde acá.'}
                     </p>
                     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                         {prepared.whatsappUrl && (
@@ -149,15 +152,17 @@ export default function StudentInvitationCard({
                             {copied ? 'Mensaje copiado' : 'Copiar mensaje'}
                         </button>
                     </div>
-                    <a
-                        href={prepared.inviteUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground underline underline-offset-4"
-                    >
-                        Probar enlace de acceso
-                        <ExternalLink className="h-3 w-3" />
-                    </a>
+                    {prepared.inviteUrl && (
+                        <a
+                            href={prepared.inviteUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground underline underline-offset-4"
+                        >
+                            Probar enlace de acceso
+                            <ExternalLink className="h-3 w-3" />
+                        </a>
+                    )}
                 </div>
             )}
         </section>

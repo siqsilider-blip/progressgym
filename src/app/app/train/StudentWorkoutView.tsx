@@ -7,6 +7,11 @@ import { completeSession, saveSet } from '@/app/dashboard/students/[studentId]/t
 import ExerciseDemo from '@/app/dashboard/students/[studentId]/train/ExerciseDemo'
 import MessageComposer from '@/components/coaching/MessageComposer'
 import WorkoutFeedbackForm from '@/components/coaching/WorkoutFeedbackForm'
+import {
+    cancelNativeRestNotice,
+    scheduleNativeRestNotice,
+    signalRestFinished,
+} from '@/lib/native/workout-rest'
 
 type RoutineBlock = 'activation' | 'main' | 'closing'
 
@@ -169,6 +174,7 @@ export default function StudentWorkoutView({
     const [finishing, setFinishing] = React.useState(false)
     const [globalError, setGlobalError] = React.useState<string | null>(null)
     const [restTimeLeft, setRestTimeLeft] = React.useState(0)
+    const [restDeadlineMs, setRestDeadlineMs] = React.useState<number | null>(null)
     const [restExerciseName, setRestExerciseName] = React.useState('')
     const [completedSession, setCompletedSession] = React.useState(initialSummary)
     const [incompleteSession, setIncompleteSession] = React.useState(initialIncomplete)
@@ -193,7 +199,17 @@ export default function StudentWorkoutView({
     const autoSaveTimerRef = React.useRef<number | null>(null)
     const recoveredDraftKeysRef = React.useRef(new Set<string>())
     const continueTrainingButtonRef = React.useRef<HTMLButtonElement | null>(null)
+    const restGenerationRef = React.useRef(0)
+    const restNoticeQueueRef = React.useRef<Promise<void>>(Promise.resolve())
     const draftStorageKey = `progrezzia:workout-draft:${studentId}:${sessionId}`
+
+    const queueRestNotice = React.useCallback((operation: () => Promise<void>) => {
+        const queued = restNoticeQueueRef.current
+            .catch(() => undefined)
+            .then(operation)
+            .catch(() => undefined)
+        restNoticeQueueRef.current = queued
+    }, [])
 
     const updateSets = React.useCallback((updater: (previous: SetState[][]) => SetState[][]) => {
         setDraftPersisted(false)
@@ -212,12 +228,58 @@ export default function StudentWorkoutView({
     const hasSafeLocalDraft = draftStorageStatus === 'available' && draftPersisted
 
     React.useEffect(() => {
-        if (restTimeLeft <= 0) return
-        const timer = window.setInterval(() => {
-            setRestTimeLeft((value) => Math.max(0, value - 1))
-        }, 1000)
-        return () => window.clearInterval(timer)
-    }, [restTimeLeft])
+        if (restDeadlineMs == null) return
+
+        let completed = false
+        const updateRestTime = () => {
+            const remaining = Math.max(0, Math.ceil((restDeadlineMs - Date.now()) / 1000))
+            setRestTimeLeft(remaining)
+            if (remaining > 0 || completed) return
+
+            completed = true
+            restGenerationRef.current += 1
+            setRestDeadlineMs(null)
+            queueRestNotice(() => cancelNativeRestNotice(sessionId))
+            const finishedRecently = Date.now() - restDeadlineMs < 1_500
+            if (document.visibilityState === 'visible' && finishedRecently) void signalRestFinished()
+        }
+
+        updateRestTime()
+        const timer = window.setInterval(updateRestTime, 250)
+        window.addEventListener('progrezzia:native-resume', updateRestTime)
+        return () => {
+            window.clearInterval(timer)
+            window.removeEventListener('progrezzia:native-resume', updateRestTime)
+        }
+    }, [queueRestNotice, restDeadlineMs, sessionId])
+
+    const beginRest = React.useCallback((seconds: number, exerciseName: string) => {
+        const generation = restGenerationRef.current + 1
+        restGenerationRef.current = generation
+        const deadline = Date.now() + seconds * 1000
+        setRestExerciseName(exerciseName)
+        setRestTimeLeft(seconds)
+        setRestDeadlineMs(deadline)
+        queueRestNotice(async () => {
+            if (restGenerationRef.current !== generation) return
+            await scheduleNativeRestNotice({ sessionId, exerciseName, seconds })
+            if (restGenerationRef.current !== generation) {
+                await cancelNativeRestNotice(sessionId)
+            }
+        })
+    }, [queueRestNotice, sessionId])
+
+    const stopRest = React.useCallback(() => {
+        restGenerationRef.current += 1
+        setRestTimeLeft(0)
+        setRestDeadlineMs(null)
+        queueRestNotice(() => cancelNativeRestNotice(sessionId))
+    }, [queueRestNotice, sessionId])
+
+    React.useEffect(() => () => {
+        restGenerationRef.current += 1
+        queueRestNotice(() => cancelNativeRestNotice(sessionId))
+    }, [queueRestNotice, sessionId])
 
     React.useEffect(() => {
         setsRef.current = sets
@@ -487,8 +549,7 @@ export default function StudentWorkoutView({
             if (valuesUnchanged) recoveredDraftKeysRef.current.delete(draftKey)
 
             if (valuesUnchanged && startRest && !cameFromRecoveredDraft && !completedSession && !incompleteSession && !set.saved && exercise.restSeconds > 0) {
-                setRestExerciseName(exercise.exerciseName)
-                setRestTimeLeft(exercise.restSeconds)
+                beginRest(exercise.restSeconds, exercise.exerciseName)
             }
             return valuesUnchanged
         } catch {
@@ -706,7 +767,7 @@ export default function StudentWorkoutView({
             plannedSets: result.plannedSets,
             completionStatus,
         })
-        setRestTimeLeft(0)
+        stopRest()
         try {
             window.localStorage.removeItem(draftStorageKey)
         } catch {
@@ -833,7 +894,7 @@ export default function StudentWorkoutView({
                         <p className="text-xs font-bold text-foreground">Descanso · {restTimeLeft}s</p>
                         <p className="truncate text-[10px] text-muted-foreground">{restExerciseName}</p>
                     </div>
-                    <button type="button" onClick={() => setRestTimeLeft(0)} className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-foreground">Omitir</button>
+                    <button type="button" onClick={stopRest} className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-foreground">Omitir</button>
                 </div>
             )}
 

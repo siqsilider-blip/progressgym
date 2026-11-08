@@ -1,10 +1,20 @@
 'use client'
 
 import { useEffect } from 'react'
+import { Capacitor } from '@capacitor/core'
 
 export default function PWARegister() {
     useEffect(() => {
         if (!('serviceWorker' in navigator)) return
+
+        // El contenedor nativo ya controla su propio ciclo de actualización.
+        // Evitamos que un service worker web deje una versión vieja en el WebView.
+        if (Capacitor.isNativePlatform()) {
+            navigator.serviceWorker.getRegistrations().then((registrations) => {
+                registrations.forEach((registration) => registration.unregister())
+            })
+            return
+        }
 
         // En desarrollo NO registramos el Service Worker: los reinicios
         // frecuentes de `npm run dev` generan archivos con hashes nuevos
