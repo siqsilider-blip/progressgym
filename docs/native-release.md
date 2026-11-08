@@ -1,6 +1,6 @@
 # Progrezzia — contenedor nativo
 
-Actualizado: 7 de noviembre de 2026.
+Actualizado: 8 de noviembre de 2026.
 
 ## Arquitectura elegida
 
@@ -35,6 +35,57 @@ npm run native:ios
 
 `native:android` requiere Android Studio, JDK y Android SDK. `native:ios` requiere una Mac con Xcode.
 
+## Entorno Android verificado
+
+En esta PC ya están instalados:
+
+- Android Studio 2026.2.2.8.
+- Microsoft OpenJDK 21 LTS.
+- Android SDK en `C:\Users\siqsi\AppData\Local\Android\Sdk`.
+- Android Platform 36.
+- Android Build Tools 35.0.0 y 36.0.0.
+- Android Platform Tools / ADB 37.0.1.
+
+El proyecto compila correctamente con Gradle 8.14.3 y JDK 21. El JBR 25
+incluido con Android Studio no debe usarse actualmente para este wrapper,
+porque genera `Unsupported class file major version 69`.
+
+`android/local.properties` debe apuntar al SDK local:
+
+```properties
+sdk.dir=C\:\\Users\\siqsi\\AppData\\Local\\Android\\Sdk
+```
+
+Ese archivo es local y está excluido de Git.
+
+### Compilar APK de prueba en Windows
+
+```powershell
+$env:JAVA_HOME = 'C:\Program Files\Microsoft\jdk-21.0.13.21-hotspot'
+Set-Location android
+.\gradlew.bat assembleDebug --no-daemon
+```
+
+El APK queda en `android/app/build/outputs/apk/debug/app-debug.apk`.
+La compilación verificada el 8 de noviembre de 2026 pesa 5.106.749 bytes y
+sirve exclusivamente para pruebas internas. Está firmada con el certificado
+debug de Android; no es el binario que se publica en Google Play.
+
+### Pruebas Android
+
+```powershell
+$env:JAVA_HOME = 'C:\Program Files\Microsoft\jdk-21.0.13.21-hotspot'
+Set-Location android
+.\gradlew.bat testDebugUnitTest lintDebug --no-daemon
+```
+
+Las pruebas unitarias, el lint Android y la compilación de `bundleRelease`
+finalizaron correctamente el 8 de noviembre de 2026. Lint quedó en 0 errores y
+30 advertencias no bloqueantes. Las pruebas unitarias nativas actuales son
+básicas: el smoke test completo en un teléfono real sigue siendo obligatorio.
+El AAB generado todavía está sin firma y no debe subirse a Google Play hasta
+configurar la upload key.
+
 Para probar contra otro servidor HTTPS durante desarrollo hay que habilitarlo
 explícitamente (sin la bandera, una compilación siempre usa producción):
 
@@ -64,8 +115,26 @@ La app ya declara los paths de invitación y recuperación, pero los sistemas op
 
 No se deben publicar archivos `.well-known` con valores ficticios: un identificador o certificado incorrecto deja los enlaces rotos.
 
-## Bloqueos externos actuales
+## Pendientes antes de Google Play
 
-- Esta PC no tiene Android Studio, Java ni Android SDK; puede generar el proyecto, pero no compilar el AAB todavía.
-- iOS necesita Mac, Xcode, membresía Apple Developer y certificados de firma.
-- Falta confirmar que el dominio definitivo seguirá siendo `progressgym-sigma.vercel.app`. Un dominio propio es preferible antes de publicar, porque cambiarlo luego obliga a actualizar asociaciones y binarios.
+- Instalar el APK debug y validar la aplicación en al menos un teléfono Android real.
+- Probar inicio de sesión, entrenamiento, fotos, notificaciones, botón Atrás,
+  segundo plano, cámara/galería y enlaces de invitación y recuperación.
+- Crear la aplicación en Google Play Console.
+- Definir y resguardar la clave de firma de publicación fuera de Git.
+- Activar Play App Signing y generar un AAB release firmado.
+- Incrementar `versionCode` para cada nueva subida a Play Console.
+- Completar ficha de tienda, política de privacidad, Data Safety, clasificación
+  de contenido y las pruebas cerradas que requiera Google.
+- Publicar `assetlinks.json` con la huella SHA-256 real de publicación.
+- Confirmar el dominio definitivo antes de cerrar los enlaces universales.
+
+## Pendientes antes de App Store
+
+- Mac con Xcode.
+- Membresía Apple Developer y certificados.
+- Bundle ID y Associated Domains.
+- Pruebas físicas en iPhone y generación del archivo de distribución.
+
+Un dominio propio es preferible antes de publicar: cambiarlo luego obliga a
+actualizar asociaciones y binarios en ambas tiendas.
