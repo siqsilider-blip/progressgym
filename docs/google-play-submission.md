@@ -106,12 +106,13 @@ Después de activar Play App Signing:
 
 La huella de la upload key no reemplaza la huella de App Signing.
 
-## Assets que faltan para la ficha
+## Assets y textos de la ficha
 
-- Feature graphic de 1024 × 500 px.
-- Cinco o seis capturas reales de Android sin datos personales.
-- Descripción completa orientada a beneficios para adultos +35/+40.
-- Textos breves para cada captura.
+- Feature graphic listo en
+  `assets/app-store/google-play-feature-graphic-1024x500.png`.
+- Título, descripción corta, descripción completa y textos sugeridos para las
+  capturas listos en `docs/google-play-listing.md`.
+- Pendiente: cinco o seis capturas reales de Android sin datos personales.
 
 Antes de publicar, confirmar que `progressgym-sigma.vercel.app` será el dominio
 permanente. Cambiarlo luego obliga a actualizar asociaciones y binarios.
