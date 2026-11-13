@@ -84,7 +84,10 @@ finalizaron correctamente el 8 de noviembre de 2026. Lint quedó en 0 errores y
 30 advertencias no bloqueantes. Las pruebas unitarias nativas actuales son
 básicas: el smoke test completo en un teléfono real sigue siendo obligatorio.
 El AAB generado todavía está sin firma y no debe subirse a Google Play hasta
-configurar la upload key.
+configurar la upload key. La configuración de release ahora falla de forma
+intencional si falta la firma, para evitar generar por error un artefacto no
+publicable. Ver `docs/google-play-submission.md` y ejecutar
+`npm run native:android:release` una vez creada la clave.
 
 Para probar contra otro servidor HTTPS durante desarrollo hay que habilitarlo
 explícitamente (sin la bandera, una compilación siempre usa producción):

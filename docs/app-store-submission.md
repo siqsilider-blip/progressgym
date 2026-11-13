@@ -70,7 +70,7 @@ Preparar de 3 a 6 capturas reales, sin datos personales, para el tamaño princip
 - [ ] Confirmar que `app.progrezzia.mobile` será el identificador definitivo antes de crear las fichas en las tiendas.
 - [ ] Completar Universal Links/App Links con Team ID y huellas SHA-256 de las firmas de publicación.
 - [ ] Configurar firma, equipo y perfiles desde una Mac con Xcode.
-- [ ] Generar el ícono final de 1024 × 1024 sin transparencia desde `assets/app-store/app-icon-source.svg`.
+- [x] Generar el ícono final de 1024 × 1024 sin transparencia desde `assets/app-store/app-icon-source.svg`.
 - [ ] Hacer una prueba en iPhone real, incluyendo red lenta, cámara/video, teclado y regreso desde segundo plano.
 - [ ] Crear el archivo de la app con el SDK de iOS vigente y subirlo con Xcode.
 

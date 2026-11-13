@@ -6,6 +6,7 @@
     "icons:generate": "node scripts/generate-brand-icons.mjs",
     "native:sync": "cap sync",
     "native:android": "cap open android",
+    "native:android:release": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-android-release.ps1",
     "native:ios": "cap open ios",
     "dev": "next dev",
     "build": "next build",
