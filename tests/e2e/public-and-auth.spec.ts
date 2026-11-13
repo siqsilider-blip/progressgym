@@ -67,6 +67,29 @@ test('los recursos instalables son válidos', async ({ request }) => {
     expect(await serviceWorkerResponse.text()).toContain("self.addEventListener('fetch'")
 })
 
+test('Android puede verificar los enlaces de invitación y recuperación', async ({ request }) => {
+    const response = await request.get('/.well-known/assetlinks.json', {
+        maxRedirects: 0,
+    })
+
+    expect(response.ok()).toBe(true)
+    expect(response.headers()['content-type']).toContain('application/json')
+
+    const statements = await response.json()
+    expect(statements).toEqual([
+        {
+            relation: ['delegate_permission/common.handle_all_urls'],
+            target: {
+                namespace: 'android_app',
+                package_name: 'app.progrezzia.mobile',
+                sha256_cert_fingerprints: expect.arrayContaining([
+                    '6D:32:55:F9:0A:3D:0F:3A:A4:1B:FC:0C:4F:87:50:97:BD:4A:7C:42:47:24:E4:84:39:10:4D:DA:F1:DC:35:5D',
+                ]),
+            },
+        },
+    ])
+})
+
 test('la versión publicada informa su estado y commit', async ({ request }) => {
     const response = await request.get('/api/health')
     expect(response.ok()).toBe(true)

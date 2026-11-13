@@ -57,7 +57,9 @@ const config: CapacitorConfig = {
   },
   plugins: {
     App: {
-      disableBackButtonHandler: true,
+      // El callback nativo debe permanecer activo para que el listener de
+      // NativeAppBridge reciba Atrás en Android y respete el historial web.
+      disableBackButtonHandler: false,
     },
     Keyboard: {
       resize: 'body',
@@ -78,7 +80,8 @@ const config: CapacitorConfig = {
     },
     StatusBar: {
       overlaysWebView: false,
-      style: 'LIGHT',
+      // En Capacitor, DARK significa texto/iconos claros sobre fondo oscuro.
+      style: 'DARK',
       backgroundColor: '#111111',
     },
   },

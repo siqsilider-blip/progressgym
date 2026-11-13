@@ -95,16 +95,24 @@ CAPACITOR_DEV_SERVER=1 CAPACITOR_SERVER_URL=https://servidor-de-prueba.example n
 
 Nunca compilar una versión de tienda apuntando a `http://`, `localhost` o una preview temporal de Vercel.
 
-## Enlaces verificados pendientes
+## Enlaces verificados
 
-La app ya declara los paths de invitación y recuperación, pero los sistemas operativos no los abrirán automáticamente hasta completar la asociación de dominio:
+La app declara los paths de invitación y recuperación. Android también
+publica `/.well-known/assetlinks.json` con la huella de desarrollo para que el
+APK debug pueda verificarse.
 
 ### Android
 
 1. Crear la app en Google Play Console y activar Play App Signing.
-2. Obtener las huellas SHA-256 de publicación y, si corresponde, de desarrollo.
-3. Publicar `/.well-known/assetlinks.json` con `app.progrezzia.mobile` y esas huellas.
-4. Probar cada enlace con `adb` en un teléfono real.
+2. Copiar la huella SHA-256 de **App signing key certificate** (no la de la
+   upload key).
+3. Configurar en producción `ANDROID_APP_LINK_SHA256_FINGERPRINTS` con esa
+   huella. Si hubiera más de una, separarlas con comas. El endpoint valida el
+   formato y suma esas huellas a la de desarrollo.
+4. Volver a desplegar y comprobar que `/.well-known/assetlinks.json` responde
+   JSON sin redirecciones.
+5. Probar invitación, confirmación, recuperación y notificaciones con `adb` en
+   un teléfono real.
 
 ### iOS
 
@@ -113,7 +121,8 @@ La app ya declara los paths de invitación y recuperación, pero los sistemas op
 3. Publicar `/.well-known/apple-app-site-association` con `TEAM_ID.app.progrezzia.mobile`.
 4. Habilitar Associated Domains en la firma y probar invitación, recuperación y arranque en frío.
 
-No se deben publicar archivos `.well-known` con valores ficticios: un identificador o certificado incorrecto deja los enlaces rotos.
+No se deben configurar valores ficticios: una huella incorrecta deja los
+enlaces de la versión publicada sin verificar.
 
 ## Pendientes antes de Google Play
 
@@ -126,7 +135,8 @@ No se deben publicar archivos `.well-known` con valores ficticios: un identifica
 - Incrementar `versionCode` para cada nueva subida a Play Console.
 - Completar ficha de tienda, política de privacidad, Data Safety, clasificación
   de contenido y las pruebas cerradas que requiera Google.
-- Publicar `assetlinks.json` con la huella SHA-256 real de publicación.
+- Agregar a `ANDROID_APP_LINK_SHA256_FINGERPRINTS` la huella SHA-256 real de
+  Play App Signing y verificar el endpoint publicado.
 - Confirmar el dominio definitivo antes de cerrar los enlaces universales.
 
 ## Pendientes antes de App Store

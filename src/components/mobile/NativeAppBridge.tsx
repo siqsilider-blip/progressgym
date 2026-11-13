@@ -75,9 +75,14 @@ export default function NativeAppBridge() {
 
     const setup = async () => {
       await Promise.allSettled([
-        StatusBar.setStyle({ style: Style.Light }),
+        // Capacitor llama `Dark` al estilo pensado para fondos oscuros:
+        // muestra texto e iconos claros en la barra de estado.
+        StatusBar.setStyle({ style: Style.Dark }),
         StatusBar.setBackgroundColor({ color: '#111111' }),
         SplashScreen.hide(),
+        ...(Capacitor.getPlatform() === 'android'
+          ? [App.toggleBackButtonHandler({ enabled: true })]
+          : []),
       ])
 
       const urlHandle = await App.addListener('appUrlOpen', ({ url }) => openDeepLink(url))
@@ -120,13 +125,13 @@ export default function NativeAppBridge() {
         }
 
         const currentPath = pathnameRef.current
-        if (canGoBack && window.history.length > 1) {
-          window.history.back()
+        if (currentPath === '/app' || currentPath === '/dashboard' || currentPath === '/login') {
+          await App.minimizeApp()
           return
         }
 
-        if (currentPath === '/app' || currentPath === '/dashboard' || currentPath === '/login') {
-          await App.minimizeApp()
+        if (canGoBack && window.history.length > 1) {
+          window.history.back()
           return
         }
 

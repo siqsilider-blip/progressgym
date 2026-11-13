@@ -21,6 +21,8 @@ export async function middleware(request: NextRequest) {
         pathname === '/support' ||
         pathname === '/account-deletion' ||
         pathname === '/api/health' ||
+        pathname === '/api/android/assetlinks' ||
+        pathname === '/.well-known/assetlinks.json' ||
         pathname.startsWith('/auth')
 
     if (isPublicRoute) return supabaseResponse
