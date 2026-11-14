@@ -121,10 +121,22 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 $bundle = Get-Item -LiteralPath $bundlePath
-$hash = Get-FileHash -LiteralPath $bundlePath -Algorithm SHA256
+$bundleStream = [System.IO.File]::OpenRead($bundlePath)
+try {
+    $sha256 = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        $hash = [Convert]::ToHexString($sha256.ComputeHash($bundleStream))
+    }
+    finally {
+        $sha256.Dispose()
+    }
+}
+finally {
+    $bundleStream.Dispose()
+}
 
 Write-Host ''
 Write-Host 'AAB release firmado y verificado:' -ForegroundColor Green
 Write-Host $bundle.FullName
 Write-Host "Tamaño: $($bundle.Length) bytes"
-Write-Host "SHA-256: $($hash.Hash)"
+Write-Host "SHA-256: $hash"
