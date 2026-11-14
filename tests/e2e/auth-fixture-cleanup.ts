@@ -114,6 +114,9 @@ export async function removeAuthFixtureData(admin: SupabaseClient, refs: AuthFix
 
     for (const userId of userIds) {
         const { error } = await admin.auth.admin.deleteUser(userId)
-        assertNoError(error, 'No se pudo eliminar un usuario de acceso E2E')
+        const userWasAlreadyDeleted = error?.status === 404 || /user not found/i.test(error?.message ?? '')
+        if (!userWasAlreadyDeleted) {
+            assertNoError(error, 'No se pudo eliminar un usuario de acceso E2E')
+        }
     }
 }

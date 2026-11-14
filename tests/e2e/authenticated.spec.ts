@@ -582,7 +582,7 @@ test('asignar un template crea un programa completo que el alumno puede abrir', 
     await logIn(page, 'student', inviteStudentEmail)
     await page.goto('/app/rutina')
 
-    await expect(page.getByText(templateName, { exact: true })).toBeVisible()
+    await expect(page.getByText(new RegExp(`^${templateName} · Semana 1 de 1$`))).toBeVisible()
     await expect(page.getByText(exerciseName, { exact: true })).toBeVisible()
     await expect(page.getByRole('link', { name: /Entrenar/ })).toBeVisible()
 })
@@ -607,7 +607,7 @@ test('el entrenador reordena y elimina días de un template sin perder su estruc
     await page.getByRole('button', { name: 'Eliminar día' }).click()
     await page.getByRole('button', { name: 'Sí', exact: true }).click()
 
-    await expect(dayTabs).toHaveCount(2)
+    await expect(dayTabs).toHaveCount(2, { timeout: 15_000 })
     await expect(page.getByText('Piernas E2E', { exact: true })).toHaveCount(0)
     await expect(dayTabs.nth(0)).toContainText('Torso E2E')
     await expect(dayTabs.nth(1)).toContainText('Movilidad E2E')

@@ -315,20 +315,17 @@ export default async function createAuthFixture() {
             throw new Error(`No se pudieron crear los días del template E2E: ${templateDaysError?.message}`)
         }
 
-        const firstTemplateDay = templateDays.find((templateDay) => templateDay.day_index === 1)
-        if (!firstTemplateDay) throw new Error('No se encontró el primer día del template E2E.')
-
         const { error: templateExerciseError } = await admin
             .from('routine_day_exercises')
-            .insert({
-                routine_day_id: firstTemplateDay.id,
+            .insert(templateDays.map((templateDay) => ({
+                routine_day_id: templateDay.id,
                 exercise_id: exercise.id,
                 sets: 1,
                 reps: 10,
                 rest_seconds: 0,
                 position: 1,
                 block: 'main',
-            })
+            })))
         if (templateExerciseError) {
             throw new Error(`No se pudo agregar el ejercicio al template E2E: ${templateExerciseError.message}`)
         }
