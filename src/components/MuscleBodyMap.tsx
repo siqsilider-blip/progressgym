@@ -1,17 +1,8 @@
 'use client'
 
-import dynamic from 'next/dynamic'
 import type { ExtendedBodyPart, Slug } from 'react-muscle-highlighter'
-import type { AnatomyBodyModelProps } from '@/components/AnatomyBodyModel'
+import AnatomyBodyModel from '@/components/AnatomyBodyModel'
 import { MUSCLE_CATALOG, muscleLabel, type MuscleId, type MuscleView } from '@/lib/exerciseMuscles'
-
-const AnatomyBodyModel = dynamic<AnatomyBodyModelProps>(
-    () => import('@/components/AnatomyBodyModel'),
-    {
-        ssr: false,
-        loading: () => <div className="h-[18rem] w-[9rem] animate-pulse rounded-full bg-white/[0.03]" aria-hidden="true" />,
-    }
-)
 
 type Props = {
     primary: MuscleId[]
