@@ -19,6 +19,7 @@ export type RoutineScheduleWeek = {
 type ScheduleSelection = {
     months: RoutineScheduleMonth[]
     weeks: RoutineScheduleWeek[]
+    orderedWeeks: RoutineScheduleWeek[]
     selectedMonth: RoutineScheduleMonth | null
     selectedWeek: RoutineScheduleWeek | null
     currentWeek: RoutineScheduleWeek | null
@@ -104,6 +105,7 @@ export async function getRoutineSchedule(
     return {
         months,
         weeks,
+        orderedWeeks,
         selectedMonth,
         selectedWeek,
         currentWeek,

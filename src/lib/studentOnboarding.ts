@@ -26,11 +26,24 @@ export const ONBOARDING_EQUIPMENT = {
     cardio: 'Cardio',
 } as const
 
+export const TRAINING_WEEKDAYS = [
+    { value: 1, shortLabel: 'Lun', label: 'Lunes' },
+    { value: 2, shortLabel: 'Mar', label: 'Martes' },
+    { value: 3, shortLabel: 'Mié', label: 'Miércoles' },
+    { value: 4, shortLabel: 'Jue', label: 'Jueves' },
+    { value: 5, shortLabel: 'Vie', label: 'Viernes' },
+    { value: 6, shortLabel: 'Sáb', label: 'Sábado' },
+    { value: 7, shortLabel: 'Dom', label: 'Domingo' },
+] as const
+
+export type TrainingWeekday = (typeof TRAINING_WEEKDAYS)[number]['value']
+
 export type StudentOnboardingProfile = {
     student_id: string
     goals: string[]
     experience_level: string
     training_days_per_week: number
+    preferred_training_weekdays: number[] | null
     session_minutes: number
     training_location: string
     available_equipment: string[]

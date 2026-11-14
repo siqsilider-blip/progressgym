@@ -5,18 +5,44 @@ import { createClient } from '@/lib/supabase/server'
 import type { StudentOnboardingProfile } from '@/lib/studentOnboarding'
 import OnboardingForm from './OnboardingForm'
 
+function isMissingPreferredWeekdays(error: { code?: string; message?: string; details?: string; hint?: string } | null) {
+    if (!error || (error.code !== '42703' && error.code !== 'PGRST204')) return false
+    return [error.message, error.details, error.hint]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+        .includes('preferred_training_weekdays')
+}
+
 export default async function StudentOnboardingPage() {
     const context = await getStudentAppContext()
     if (!context?.profile.student_id) redirect('/app')
 
     const supabase = await createClient()
-    const { data } = await supabase
+    const result = await supabase
         .from('student_onboarding_profiles')
-        .select('student_id, goals, experience_level, training_days_per_week, session_minutes, training_location, available_equipment, limitations, preferences, completed_at')
+        .select('student_id, goals, experience_level, training_days_per_week, preferred_training_weekdays, session_minutes, training_location, available_equipment, limitations, preferences, completed_at')
         .eq('student_id', context.profile.student_id)
         .maybeSingle()
 
-    const profile = (data as StudentOnboardingProfile | null) ?? null
+    let profile = (result.data as StudentOnboardingProfile | null) ?? null
+
+    // Mantiene accesible la ficha mientras se aplica la migración en Supabase.
+    // No inventa días: los perfiles antiguos quedan pendientes de confirmación.
+    if (isMissingPreferredWeekdays(result.error)) {
+        const legacyResult = await supabase
+            .from('student_onboarding_profiles')
+            .select('student_id, goals, experience_level, training_days_per_week, session_minutes, training_location, available_equipment, limitations, preferences, completed_at')
+            .eq('student_id', context.profile.student_id)
+            .maybeSingle()
+
+        profile = legacyResult.data
+            ? {
+                ...(legacyResult.data as Omit<StudentOnboardingProfile, 'preferred_training_weekdays'>),
+                preferred_training_weekdays: null,
+            }
+            : null
+    }
 
     return (
         <main className="mx-auto max-w-lg space-y-4 px-4 pb-28 pt-5">

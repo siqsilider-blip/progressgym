@@ -16,6 +16,7 @@ type PageProps = {
         week?: string
         month?: string
         session?: string
+        view?: string
     }>
 }
 
@@ -540,7 +541,7 @@ export default async function AppTrainPage(props: PageProps) {
         : selectedDay?.day_index ? `Día ${selectedDay.day_index}` : 'Hoy'
 
     const fullName = `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim()
-    const routineReturnHref = `/app/rutina?${selectedMonth ? `month=${selectedMonth.id}&` : ''}week=${selectedWeek?.id}`
+    const routineReturnHref = `/app/rutina?${selectedMonth ? `month=${selectedMonth.id}&` : ''}week=${selectedWeek?.id}&day=${selectedDayId}&view=${searchParams?.view === 'month' ? 'month' : 'week'}`
     const returnHref = historicalSession ? '/app/history' : routineReturnHref
     const returnLabel = historicalSession ? 'Volver al historial' : 'Volver a la rutina'
 

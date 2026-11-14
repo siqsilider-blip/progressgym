@@ -9,11 +9,13 @@ import {
     ONBOARDING_EXPERIENCE,
     ONBOARDING_GOALS,
     ONBOARDING_LOCATIONS,
+    TRAINING_WEEKDAYS,
 } from '@/lib/studentOnboarding'
 
 export type OnboardingFormState = { error: string | null }
 
 const allowedDurations = new Set([30, 45, 60, 75, 90])
+const allowedWeekdays = new Set<number>(TRAINING_WEEKDAYS.map((weekday) => weekday.value))
 
 export async function saveStudentOnboarding(
     _previousState: OnboardingFormState,
@@ -25,6 +27,12 @@ export async function saveStudentOnboarding(
     const goals = formData.getAll('goals').map(String).filter((value) => value in ONBOARDING_GOALS)
     const experience = String(formData.get('experience') ?? '')
     const days = Number(formData.get('days'))
+    const weekdays = Array.from(new Set(
+        formData
+            .getAll('weekdays')
+            .map(Number)
+            .filter((value) => Number.isInteger(value) && allowedWeekdays.has(value))
+    )).sort((a, b) => a - b)
     const duration = Number(formData.get('duration'))
     const location = String(formData.get('location') ?? '')
     const equipment = formData.getAll('equipment').map(String).filter((value) => value in ONBOARDING_EQUIPMENT)
@@ -40,6 +48,11 @@ export async function saveStudentOnboarding(
     if (!Number.isInteger(days) || days < 1 || days > 7) {
         return { error: 'Elegí cuántos días podés entrenar.' }
     }
+    if (weekdays.length !== days) {
+        return {
+            error: `Elegí exactamente ${days} ${days === 1 ? 'día de entrenamiento' : 'días de entrenamiento'}.`,
+        }
+    }
     if (!allowedDurations.has(duration)) {
         return { error: 'Elegí una duración aproximada.' }
     }
@@ -51,10 +64,11 @@ export async function saveStudentOnboarding(
     }
 
     const supabase = await createClient()
-    const { error } = await supabase.rpc('save_student_onboarding', {
+    const { error } = await supabase.rpc('save_student_onboarding_v2', {
         p_goals: goals,
         p_experience_level: experience,
         p_training_days_per_week: days,
+        p_preferred_training_weekdays: weekdays,
         p_session_minutes: duration,
         p_training_location: location,
         p_available_equipment: equipment,
@@ -66,7 +80,7 @@ export async function saveStudentOnboarding(
         console.error('[saveStudentOnboarding]', error)
         return {
             error: error.code === 'PGRST202' || error.code === '42P01'
-                ? 'Falta habilitar la ficha inicial en la base de datos.'
+                ? 'Falta aplicar la actualización del calendario en la base de datos.'
                 : 'No pudimos guardar la ficha. Intentá nuevamente.',
         }
     }

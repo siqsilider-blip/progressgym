@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useFormState, useFormStatus } from 'react-dom'
 import { ChevronRight, Clock3, Dumbbell, HeartPulse, MapPin, Target } from 'lucide-react'
 import { saveStudentOnboarding, type OnboardingFormState } from './actions'
@@ -8,17 +9,18 @@ import {
     ONBOARDING_EXPERIENCE,
     ONBOARDING_GOALS,
     ONBOARDING_LOCATIONS,
+    TRAINING_WEEKDAYS,
     type StudentOnboardingProfile,
 } from '@/lib/studentOnboarding'
 
 const initialState: OnboardingFormState = { error: null }
 
-function SubmitButton({ editing }: { editing: boolean }) {
+function SubmitButton({ editing, scheduleComplete }: { editing: boolean; scheduleComplete: boolean }) {
     const { pending } = useFormStatus()
     return (
         <button
             type="submit"
-            disabled={pending}
+            disabled={pending || !scheduleComplete}
             className="flex h-13 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 text-sm font-black text-primary-foreground shadow-lg shadow-primary/20 transition active:scale-[0.99] disabled:opacity-60"
         >
             {pending ? 'Guardando…' : editing ? 'Guardar cambios' : 'Guardar y empezar'}
@@ -43,6 +45,24 @@ function SectionTitle({ icon: Icon, title, helper }: { icon: typeof Target; titl
 
 export default function OnboardingForm({ profile }: { profile: StudentOnboardingProfile | null }) {
     const [state, formAction] = useFormState(saveStudentOnboarding, initialState)
+    const initialTrainingDays = profile?.training_days_per_week ?? 3
+    const [trainingDays, setTrainingDays] = useState(initialTrainingDays)
+    const [preferredWeekdays, setPreferredWeekdays] = useState<number[]>(
+        (profile?.preferred_training_weekdays ?? [])
+            .filter((value) => Number.isInteger(value) && value >= 1 && value <= 7)
+            .sort((a, b) => a - b)
+    )
+    const scheduleComplete = preferredWeekdays.length === trainingDays
+
+    function toggleWeekday(value: number) {
+        setPreferredWeekdays((current) => {
+            if (current.includes(value)) {
+                return current.filter((weekday) => weekday !== value)
+            }
+            if (current.length >= trainingDays) return current
+            return [...current, value].sort((a, b) => a - b)
+        })
+    }
 
     return (
         <form action={formAction} className="space-y-3">
@@ -91,7 +111,12 @@ export default function OnboardingForm({ profile }: { profile: StudentOnboarding
                 <div className="grid grid-cols-2 gap-3">
                     <label className="space-y-1.5 text-[11px] font-bold text-muted-foreground">
                         Días por semana
-                        <select name="days" defaultValue={profile?.training_days_per_week ?? 3} className="h-12 w-full rounded-xl border border-border bg-background px-3 text-sm font-bold text-foreground outline-none focus:border-primary">
+                        <select
+                            name="days"
+                            value={trainingDays}
+                            onChange={(event) => setTrainingDays(Number(event.target.value))}
+                            className="h-12 w-full rounded-xl border border-border bg-background px-3 text-sm font-bold text-foreground outline-none focus:border-primary"
+                        >
                             {[1, 2, 3, 4, 5, 6, 7].map((day) => <option key={day} value={day}>{day} {day === 1 ? 'día' : 'días'}</option>)}
                         </select>
                     </label>
@@ -101,6 +126,52 @@ export default function OnboardingForm({ profile }: { profile: StudentOnboarding
                             {[30, 45, 60, 75, 90].map((minutes) => <option key={minutes} value={minutes}>{minutes} min</option>)}
                         </select>
                     </label>
+                </div>
+                <div className="mt-4 border-t border-border pt-4">
+                    <div className="flex items-end justify-between gap-3">
+                        <div>
+                            <p className="text-xs font-black text-foreground">¿Qué días preferís entrenar?</p>
+                            <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">
+                                Elegí exactamente {trainingDays} {trainingDays === 1 ? 'día' : 'días'}. Después vas a poder cambiarlos.
+                            </p>
+                        </div>
+                        <span className={`shrink-0 text-[11px] font-black ${scheduleComplete ? 'text-emerald-400' : 'text-primary'}`}>
+                            {preferredWeekdays.length}/{trainingDays}
+                        </span>
+                    </div>
+                    <div className="mt-3 grid grid-cols-7 gap-1.5">
+                        {TRAINING_WEEKDAYS.map((weekday) => {
+                            const checked = preferredWeekdays.includes(weekday.value)
+                            const disabled = !checked && preferredWeekdays.length >= trainingDays
+                            return (
+                                <label
+                                    key={weekday.value}
+                                    title={weekday.label}
+                                    className={`cursor-pointer ${disabled ? 'cursor-not-allowed opacity-40' : ''}`}
+                                >
+                                    <input
+                                        type="checkbox"
+                                        name="weekdays"
+                                        value={weekday.value}
+                                        checked={checked}
+                                        disabled={disabled}
+                                        onChange={() => toggleWeekday(weekday.value)}
+                                        className="peer sr-only"
+                                    />
+                                    <span className="flex h-12 min-w-0 items-center justify-center rounded-xl border border-border bg-background px-0.5 text-[10px] font-black text-muted-foreground transition peer-checked:border-primary peer-checked:bg-primary/15 peer-checked:text-primary">
+                                        {weekday.shortLabel}
+                                    </span>
+                                </label>
+                            )
+                        })}
+                    </div>
+                    {!scheduleComplete && (
+                        <p className="mt-2 text-[11px] font-semibold text-primary">
+                            {preferredWeekdays.length < trainingDays
+                                ? `Te falta elegir ${trainingDays - preferredWeekdays.length}.`
+                                : `Quitá ${preferredWeekdays.length - trainingDays} para continuar.`}
+                        </p>
+                    )}
                 </div>
             </section>
 
@@ -173,7 +244,7 @@ export default function OnboardingForm({ profile }: { profile: StudentOnboarding
                 </div>
             )}
 
-            <SubmitButton editing={Boolean(profile)} />
+            <SubmitButton editing={Boolean(profile)} scheduleComplete={scheduleComplete} />
             <p className="px-3 text-center text-[10px] leading-4 text-muted-foreground">
                 Podés cambiar estos datos más adelante desde tu perfil.
             </p>

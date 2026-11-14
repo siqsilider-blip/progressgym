@@ -354,6 +354,7 @@ export default async function createAuthFixture() {
             student_id: student.id,
             routine_id: routine.id,
             status: 'active',
+            training_weekdays: [1],
         })
         if (assignmentError) throw assignmentError
 

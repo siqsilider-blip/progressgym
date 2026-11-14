@@ -342,6 +342,7 @@ async function createDemo() {
             routine_id: routine.id,
             status: 'active',
             program_started_on: dateOnly(currentMonday),
+            training_weekdays: [1, 3, 5],
         })).error, 'No se pudo asignar la rutina demo')
 
         const firstDay = days.find((day) => day.week === 1 && day.day_index === 1)
