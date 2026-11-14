@@ -77,20 +77,20 @@ Antes de publicar, confirmar que el correo se mantendrá como canal definitivo y
 
 Ordenar primero la experiencia del alumno —la parte más fácil de entender para quien descubre la app— y cerrar con el valor para el entrenador.
 
-1. **Tu entrenamiento, claro desde el primer día**  
-   Semana, días y rutina del alumno en una sola vista.
+1. **Tu próximo entrenamiento, sin vueltas**
+   Inicio del alumno con la sesión que sigue y el control semanal.
 
-2. **Registrá cada serie sin perder el ritmo**  
+2. **Toda tu semana, clara y ordenada**
+   Días, ejercicios y avance semanal en una sola vista.
+
+3. **Registrá cada serie sin perder el ritmo**
    Peso, repeticiones, esfuerzo y referencia de la sesión anterior.
 
-3. **Mirá la técnica y entendé qué trabajás**  
-   Video del ejercicio y mapa muscular dentro de la rutina.
+4. **Entendé qué trabaja cada ejercicio**
+   Guía visual y mapa muscular dentro de la rutina.
 
-4. **Todo tu progreso en un solo lugar**  
-   Historial, logros, controles y evolución personal.
-
-5. **Seguimiento real con tu entrenador**  
-   Check-ins, molestias y mensajes privados sin salir de la app.
+5. **Todo tu progreso en un solo lugar**
+   Bienestar, peso, controles y evolución personal.
 
 6. **Organizá alumnos y rutinas con menos vueltas**  
    Panel del entrenador con prioridades, programas y seguimiento.
