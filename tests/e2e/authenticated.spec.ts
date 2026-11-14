@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+import { getBuenosAiresDateString } from '../../src/lib/buenosAiresDate'
+import { formatSpanishMonthLabel } from '../../src/lib/routineCalendar'
 
 const trainerEmail = process.env.E2E_TRAINER_EMAIL!
 const otherTrainerEmail = process.env.E2E_OTHER_TRAINER_EMAIL!
@@ -75,6 +77,10 @@ test('el alumno entra a su portal y no al panel del entrenador', async ({ page }
     await expect(page).toHaveURL(/\/app(?:\?|$)/)
     await expect(page.getByRole('link', { name: 'Rutina', exact: true })).toBeVisible()
     await expect(page.getByRole('link', { name: 'Progreso', exact: true })).toBeVisible()
+    await expect(page.getByRole('heading', { name: /Buenos días|Buenas tardes|Buenas noches/ })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Tus entrenamientos' })).toBeVisible()
+    await expect(page.getByRole('link', { name: /Ver calendario/ })).toBeVisible()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBeTruthy()
 
     await page.goto('/dashboard')
     await expect(page).toHaveURL(/\/app(?:\?|$)/)
@@ -84,6 +90,8 @@ test('el alumno entra a su portal y no al panel del entrenador', async ({ page }
     await page.goto('/app/rutina')
     await expect(page.getByText(routineName, { exact: true })).toBeVisible()
     await expect(page.getByText(exerciseName, { exact: true })).toBeVisible()
+    await page.getByRole('button', { name: 'Mes', exact: true }).click()
+    await expect(page.getByText(formatSpanishMonthLabel(getBuenosAiresDateString()), { exact: true })).toBeVisible()
     await page.getByRole('link', { name: /Entrenar/ }).click()
 
     await expect(page).toHaveURL(/\/app\/train\?/, { timeout: 30_000 })

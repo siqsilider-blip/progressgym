@@ -14,6 +14,19 @@ type CreatedFixture = {
     exerciseId?: string
 }
 
+function buenosAiresDateDaysAgo(days: number) {
+    const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/Argentina/Buenos_Aires',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+    }).formatToParts(new Date())
+    const values = Object.fromEntries(parts.map((part) => [part.type, part.value]))
+    const date = new Date(Date.UTC(Number(values.year), Number(values.month) - 1, Number(values.day)))
+    date.setUTCDate(date.getUTCDate() - days)
+    return date.toISOString().slice(0, 10)
+}
+
 export default async function createAuthFixture() {
     loadEnvConfig(process.cwd())
 
@@ -351,6 +364,7 @@ export default async function createAuthFixture() {
             student_id: student.id,
             routine_id: routine.id,
             status: 'active',
+            program_started_on: buenosAiresDateDaysAgo(56),
             training_weekdays: [1],
         })
         if (assignmentError) throw assignmentError

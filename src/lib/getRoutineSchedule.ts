@@ -23,6 +23,7 @@ type ScheduleSelection = {
     selectedMonth: RoutineScheduleMonth | null
     selectedWeek: RoutineScheduleWeek | null
     currentWeek: RoutineScheduleWeek | null
+    currentCycleStartWeekIndex: number
     programWeekNumber: number
     totalProgramWeeks: number
     selectedProgramWeekNumber: number
@@ -72,8 +73,14 @@ export async function getRoutineSchedule(
     const elapsedWeekIndex = options.programStartedOn
         ? getElapsedProgramWeekIndex(options.programStartedOn)
         : 0
-    const currentWeek = orderedWeeks.length > 0
-        ? orderedWeeks[Math.min(elapsedWeekIndex, orderedWeeks.length - 1)]
+    const currentCycleStartWeekIndex = orderedWeeks.length > 0
+        ? Math.floor(elapsedWeekIndex / orderedWeeks.length) * orderedWeeks.length
+        : 0
+    const currentWeekIndex = orderedWeeks.length > 0
+        ? elapsedWeekIndex % orderedWeeks.length
+        : -1
+    const currentWeek = currentWeekIndex >= 0
+        ? orderedWeeks[currentWeekIndex]
         : null
 
     const selectedMonth = requestedWeek?.routine_month_id
@@ -99,7 +106,7 @@ export async function getRoutineSchedule(
         ? orderedWeeks.findIndex((week) => week.id === selectedWeek.id)
         : -1
     const selectedWeekRange = options.programStartedOn && selectedWeekIndex >= 0
-        ? getProgramWeekDateRange(options.programStartedOn, selectedWeekIndex)
+        ? getProgramWeekDateRange(options.programStartedOn, currentCycleStartWeekIndex + selectedWeekIndex)
         : null
 
     return {
@@ -109,8 +116,9 @@ export async function getRoutineSchedule(
         selectedMonth,
         selectedWeek,
         currentWeek,
+        currentCycleStartWeekIndex,
         programWeekNumber: orderedWeeks.length > 0
-            ? Math.min(elapsedWeekIndex + 1, orderedWeeks.length)
+            ? currentWeekIndex + 1
             : 0,
         totalProgramWeeks: orderedWeeks.length,
         selectedProgramWeekNumber: selectedWeekIndex >= 0 ? selectedWeekIndex + 1 : 0,

@@ -194,7 +194,12 @@ export default async function AppRoutinePage(props: PageProps) {
     )
 
     const plannerWeeks: RoutinePlannerWeek[] = schedule.orderedWeeks.map((week, weekIndex) => {
-        const range = assignment.programStartedOn ? getProgramWeekDateRange(assignment.programStartedOn, weekIndex) : null
+        const range = assignment.programStartedOn
+            ? getProgramWeekDateRange(
+                assignment.programStartedOn,
+                schedule.currentCycleStartWeekIndex + weekIndex
+            )
+            : null
         const weekDays = trainingDaysByWeek.get(week.id) ?? []
         return {
             id: week.id,
