@@ -49,6 +49,8 @@ export default async function AppHomePage() {
             .eq('student_id', studentId)
             .maybeSingle(),
     ])
+    if (studentResult.error) throw studentResult.error
+    if (onboardingResult.error) throw onboardingResult.error
     const student = studentResult.data
     const weeklyCheckinCompleted = Boolean(weeklyCheckinResult.data)
     const latestPhotoDate = latestPhotoResult.data?.captured_on ?? null
@@ -87,6 +89,7 @@ export default async function AppHomePage() {
                 programStartedOn: assignment.programStartedOn,
             }),
         ])
+        if (routineResult.error) throw routineResult.error
         const routine = routineResult.data
 
         if (routine) {
@@ -98,19 +101,21 @@ export default async function AppHomePage() {
 
             if (selectedWeekId) {
 
-                const { data: days } = await supabase
+                const { data: days, error: daysError } = await supabase
                     .from('routine_days')
                     .select('id, name, title, day_index')
                     .eq('routine_week_id', selectedWeekId)
                     .order('day_index', { ascending: true })
+                if (daysError) throw daysError
 
                 if (days && days.length > 0) {
                     const dayIds = days.map((day) => day.id)
-                    const { data: weekExercises } = await supabase
+                    const { data: weekExercises, error: weekExercisesError } = await supabase
                         .from('routine_day_exercises')
                         .select('routine_day_id, sets, reps, exercise_id')
                         .in('routine_day_id', dayIds)
                         .order('position', { ascending: true })
+                    if (weekExercisesError) throw weekExercisesError
 
                     const daysWithExercises = new Set(
                         (weekExercises ?? []).map((exercise) => exercise.routine_day_id).filter(Boolean)
@@ -142,6 +147,7 @@ export default async function AppHomePage() {
                                 .in('id', exerciseIds)
                             : Promise.resolve({ data: [] }),
                     ])
+                    if ('error' in exercisesResult && exercisesResult.error) throw exercisesResult.error
 
                     const exMap = new Map(
                         (exercisesResult.data ?? []).map((exercise) => [exercise.id, exercise.name])

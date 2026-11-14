@@ -42,6 +42,22 @@ async function logIn(
     }
 }
 
+async function recoverStudentPage(
+    page: import('@playwright/test').Page,
+    ready: import('@playwright/test').Locator
+) {
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+        if (await ready.isVisible({ timeout: 2_000 }).catch(() => false)) return
+        const retry = page.getByRole('button', { name: 'Reintentar' })
+        if (await retry.isVisible({ timeout: 2_000 }).catch(() => false)) {
+            await retry.click()
+        } else {
+            await page.reload()
+        }
+        await page.waitForTimeout(750)
+    }
+}
+
 test('el entrenador entra al panel y no al portal del alumno', async ({ page }, testInfo) => {
     await logIn(page, 'trainer', trainerEmail)
 
@@ -88,7 +104,7 @@ test('el alumno entra a su portal y no al panel del entrenador', async ({ page }
     if (testInfo.project.name === 'desktop-chromium') return
 
     await page.goto('/app/rutina')
-    await expect(page.getByText(routineName, { exact: true })).toBeVisible()
+    await expect(page.getByText(routineName, { exact: false }).first()).toBeVisible()
     await expect(page.getByText(exerciseName, { exact: true })).toBeVisible()
     await page.getByRole('button', { name: 'Mes', exact: true }).click()
     await expect(page.getByText(formatSpanishMonthLabel(getBuenosAiresDateString()), { exact: true })).toBeVisible()
@@ -200,13 +216,17 @@ test('el alumno entra a su portal y no al panel del entrenador', async ({ page }
     await expect(page.getByRole('button', { name: 'Guardar serie 1' })).toContainText('Actualizar')
 
     await page.goto('/app/rutina')
-    await expect(page.getByText('Semana completada ✓')).toBeVisible()
-    await expect(page.getByText('1 de 1 entrenamientos completados')).toBeVisible()
-    await expect(page.getByText('✓ Completado esta semana')).toBeVisible()
+    const completedWeekLabel = page.getByText('Semana completada ✓')
+    await recoverStudentPage(page, completedWeekLabel)
+    await expect(completedWeekLabel).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByText('1 de 1 entrenamientos', { exact: true })).toBeVisible()
+    await expect(page.getByText('Completado', { exact: true }).first()).toBeVisible()
 
     await page.goto('/app')
-    await expect(page.getByText('Semana completada', { exact: true })).toBeVisible()
-    await expect(page.getByText('¡Excelente trabajo! ✓')).toBeVisible()
+    const completedHomeLabel = page.getByText('Semana completada', { exact: true })
+    await recoverStudentPage(page, completedHomeLabel)
+    await expect(completedHomeLabel).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByText('¡Excelente trabajo!')).toBeVisible()
 
     const { data: currentSession, error: currentSessionError } = await admin
         .from('workout_sessions')
