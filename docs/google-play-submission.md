@@ -112,7 +112,8 @@ La huella de la upload key no reemplaza la huella de App Signing.
   `assets/app-store/google-play-feature-graphic-1024x500.png`.
 - Título, descripción corta, descripción completa y textos sugeridos para las
   capturas listos en `docs/google-play-listing.md`.
-- Pendiente: cinco o seis capturas reales de Android sin datos personales.
+- Pendiente: cinco o seis capturas reales de Android sin datos personales,
+  preparadas en 1080 × 1920 px y PNG de 24 bits sin transparencia.
 
 Antes de publicar, confirmar que `progressgym-sigma.vercel.app` será el dominio
 permanente. Cambiarlo luego obliga a actualizar asociaciones y binarios.

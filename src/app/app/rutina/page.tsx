@@ -324,7 +324,8 @@ export default async function AppRutinePage(props: PageProps) {
                                                 ))}
                                                 {dayExercises.length > 3 && (
                                                     <p className="px-2.5 pt-1 text-[10px] font-medium text-muted-foreground">
-                                                        + {dayExercises.length - 3} ejercicios más
+                                                        + {dayExercises.length - 3}{' '}
+                                                        {dayExercises.length - 3 === 1 ? 'ejercicio más' : 'ejercicios más'}
                                                     </p>
                                                 )}
                                             </div>

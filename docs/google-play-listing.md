@@ -95,14 +95,28 @@ Ordenar primero la experiencia del alumno —la parte más fácil de entender pa
 6. **Organizá alumnos y rutinas con menos vueltas**  
    Panel del entrenador con prioridades, programas y seguimiento.
 
+### Texto alternativo sugerido
+
+1. `Panel del alumno con el entrenamiento de la semana y acceso a la sesión del día.`
+2. `Rutina semanal organizada por días y ejercicios, con series y repeticiones indicadas.`
+3. `Registro de una serie con peso, repeticiones, esfuerzo y referencia del entrenamiento anterior.`
+4. `Guía de Hip Thrust con video técnico y músculos principales destacados.`
+5. `Panel de progreso con historial de entrenamientos y evolución registrada.`
+6. `Panel del entrenador con prioridades, alumnos y seguimiento de rutinas.`
+
 ### Criterios visuales
 
 - Usar capturas reales de Android, sin datos personales ni cuentas reales.
+- Exportar al menos cuatro y preferentemente las seis en formato vertical
+  1080 × 1920 px, PNG de 24 bits sin transparencia.
 - Mantener el mismo marco, tipografía y escala en las seis piezas.
 - Una sola idea y un solo titular por captura.
 - Priorizar texto grande y contraste alto para que sea legible en teléfonos.
 - Usar la paleta oficial: carbón `#111111`, blanco cálido `#F5F2EE`, rosa `#C98796` y gris `#D9D9D9`.
 - Evitar mostrar conversaciones, correos, fotos de progreso o nombres reales sin autorización específica.
+
+Requisitos oficiales de Google Play:
+https://support.google.com/googleplay/android-developer/answer/9866151
 
 ## Recomendación de audiencia y contenido
 
