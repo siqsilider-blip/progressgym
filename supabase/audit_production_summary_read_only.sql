@@ -201,7 +201,10 @@ invalid_indexes as (
 workout_session_write_policies as (
   select
     count(*)::bigint as issue_count,
-    string_agg(p.polname || ' [' || p.polcmd || ']', ', ' order by p.polname) as details
+    string_agg(
+      p.polname || ' [' || p.polcmd::text || ']',
+      ', ' order by p.polname
+    ) as details
   from pg_policy p
   join pg_class c on c.oid = p.polrelid
   join pg_namespace n on n.oid = c.relnamespace
@@ -212,7 +215,10 @@ workout_session_write_policies as (
 notification_write_policies as (
   select
     count(*)::bigint as issue_count,
-    string_agg(p.polname || ' [' || p.polcmd || ']', ', ' order by p.polname) as details
+    string_agg(
+      p.polname || ' [' || p.polcmd::text || ']',
+      ', ' order by p.polname
+    ) as details
   from pg_policy p
   join pg_class c on c.oid = p.polrelid
   join pg_namespace n on n.oid = c.relnamespace
