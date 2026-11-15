@@ -199,10 +199,11 @@ export async function saveWorkoutFeedback(payload: {
         }
     }
 
-    await supabase
-        .from('workout_sessions')
-        .update({ notes: payload.comment.trim() || null })
-        .eq('id', session.id)
+    const { error: noteError } = await supabase.rpc('save_workout_session_note_safe', {
+        p_session_id: session.id,
+        p_note: payload.comment,
+    })
+    if (noteError) console.error('[saveWorkoutFeedback:note]', noteError)
 
     revalidatePath(`/dashboard/students/${payload.studentId}`)
     revalidatePath('/dashboard/messages')

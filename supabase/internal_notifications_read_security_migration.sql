@@ -1,13 +1,10 @@
 -- Progrezzia - marcado seguro de notificaciones internas
 --
--- El cliente ya no puede actualizar filas completas de internal_notifications.
--- Solo puede marcar como leídos sus propios avisos mediante esta RPC.
--- No elimina ni reescribe datos históricos.
+-- Fase 1: crea la RPC que permite marcar como leídos únicamente avisos propios.
+-- No elimina ni reescribe datos históricos y todavía no quita la policy UPDATE
+-- para evitar romper la versión web anterior al despliegue.
 
 begin;
-
-drop policy if exists internal_notifications_update_own
-on public.internal_notifications;
 
 create or replace function public.mark_internal_notifications_read(
   p_notification_id uuid default null,
@@ -44,17 +41,7 @@ grant execute on function public.mark_internal_notifications_read(uuid, text) to
 
 commit;
 
--- Verificación: no debe existir una policy UPDATE para la tabla y la RPC debe
--- ser ejecutable únicamente por authenticated (además de su owner).
-select
-  policyname,
-  cmd,
-  roles
-from pg_policies
-where schemaname = 'public'
-  and tablename = 'internal_notifications'
-order by policyname;
-
+-- Verificación de la fase 1.
 select
   has_function_privilege(
     'anon',

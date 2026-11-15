@@ -142,6 +142,8 @@ with expected(signature) as (
     ('public.trainer_owns_routine(uuid)'),
     ('public.start_workout_session_safe(uuid,uuid,date,boolean)'),
     ('public.save_workout_set_safe(uuid,uuid,integer,numeric,integer,numeric,date)'),
+    ('public.finish_workout_session_safe(uuid,boolean)'),
+    ('public.save_workout_session_note_safe(uuid,text)'),
     ('public.create_template_v2(text,integer,text[],text[],text[],text[],integer)'),
     ('public.assign_template_to_student(uuid,uuid)'),
     ('public.assign_student_routine(uuid,uuid)'),
@@ -183,6 +185,20 @@ select
       'public.get_students_risk_metrics(uuid[])'::regprocedure
     ))
   ) > 0 as uses_null_safe_trainer_ownership_check;
+
+-- 6.d. La escritura de series debe validar al entrenador actual de forma
+-- null-safe, no confiar solamente en trainer_id histórico de la sesión.
+select
+  position(
+    'join public.students' in lower(pg_get_functiondef(
+      'public.save_workout_set_safe(uuid,uuid,integer,numeric,integer,numeric,date)'::regprocedure
+    ))
+  ) > 0 as uses_current_student_trainer,
+  position(
+    'is distinct from' in lower(pg_get_functiondef(
+      'public.save_workout_set_safe(uuid,uuid,integer,numeric,integer,numeric,date)'::regprocedure
+    ))
+  ) > 0 as uses_null_safe_authorization;
 
 -- 7. Policies completas para comparar con los SQL versionados.
 select

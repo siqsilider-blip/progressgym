@@ -201,14 +201,16 @@ begin
     raise exception 'Completá al menos peso o reps.';
   end if;
 
-  select ws.student_id, ws.trainer_id
+  select ws.student_id, s.trainer_id
     into v_student_id, v_trainer_id
   from public.workout_sessions ws
+  join public.students s on s.id = ws.student_id
   where ws.id = p_session_id
     and ws.status in ('in_progress', 'completed');
 
-  if v_student_id is null or not (
-    v_caller = v_trainer_id or public.auth_student_id() = v_student_id
+  if v_student_id is null or (
+    v_caller is distinct from v_trainer_id
+    and public.auth_student_id() is distinct from v_student_id
   ) then
     raise exception 'Sesión no encontrada o no autorizada.';
   end if;

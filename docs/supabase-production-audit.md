@@ -35,6 +35,7 @@ integridad son conteos agregados.
 - Todas las RPC críticas aparecen como existentes.
 - `obsolete_three_argument_overload_exists` es falso.
 - Las dos defensas internas de `get_students_risk_metrics` son verdaderas.
+- Las dos defensas de autorización de `save_workout_set_safe` son verdaderas.
 - El bucket `progress-photos` figura como privado.
 - Los seis conteos de integridad son cero.
 - No existen índices inválidos o sin terminar.
@@ -56,5 +57,10 @@ integridad son conteos agregados.
 2. Confirmar que las firmas reales coinciden con las esperadas.
 3. Aplicar `risk_metrics_security_hardening_migration.sql`.
 4. Aplicar `internal_notifications_read_security_migration.sql`.
-5. Recién entonces desplegar el código web que usa la nueva RPC de avisos.
-6. Volver a ejecutar la auditoría y conservar el resultado como evidencia.
+5. Aplicar `workout_session_write_security_migration.sql`.
+6. Recién entonces desplegar el código web que usa las nuevas RPC.
+7. Probar avisos leídos, cierre completo, cierre incompleto, edición histórica,
+   nota y evaluación post-entrenamiento.
+8. Aplicar `internal_notifications_read_lockdown_migration.sql`.
+9. Aplicar `workout_session_write_lockdown_migration.sql`.
+10. Volver a ejecutar la auditoría y conservar el resultado como evidencia.

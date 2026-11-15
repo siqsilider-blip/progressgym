@@ -741,7 +741,7 @@ export default function StudentWorkoutView({
             return
         }
 
-        const result = await completeSession({ sessionId, studentId, allowIncomplete })
+        const result = await completeSession({ sessionId, allowIncomplete })
         setFinishing(false)
 
         if (result.requiresConfirmation) {

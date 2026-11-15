@@ -511,7 +511,7 @@ export default function TrainFocusedView({
     async function finishSession(allowIncomplete = false) {
         setSaving(true)
         setSaveError(null)
-        const result = await completeSession({ sessionId, studentId, allowIncomplete })
+        const result = await completeSession({ sessionId, allowIncomplete })
         setSaving(false)
 
         if (result.requiresConfirmation) {
@@ -568,8 +568,12 @@ export default function TrainFocusedView({
     async function saveNote() {
         if (!sessionNote.trim()) return
         setSavingNote(true)
-        await saveSessionNote({ sessionId, studentId, note: sessionNote })
+        const result = await saveSessionNote({ sessionId, note: sessionNote })
         setSavingNote(false)
+        if (!result.ok) {
+            setSaveError(result.error || 'No pudimos guardar la nota.')
+            return
+        }
         setNoteSaved(true)
         setTimeout(() => setNoteSaved(false), 2000)
     }

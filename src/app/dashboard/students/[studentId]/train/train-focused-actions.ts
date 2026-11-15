@@ -63,7 +63,6 @@ export async function saveSet(payload: {
 
 export async function completeSession(payload: {
     sessionId: string
-    studentId: string
     allowIncomplete?: boolean
 }): Promise<{
     ok: boolean
@@ -88,120 +87,55 @@ export async function completeSession(payload: {
 
     try {
         const supabase = await createClient()
-        const { data: { user }, error: authError } = await supabase.auth.getUser()
-        if (authError || !user) return failure('No autenticado')
-
-        const { data: session } = await supabase
-            .from('workout_sessions')
-            .select('id, started_at, status, student_id, duration_seconds, routine_day_id, completion_status')
-            .eq('id', payload.sessionId)
-            .eq('student_id', payload.studentId)
-            .single()
-
-        if (!session) return failure('Sesión no encontrada')
-        if (session.status !== 'in_progress' && session.status !== 'completed') {
-            return failure('Estado de sesión inválido')
-        }
-
-        const [plannedResult, logsResult] = await Promise.all([
-            supabase
-                .from('routine_day_exercises')
-                .select('id, sets')
-                .eq('routine_day_id', session.routine_day_id),
-            supabase
-                .from('exercise_logs')
-                .select('routine_day_exercise_id, set_index, reps, created_at')
-                .eq('workout_session_id', payload.sessionId)
-                .order('created_at', { ascending: false })
-        ])
-
-        if (plannedResult.error || logsResult.error) {
-            console.error('Error calculando avance de sesión:', plannedResult.error ?? logsResult.error)
-            return failure('No pudimos verificar las series del entrenamiento.')
-        }
-
-        const plannedRows = plannedResult.data ?? []
-        const plannedSets = plannedRows.reduce(
-            (total, exercise) => total + Math.max(1, Number(exercise.sets ?? 1)),
-            0
-        )
-        const plannedSetsByExercise = new Map(
-            plannedRows.map((exercise) => [exercise.id, Math.max(1, Number(exercise.sets ?? 1))])
-        )
-        const validLogs = (logsResult.data ?? []).filter((log) => {
-            const exerciseSets = plannedSetsByExercise.get(log.routine_day_exercise_id)
-            return exerciseSets != null
-                && log.set_index != null
-                && log.set_index >= 0
-                && log.set_index < exerciseSets
-                && Number.isInteger(Number(log.reps))
-                && Number(log.reps) > 0
+        const { data, error } = await supabase.rpc('finish_workout_session_safe', {
+            p_session_id: payload.sessionId,
+            p_allow_incomplete: payload.allowIncomplete ?? false,
         })
-        const completedSetKeys = new Set(
-            validLogs.map((log) => `${log.routine_day_exercise_id}:${log.set_index}`)
-        )
-        const completedSets = completedSetKeys.size
-        const effectivePlannedSets = Math.max(plannedSets, completedSets)
-        const isIncomplete = completedSets < effectivePlannedSets
 
-        if (completedSets === 0) return failure('No hay series registradas')
+        if (error) {
+            console.error('Error completando sesión:', error)
+            return failure(error.message)
+        }
 
-        if (isIncomplete && !payload.allowIncomplete) {
+        const result = Array.isArray(data) ? data[0] : null
+        if (!result) return failure('No pudimos finalizar el entrenamiento.')
+
+        const completedSets = Number(result.completed_sets ?? 0)
+        const plannedSets = Number(result.planned_sets ?? 0)
+        const durationSeconds = result.duration_seconds == null
+            ? null
+            : Number(result.duration_seconds)
+        const completionStatus = result.completion_status === 'incomplete'
+            ? 'incomplete' as const
+            : result.completion_status === 'complete'
+                ? 'complete' as const
+                : null
+
+        if (!completionStatus) return failure('La sesión devolvió un resultado inválido.')
+
+        if (result.requires_confirmation) {
             return {
                 ok: false,
                 error: null,
-                durationSeconds: session.duration_seconds ?? null,
+                durationSeconds,
                 totalSets: completedSets,
                 completedSets,
-                plannedSets: effectivePlannedSets,
+                plannedSets,
                 requiresConfirmation: true,
-                completionStatus: 'incomplete',
+                completionStatus,
             }
         }
 
-        let durationSeconds = session.duration_seconds ?? null
-        let finishedAt: Date | null = null
-
-        if (session.status === 'in_progress') {
-            const now = new Date()
-            const latestActivityAt = validLogs[0]?.created_at
-                ? new Date(validLogs[0].created_at)
-                : now
-            const idleMilliseconds = now.getTime() - latestActivityAt.getTime()
-            finishedAt = idleMilliseconds <= 15 * 60 * 1000 ? now : latestActivityAt
-            const rawDurationSeconds = Math.floor(
-                (finishedAt.getTime() - new Date(session.started_at).getTime()) / 1000
-            )
-            durationSeconds = Math.max(0, Math.min(rawDurationSeconds, 4 * 60 * 60))
+        if (typeof result.student_id !== 'string') {
+            return failure('La sesión no devolvió un alumno válido.')
         }
-
-        const completionStatus = isIncomplete ? 'incomplete' as const : 'complete' as const
-        const update: Record<string, string | number | boolean | null> = {
-            status: 'completed',
-            completed_manually: true,
-            completion_status: completionStatus,
-        }
-        if (finishedAt) {
-            update.finished_at = finishedAt.toISOString()
-            update.duration_seconds = durationSeconds
-        }
-
-        const { error: updateError } = await supabase
-            .from('workout_sessions')
-            .update(update)
-            .eq('id', payload.sessionId)
-            .eq('student_id', payload.studentId)
-
-        if (updateError) {
-            console.error('Error completando sesión:', updateError)
-            return failure(updateError.message)
-        }
+        const sessionStudentId = result.student_id
 
         revalidatePath('/app')
         revalidatePath('/app/rutina')
         revalidatePath('/app/history')
-        revalidatePath(`/dashboard/students/${payload.studentId}`)
-        revalidatePath(`/dashboard/students/${payload.studentId}/progress`)
+        revalidatePath(`/dashboard/students/${sessionStudentId}`)
+        revalidatePath(`/dashboard/students/${sessionStudentId}/progress`)
 
         return {
             ok: true,
@@ -209,7 +143,7 @@ export async function completeSession(payload: {
             durationSeconds,
             totalSets: completedSets,
             completedSets,
-            plannedSets: effectivePlannedSets,
+            plannedSets,
             requiresConfirmation: false,
             completionStatus,
         }
@@ -270,19 +204,14 @@ export async function getExerciseMaxWeights(payload: {
 
 export async function saveSessionNote(payload: {
     sessionId: string
-    studentId: string
     note: string
 }): Promise<{ ok: boolean; error: string | null }> {
     try {
         const supabase = await createClient()
-        const { data: { user }, error: authError } = await supabase.auth.getUser()
-        if (authError || !user) return { ok: false, error: 'No autenticado' }
-
-        const { error } = await supabase
-            .from('workout_sessions')
-            .update({ notes: payload.note.trim() })
-            .eq('id', payload.sessionId)
-            .eq('student_id', payload.studentId)
+        const { error } = await supabase.rpc('save_workout_session_note_safe', {
+            p_session_id: payload.sessionId,
+            p_note: payload.note,
+        })
 
         if (error) return { ok: false, error: error.message }
         return { ok: true, error: null }
