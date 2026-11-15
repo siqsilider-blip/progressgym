@@ -178,12 +178,6 @@ export default function WeeklyCheckinForm({
                         })
                     }
 
-                    const replacedPhotoIds = photosToUpload.flatMap(({ pose }) => {
-                        const previous = savedPhotos.find((photo) => photo.pose === pose)
-                        return previous ? [previous.id] : []
-                    })
-                    await Promise.allSettled(replacedPhotoIds.map((photoId) => deleteProgressPhoto(photoId)))
-
                     const uploadedPoses = new Set(registeredPhotos.map((photo) => photo.pose))
                     setSavedPhotos((current) => [
                         ...current.filter((photo) => !uploadedPoses.has(photo.pose)),
@@ -305,7 +299,7 @@ export default function WeeklyCheckinForm({
                     <Camera className="h-5 w-5 shrink-0 text-brand-soft" />
                 </div>
 
-                <p className="mt-3 text-[11px] font-semibold text-foreground">Podés cargar una, dos o las tres posiciones. Las guardadas quedan visibles; tocá una para reemplazarla.</p>
+                <p className="mt-3 text-[11px] font-semibold text-foreground">Podés cargar una, dos o las tres posiciones. Si agregás una nueva, la anterior queda guardada en tu historial.</p>
                 <div className="mt-2 grid grid-cols-3 gap-2">
                     {PHOTO_POSES.map(({ value, label }) => {
                         const selected = photos[value]
@@ -348,7 +342,7 @@ export default function WeeklyCheckinForm({
                                             />
                                         </label>
                                         <p className={`px-1 py-1.5 text-center text-[8px] font-semibold ${saved.marketingConsent ? 'text-emerald-500' : 'text-muted-foreground'}`}>
-                                            {saved.marketingConsent ? 'Autorizada' : 'Privada'}
+                                            {saved.marketingConsent ? 'Autorizada · tocá para actualizar' : 'Privada · tocá para actualizar'}
                                         </p>
                                     </>
                                 ) : (

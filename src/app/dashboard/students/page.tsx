@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import StudentsList from '@/components/StudentsList'
 import { getStudentsRiskBatch } from './[studentId]/getStudentRisk'
 import { getElapsedProgramWeekIndex } from '@/lib/buenosAiresDate'
+import { getProgramCyclePosition } from '@/lib/trainingDomain'
 import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
 import { getServerUser } from '@/lib/auth/server'
 
@@ -161,10 +162,10 @@ export default async function StudentsPage() {
             }
 
             const totalWeeks = Math.max(1, weekCountByRoutine.get(assignment.routine_id) ?? 1)
-            const weekNumber = Math.min(
-                getElapsedProgramWeekIndex(assignment.program_started_on) + 1,
-                totalWeeks
-            )
+            const weekNumber = getProgramCyclePosition(
+                totalWeeks,
+                getElapsedProgramWeekIndex(assignment.program_started_on)
+            ).programWeekNumber
 
             operationsByStudentId[student.id] = {
                 routineId: assignment.routine_id,

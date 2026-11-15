@@ -17,6 +17,7 @@
     "test:e2e": "playwright test",
     "test:e2e:auth": "playwright test --config=playwright.auth.config.ts",
     "test:e2e:prod": "playwright test --config=playwright.config.ts",
+    "test:domain": "playwright test --config=playwright.domain.config.ts",
     "store-demo:create": "node scripts/store-demo.mjs create",
     "store-demo:cleanup": "node scripts/store-demo.mjs cleanup"
   },

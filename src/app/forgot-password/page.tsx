@@ -8,6 +8,7 @@ export default async function ForgotPasswordPage(
     const searchParams = await props.searchParams
     const message = searchParams?.message
     const sent = searchParams?.sent === '1'
+    const email = typeof searchParams?.email === 'string' ? searchParams.email : ''
 
     return (
         <div className="relative flex min-h-screen flex-col items-center justify-center bg-[#111111] p-5 text-white overflow-hidden">
@@ -63,6 +64,7 @@ export default async function ForgotPasswordPage(
                                     id="email"
                                     name="email"
                                     type="email"
+                                    defaultValue={email}
                                     placeholder="tu@email.com"
                                     required
                                 />

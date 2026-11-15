@@ -31,7 +31,7 @@ export default async function SettingsPage() {
             initialSettings={{
                 name: profile?.name ?? '',
                 weight_unit: (profile?.weight_unit ?? 'kg') as 'kg' | 'lb',
-                theme: (profile?.theme ?? theme) as 'system' | 'dark' | 'light',
+                theme: profile?.theme === 'light' ? 'light' : 'dark',
                 display_name: trainerProfile?.display_name ?? '',
                 gym_name: trainerProfile?.gym_name ?? '',
                 whatsapp: trainerProfile?.whatsapp ?? '',

@@ -12,6 +12,7 @@ import { getActiveStudentRoutine } from '@/lib/getActiveStudentRoutine'
 import { getRoutineSchedule } from '@/lib/getRoutineSchedule'
 import { resolveWeekdayDateInProgramWeek, type IsoWeekday } from '@/lib/routineCalendar'
 import { createClient } from '@/lib/supabase/server'
+import { getRoutineDayProgressStatus, type WorkoutSessionProgressRow } from '@/lib/trainingDomain'
 
 type PageProps = {
     searchParams?: Promise<{
@@ -34,32 +35,6 @@ type RoutineDayExerciseRow = {
     sets: number | null
     reps: string | number | null
     exercise_id: string | null
-}
-
-type WorkoutSessionRow = {
-    routine_day_id: string | null
-    performed_date: string | null
-    status: string | null
-    completion_status: string | null
-}
-
-function statusForDay(
-    dayId: string,
-    weekStart: string | null,
-    weekEnd: string | null,
-    sessions: WorkoutSessionRow[],
-    today: string
-): RoutinePlannerStatus {
-    const relevant = sessions.filter((session) => {
-        if (session.routine_day_id !== dayId) return false
-        if (!weekStart || !weekEnd || !session.performed_date) return true
-        return session.performed_date >= weekStart && session.performed_date <= weekEnd
-    })
-
-    if (relevant.some((session) => session.status === 'in_progress' && session.performed_date === today)) return 'in_progress'
-    if (relevant.some((session) => session.status === 'completed' && session.completion_status === 'complete')) return 'completed'
-    if (relevant.some((session) => session.status === 'completed' && session.completion_status === 'incomplete')) return 'incomplete'
-    return 'pending'
 }
 
 export default async function AppRoutinePage(props: PageProps) {
@@ -172,16 +147,16 @@ export default async function AppRoutinePage(props: PageProps) {
 
     const requiredTrainingDays = Math.max(0, ...Array.from(trainingDaysByWeek.values()).map((days) => days.length))
     const allTrainingDayIds = Array.from(trainingDaysByWeek.values()).flat().map((day) => day.id)
-    let sessions: WorkoutSessionRow[] = []
+    let sessions: WorkoutSessionProgressRow[] = []
 
     if (allTrainingDayIds.length > 0) {
         const { data, error } = await supabase
             .from('workout_sessions')
-            .select('routine_day_id, performed_date, status, completion_status')
+            .select('routine_day_id, performed_date, status, completed_manually, completion_status')
             .eq('student_id', studentId)
             .in('routine_day_id', allTrainingDayIds)
         if (error) throw error
-        sessions = (data ?? []) as WorkoutSessionRow[]
+        sessions = (data ?? []) as WorkoutSessionProgressRow[]
     }
 
     const today = getBuenosAiresDateString()
@@ -219,7 +194,15 @@ export default async function AppRoutinePage(props: PageProps) {
                     name: day.name?.trim() || `Entrenamiento ${dayPosition + 1}`,
                     dayIndex: dayPosition + 1,
                     scheduledDate,
-                    status: statusForDay(day.id, range?.weekStart ?? null, range?.weekEnd ?? null, sessions, today),
+                    status: range
+                        ? getRoutineDayProgressStatus({
+                            dayId: day.id,
+                            sessions,
+                            today,
+                            weekStart: range.weekStart,
+                            weekEnd: range.weekEnd,
+                        }) satisfies RoutinePlannerStatus
+                        : 'pending',
                     exercises: exercisesByDay.get(day.id) ?? [],
                 }
             }),

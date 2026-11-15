@@ -1,14 +1,14 @@
 import type { createClient } from '@/lib/supabase/server'
 import { getBuenosAiresDateString, getCurrentBuenosAiresWeek } from '@/lib/buenosAiresDate'
+import {
+    getRoutineDayProgressStatus,
+    type RoutineDayProgressStatus,
+    type WorkoutSessionProgressRow,
+} from '@/lib/trainingDomain'
+
+export type { RoutineDayProgressStatus } from '@/lib/trainingDomain'
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>
-
-export type RoutineDayProgressStatus = 'pending' | 'in_progress' | 'incomplete' | 'completed'
-
-type WorkoutSessionRow = {
-    routine_day_id: string | null
-    completion_status?: 'complete' | 'incomplete' | null
-}
 
 export type RoutineWeekProgress = {
     statusByDayId: Map<string, RoutineDayProgressStatus>
@@ -46,14 +46,14 @@ export async function getStudentRoutineWeekProgress(
     const [activeResult, completedResult] = await Promise.all([
         supabase
             .from('workout_sessions')
-            .select('routine_day_id')
+            .select('routine_day_id, performed_date, status, completed_manually, completion_status')
             .eq('student_id', studentId)
             .eq('status', 'in_progress')
             .eq('performed_date', today)
             .in('routine_day_id', routineDayIds),
         supabase
             .from('workout_sessions')
-            .select('routine_day_id, completion_status')
+            .select('routine_day_id, performed_date, status, completed_manually, completion_status')
             .eq('student_id', studentId)
             .eq('status', 'completed')
             .eq('completed_manually', true)
@@ -65,26 +65,23 @@ export async function getStudentRoutineWeekProgress(
     if (activeResult.error) throw activeResult.error
     if (completedResult.error) throw completedResult.error
 
-    const completedSessions = (completedResult.data as WorkoutSessionRow[] | null) ?? []
+    const sessions: WorkoutSessionProgressRow[] = [
+        ...((completedResult.data as WorkoutSessionProgressRow[] | null) ?? []),
+        ...((activeResult.data as WorkoutSessionProgressRow[] | null) ?? []),
+    ]
 
-    for (const session of completedSessions) {
-        if (!session.routine_day_id || session.completion_status !== 'incomplete') continue
-        incompleteDayIds.add(session.routine_day_id)
-        statusByDayId.set(session.routine_day_id, 'incomplete')
-    }
-
-    for (const session of completedSessions) {
-        if (!session.routine_day_id) continue
-        if (session.completion_status !== 'complete') continue
-        completedDayIds.add(session.routine_day_id)
-        incompleteDayIds.delete(session.routine_day_id)
-        statusByDayId.set(session.routine_day_id, 'completed')
-    }
-
-    for (const session of (activeResult.data as WorkoutSessionRow[] | null) ?? []) {
-        if (!session.routine_day_id) continue
-        inProgressDayIds.add(session.routine_day_id)
-        statusByDayId.set(session.routine_day_id, 'in_progress')
+    for (const dayId of routineDayIds) {
+        const status = getRoutineDayProgressStatus({
+            dayId,
+            sessions,
+            today,
+            weekStart,
+            weekEnd,
+        })
+        statusByDayId.set(dayId, status)
+        if (status === 'completed') completedDayIds.add(dayId)
+        if (status === 'incomplete') incompleteDayIds.add(dayId)
+        if (status === 'in_progress') inProgressDayIds.add(dayId)
     }
 
     return { statusByDayId, completedDayIds, inProgressDayIds, incompleteDayIds, weekStart, weekEnd }

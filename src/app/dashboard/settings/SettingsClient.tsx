@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { User, Mail, Shield, Moon, Scale, Dumbbell, BarChart2, Bell, Building2, LogOut, Lock } from 'lucide-react'
+import Link from 'next/link'
+import { User, Mail, Shield, Moon, Scale, Dumbbell, BarChart2, Building2, LogOut, Lock } from 'lucide-react'
 import { saveSettings, signOutAction } from './actions'
 import { type SettingsData } from './types'
 import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
@@ -113,7 +114,6 @@ export default function SettingsClient({ email, theme, initialSettings }: Props)
                                         <Moon className="h-4 w-4 text-zinc-400" /> Apariencia
                                     </label>
                                     <select value={settings.theme} onChange={(e) => set('theme', e.target.value as SettingsData['theme'])} className={selectCls}>
-                                        <option value="system">Sistema</option>
                                         <option value="dark">Oscuro</option>
                                         <option value="light">Claro</option>
                                     </select>
@@ -163,16 +163,7 @@ export default function SettingsClient({ email, theme, initialSettings }: Props)
                     {/* ── Tracking ── */}
                     <Section title="Tracking" desc="Qué mostrar durante el entrenamiento." icon={<BarChart2 className="h-5 w-5" />} iconBox={iconBox} card={card} sectionTitle={sectionTitle} sectionDesc={sectionDesc}>
                         <div className="mt-5 space-y-1">
-                            <ToggleRow label="Mostrar PRs" description="Alerta cuando el alumno supera su récord" checked={settings.show_prs} onChange={(v) => set('show_prs', v)} isLight={isLight} />
-                            <ToggleRow label="Mostrar gráficos de progreso" description="Gráfico de carga en el historial de ejercicios" checked={settings.show_charts} onChange={(v) => set('show_charts', v)} isLight={isLight} />
-                        </div>
-                    </Section>
-
-                    {/* ── Notificaciones ── */}
-                    <Section title="Notificaciones" desc="Alertas sobre tus alumnos." icon={<Bell className="h-5 w-5" />} iconBox={iconBox} card={card} sectionTitle={sectionTitle} sectionDesc={sectionDesc}>
-                        <div className="mt-5 space-y-1">
-                            <ToggleRow label="Alumnos inactivos" description="Avisame si un alumno lleva más de 7 días sin entrenar" checked={settings.notify_inactive} onChange={(v) => set('notify_inactive', v)} isLight={isLight} />
-                            <ToggleRow label="Riesgo alto" description="Avisame cuando un alumno pasa a nivel de riesgo alto" checked={settings.notify_high_risk} onChange={(v) => set('notify_high_risk', v)} isLight={isLight} />
+                            <ToggleRow label="Mostrar PRs" description="Avisa cuando registrás un nuevo récord desde el modo entrenador" checked={settings.show_prs} onChange={(v) => set('show_prs', v)} isLight={isLight} />
                         </div>
                     </Section>
 
@@ -187,15 +178,14 @@ export default function SettingsClient({ email, theme, initialSettings }: Props)
                         </div>
 
                         <div className="mt-5 space-y-2">
-                            <button
-                                type="button"
-                                disabled
-                                className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm transition disabled:opacity-40 ${isLight ? 'border border-zinc-200 bg-zinc-50 text-zinc-700 hover:bg-zinc-100' : 'border border-zinc-800 bg-zinc-800/40 text-zinc-300 hover:bg-zinc-800'}`}
+                            <Link
+                                href={`/forgot-password?email=${encodeURIComponent(email)}`}
+                                className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm transition ${isLight ? 'border border-zinc-200 bg-zinc-50 text-zinc-700 hover:bg-zinc-100' : 'border border-zinc-800 bg-zinc-800/40 text-zinc-300 hover:bg-zinc-800'}`}
                             >
                                 <Lock className="h-4 w-4 shrink-0 text-zinc-400" />
                                 <span className="flex-1 font-medium">Cambiar contraseña</span>
-                                <span className={`text-xs ${isLight ? 'text-zinc-400' : 'text-zinc-500'}`}>Próximamente</span>
-                            </button>
+                                <span className={`text-xs ${isLight ? 'text-zinc-400' : 'text-zinc-500'}`}>Enviar enlace</span>
+                            </Link>
 
                             <form action={signOutAction}>
                                 <button

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getBuenosAiresDateString, getElapsedProgramWeekIndex } from '@/lib/buenosAiresDate'
+import { getProgramCyclePosition } from '@/lib/trainingDomain'
 import { getTrainerStudents } from './getTrainerStudents'
 
 export type TrainerAlert = {
@@ -429,10 +430,10 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
         }
 
         const totalWeeks = Math.max(1, weekCountByRoutine.get(assignment.routine_id) ?? 1)
-        const currentWeek = Math.min(
-            getElapsedProgramWeekIndex(assignment.program_started_on) + 1,
-            totalWeeks
-        )
+        const currentWeek = getProgramCyclePosition(
+            totalWeeks,
+            getElapsedProgramWeekIndex(assignment.program_started_on)
+        ).programWeekNumber
 
         if (totalWeeks > 1 && currentWeek === totalWeeks) {
             if (!isSuppressed(student.id, 'program_ending')) {
@@ -441,8 +442,9 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
                     studentId: student.id,
                     studentName: fullName,
                     studentPhone: student.phone ?? null,
-                    message: `${fullName} está en la última semana de su programa.`,
+                    message: `${fullName} está en la última semana del ciclo. Conviene revisar si el programa sigue igual o necesita ajustes.`,
                     actionHref: `/dashboard/students/${student.id}`,
+                    actionLabel: 'Revisar programa',
                 })
             }
             continue

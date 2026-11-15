@@ -33,7 +33,7 @@ export default async function AppProgressPage() {
             .from('student_progress_photos')
             .select('id, storage_path, captured_on, pose, marketing_consent')
             .eq('student_id', studentId)
-            .order('captured_on', { ascending: true })
+            .order('captured_on', { ascending: false })
             .limit(30),
     ])
 
@@ -41,7 +41,7 @@ export default async function AppProgressPage() {
         supabase,
         (photosResult.data ?? []) as ProgressPhotoRecord[]
     )
-    const progressPhotos: ProgressPhotoItem[] = signedPhotos.map((photo) => ({
+    const progressPhotos: ProgressPhotoItem[] = signedPhotos.reverse().map((photo) => ({
         id: photo.id,
         url: photo.url,
         capturedOn: photo.captured_on,

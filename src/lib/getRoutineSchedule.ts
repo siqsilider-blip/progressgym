@@ -1,5 +1,6 @@
 import type { createClient } from '@/lib/supabase/server'
 import { getElapsedProgramWeekIndex, getProgramWeekDateRange } from '@/lib/buenosAiresDate'
+import { getProgramCyclePosition } from '@/lib/trainingDomain'
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>
 
@@ -73,12 +74,8 @@ export async function getRoutineSchedule(
     const elapsedWeekIndex = options.programStartedOn
         ? getElapsedProgramWeekIndex(options.programStartedOn)
         : 0
-    const currentCycleStartWeekIndex = orderedWeeks.length > 0
-        ? Math.floor(elapsedWeekIndex / orderedWeeks.length) * orderedWeeks.length
-        : 0
-    const currentWeekIndex = orderedWeeks.length > 0
-        ? elapsedWeekIndex % orderedWeeks.length
-        : -1
+    const cyclePosition = getProgramCyclePosition(orderedWeeks.length, elapsedWeekIndex)
+    const { currentCycleStartWeekIndex, currentWeekIndex } = cyclePosition
     const currentWeek = currentWeekIndex >= 0
         ? orderedWeeks[currentWeekIndex]
         : null
@@ -117,9 +114,7 @@ export async function getRoutineSchedule(
         selectedWeek,
         currentWeek,
         currentCycleStartWeekIndex,
-        programWeekNumber: orderedWeeks.length > 0
-            ? currentWeekIndex + 1
-            : 0,
+        programWeekNumber: cyclePosition.programWeekNumber,
         totalProgramWeeks: orderedWeeks.length,
         selectedProgramWeekNumber: selectedWeekIndex >= 0 ? selectedWeekIndex + 1 : 0,
         selectedWeekStart: selectedWeekRange?.weekStart ?? null,
