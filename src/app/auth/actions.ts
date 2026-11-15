@@ -65,31 +65,11 @@ export async function signup(formData: FormData) {
 }
 
 // ─── Signup alumno ───
-export async function signupStudent(formData: FormData) {
-    const supabase = await createClient()
-
-    const email = formData.get('email') as string
-    const password = formData.get('password') as string
-    const fullName = formData.get('full_name') as string
-
-    const { data, error } = await supabase.auth.signUp({ email, password })
-
-    if (error) {
-        console.error('[signupStudent] Supabase error:', error)
-        redirect('/signup/student?message=No se pudo crear la cuenta')
-    }
-
-    if (data.user) {
-        console.log('[signupStudent] Usuario creado:', { id: data.user.id, email: data.user.email })
-        await supabaseAdmin.from('profiles').insert({
-            id: data.user.id,
-            email,
-            name: fullName,
-            role: 'student',
-        })
-    }
-
-    redirect('/app')
+// Los alumnos se crean únicamente desde la invitación de su entrenador. Este
+// action se conserva para que una versión anterior del frontend no pueda crear
+// un profile role=student sin student_id y dejar una cuenta huérfana.
+export async function signupStudent(_formData: FormData) {
+    redirect('/signup/student?message=Tu entrenador debe enviarte una invitación para crear tu acceso.')
 }
 
 // ─── Login entrenador ───
@@ -141,13 +121,18 @@ export async function loginStudent(formData: FormData) {
         await stopPendingDeletionLogin(supabase, user.id)
         const { data: profile } = await supabase
             .from('profiles')
-            .select('role')
+            .select('role, student_id')
             .eq('id', user.id)
             .maybeSingle()
 
         if (profile?.role !== 'student') {
             await supabase.auth.signOut()
             redirect('/login/student?message=Esta cuenta es de entrenador. Usá el login de entrenador.')
+        }
+
+        if (!profile.student_id) {
+            await supabase.auth.signOut()
+            redirect('/login/student?message=Tu acceso todavía no está vinculado a una ficha. Pedile una nueva invitación a tu entrenador.')
         }
     }
 
@@ -172,11 +157,15 @@ export async function login(formData: FormData) {
         await stopPendingDeletionLogin(supabase, user.id)
         const { data: profile } = await supabase
             .from('profiles')
-            .select('role')
+            .select('role, student_id')
             .eq('id', user.id)
             .maybeSingle()
 
         if (profile?.role === 'student') {
+            if (!profile.student_id) {
+                await supabase.auth.signOut()
+                redirect('/login/student?message=Tu acceso todavía no está vinculado a una ficha. Pedile una nueva invitación a tu entrenador.')
+            }
             redirect('/app')
         }
     }

@@ -14,7 +14,9 @@ export default async function AppHomePage() {
     if (!context) redirect('/login')
     const { profile } = context
     const studentId = profile.student_id
-    if (!studentId) redirect('/app')
+    if (!studentId) {
+        redirect('/login/student?message=Tu acceso todavía no está vinculado a una ficha. Pedile una nueva invitación a tu entrenador.')
+    }
 
     const today = getBuenosAiresDateString()
     const { weekStart: currentWeekStart } = getCurrentBuenosAiresWeek()
