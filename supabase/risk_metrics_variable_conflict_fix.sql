@@ -49,13 +49,17 @@ BEGIN
         )
         LANGUAGE plpgsql
         SECURITY DEFINER
-        SET search_path TO 'public'
+        SET search_path TO pg_catalog, public
         AS %L
         $definition$,
         function_body
     );
 END;
 $migration$;
+
+REVOKE ALL ON FUNCTION public.get_students_risk_metrics(uuid[]) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.get_students_risk_metrics(uuid[]) FROM anon;
+GRANT EXECUTE ON FUNCTION public.get_students_risk_metrics(uuid[]) TO authenticated;
 
 COMMIT;
 

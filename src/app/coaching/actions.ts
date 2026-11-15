@@ -120,15 +120,12 @@ export async function markCoachingMessagesRead(conversationId: string) {
 }
 
 export async function markNotificationTypeRead(type: string) {
-    const user = await getServerUser()
-    if (!user || !type) return
+    if (!type) return
     const supabase = await createClient()
-    const { error } = await supabase
-        .from('internal_notifications')
-        .update({ read_at: new Date().toISOString() })
-        .eq('recipient_user_id', user.id)
-        .eq('type', type)
-        .is('read_at', null)
+    const { error } = await supabase.rpc('mark_internal_notifications_read', {
+        p_notification_id: null,
+        p_type: type,
+    })
     if (error) console.error('[markNotificationTypeRead]', error)
 }
 

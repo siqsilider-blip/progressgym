@@ -12,9 +12,8 @@
 --   D) CHECK routine_kind IN ('program','template')
 --   E) unique partial index: una sola 'active' por student_id
 --   F) índice de apoyo (student_id, status)
---   G) get_students_risk_metrics -- definición real completa, con el único
---      fix: "and sr.status = 'active'" agregado en la CTE first_month.
---      Auditada y cerrada, sin trabajo pendiente.
+--   G) get_students_risk_metrics -- definición completa con el filtro de
+--      rutina activa y permisos limitados al rol authenticated.
 --   + función RPC assign_student_routine (necesaria para la sección 3 del
 --     diseño: cambio de programa atómico, sin estado intermedio inconsistente)
 --
@@ -111,11 +110,10 @@ end;
 $$;
 
 -- ----------------------------------------------------------------------------
--- G) get_students_risk_metrics — definición real completa, con el ÚNICO
---    cambio funcional: "and sr.status = 'active'" agregado dentro de la CTE
---    first_month. Ninguna otra línea, fórmula, parámetro, SECURITY DEFINER
---    ni search_path fue modificado respecto a la definición real que se
---    auditó (confirmada contra pg_get_functiondef en Supabase).
+-- G) get_students_risk_metrics — definición completa con el filtro
+--    "and sr.status = 'active'" dentro de first_month. Además exige una
+--    sesión autenticada, fija un search_path seguro y revoca EXECUTE de
+--    PUBLIC/anon porque la función usa SECURITY DEFINER.
 -- ----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.get_students_risk_metrics(p_student_ids uuid[])
 RETURNS TABLE(
@@ -128,10 +126,14 @@ RETURNS TABLE(
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path TO 'public'
+SET search_path TO pg_catalog, public
 AS $function$
 #variable_conflict use_column
 begin
+
+  if auth.uid() is null then
+    raise exception 'No autenticado';
+  end if;
 
   -- Seguridad: solo se pueden pedir métricas de alumnos del entrenador autenticado
   if exists (
@@ -139,7 +141,7 @@ begin
     from unnest(p_student_ids) as sid(id)
     left join public.students s on s.id = sid.id
     where s.id is null
-       or s.trainer_id <> auth.uid()
+       or s.trainer_id is distinct from auth.uid()
   ) then
     raise exception 'No autorizado para ver estos alumnos';
   end if;
@@ -397,6 +399,10 @@ begin
 
 end;
 $function$;
+
+revoke all on function public.get_students_risk_metrics(uuid[]) from public;
+revoke all on function public.get_students_risk_metrics(uuid[]) from anon;
+grant execute on function public.get_students_risk_metrics(uuid[]) to authenticated;
 
 commit;
 

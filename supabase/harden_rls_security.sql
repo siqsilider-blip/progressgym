@@ -42,13 +42,38 @@ returns uuid
 language sql
 stable
 security definer
-set search_path = public
+set search_path = pg_catalog, public
 as $$
   select student_id
   from public.profiles
   where id = auth.uid()
     and role = 'student';
 $$;
+
+revoke all on function public.auth_student_id() from public;
+revoke all on function public.auth_student_id() from anon;
+grant execute on function public.auth_student_id() to authenticated;
+
+-- Valida ownership sin consultar routines desde una policy de
+-- student_routines, evitando recursión entre ambas tablas.
+create or replace function public.trainer_owns_routine(p_routine_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = pg_catalog, public
+as $function$
+  select exists (
+    select 1
+    from public.routines r
+    where r.id = p_routine_id
+      and r.trainer_id = auth.uid()
+  );
+$function$;
+
+revoke all on function public.trainer_owns_routine(uuid) from public;
+revoke all on function public.trainer_owns_routine(uuid) from anon;
+grant execute on function public.trainer_owns_routine(uuid) to authenticated;
 
 -- ----------------------------------------------------------------------------
 -- 1. POLICIES ABIERTAS — eliminar "Allow authenticated users"
@@ -96,11 +121,7 @@ with check (
     where s.id = student_routines.student_id
       and s.trainer_id = auth.uid()
   )
-  and exists (
-    select 1 from public.routines r
-    where r.id = student_routines.routine_id
-      and r.trainer_id = auth.uid()
-  )
+  and public.trainer_owns_routine(student_routines.routine_id)
 );
 
 drop policy if exists "trainer_update_student_routines" on public.student_routines;
@@ -121,11 +142,7 @@ with check (
     where s.id = student_routines.student_id
       and s.trainer_id = auth.uid()
   )
-  and exists (
-    select 1 from public.routines r
-    where r.id = student_routines.routine_id
-      and r.trainer_id = auth.uid()
-  )
+  and public.trainer_owns_routine(student_routines.routine_id)
 );
 
 drop policy if exists "trainer_delete_student_routines" on public.student_routines;

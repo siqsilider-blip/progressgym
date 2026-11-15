@@ -59,12 +59,11 @@ export async function GET(request: NextRequest) {
         return redirectWithinApp(request, notificationHome(role))
     }
 
-    await supabase
-        .from('internal_notifications')
-        .update({ read_at: new Date().toISOString() })
-        .eq('id', notification.id)
-        .eq('recipient_user_id', user.id)
-        .is('read_at', null)
+    const { error: markReadError } = await supabase.rpc('mark_internal_notifications_read', {
+        p_notification_id: notification.id,
+        p_type: null,
+    })
+    if (markReadError) console.error('[openNotification]', markReadError)
 
     if (role === 'trainer') {
         revalidatePath('/dashboard', 'layout')

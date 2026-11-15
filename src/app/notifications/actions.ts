@@ -57,12 +57,11 @@ export async function markInternalNotificationReadAndOpen(formData: FormData) {
 
     if (!notification) redirect(notificationHome(context.role))
 
-    await context.supabase
-        .from('internal_notifications')
-        .update({ read_at: new Date().toISOString() })
-        .eq('id', notification.id)
-        .eq('recipient_user_id', context.user.id)
-        .is('read_at', null)
+    const { error } = await context.supabase.rpc('mark_internal_notifications_read', {
+        p_notification_id: notification.id,
+        p_type: null,
+    })
+    if (error) console.error('[markInternalNotificationReadAndOpen]', error)
 
     refreshNotificationSurfaces(context.role)
     redirect(safeNotificationHref(notification.href, context.role))
@@ -72,11 +71,11 @@ export async function markAllInternalNotificationsRead() {
     const context = await getNotificationContext()
     if (!context) return
 
-    await context.supabase
-        .from('internal_notifications')
-        .update({ read_at: new Date().toISOString() })
-        .eq('recipient_user_id', context.user.id)
-        .is('read_at', null)
+    const { error } = await context.supabase.rpc('mark_internal_notifications_read', {
+        p_notification_id: null,
+        p_type: null,
+    })
+    if (error) console.error('[markAllInternalNotificationsRead]', error)
 
     refreshNotificationSurfaces(context.role)
 }
