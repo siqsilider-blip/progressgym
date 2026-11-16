@@ -42,23 +42,62 @@ async function stopPendingDeletionLogin(
 export async function signup(formData: FormData) {
     const supabase = await createClient()
 
-    const email = formData.get('email') as string
-    const password = formData.get('password') as string
-    const fullName = formData.get('full_name') as string
+    const email = String(formData.get('email') ?? '').trim().toLowerCase()
+    const password = String(formData.get('password') ?? '')
+    const fullName = String(formData.get('full_name') ?? '').trim()
 
-    const { data, error } = await supabase.auth.signUp({ email, password })
+    if (!email || !password || !fullName) {
+        redirect('/signup?message=Completá todos los campos')
+    }
 
-    if (error) {
+    const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+            data: { full_name: fullName },
+        },
+    })
+
+    if (error || !data.user) {
         redirect('/signup?message=No se pudo crear la cuenta')
     }
 
-    if (data.user) {
-        await supabaseAdmin.from('profiles').insert({
-            id: data.user.id,
-            email,
-            name: fullName,
-            role: 'trainer',
+    if ((data.user.identities?.length ?? 0) === 0) {
+        await supabase.auth.signOut()
+        redirect('/signup?message=No se pudo crear la cuenta. Si ya tenés acceso, iniciá sesión o recuperá tu contraseña.')
+    }
+
+    let provisioning = await supabaseAdmin.rpc(
+        'provision_trainer_account',
+        {
+            p_user_id: data.user.id,
+            p_full_name: fullName,
+        }
+    )
+
+    // La RPC es idempotente. Un reintento cubre un corte de red transitorio sin
+    // arriesgar la eliminacion de una cuenta que pudo haberse creado bien.
+    if (provisioning.error) {
+        provisioning = await supabaseAdmin.rpc(
+            'provision_trainer_account',
+            {
+                p_user_id: data.user.id,
+                p_full_name: fullName,
+            }
+        )
+    }
+
+    if (provisioning.error) {
+        console.error('No se pudo aprovisionar la cuenta de entrenador:', {
+            code: provisioning.error.code,
         })
+        await supabase.auth.signOut()
+
+        redirect('/signup?message=La cuenta no pudo terminar de configurarse. Intentá nuevamente o contactá a soporte.')
+    }
+
+    if (!data.session) {
+        redirect('/login/trainer?message=Revisá tu correo para confirmar la cuenta y después iniciá sesión.')
     }
 
     redirect('/dashboard')
@@ -68,7 +107,7 @@ export async function signup(formData: FormData) {
 // Los alumnos se crean únicamente desde la invitación de su entrenador. Este
 // action se conserva para que una versión anterior del frontend no pueda crear
 // un profile role=student sin student_id y dejar una cuenta huérfana.
-export async function signupStudent(_formData: FormData) {
+export async function signupStudent() {
     redirect('/signup/student?message=Tu entrenador debe enviarte una invitación para crear tu acceso.')
 }
 
