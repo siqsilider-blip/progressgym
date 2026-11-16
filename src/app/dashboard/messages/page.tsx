@@ -8,6 +8,7 @@ import ReadMarker from '@/components/coaching/ReadMarker'
 import StudentConversationPicker from '@/components/coaching/StudentConversationPicker'
 import ReviewCheckinButton from '@/components/coaching/ReviewCheckinButton'
 import ReviewWorkoutFeedbackButton from '@/components/coaching/ReviewWorkoutFeedbackButton'
+import { getRoutineExerciseNameMap } from '@/lib/coaching/getRoutineExerciseNames'
 
 type PageProps = { searchParams?: Promise<{ student?: string }> }
 type StudentRow = { id: string; first_name: string; last_name: string }
@@ -17,6 +18,7 @@ type MessageRow = {
     sender_role: 'trainer' | 'student'
     topic: string
     body: string
+    routine_day_exercise_id: string | null
     read_at: string | null
     created_at: string
 }
@@ -122,13 +124,17 @@ export default async function TrainerMessagesPage(props: PageProps) {
     const { data: messageData } = conversationId
         ? await supabase
             .from('coaching_messages')
-            .select('id, sender_role, topic, body, read_at, created_at')
+            .select('id, sender_role, topic, body, routine_day_exercise_id, read_at, created_at')
             .eq('conversation_id', conversationId)
             .order('created_at', { ascending: true })
             .limit(200)
         : { data: [] }
 
     const messages = (messageData as MessageRow[] | null) ?? []
+    const exerciseNameByRoutineExercise = await getRoutineExerciseNameMap(
+        supabase,
+        messages.map((message) => message.routine_day_exercise_id)
+    )
     const unreadByConversation = new Map<string, number>()
     if (conversations.length > 0) {
         const { data: unreadMessages } = await supabase
@@ -270,10 +276,18 @@ export default async function TrainerMessagesPage(props: PageProps) {
                         <div className="min-h-44 min-w-0 space-y-2 py-3 md:min-h-72">
                             {messages.length ? messages.map((message) => {
                                 const own = message.sender_role === 'trainer'
+                                const exerciseName = message.routine_day_exercise_id
+                                    ? exerciseNameByRoutineExercise.get(message.routine_day_exercise_id)
+                                    : null
                                 return (
                                     <article key={message.id} className={`flex min-w-0 ${own ? 'justify-end' : 'justify-start'}`}>
                                         <div className={`min-w-0 max-w-[86%] rounded-2xl px-3.5 py-2.5 ${own ? 'rounded-br-md bg-primary text-primary-foreground' : 'rounded-bl-md border border-border bg-card text-card-foreground'}`}>
                                             <p className="mb-1 text-[9px] font-bold uppercase tracking-wide opacity-60">{own ? 'Vos' : selectedStudent?.first_name} · {TOPIC_LABELS[message.topic] ?? 'Mensaje'}</p>
+                                            {message.routine_day_exercise_id && (
+                                                <p className="mb-1.5 inline-flex max-w-full rounded-md border border-current/15 bg-black/10 px-2 py-1 text-[10px] font-bold leading-4 opacity-80">
+                                                    Ejercicio · {exerciseName ?? 'Ejercicio de la rutina'}
+                                                </p>
+                                            )}
                                             <p className="break-words whitespace-pre-wrap text-sm leading-5">{message.body}</p>
                                             <p className="mt-1 text-right text-[9px] opacity-50">{formatMessageDate(message.created_at)}</p>
                                         </div>

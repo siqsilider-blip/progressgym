@@ -71,6 +71,36 @@ export async function sendCoachingMessage(payload: {
         if (!ownedStudent) return { ok: false, error: 'No tenés acceso a este alumno.' }
     }
 
+    const routineDayExerciseId = payload.routineDayExerciseId || null
+    const workoutSessionId = payload.workoutSessionId || null
+    if (Boolean(routineDayExerciseId) !== Boolean(workoutSessionId)) {
+        return { ok: false, error: 'No pudimos identificar el ejercicio de la consulta.' }
+    }
+
+    if (routineDayExerciseId && workoutSessionId) {
+        const { data: session } = await supabase
+            .from('workout_sessions')
+            .select('id, student_id, routine_day_id')
+            .eq('id', workoutSessionId)
+            .eq('student_id', studentId)
+            .maybeSingle()
+
+        if (!session) {
+            return { ok: false, error: 'La sesión de esta consulta no está disponible.' }
+        }
+
+        const { data: exerciseContext } = await supabase
+            .from('routine_day_exercises')
+            .select('id')
+            .eq('id', routineDayExerciseId)
+            .eq('routine_day_id', session.routine_day_id)
+            .maybeSingle()
+
+        if (!exerciseContext) {
+            return { ok: false, error: 'El ejercicio no pertenece a esta sesión.' }
+        }
+    }
+
     const { data: conversationId, error: conversationError } = await supabase.rpc(
         'ensure_coaching_conversation',
         { p_student_id: studentId }
@@ -94,8 +124,8 @@ export async function sendCoachingMessage(payload: {
             sender_role: senderRole,
             topic,
             body,
-            routine_day_exercise_id: payload.routineDayExerciseId || null,
-            workout_session_id: payload.workoutSessionId || null,
+            routine_day_exercise_id: routineDayExerciseId,
+            workout_session_id: workoutSessionId,
         })
 
     if (insertError) {

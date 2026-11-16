@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getBuenosAiresDateString, getElapsedProgramWeekIndex } from '@/lib/buenosAiresDate'
 import { getProgramCyclePosition } from '@/lib/trainingDomain'
+import { getRoutineExerciseNameMap } from '@/lib/coaching/getRoutineExerciseNames'
+import { formatOpenSessionAge, isStaleOpenSession } from '@/lib/trainerAlertTime'
 import { getTrainerStudents } from './getTrainerStudents'
 
 export type TrainerAlert = {
@@ -37,7 +39,12 @@ type WeeklyCheckinRow = {
 type ProgressPhotoRow = { student_id: string; captured_on: string }
 type WorkoutPainRow = { student_id: string; pain_details: string | null; created_at: string }
 type ConversationRow = { id: string; student_id: string }
-type PainMessageRow = { conversation_id: string; body: string; created_at: string }
+type PainMessageRow = {
+    conversation_id: string
+    body: string
+    created_at: string
+    routine_day_exercise_id: string | null
+}
 type LinkedProfileRow = { id: string; student_id: string | null }
 type OnboardingRow = { student_id: string; completed_at: string | null }
 
@@ -200,10 +207,11 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
     const conversations = (conversationsResult.data as ConversationRow[] | null) ?? []
     const conversationStudentMap = new Map(conversations.map((conversation) => [conversation.id, conversation.student_id]))
     const painMessageByStudent = new Map<string, PainMessageRow>()
+    let painExerciseNameByRoutineExercise = new Map<string, string>()
     if (conversations.length > 0) {
         const { data: painMessages, error: painMessagesError } = await supabase
             .from('coaching_messages')
-            .select('conversation_id, body, created_at')
+            .select('conversation_id, body, created_at, routine_day_exercise_id')
             .in('conversation_id', conversations.map((conversation) => conversation.id))
             .eq('sender_role', 'student')
             .eq('topic', 'pain')
@@ -214,7 +222,13 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
             console.error('Error fetching pain messages for alerts:', painMessagesError)
         }
 
-        for (const message of ((painMessages as PainMessageRow[] | null) ?? [])) {
+        const typedPainMessages = (painMessages as PainMessageRow[] | null) ?? []
+        painExerciseNameByRoutineExercise = await getRoutineExerciseNameMap(
+            supabase,
+            typedPainMessages.map((message) => message.routine_day_exercise_id)
+        )
+
+        for (const message of typedPainMessages) {
             const studentId = conversationStudentMap.get(message.conversation_id)
             if (studentId && !painMessageByStudent.has(studentId)) {
                 painMessageByStudent.set(studentId, message)
@@ -277,9 +291,13 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
     const staleSessionByStudent = new Map<string, SessionRow>()
 
     for (const session of activeSessions) {
-        const startedAt = new Date(session.started_at)
-        const ageHours = (now.getTime() - startedAt.getTime()) / (1000 * 60 * 60)
-        if (ageHours >= 6 && !staleSessionByStudent.has(session.student_id)) {
+        if (!isStaleOpenSession(session.started_at, now)) continue
+
+        const current = staleSessionByStudent.get(session.student_id)
+        if (
+            !current
+            || new Date(session.started_at).getTime() > new Date(current.started_at).getTime()
+        ) {
             staleSessionByStudent.set(session.student_id, session)
         }
     }
@@ -299,6 +317,9 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
         // Una sola prioridad por alumno: siempre queda arriba la acción más urgente.
         if (workoutPain || painMessage) {
             if (!isSuppressed(student.id, 'workout_pain')) {
+                const painExerciseName = painMessage?.routine_day_exercise_id
+                    ? painExerciseNameByRoutineExercise.get(painMessage.routine_day_exercise_id)
+                    : null
                 alerts.push({
                     type: 'workout_pain',
                     studentId: student.id,
@@ -306,7 +327,7 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
                     studentPhone: student.phone ?? null,
                     message: workoutPain
                         ? `${fullName} informó una molestia después de entrenar${workoutPain.pain_details ? `: ${workoutPain.pain_details}` : '.'}`
-                        : `${fullName} informó una molestia durante el entrenamiento${painMessage?.body ? `: ${painMessage.body}` : '.'}`,
+                        : `${fullName} informó una molestia ${painExerciseName ? `al hacer ${painExerciseName}` : 'durante el entrenamiento'}${painMessage?.body ? `: ${painMessage.body}` : '.'}`,
                     actionHref: `/dashboard/messages?student=${student.id}`,
                     actionLabel: 'Revisar molestia',
                 })
@@ -361,14 +382,15 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
             continue
         }
 
-        if (staleSessionByStudent.has(student.id)) {
+        const staleSession = staleSessionByStudent.get(student.id)
+        if (staleSession) {
             if (!isSuppressed(student.id, 'unfinished_session')) {
                 alerts.push({
                     type: 'unfinished_session',
                     studentId: student.id,
                     studentName: fullName,
                     studentPhone: student.phone ?? null,
-                    message: `${fullName} dejó una sesión abierta hace más de 6 horas.`,
+                    message: `${fullName} dejó una sesión abierta ${formatOpenSessionAge(staleSession.started_at, now)}.`,
                     actionHref: `/dashboard/students/${student.id}/train`,
                 })
             }

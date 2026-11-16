@@ -4,12 +4,14 @@ import { createClient } from '@/lib/supabase/server'
 import { getStudentAppContext } from '@/lib/auth/student'
 import MessageComposer from '@/components/coaching/MessageComposer'
 import ReadMarker from '@/components/coaching/ReadMarker'
+import { getRoutineExerciseNameMap } from '@/lib/coaching/getRoutineExerciseNames'
 
 type MessageRow = {
     id: string
     sender_role: 'trainer' | 'student'
     topic: string
     body: string
+    routine_day_exercise_id: string | null
     created_at: string
 }
 
@@ -52,11 +54,17 @@ export default async function StudentMessagesPage() {
     const { data: messages } = conversationId
         ? await supabase
             .from('coaching_messages')
-            .select('id, sender_role, topic, body, created_at')
+            .select('id, sender_role, topic, body, routine_day_exercise_id, created_at')
             .eq('conversation_id', conversationId)
             .order('created_at', { ascending: true })
             .limit(200)
         : { data: [] }
+
+    const typedMessages = (messages as MessageRow[] | null) ?? []
+    const exerciseNameByRoutineExercise = await getRoutineExerciseNameMap(
+        supabase,
+        typedMessages.map((message) => message.routine_day_exercise_id)
+    )
 
     return (
         <main className="mx-auto max-w-lg px-4 pb-28 pt-5">
@@ -75,9 +83,12 @@ export default async function StudentMessagesPage() {
             )}
 
             <section className="mt-4 min-h-64 space-y-2 rounded-2xl border border-border bg-card p-3">
-                {(messages as MessageRow[] | null)?.length ? (
-                    (messages as MessageRow[]).map((message) => {
+                {typedMessages.length ? (
+                    typedMessages.map((message) => {
                         const own = message.sender_role === 'student'
+                        const exerciseName = message.routine_day_exercise_id
+                            ? exerciseNameByRoutineExercise.get(message.routine_day_exercise_id)
+                            : null
                         return (
                             <article key={message.id} className={`flex ${own ? 'justify-end' : 'justify-start'}`}>
                                 <div className={`max-w-[86%] rounded-2xl px-3.5 py-2.5 ${own ? 'rounded-br-md bg-primary text-primary-foreground' : 'rounded-bl-md border border-border bg-background text-foreground'}`}>
@@ -86,6 +97,11 @@ export default async function StudentMessagesPage() {
                                         <span>·</span>
                                         <span>{TOPIC_LABELS[message.topic] ?? 'Mensaje'}</span>
                                     </div>
+                                    {message.routine_day_exercise_id && (
+                                        <p className="mb-1.5 inline-flex max-w-full rounded-md border border-current/15 bg-black/10 px-2 py-1 text-[10px] font-bold leading-4 opacity-80">
+                                            Ejercicio · {exerciseName ?? 'Ejercicio de la rutina'}
+                                        </p>
+                                    )}
                                     <p className="whitespace-pre-wrap text-sm leading-5">{message.body}</p>
                                     <p className="mt-1 text-right text-[9px] opacity-60">{formatMessageDate(message.created_at)}</p>
                                 </div>

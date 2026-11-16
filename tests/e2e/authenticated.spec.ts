@@ -358,7 +358,9 @@ test('el alumno entra a su portal y no al panel del entrenador', async ({ page }
     await expect(page.getByText('Molestia después del entrenamiento', { exact: true }).first()).toBeVisible({ timeout: 15_000 })
     await painNotification.click()
     await expect(page).toHaveURL(new RegExp(`/dashboard/messages\\?student=${studentId}$`), { timeout: 15_000 })
-    await expect(page.getByText('Aviso de molestia E2E', { exact: true })).toBeVisible({ timeout: 15_000 })
+    const exercisePainMessage = page.locator('article').filter({ hasText: 'Aviso de molestia E2E' })
+    await expect(exercisePainMessage).toBeVisible({ timeout: 15_000 })
+    await expect(exercisePainMessage.getByText(`Ejercicio · ${exerciseName}`, { exact: true })).toBeVisible()
 
     const feedbackCard = page.locator('article').filter({ hasText: 'Molestia post entrenamiento E2E' })
     await expect(feedbackCard).toBeVisible()
