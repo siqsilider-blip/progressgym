@@ -93,9 +93,9 @@ export default function DayBlockEditor({
     const [isPending, startTransition] = useTransition()
 
     const [openBlocks, setOpenBlocks] = useState<Record<Block, boolean>>({
-        activation: false,
+        activation: true,
         main: true,
-        closing: false
+        closing: true
     })
 
     return (
@@ -243,6 +243,11 @@ function ExerciseRow({
     const replacementExercise = exerciseOptions.find(
         (option) => option.name.toLocaleLowerCase() === replacementName.trim().toLocaleLowerCase()
     )
+    const keepsCurrentExercise =
+        replacementName.trim().toLocaleLowerCase() === (relation?.name ?? '').trim().toLocaleLowerCase()
+    const replacementExerciseId = replacementExercise?.id ?? (
+        keepsCurrentExercise ? exercise.exercise_id : ''
+    )
 
     if (isEditing) {
         return (
@@ -267,7 +272,7 @@ function ExerciseRow({
                     <input type="hidden" name="dayId" value={dayId} />
                     <input type="hidden" name="weekId" value={weekId} />
                     <input type="hidden" name="exerciseRowId" value={exercise.id} />
-                    <input type="hidden" name="replacementExerciseId" value={replacementExercise?.id ?? ''} />
+                    <input type="hidden" name="replacementExerciseId" value={replacementExerciseId} />
                     {searchParams.get('month') && <input type="hidden" name="monthId" value={searchParams.get('month')!} />}
 
                     <div className="flex items-center justify-between">
@@ -291,7 +296,7 @@ function ExerciseRow({
                                 <option key={option.id} value={option.name}>{option.muscle_group || option.category || ''}</option>
                             ))}
                         </datalist>
-                        {replacementName.trim() && !replacementExercise && (
+                        {replacementName.trim() && !replacementExerciseId && (
                             <p className="mt-1 text-[10px] text-amber-500">Elegí una opción exacta de la lista.</p>
                         )}
                     </div>
@@ -324,7 +329,7 @@ function ExerciseRow({
                     )}
 
                     <div className="flex gap-2">
-                        <button type="submit" disabled={isPending || !replacementExercise} className="h-9 flex-1 rounded-lg bg-primary text-xs font-semibold text-primary-foreground hover:bg-primary disabled:opacity-50">
+                        <button type="submit" disabled={isPending || !replacementExerciseId} className="h-9 flex-1 rounded-lg bg-primary text-xs font-semibold text-primary-foreground hover:bg-primary disabled:opacity-50">
                             Guardar
                         </button>
                         <button formAction={(fd) => {
@@ -415,11 +420,19 @@ function ExerciseRow({
                     <span aria-hidden="true">↓</span>
                 </button>
             </div>
-            <div className="hidden shrink-0 opacity-0 transition group-hover:opacity-100 sm:block">
+            <button
+                type="button"
+                onClick={(event) => {
+                    event.stopPropagation()
+                    onEdit()
+                }}
+                aria-label={`Editar ${relation?.name ?? 'ejercicio'}`}
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition hover:bg-secondary hover:text-foreground sm:opacity-0 sm:group-hover:opacity-100"
+            >
                 <svg className="h-4 w-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                 </svg>
-            </div>
+            </button>
           </div>
           {errorMsg && <p role="alert" className="px-2 pb-1 text-xs font-medium text-red-500">{errorMsg}</p>}
         </div>

@@ -617,6 +617,62 @@ test('asignar un template crea un programa completo que el alumno puede abrir', 
     await expect(page.getByRole('link', { name: /Entrenar/ })).toBeVisible()
 })
 
+test('el planificador del entrenador es claro, responsive y conserva la navegación', async ({ page }, testInfo) => {
+    await logIn(page, 'trainer', trainerEmail)
+    await page.goto(`/dashboard/routines/${templateId}`, { waitUntil: 'domcontentloaded' })
+
+    await expect(page.getByTestId('routine-planner-workspace')).toBeVisible()
+    await expect(page.getByTestId('planner-navigation')).toBeVisible()
+    await expect(page.getByTestId('planner-days')).toBeVisible()
+
+    const dayLinks = page.locator('[data-testid^="routine-day-"]')
+    await expect(dayLinks.first()).toBeVisible()
+    expect(await dayLinks.count()).toBeGreaterThanOrEqual(2)
+
+    if (testInfo.project.name === 'desktop-chromium') {
+        await expect(page.getByTestId('desktop-routine-editor')).toBeVisible()
+        await expect(page.getByTestId('mobile-routine-editor')).toBeHidden()
+        await expect(page.getByText('Ejercicio', { exact: true }).first()).toBeVisible()
+        await expect(page.getByText('Series', { exact: true }).first()).toBeVisible()
+        await expect(page.getByText('Descanso', { exact: true }).first()).toBeVisible()
+    } else {
+        await expect(page.getByTestId('mobile-routine-editor')).toBeVisible()
+        await expect(page.getByTestId('desktop-routine-editor')).toBeHidden()
+        await expect(page.getByRole('button', { name: /^Editar Ejercicio E2E/ }).first()).toBeVisible()
+    }
+
+    const secondDayHref = await dayLinks.nth(1).getAttribute('href')
+    expect(secondDayHref).toContain('day=')
+    await dayLinks.nth(1).click()
+    await expect(page).toHaveURL(/day=/)
+    await expect(page.locator('[data-testid^="routine-day-"][aria-current="page"]')).toHaveCount(1)
+
+    await page.goBack()
+    await expect(page.getByTestId('routine-planner-workspace')).toBeVisible()
+    await expect(page.locator('[data-testid^="routine-day-"][aria-current="page"]')).toHaveCount(1)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBeTruthy()
+})
+
+test('el entrenador edita series directamente desde la tabla de escritorio', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop-chromium', 'La tabla editable solo se muestra en escritorio.')
+
+    await logIn(page, 'trainer', trainerEmail)
+    await page.goto(`/dashboard/routines/${templateId}`, { waitUntil: 'domcontentloaded' })
+
+    const row = page.locator('[data-testid^="exercise-row-"]').first()
+    await expect(row).toBeVisible()
+
+    const series = row.getByLabel(/^Series de /)
+    await series.fill('2')
+    const save = row.getByRole('button', { name: 'Guardar' })
+    await expect(save).toBeEnabled()
+    await save.click()
+    await expect(row.getByRole('button', { name: 'Listo' })).toBeVisible({ timeout: 15_000 })
+
+    await page.reload()
+    await expect(page.locator('[data-testid^="exercise-row-"]').first().getByLabel(/^Series de /)).toHaveValue('2')
+})
+
 test('el entrenador reordena y elimina días de un template sin perder su estructura', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name === 'desktop-chromium', 'La mutación se prueba una sola vez por fixture.')
 

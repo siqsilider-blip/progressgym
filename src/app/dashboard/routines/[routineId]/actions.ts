@@ -950,6 +950,8 @@ export async function renameRoutineWeek(formData: FormData) {
     const supabase = await createClient()
     const routineId = formData.get('routineId') as string
     const weekId = formData.get('weekId') as string
+    const monthId = formData.get('monthId') as string | null
+    const dayId = formData.get('dayId') as string | null
     const name = (formData.get('name') as string)?.trim() || null
 
     const {
@@ -963,7 +965,7 @@ export async function renameRoutineWeek(formData: FormData) {
         .eq('id', weekId)
 
     revalidatePath(`/dashboard/routines/${routineId}`)
-    redirect(`/dashboard/routines/${routineId}?week=${weekId}`)
+    redirect(`/dashboard/routines/${routineId}?week=${weekId}${monthId ? `&month=${monthId}` : ''}${dayId ? `&day=${dayId}` : ''}`)
 }
 
 export async function addRoutineMonth(formData: FormData) {
@@ -1027,7 +1029,7 @@ export async function addRoutineMonth(formData: FormData) {
     }
 
     revalidatePath(`/dashboard/routines/${routineId}`)
-    redirect(`/dashboard/routines/${routineId}`)
+    redirect(`/dashboard/routines/${routineId}?month=${newMonth.id}`)
 }
 
 export async function renameRoutineMonth(formData: FormData) {

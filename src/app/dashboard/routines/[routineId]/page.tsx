@@ -10,6 +10,7 @@ import BackButton from './BackButton'
 import WeekMonthSelector from './WeekMonthSelector'
 import DeleteTemplateButton from './DeleteTemplateButton'
 import DayControls from './DayControls'
+import DesktopRoutineExerciseTable from './DesktopRoutineExerciseTable'
 import TemplateCriteriaFields from '@/components/TemplateCriteriaFields'
 import { normalizeStringArray, type TemplateMatchingProfile } from '@/lib/templateMatching'
 import { getServerUser } from '@/lib/auth/server'
@@ -310,10 +311,18 @@ export default async function RoutineDetailPage(props: PageProps) {
         (acc, ex) => acc + (ex.sets ?? 0),
         0
     )
+    const editableDayExercises = currentDayExercises.map((exercise) => ({
+        ...exercise,
+        block: exercise.block || 'main',
+    })) as DayExercise[]
+    const selectedDayDefaultTitle = selectedDay ? `Día ${selectedDay.day_index}` : ''
+    const selectedDayFocus = selectedDay?.title?.trim() && selectedDay.title.trim() !== selectedDayDefaultTitle
+        ? selectedDay.title.trim()
+        : null
 
     return (
         <div className="px-3 pb-24 pt-2 text-foreground sm:px-4 sm:pt-3 md:p-6">
-            <div className="mx-auto max-w-3xl space-y-3.5">
+            <div className="mx-auto max-w-[1600px] space-y-3.5">
 
                 {/* ── Header ── */}
                 <div className="grid grid-cols-[2rem_minmax(0,1fr)] items-start gap-2.5">
@@ -398,111 +407,171 @@ export default async function RoutineDetailPage(props: PageProps) {
                         Error cargando los días de la rutina.
                     </div>
                 ) : (
-                    <>
-                        {/* ── Mesociclo / Semana selector ── */}
-                        <WeekMonthSelector
-                            routineId={routine.id}
-                            months={months}
-                            weeks={weeks}
-                            selectedMonthId={selectedMonth?.id ?? null}
-                            selectedWeekId={selectedWeek?.id ?? null}
-                            addRoutineMonth={addRoutineMonth}
-                            addRoutineWeek={addRoutineWeek}
-                            duplicateRoutineWeek={duplicateRoutineWeek}
-                            deleteRoutineWeek={deleteRoutineWeek}
-                            deleteRoutineMonth={deleteRoutineMonth}
-                            renameRoutineMonth={renameRoutineMonth}
-                            renameRoutineWeek={renameRoutineWeek}
-                        />
+                    <div
+                        data-testid="routine-planner-workspace"
+                        className="grid min-w-0 gap-3 2xl:grid-cols-[17rem_minmax(0,1fr)] 2xl:items-start"
+                    >
+                        <aside className="min-w-0 space-y-3 2xl:sticky 2xl:top-4">
+                            <WeekMonthSelector
+                                routineId={routine.id}
+                                months={months}
+                                weeks={weeks}
+                                selectedMonthId={selectedMonth?.id ?? null}
+                                selectedWeekId={selectedWeek?.id ?? null}
+                                addRoutineMonth={addRoutineMonth}
+                                addRoutineWeek={addRoutineWeek}
+                                duplicateRoutineWeek={duplicateRoutineWeek}
+                                deleteRoutineWeek={deleteRoutineWeek}
+                                deleteRoutineMonth={deleteRoutineMonth}
+                                renameRoutineMonth={renameRoutineMonth}
+                                renameRoutineWeek={renameRoutineWeek}
+                            />
 
-                        {!selectedDay ? (
-                            <div className="rounded-2xl border border-dashed border-border bg-card/60 p-8 text-center">
-                                <p className="text-sm font-medium text-card-foreground">
-                                    Esta semana no tiene días
-                                </p>
-                                <p className="mt-1 text-xs text-muted-foreground">
-                                    Usá &ldquo;Duplicar semana anterior&rdquo; para copiar desde una semana existente.
-                                </p>
-                            </div>
-                        ) : (
-                            <>
-                                {/* ── Day tabs ── */}
-                                <div className="flex snap-x gap-1.5 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                            <section className="rounded-xl border border-border bg-card p-3 shadow-sm" data-testid="planner-days">
+                                <div className="mb-2 flex items-center justify-between">
+                                    <div>
+                                        <h2 className="text-sm font-bold text-foreground">Días de entrenamiento</h2>
+                                        <p className="text-[11px] text-muted-foreground">
+                                            {selectedWeek ? `Semana ${selectedWeek.week_number}` : 'Sin semana seleccionada'}
+                                        </p>
+                                    </div>
+                                    <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-secondary-foreground">
+                                        {typedDays.length}
+                                    </span>
+                                </div>
+
+                                <nav
+                                    aria-label="Días de la semana"
+                                    className="flex snap-x gap-2 overflow-x-auto pb-1 2xl:grid 2xl:max-h-[24rem] 2xl:grid-cols-1 2xl:overflow-y-auto 2xl:pr-1"
+                                >
                                     {typedDays.map((day) => {
-                                        const isActive = day.id === selectedDay.id
-                                        const label = day.title || `Día ${day.day_index}`
+                                        const isActive = day.id === selectedDay?.id
+                                        const defaultTitle = `Día ${day.day_index}`
+                                        const customTitle = day.title?.trim() && day.title.trim() !== defaultTitle
+                                            ? day.title.trim()
+                                            : null
                                         const dayExercises = exercisesByDay[day.id] ?? []
-                                        const hasDayExercises = dayExercises.length > 0
+                                        const daySets = dayExercises.reduce((total, exercise) => total + (exercise.sets ?? 0), 0)
 
                                         return (
                                             <Link
                                                 key={day.id}
-                                                title={label}
                                                 href={`/dashboard/routines/${routine.id}?week=${selectedWeek!.id}&day=${day.id}${selectedMonth?.id ? `&month=${selectedMonth.id}` : ''}`}
-                                                className={`relative max-w-[8.5rem] shrink-0 snap-start truncate rounded-lg px-3 py-1.5 text-xs font-semibold transition active:scale-[0.96] ${isActive
-                                                        ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/25'
-                                                        : 'border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground'
+                                                aria-current={isActive ? 'page' : undefined}
+                                                data-testid={`routine-day-${day.id}`}
+                                                className={`min-w-[10.5rem] snap-start rounded-lg border px-3 py-2.5 text-left transition 2xl:min-w-0 ${isActive
+                                                    ? 'border-primary bg-primary/10 ring-1 ring-primary/20'
+                                                    : 'border-border bg-background hover:border-primary/40 hover:bg-muted/30'
                                                     }`}
                                             >
-                                                {label}
-                                                {hasDayExercises && !isActive && (
-                                                    <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                                <span className="block text-sm font-bold text-foreground">{defaultTitle}</span>
+                                                <span className="mt-0.5 block truncate text-[11px] text-muted-foreground" title={customTitle ?? undefined}>
+                                                    {customTitle || `${dayExercises.length} ejercicios · ${daySets} series`}
+                                                </span>
+                                                {customTitle && (
+                                                    <span className="mt-1 block text-[10px] text-muted-foreground">
+                                                        {dayExercises.length} ejercicios · {daySets} series
+                                                    </span>
                                                 )}
                                             </Link>
                                         )
                                     })}
-                                </div>
+                                </nav>
+                            </section>
+                        </aside>
 
-                                {/* ── Day header ── */}
-                                <div className="flex items-center justify-between gap-2">
-                                    <div className="min-w-0 flex-1">
-                                        <h2 className="truncate text-base font-bold text-foreground">
-                                            {selectedDay.title || `Día ${selectedDay.day_index}`}
-                                        </h2>
-                                        <p className="mt-0.5 text-xs text-muted-foreground">
-                                            {currentDayExercises.length} {currentDayExercises.length === 1 ? 'ejercicio' : 'ejercicios'}
-                                            <span className="mx-1.5 text-border">·</span>
-                                            {totalSetsForDay} series
-                                        </p>
+                        <main className="min-w-0 space-y-3">
+                            {!selectedDay ? (
+                                <div className="rounded-xl border border-dashed border-border bg-card/60 p-8 text-center">
+                                    <p className="text-sm font-medium text-card-foreground">Esta semana no tiene días</p>
+                                    <p className="mt-1 text-xs text-muted-foreground">
+                                        Duplicá una semana existente o creá una nueva para continuar.
+                                    </p>
+                                </div>
+                            ) : (
+                                <>
+                                    <section className="rounded-xl border border-border bg-card p-3 shadow-sm sm:p-4">
+                                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                            <div className="min-w-0">
+                                                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-primary">
+                                                    Semana {selectedWeek!.week_number} · Plan de entrenamiento
+                                                </p>
+                                                <h2 className="mt-1 text-lg font-bold text-foreground">
+                                                    {selectedDayDefaultTitle}
+                                                </h2>
+                                                {selectedDayFocus && (
+                                                    <p className="mt-0.5 truncate text-sm text-muted-foreground" title={selectedDayFocus}>
+                                                        {selectedDayFocus}
+                                                    </p>
+                                                )}
+                                                <p className="mt-1 text-xs text-muted-foreground">
+                                                    {currentDayExercises.length} {currentDayExercises.length === 1 ? 'ejercicio' : 'ejercicios'}
+                                                    <span className="mx-1.5 text-border">·</span>
+                                                    {totalSetsForDay} series
+                                                </p>
+                                            </div>
+                                            <DayControls
+                                                routineId={routine.id}
+                                                dayId={selectedDay.id}
+                                                initialTitle={selectedDay.title || selectedDayDefaultTitle}
+                                                weekId={selectedWeek!.id}
+                                                monthId={selectedMonth?.id ?? null}
+                                                canManageStructure={routine.routine_kind === 'template'}
+                                                canMoveLeft={typedDays.findIndex((day) => day.id === selectedDay.id) > 0}
+                                                canMoveRight={typedDays.findIndex((day) => day.id === selectedDay.id) < typedDays.length - 1}
+                                                canDelete={routine.routine_kind === 'template' && typedDays.length > 1}
+                                                renameAction={renameRoutineDay}
+                                                duplicateAction={duplicateRoutineDay}
+                                                moveAction={moveRoutineDay}
+                                                deleteAction={deleteRoutineDay}
+                                            />
+                                        </div>
+                                    </section>
+
+                                    <div className="hidden xl:block" data-testid="desktop-routine-editor">
+                                        <DesktopRoutineExerciseTable
+                                            routineId={routine.id}
+                                            routineDayId={selectedDay.id}
+                                            exercises={editableDayExercises}
+                                            exerciseOptions={(exerciseOptions as ExerciseOption[]) ?? []}
+                                            defaultSets={trainerProfile?.default_sets ?? 3}
+                                            defaultReps={trainerProfile?.default_reps ?? 10}
+                                            defaultRest={trainerProfile?.default_rest ?? 60}
+                                            addAction={addExerciseToRoutineDay}
+                                            createExerciseAction={createExerciseFromRoutine}
+                                            updateAction={updateExerciseInRoutineDay}
+                                            moveAction={moveExerciseInRoutineDay}
+                                            deleteAction={deleteExerciseFromRoutineDay}
+                                            weekId={selectedWeek!.id}
+                                            logsByExercise={logsByExercise}
+                                            weightUnit={weightUnit}
+                                            showHistory={routine.routine_kind !== 'template'}
+                                        />
                                     </div>
-                                    <DayControls
-                                        routineId={routine.id}
-                                        dayId={selectedDay.id}
-                                        initialTitle={selectedDay.title || `Día ${selectedDay.day_index}`}
-                                        weekId={selectedWeek!.id}
-                                        monthId={selectedMonth?.id ?? null}
-                                        canManageStructure={routine.routine_kind === 'template'}
-                                        canMoveLeft={typedDays.findIndex((day) => day.id === selectedDay.id) > 0}
-                                        canMoveRight={typedDays.findIndex((day) => day.id === selectedDay.id) < typedDays.length - 1}
-                                        canDelete={routine.routine_kind === 'template' && typedDays.length > 1}
-                                        renameAction={renameRoutineDay}
-                                        duplicateAction={duplicateRoutineDay}
-                                        moveAction={moveRoutineDay}
-                                        deleteAction={deleteRoutineDay}
-                                    />
-                                </div>
 
-                                {/* ── Exercises ── */}
-                                <DayBlockEditor
-                                    routineId={routine.id}
-                                    routineDayId={selectedDay.id}
-                                    exercises={currentDayExercises.map(ex => ({ ...ex, block: ex.block || 'main' })) as DayExercise[]}
-                                    exerciseOptions={(exerciseOptions as ExerciseOption[]) ?? []}
-                                    defaultSets={trainerProfile?.default_sets ?? 3}
-                                    defaultReps={trainerProfile?.default_reps ?? 10}
-                                    defaultRest={trainerProfile?.default_rest ?? 60}
-                                    addAction={addExerciseToRoutineDay}
-                                    createExerciseAction={createExerciseFromRoutine}
-                                    updateAction={updateExerciseInRoutineDay}
-                                    moveAction={moveExerciseInRoutineDay}
-                                    deleteAction={deleteExerciseFromRoutineDay}
-                                    weekId={selectedWeek!.id}
-                                    logsByExercise={logsByExercise}
-                                    weightUnit={weightUnit}
-                                />
-                            </>
-                        )}
-                    </>
+                                    <div className="xl:hidden" data-testid="mobile-routine-editor">
+                                        <DayBlockEditor
+                                            routineId={routine.id}
+                                            routineDayId={selectedDay.id}
+                                            exercises={editableDayExercises}
+                                            exerciseOptions={(exerciseOptions as ExerciseOption[]) ?? []}
+                                            defaultSets={trainerProfile?.default_sets ?? 3}
+                                            defaultReps={trainerProfile?.default_reps ?? 10}
+                                            defaultRest={trainerProfile?.default_rest ?? 60}
+                                            addAction={addExerciseToRoutineDay}
+                                            createExerciseAction={createExerciseFromRoutine}
+                                            updateAction={updateExerciseInRoutineDay}
+                                            moveAction={moveExerciseInRoutineDay}
+                                            deleteAction={deleteExerciseFromRoutineDay}
+                                            weekId={selectedWeek!.id}
+                                            logsByExercise={logsByExercise}
+                                            weightUnit={weightUnit}
+                                        />
+                                    </div>
+                                </>
+                            )}
+                        </main>
+                    </div>
                 )}
             </div>
         </div>
