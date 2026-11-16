@@ -26,7 +26,7 @@ import {
     type IsoWeekday,
 } from '@/lib/routineCalendar'
 
-export type RoutinePlannerStatus = 'pending' | 'in_progress' | 'incomplete' | 'completed'
+export type RoutinePlannerStatus = 'pending' | 'in_progress' | 'partial' | 'completed'
 
 export type RoutinePlannerExercise = {
     name: string
@@ -40,6 +40,7 @@ export type RoutinePlannerDay = {
     dayIndex: number
     scheduledDate: string | null
     status: RoutinePlannerStatus
+    sessionId: string | null
     exercises: RoutinePlannerExercise[]
 }
 
@@ -99,21 +100,21 @@ function monthKey(date: string | null | undefined) {
 function statusLabel(status: RoutinePlannerStatus) {
     if (status === 'completed') return 'Completado'
     if (status === 'in_progress') return 'En curso'
-    if (status === 'incomplete') return 'Con series pendientes'
+    if (status === 'partial') return 'Parcial'
     return 'Programado'
 }
 
 function ctaLabel(status: RoutinePlannerStatus) {
     if (status === 'completed') return 'Revisar / editar'
     if (status === 'in_progress') return 'Continuar →'
-    if (status === 'incomplete') return 'Completar →'
+    if (status === 'partial') return 'Completar pendientes →'
     return 'Entrenar →'
 }
 
 function TrainingDayIcon({ status }: { status: RoutinePlannerStatus }) {
     if (status === 'completed') return <Check className="h-3.5 w-3.5" aria-hidden="true" />
     if (status === 'in_progress') return <Play className="h-3.5 w-3.5" aria-hidden="true" />
-    if (status === 'incomplete') return <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
+    if (status === 'partial') return <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
     return <Circle className="h-2.5 w-2.5 fill-current" aria-hidden="true" />
 }
 
@@ -216,13 +217,16 @@ function TrainingWeekdayEditor({
 
 function DayDetail({ day, week, view }: { day: RoutinePlannerDay; week: RoutinePlannerWeek; view: PlannerView }) {
     const totalSets = day.exercises.reduce((sum, exercise) => sum + exercise.sets, 0)
-    const trainHref = `/app/train?${week.monthId ? `month=${week.monthId}&` : ''}week=${week.id}&day=${day.id}&view=${view}`
+    const scheduleQuery = `${week.monthId ? `month=${week.monthId}&` : ''}week=${week.id}&day=${day.id}&view=${view}`
+    const trainHref = day.sessionId && (day.status === 'partial' || day.status === 'completed')
+        ? `/app/train?session=${day.sessionId}&source=routine&${scheduleQuery}`
+        : `/app/train?${scheduleQuery}`
     const dateHeading = day.scheduledDate ? formatSpanishLongDateLabel(day.scheduledDate) : `Entrenamiento ${day.dayIndex}`
 
     return (
         <article className={`overflow-hidden rounded-2xl border bg-card shadow-sm ${day.status === 'completed'
             ? 'border-emerald-500/30'
-            : day.status === 'incomplete'
+            : day.status === 'partial'
                 ? 'border-amber-500/35'
                 : day.status === 'in_progress'
                     ? 'border-primary/45'
@@ -236,15 +240,15 @@ function DayDetail({ day, week, view }: { day: RoutinePlannerDay; week: RoutineP
                         </p>
                         <h2 className="mt-1.5 text-xl font-black leading-6 text-foreground">{day.name || `Día ${day.dayIndex}`}</h2>
                         <p className="mt-1.5 text-sm text-muted-foreground">{day.exercises.length} ejercicios · {totalSets} series</p>
-                        {day.status === 'incomplete' && (
+                        {day.status === 'partial' && (
                             <p className="mt-2 text-xs font-bold text-amber-400">
-                                Series pendientes · todavía no cuenta como completado
+                                Sesión parcial · cuenta como actividad, pero no completa el día
                             </p>
                         )}
                     </div>
                     <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-black ${day.status === 'completed'
                         ? 'bg-emerald-500/10 text-emerald-400'
-                        : day.status === 'incomplete'
+                        : day.status === 'partial'
                             ? 'bg-amber-500/10 text-amber-400'
                             : day.status === 'in_progress'
                                 ? 'bg-primary/10 text-primary'
@@ -448,7 +452,7 @@ export default function StudentRoutinePlanner({
                                                         ? 'border-primary bg-primary text-primary-foreground'
                                                         : entry.day.status === 'completed'
                                                             ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
-                                                            : entry.day.status === 'incomplete'
+                                                            : entry.day.status === 'partial'
                                                                 ? 'border-amber-500/30 bg-amber-500/10 text-amber-400'
                                                                 : 'border-primary/25 bg-primary/[0.06] text-foreground'
                                                         }`}
@@ -502,7 +506,7 @@ export default function StudentRoutinePlanner({
                                                         ? 'border-primary bg-primary text-primary-foreground'
                                                         : entry?.day.status === 'completed'
                                                             ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-400'
-                                                            : entry?.day.status === 'incomplete'
+                                                            : entry?.day.status === 'partial'
                                                                 ? 'border-amber-500/25 bg-amber-500/10 text-amber-400'
                                                                 : entry
                                                                     ? 'border-primary/20 bg-primary/[0.06] text-foreground'
@@ -512,7 +516,7 @@ export default function StudentRoutinePlanner({
                                                     }`}
                                             >
                                                 {cell.dayNumber}
-                                                {entry && <span className={`absolute bottom-1 h-1.5 w-1.5 rounded-full ${active ? 'bg-primary-foreground' : entry.day.status === 'completed' ? 'bg-emerald-400' : entry.day.status === 'incomplete' ? 'bg-amber-400' : 'bg-primary'}`} />}
+                                                {entry && <span className={`absolute bottom-1 h-1.5 w-1.5 rounded-full ${active ? 'bg-primary-foreground' : entry.day.status === 'completed' ? 'bg-emerald-400' : entry.day.status === 'partial' ? 'bg-amber-400' : 'bg-primary'}`} />}
                                             </button>
                                         )
                                     })}

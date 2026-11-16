@@ -1,8 +1,10 @@
 import { expect, test } from '@playwright/test'
 import {
     getProgramCyclePosition,
+    getRoutineDayProgress,
     getRoutineDayProgressStatus,
     getWorkoutCompletionKind,
+    hasMeaningfulWorkoutActivity,
     isCompletedWorkoutSession,
     type WorkoutSessionProgressRow,
 } from '../../src/lib/trainingDomain'
@@ -22,32 +24,51 @@ test.describe('training completion domain', () => {
             status: 'completed',
             completed_manually: true,
             completion_status: 'complete',
+            recorded_sets: 12,
         })).toBe('complete')
         expect(isCompletedWorkoutSession({
             status: 'completed',
             completed_manually: true,
             completion_status: 'complete',
+            recorded_sets: 12,
         })).toBe(true)
     })
 
-    test('an auto-closed session never completes the training day', () => {
+    test('an empty auto-closed session remains not started', () => {
         expect(statusFor([{
             routine_day_id: dayId,
             performed_date: today,
             status: 'completed',
             completed_manually: false,
             completion_status: 'complete',
+            recorded_sets: 0,
         }])).toBe('pending')
     })
 
-    test('an explicitly incomplete session remains incomplete', () => {
+    test('an auto-closed session with saved sets becomes partial activity', () => {
+        const session = {
+            routine_day_id: dayId,
+            performed_date: today,
+            status: 'completed',
+            completed_manually: false,
+            completion_status: null,
+            recorded_sets: 8,
+        }
+
+        expect(statusFor([session])).toBe('partial')
+        expect(getWorkoutCompletionKind(session)).toBe('partial')
+        expect(hasMeaningfulWorkoutActivity(session)).toBe(true)
+    })
+
+    test('an explicitly incomplete session remains partial', () => {
         expect(statusFor([{
             routine_day_id: dayId,
             performed_date: today,
             status: 'completed',
             completed_manually: true,
             completion_status: 'incomplete',
-        }])).toBe('incomplete')
+            recorded_sets: 8,
+        }])).toBe('partial')
     })
 
     test('a full completion takes precedence over an earlier incomplete session', () => {
@@ -58,6 +79,7 @@ test.describe('training completion domain', () => {
                 status: 'completed',
                 completed_manually: true,
                 completion_status: 'incomplete',
+                recorded_sets: 8,
             },
             {
                 routine_day_id: dayId,
@@ -65,6 +87,7 @@ test.describe('training completion domain', () => {
                 status: 'completed',
                 completed_manually: true,
                 completion_status: 'complete',
+                recorded_sets: 12,
             },
         ])).toBe('completed')
     })
@@ -77,6 +100,7 @@ test.describe('training completion domain', () => {
                 status: 'completed',
                 completed_manually: true,
                 completion_status: 'complete',
+                recorded_sets: 12,
             },
             {
                 routine_day_id: dayId,
@@ -84,6 +108,7 @@ test.describe('training completion domain', () => {
                 status: 'in_progress',
                 completed_manually: false,
                 completion_status: null,
+                recorded_sets: 1,
             },
         ])).toBe('in_progress')
     })
@@ -95,7 +120,49 @@ test.describe('training completion domain', () => {
             status: 'completed',
             completed_manually: true,
             completion_status: 'complete',
+            recorded_sets: 12,
         }])).toBe('pending')
+    })
+
+    test('a previous-day open session with saved sets is partial, not current', () => {
+        expect(statusFor([{
+            id: 'old-open-session',
+            routine_day_id: dayId,
+            performed_date: '2026-11-14',
+            started_at: '2026-11-14T20:00:00.000Z',
+            status: 'in_progress',
+            completed_manually: false,
+            completion_status: null,
+            recorded_sets: 3,
+        }])).toBe('partial')
+    })
+
+    test('returns the exact session that explains the day status', () => {
+        expect(getRoutineDayProgress({
+            dayId,
+            today,
+            weekStart,
+            weekEnd,
+            sessions: [{
+                id: 'partial-session',
+                routine_day_id: dayId,
+                performed_date: today,
+                started_at: '2026-11-15T12:00:00.000Z',
+                status: 'completed',
+                completed_manually: false,
+                completion_status: null,
+                recorded_sets: 2,
+            }],
+        })).toEqual({ status: 'partial', sessionId: 'partial-session' })
+    })
+
+    test('a session without saved sets is not meaningful activity', () => {
+        expect(hasMeaningfulWorkoutActivity({
+            status: 'completed',
+            completed_manually: false,
+            completion_status: null,
+            recorded_sets: 0,
+        })).toBe(false)
     })
 })
 

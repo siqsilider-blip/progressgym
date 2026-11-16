@@ -26,6 +26,7 @@ export async function getStudentSessionHistory(
     limit = 20
 ): Promise<SessionHistoryItem[]> {
     const supabase = await createClient()
+    const sessionFetchLimit = Math.max(limit * 4, 100)
 
     // 1. Traer IDs de sesiones que tienen logs
     const { data: logsIndex } = await supabase
@@ -40,14 +41,13 @@ export async function getStudentSessionHistory(
     // 2. Traer sesiones completadas del alumno (solo las que tienen logs)
     const { data: sessions, error: sessionsError } = await supabase
         .from('workout_sessions')
-        .select('id, performed_date, started_at, finished_at, duration_seconds, routine_day_id, notes, completion_status')
+        .select('id, performed_date, started_at, finished_at, duration_seconds, routine_day_id, notes, completed_manually, completion_status')
         .eq('student_id', studentId)
         .eq('status', 'completed')
-        .eq('completed_manually', true)
         .in('id', sessionIdsWithLogs)
         .order('performed_date', { ascending: false })
         .order('started_at', { ascending: false })
-        .limit(limit)
+        .limit(sessionFetchLimit)
 
     if (sessionsError || !sessions || sessions.length === 0) return []
 
@@ -123,7 +123,9 @@ export async function getStudentSessionHistory(
     }
 
     // 7. Construir resultado
-    return sessions.map((session) => {
+    return sessions
+        .filter((session) => logsBySession.has(session.id))
+        .map((session) => {
         const sessionLogs = logsBySession.get(session.id) ?? []
 
         const exerciseGroups = new Map<string, {
@@ -178,7 +180,9 @@ export async function getStudentSessionHistory(
             performedDate: session.performed_date ?? String(session.started_at ?? '').split('T')[0],
             startedAt: session.started_at ?? '',
             durationSeconds: session.duration_seconds ?? null,
-            completionStatus: session.completion_status === 'incomplete' ? 'incomplete' : 'complete',
+            completionStatus: session.completed_manually === true && session.completion_status === 'complete'
+                ? 'complete' as const
+                : 'incomplete' as const,
             dayLabel: session.routine_day_id
                 ? (dayLabelMap.get(session.routine_day_id) ?? 'Sesión')
                 : 'Sesión',
@@ -186,5 +190,6 @@ export async function getStudentSessionHistory(
             note: session.notes ?? null,
             exercises,
         }
-    })
+        })
+        .slice(0, limit)
 }

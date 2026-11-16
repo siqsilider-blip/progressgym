@@ -150,7 +150,7 @@ export default async function StudentHistoryPage(props: PageProps) {
                                                         {formatDate(session.performedDate)}
                                                     </p>
                                                     {session.completionStatus === 'incomplete' && (
-                                                        <p className="mt-1 text-[10px] font-bold text-amber-500">Finalizada con series pendientes</p>
+                                                        <p className="mt-1 text-[10px] font-bold text-amber-500">Sesión parcial · cuenta como actividad</p>
                                                     )}
                                                 </div>
 

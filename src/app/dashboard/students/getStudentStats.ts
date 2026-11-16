@@ -42,9 +42,14 @@ export async function getStudentStats(studentId: string): Promise<StudentStats> 
 
     const completedSessions = sessionsResult.data ?? []
     const totalSessions = completedSessions.length
-    const lastWorkoutAt = completedSessions[0]
-        ? (completedSessions[0].finished_at ?? completedSessions[0].performed_date ?? completedSessions[0].started_at ?? null)
-        : null
+    // Actividad y cumplimiento no son lo mismo: una sesión parcial debe evitar
+    // un falso “inactivo”, aunque no aumente el contador de días completados.
+    const latestActivityLog = safeLogs.at(-1)
+    const lastWorkoutAt = latestActivityLog
+        ? (latestActivityLog.created_at ?? latestActivityLog.performed_at ?? null)
+        : completedSessions[0]
+            ? (completedSessions[0].finished_at ?? completedSessions[0].performed_date ?? completedSessions[0].started_at ?? null)
+            : null
 
     const logsByExercise = new Map<
         string,

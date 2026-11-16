@@ -12,7 +12,7 @@ import { getActiveStudentRoutine } from '@/lib/getActiveStudentRoutine'
 import { getRoutineSchedule } from '@/lib/getRoutineSchedule'
 import { resolveWeekdayDateInProgramWeek, type IsoWeekday } from '@/lib/routineCalendar'
 import { createClient } from '@/lib/supabase/server'
-import { getRoutineDayProgressStatus, type WorkoutSessionProgressRow } from '@/lib/trainingDomain'
+import { getRoutineDayProgress, type WorkoutSessionProgressRow } from '@/lib/trainingDomain'
 
 type PageProps = {
     searchParams?: Promise<{
@@ -152,11 +152,34 @@ export default async function AppRoutinePage(props: PageProps) {
     if (allTrainingDayIds.length > 0) {
         const { data, error } = await supabase
             .from('workout_sessions')
-            .select('routine_day_id, performed_date, status, completed_manually, completion_status')
+            .select('id, routine_day_id, performed_date, started_at, status, completed_manually, completion_status')
             .eq('student_id', studentId)
+            .in('status', ['in_progress', 'completed'])
             .in('routine_day_id', allTrainingDayIds)
         if (error) throw error
         sessions = (data ?? []) as WorkoutSessionProgressRow[]
+
+        const sessionIds = sessions.map((session) => session.id).filter((id): id is string => Boolean(id))
+        if (sessionIds.length > 0) {
+            const { data: logs, error: logsError } = await supabase
+                .from('exercise_logs')
+                .select('workout_session_id, routine_day_exercise_id, set_index, reps')
+                .in('workout_session_id', sessionIds)
+                .gt('reps', 0)
+            if (logsError) throw logsError
+
+            const recordedSetKeysBySession = new Map<string, Set<string>>()
+            for (const log of logs ?? []) {
+                if (!log.workout_session_id || !log.routine_day_exercise_id || log.set_index == null || log.set_index < 0) continue
+                const keys = recordedSetKeysBySession.get(log.workout_session_id) ?? new Set<string>()
+                keys.add(`${log.routine_day_exercise_id}:${log.set_index}`)
+                recordedSetKeysBySession.set(log.workout_session_id, keys)
+            }
+            sessions = sessions.map((session) => ({
+                ...session,
+                recorded_sets: session.id ? (recordedSetKeysBySession.get(session.id)?.size ?? 0) : 0,
+            }))
+        }
     }
 
     const today = getBuenosAiresDateString()
@@ -189,20 +212,22 @@ export default async function AppRoutinePage(props: PageProps) {
                 const scheduledDate = range && weekday
                     ? resolveWeekdayDateInProgramWeek(range.weekStart, weekday as IsoWeekday)
                     : null
+                const progress = range
+                    ? getRoutineDayProgress({
+                        dayId: day.id,
+                        sessions,
+                        today,
+                        weekStart: range.weekStart,
+                        weekEnd: range.weekEnd,
+                    })
+                    : { status: 'pending' as const, sessionId: null }
                 return {
                     id: day.id,
                     name: day.name?.trim() || `Entrenamiento ${dayPosition + 1}`,
                     dayIndex: dayPosition + 1,
                     scheduledDate,
-                    status: range
-                        ? getRoutineDayProgressStatus({
-                            dayId: day.id,
-                            sessions,
-                            today,
-                            weekStart: range.weekStart,
-                            weekEnd: range.weekEnd,
-                        }) satisfies RoutinePlannerStatus
-                        : 'pending',
+                    status: progress.status satisfies RoutinePlannerStatus,
+                    sessionId: progress.sessionId,
                     exercises: exercisesByDay.get(day.id) ?? [],
                 }
             }),

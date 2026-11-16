@@ -36,7 +36,7 @@ export async function startWorkoutSession(payload: {
     if (!error && payload.allowCompleted && firstResult?.just_completed && firstResult.session_id) {
         const { data: completedSession, error: completedSessionError } = await supabase
             .from('workout_sessions')
-            .select('completed_manually, completion_status')
+            .select('performed_date, completed_manually, completion_status')
             .eq('id', firstResult.session_id)
             .maybeSingle()
 
@@ -45,7 +45,10 @@ export async function startWorkoutSession(payload: {
             throw new Error('WORKOUT_SESSION_LOAD_FAILED')
         }
 
-        if (completedSession?.completed_manually !== true) {
+        if (
+            completedSession?.completed_manually !== true
+            || completedSession.performed_date !== rpcPayload.p_performed_date
+        ) {
             const retry = await supabase.rpc('start_workout_session_safe', {
                 ...rpcPayload,
                 p_allow_completed: false,

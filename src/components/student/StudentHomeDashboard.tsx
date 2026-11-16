@@ -61,7 +61,7 @@ function sentenceCase(value: string) {
 function primaryCopy(day: StudentHomeTrainingDay | null, today: string) {
     if (!day) return { eyebrow: 'Tu entrenamiento', action: 'Abrir rutina' }
     if (day.status === 'in_progress') return { eyebrow: 'Sesión en curso', action: 'Continuar entrenamiento' }
-    if (day.status === 'incomplete') return { eyebrow: 'Series pendientes', action: 'Completar entrenamiento' }
+    if (day.status === 'partial') return { eyebrow: 'Sesión parcial', action: 'Completar pendientes' }
     if (day.scheduledDate === today) return { eyebrow: 'Entrenamiento de hoy', action: 'Empezar entrenamiento' }
     if (day.scheduledDate && day.scheduledDate < today) return { eyebrow: 'Entrenamiento pendiente', action: 'Completar entrenamiento' }
     return { eyebrow: 'Próximo entrenamiento', action: 'Ver entrenamiento' }
@@ -70,7 +70,10 @@ function primaryCopy(day: StudentHomeTrainingDay | null, today: string) {
 function dayStatus(day: StudentHomeTrainingDay, today: string) {
     if (day.status === 'completed') return { label: 'Hecho', tone: 'text-emerald-400', dot: 'bg-emerald-400' }
     if (day.status === 'in_progress') return { label: 'En curso', tone: 'text-primary', dot: 'bg-primary' }
-    if (day.status === 'incomplete' || (day.scheduledDate && day.scheduledDate < today)) {
+    if (day.status === 'partial') {
+        return { label: 'Parcial', tone: 'text-amber-400', dot: 'bg-amber-400' }
+    }
+    if (day.scheduledDate && day.scheduledDate < today) {
         return { label: 'Pendiente', tone: 'text-amber-400', dot: 'bg-amber-400' }
     }
     if (day.scheduledDate === today) return { label: 'Hoy', tone: 'text-primary', dot: 'bg-primary' }

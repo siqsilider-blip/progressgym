@@ -93,8 +93,8 @@ export default async function AppHistoryPage() {
                 {sessions.length === 0 ? (
                     <div className="rounded-2xl border border-dashed border-border p-8 text-center">
                         <p className="text-4xl">🏋️</p>
-                        <p className="mt-3 text-sm font-semibold text-card-foreground">Todavía no hay sesiones completadas</p>
-                        <p className="mt-1 text-xs text-muted-foreground">Las sesiones aparecen acá después de finalizarlas.</p>
+                        <p className="mt-3 text-sm font-semibold text-card-foreground">Todavía no hay entrenamientos registrados</p>
+                        <p className="mt-1 text-xs text-muted-foreground">Las sesiones con al menos una serie guardada aparecerán acá.</p>
                     </div>
                 ) : (
                     <div className="space-y-6">
@@ -109,7 +109,7 @@ export default async function AppHistoryPage() {
                                                     <p className="text-sm font-bold text-card-foreground">{session.dayLabel}</p>
                                                     <p className="mt-0.5 text-xs text-muted-foreground">{formatDate(session.performedDate)}</p>
                                                     {session.completionStatus === 'incomplete' && (
-                                                        <p className="mt-1 text-[10px] font-bold text-amber-500">Finalizado con series pendientes</p>
+                                                        <p className="mt-1 text-[10px] font-bold text-amber-500">Sesión parcial · cuenta como actividad</p>
                                                     )}
                                                 </div>
                                                 <div className="flex shrink-0 items-center gap-2">
@@ -155,7 +155,7 @@ export default async function AppHistoryPage() {
                                             )}
                                             {session.routineDayId && session.routineWeekId && (
                                                 <Link
-                                                    href={`/app/train?session=${session.sessionId}`}
+                                                    href={`/app/train?session=${session.sessionId}&source=history`}
                                                     className="mt-3 inline-flex min-h-10 items-center rounded-xl border border-primary/25 bg-primary/10 px-3 text-xs font-bold text-primary"
                                                 >
                                                     Revisar / editar sesión

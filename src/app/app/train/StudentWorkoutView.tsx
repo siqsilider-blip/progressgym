@@ -179,6 +179,7 @@ export default function StudentWorkoutView({
     const [completedSession, setCompletedSession] = React.useState(initialSummary)
     const [incompleteSession, setIncompleteSession] = React.useState(initialIncomplete)
     const [finishConfirmation, setFinishConfirmation] = React.useState<{ completedSets: number; plannedSets: number } | null>(null)
+    const [readyToFinish, setReadyToFinish] = React.useState(false)
     const [summary, setSummary] = React.useState<{
         durationSeconds: number | null
         totalSets: number
@@ -199,6 +200,7 @@ export default function StudentWorkoutView({
     const autoSaveTimerRef = React.useRef<number | null>(null)
     const recoveredDraftKeysRef = React.useRef(new Set<string>())
     const continueTrainingButtonRef = React.useRef<HTMLButtonElement | null>(null)
+    const readyPromptShownRef = React.useRef(false)
     const restGenerationRef = React.useRef(0)
     const restNoticeQueueRef = React.useRef<Promise<void>>(Promise.resolve())
     const draftStorageKey = `progrezzia:workout-draft:${studentId}:${sessionId}`
@@ -275,6 +277,21 @@ export default function StudentWorkoutView({
         setRestDeadlineMs(null)
         queueRestNotice(() => cancelNativeRestNotice(sessionId))
     }, [queueRestNotice, sessionId])
+
+    React.useEffect(() => {
+        if (
+            completedSession
+            || totalPlannedSets <= 0
+            || savedSets < totalPlannedSets
+            || hasDraftChanges
+            || hasQueuedChanges
+            || readyPromptShownRef.current
+        ) return
+
+        readyPromptShownRef.current = true
+        stopRest()
+        setReadyToFinish(true)
+    }, [completedSession, hasDraftChanges, hasQueuedChanges, savedSets, stopRest, totalPlannedSets])
 
     React.useEffect(() => () => {
         restGenerationRef.current += 1
@@ -528,6 +545,10 @@ export default function StudentWorkoutView({
             }
 
             const latestSet = setsRef.current[exerciseIndex]?.[setIndex]
+            const savedBefore = setsRef.current.reduce(
+                (total, exerciseSets) => total + exerciseSets.filter((item) => item.saved).length,
+                0
+            )
             const valuesUnchanged = Boolean(
                 latestSet
                 && latestSet.weight === set.weight
@@ -548,7 +569,11 @@ export default function StudentWorkoutView({
             ))
             if (valuesUnchanged) recoveredDraftKeysRef.current.delete(draftKey)
 
-            if (valuesUnchanged && startRest && !cameFromRecoveredDraft && !completedSession && !incompleteSession && !set.saved && exercise.restSeconds > 0) {
+            const completesPlan = valuesUnchanged
+                && latestSet?.saved !== true
+                && savedBefore + 1 >= totalPlannedSets
+
+            if (valuesUnchanged && startRest && !completesPlan && !cameFromRecoveredDraft && !completedSession && !incompleteSession && !set.saved && exercise.restSeconds > 0) {
                 beginRest(exercise.restSeconds, exercise.exerciseName)
             }
             return valuesUnchanged
@@ -712,6 +737,7 @@ export default function StudentWorkoutView({
 
     async function finishWorkout(allowIncomplete = false) {
         if (finishing) return
+        setReadyToFinish(false)
         if (!window.navigator.onLine) {
             setIsOnline(false)
             const hasPendingChanges = hasDraftChanges || hasQueuedChanges
@@ -787,14 +813,14 @@ export default function StudentWorkoutView({
                             : <Check className="h-7 w-7" aria-hidden="true" />}
                     </div>
                     <h1 className="mt-3 text-xl font-black text-foreground">
-                        {isIncomplete ? 'Entrenamiento finalizado con pendientes' : 'Entrenamiento guardado'}
+                        {isIncomplete ? 'Sesión guardada como parcial' : 'Entrenamiento guardado'}
                     </h1>
                     <p className="mt-1 text-sm text-muted-foreground">
                         {dayLabel} · {summary.totalSets} de {summary.plannedSets} series · {formatDuration(summary.durationSeconds)}
                     </p>
                     <p className="mt-2 text-xs leading-5 text-muted-foreground">
                         {isIncomplete
-                            ? 'Este día no cuenta como completado todavía. Podés volver ahora o más adelante para registrar las series pendientes.'
+                            ? 'Cuenta como actividad, pero el día seguirá pendiente hasta que completes las series. Podés retomarlo cuando quieras.'
                             : 'Si necesitás corregir un peso, podés volver a abrir este día.'}
                     </p>
                 </section>
@@ -835,7 +861,7 @@ export default function StudentWorkoutView({
                     <h1 className="mt-0.5 text-xl font-black text-foreground">{dayLabel}</h1>
                 </div>
                 {completedSession && <span className="rounded-full bg-emerald-500/10 px-3 py-1.5 text-[11px] font-bold text-emerald-500">Finalizada · editable</span>}
-                {incompleteSession && <span className="rounded-full bg-amber-500/10 px-3 py-1.5 text-[11px] font-bold text-amber-500">Incompleta · editable</span>}
+                {incompleteSession && <span className="rounded-full bg-amber-500/10 px-3 py-1.5 text-[11px] font-bold text-amber-500">Parcial · editable</span>}
             </div>
 
             <div className="mt-3">
@@ -883,7 +909,7 @@ export default function StudentWorkoutView({
 
             {incompleteSession && (
                 <p className="mt-3 rounded-xl border border-amber-500/25 bg-amber-500/[0.06] px-3 py-2 text-xs leading-5 text-amber-500">
-                    Este día quedó incompleto y todavía no suma como entrenamiento realizado. Completá las series pendientes y volvé a finalizarlo.
+                    Esta sesión cuenta como actividad, pero todavía no completa el día. Registrá las series pendientes y volvé a finalizarla.
                 </p>
             )}
 
@@ -1111,11 +1137,33 @@ export default function StudentWorkoutView({
                     <button type="button" onClick={() => router.push(returnHref)} className={`min-h-12 rounded-xl border border-border bg-secondary px-4 text-sm font-semibold text-foreground ${completedSession ? 'flex-1' : ''}`}>{returnLabel}</button>
                     {!completedSession && (
                         <button type="button" onClick={() => finishWorkout(false)} disabled={finishing} className="min-h-12 flex-1 rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground disabled:opacity-50">
-                            {finishing ? 'Finalizando…' : 'Finalizar entrenamiento'}
+                            {finishing ? 'Finalizando…' : savedSets >= totalPlannedSets ? `Finalizar · ${savedSets}/${totalPlannedSets}` : 'Finalizar entrenamiento'}
                         </button>
                     )}
                 </div>
             </div>
+
+            {readyToFinish && !completedSession && (
+                <div className="fixed inset-0 z-[75] flex items-end justify-center bg-black/70 p-4 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] sm:items-center" role="presentation">
+                    <section role="dialog" aria-modal="true" aria-labelledby="ready-to-finish-title" className="w-full max-w-md rounded-2xl border border-primary/30 bg-card p-5 shadow-2xl">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400">
+                            <Check className="h-6 w-6" aria-hidden="true" />
+                        </div>
+                        <h2 id="ready-to-finish-title" className="mt-3 text-lg font-black text-foreground">Todas las series listas</h2>
+                        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                            Guardaste {savedSets} de {totalPlannedSets} series. Revisá tus datos o finalizá para marcar el entrenamiento como completado.
+                        </p>
+                        <div className="mt-5 grid grid-cols-2 gap-2">
+                            <button type="button" onClick={() => setReadyToFinish(false)} className="min-h-12 rounded-xl border border-border bg-secondary px-3 text-sm font-bold text-foreground">
+                                Revisar
+                            </button>
+                            <button type="button" onClick={() => finishWorkout(false)} disabled={finishing} className="min-h-12 rounded-xl bg-primary px-3 text-sm font-black text-primary-foreground disabled:opacity-50">
+                                {finishing ? 'Finalizando…' : 'Finalizar entrenamiento'}
+                            </button>
+                        </div>
+                    </section>
+                </div>
+            )}
 
             {finishConfirmation && (
                 <div className="fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto bg-black/70 p-4 pb-24" role="presentation">
@@ -1129,10 +1177,10 @@ export default function StudentWorkoutView({
                         <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-500/15 text-amber-500">
                             <AlertTriangle className="h-6 w-6" aria-hidden="true" />
                         </div>
-                        <h2 id="incomplete-workout-title" className="mt-3 text-lg font-black text-foreground">¿Finalizar entrenamiento incompleto?</h2>
+                        <h2 id="incomplete-workout-title" className="mt-3 text-lg font-black text-foreground">¿Terminaste por hoy?</h2>
                         <p id="incomplete-workout-description" className="mt-2 text-sm leading-6 text-muted-foreground">
-                            Te quedan {finishConfirmation.plannedSets - finishConfirmation.completedSets} de {finishConfirmation.plannedSets} series sin registrar.
-                            Si terminás ahora, el día quedará incompleto y no contará como entrenamiento completado.
+                            Guardaste {finishConfirmation.completedSets} de {finishConfirmation.plannedSets} series. Las {finishConfirmation.plannedSets - finishConfirmation.completedSets} restantes quedarán pendientes.
+                            Esta sesión contará como actividad, pero el día no se marcará como completado.
                         </p>
                         <div className="mt-5 grid grid-cols-2 gap-2">
                             <button
@@ -1149,7 +1197,7 @@ export default function StudentWorkoutView({
                                 disabled={finishing}
                                 className="min-h-12 rounded-xl bg-amber-500 px-3 text-sm font-black text-black disabled:opacity-50"
                             >
-                                {finishing ? 'Finalizando…' : 'Finalizar incompleto'}
+                                {finishing ? 'Guardando…' : 'Terminar como parcial'}
                             </button>
                         </div>
                     </section>

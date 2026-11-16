@@ -3,7 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getBuenosAiresDateString, getElapsedProgramWeekIndex } from '@/lib/buenosAiresDate'
 import { getProgramCyclePosition } from '@/lib/trainingDomain'
 import { getRoutineExerciseNameMap } from '@/lib/coaching/getRoutineExerciseNames'
-import { formatOpenSessionAge, isStaleOpenSession } from '@/lib/trainerAlertTime'
+import { formatOpenSessionAge, getSessionActivityAt, isStaleOpenSession } from '@/lib/trainerAlertTime'
 import { getTrainerStudents } from './getTrainerStudents'
 
 export type TrainerAlert = {
@@ -24,7 +24,7 @@ type AssignmentRow = {
 }
 
 type WeekRow = { routine_id: string }
-type SessionRow = { student_id: string; started_at: string }
+type SessionRow = { id: string; student_id: string; started_at: string; last_activity_at?: string }
 type FollowUpRow = { student_id: string; alert_type: TrainerAlert['type'] }
 type WeeklyCheckinRow = {
     student_id: string
@@ -64,10 +64,9 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
     const [workoutsResult, routinesResult, activeSessionsResult, followUpsResult, weeklyCheckinsResult, workoutPainResult, conversationsResult, progressPhotosResult, linkedProfilesResult, onboardingResult] = await Promise.all([
         supabase
             .from('exercise_logs')
-            .select('student_id, performed_at')
+            .select('student_id, performed_at, created_at')
             .in('student_id', studentIds)
-            .not('performed_at', 'is', null)
-            .order('performed_at', { ascending: false }),
+            .order('created_at', { ascending: false }),
 
         supabase
             .from('student_routines')
@@ -77,7 +76,7 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
 
         supabase
             .from('workout_sessions')
-            .select('student_id, started_at')
+            .select('id, student_id, started_at')
             .in('student_id', studentIds)
             .eq('status', 'in_progress'),
 
@@ -166,7 +165,30 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
 
     const workouts = workoutsResult.data ?? []
     const routines = (routinesResult.data as AssignmentRow[] | null) ?? []
-    const activeSessions = (activeSessionsResult.data as SessionRow[] | null) ?? []
+    let activeSessions = (activeSessionsResult.data as SessionRow[] | null) ?? []
+    const activeSessionIds = activeSessions.map((session) => session.id)
+    if (activeSessionIds.length > 0) {
+        const { data: activeLogs, error: activeLogsError } = await supabase
+            .from('exercise_logs')
+            .select('workout_session_id, created_at')
+            .in('workout_session_id', activeSessionIds)
+            .order('created_at', { ascending: false })
+
+        if (activeLogsError) {
+            console.error('Error fetching active session activity:', activeLogsError)
+        } else {
+            const latestActivityBySession = new Map<string, string>()
+            for (const log of activeLogs ?? []) {
+                if (log.workout_session_id && log.created_at && !latestActivityBySession.has(log.workout_session_id)) {
+                    latestActivityBySession.set(log.workout_session_id, log.created_at)
+                }
+            }
+            activeSessions = activeSessions.map((session) => ({
+                ...session,
+                last_activity_at: latestActivityBySession.get(session.id) ?? session.started_at,
+            }))
+        }
+    }
     const linkedProfiles = (linkedProfilesResult.data as LinkedProfileRow[] | null) ?? []
     const completedOnboardingStudentIds = new Set(
         ((onboardingResult.data as OnboardingRow[] | null) ?? [])
@@ -280,8 +302,8 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
 
     const lastWorkoutByStudent = new Map<string, string>()
     for (const log of workouts) {
-        if (!lastWorkoutByStudent.has(log.student_id) && log.performed_at) {
-            lastWorkoutByStudent.set(log.student_id, String(log.performed_at))
+        if (!lastWorkoutByStudent.has(log.student_id) && (log.created_at || log.performed_at)) {
+            lastWorkoutByStudent.set(log.student_id, String(log.created_at ?? log.performed_at))
         }
     }
 
@@ -291,12 +313,13 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
     const staleSessionByStudent = new Map<string, SessionRow>()
 
     for (const session of activeSessions) {
-        if (!isStaleOpenSession(session.started_at, now)) continue
+        const activityAt = getSessionActivityAt(session.started_at, session.last_activity_at)
+        if (!isStaleOpenSession(activityAt, now)) continue
 
         const current = staleSessionByStudent.get(session.student_id)
         if (
             !current
-            || new Date(session.started_at).getTime() > new Date(current.started_at).getTime()
+            || new Date(activityAt).getTime() > new Date(current.last_activity_at ?? current.started_at).getTime()
         ) {
             staleSessionByStudent.set(session.student_id, session)
         }
@@ -390,7 +413,7 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
                     studentId: student.id,
                     studentName: fullName,
                     studentPhone: student.phone ?? null,
-                    message: `${fullName} dejó una sesión abierta ${formatOpenSessionAge(staleSession.started_at, now)}.`,
+                    message: `${fullName} tiene una sesión abierta sin actividad ${formatOpenSessionAge(getSessionActivityAt(staleSession.started_at, staleSession.last_activity_at), now)}.`,
                     actionHref: `/dashboard/students/${student.id}/train`,
                 })
             }

@@ -17,6 +17,7 @@ type PageProps = {
         month?: string
         session?: string
         view?: string
+        source?: 'home' | 'routine' | 'history'
     }>
 }
 
@@ -147,12 +148,20 @@ export default async function AppTrainPage(props: PageProps) {
         if (
             !session
             || session.status !== 'completed'
-            || session.completed_manually !== true
             || !session.routine_day_id
             || !/^\d{4}-\d{2}-\d{2}$/.test(performedDate)
         ) {
             return <HistoricalSessionUnavailable />
         }
+
+        const { count: recordedSets, error: recordedSetsError } = await supabase
+            .from('exercise_logs')
+            .select('id', { count: 'exact', head: true })
+            .eq('workout_session_id', session.id)
+            .gt('reps', 0)
+
+        if (recordedSetsError) throwWorkoutLoadError('historical session logs', recordedSetsError)
+        if (!recordedSets) return <HistoricalSessionUnavailable />
 
         const { data: sessionDay, error: sessionDayError } = await supabase
             .from('routine_days')
@@ -179,7 +188,9 @@ export default async function AppTrainPage(props: PageProps) {
             id: session.id,
             routineDayId: session.routine_day_id,
             performedDate,
-            completionStatus: session.completion_status === 'incomplete' ? 'incomplete' : 'complete',
+            completionStatus: session.completed_manually === true && session.completion_status === 'complete'
+                ? 'complete'
+                : 'incomplete',
         }
     } else {
         const assignment = await getActiveStudentRoutine(supabase, studentId)
@@ -542,8 +553,19 @@ export default async function AppTrainPage(props: PageProps) {
 
     const fullName = `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim()
     const routineReturnHref = `/app/rutina?${selectedMonth ? `month=${selectedMonth.id}&` : ''}week=${selectedWeek?.id}&day=${selectedDayId}&view=${searchParams?.view === 'month' ? 'month' : 'week'}`
-    const returnHref = historicalSession ? '/app/history' : routineReturnHref
-    const returnLabel = historicalSession ? 'Volver al historial' : 'Volver a la rutina'
+    const historicalReturnHref = searchParams?.source === 'home'
+        ? '/app'
+        : searchParams?.source === 'routine'
+            ? routineReturnHref
+            : '/app/history'
+    const returnHref = historicalSession ? historicalReturnHref : routineReturnHref
+    const returnLabel = historicalSession
+        ? searchParams?.source === 'home'
+            ? 'Volver al inicio'
+            : searchParams?.source === 'routine'
+                ? 'Volver a la rutina'
+                : 'Volver al historial'
+        : 'Volver a la rutina'
 
     if (!selectedDay || exercisesForDay.length === 0) {
         return (
@@ -588,32 +610,19 @@ export default async function AppTrainPage(props: PageProps) {
                             </Link>
                         </div>
                     ) : (
-                        <>
-                            <p className="mb-2 text-xs text-muted-foreground">
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="min-w-0">
+                            <p className="truncate text-xs text-muted-foreground">
                                 {routine?.name}
                                 {selectedMonth ? ` · ${selectedMonth.name || `Mes ${selectedMonth.month_number}`}` : ''}
                                 {selectedWeek ? ` · ${selectedWeek.name || `Sem. ${selectedWeek.week_number}`}` : ''}
                             </p>
-                            <div className="flex gap-1.5 overflow-x-auto pb-1">
-                                {routineDays.map((day, idx) => {
-                                    const label = day.name?.trim() || `Día ${day.day_index ?? idx + 1}`
-                                    const isActive = day.id === selectedDayId
-                                    return (
-                                        <Link
-                                            key={day.id}
-                                            href={`/app/train?${selectedMonth ? `month=${selectedMonth.id}&` : ''}week=${selectedWeek?.id}&day=${day.id}`}
-                                            prefetch={true}
-                                            className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition ${isActive
-                                                    ? 'bg-primary text-primary-foreground'
-                                                    : 'border border-border bg-secondary text-secondary-foreground hover:bg-muted'
-                                                }`}
-                                        >
-                                            {label}
-                                        </Link>
-                                    )
-                                })}
+                            <p className="mt-0.5 truncate text-sm font-bold text-foreground">{selectedDayLabel}</p>
                             </div>
-                        </>
+                            <Link href={routineReturnHref} className="shrink-0 rounded-lg border border-border bg-secondary px-3 py-2 text-xs font-semibold text-foreground">
+                                Cambiar
+                            </Link>
+                        </div>
                     )}
                 </div>
             </div>

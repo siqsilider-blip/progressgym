@@ -1,5 +1,15 @@
 const HOUR_MS = 60 * 60 * 1000
 
+export function getSessionActivityAt(startedAt: string | Date, lastActivityAt?: string | Date | null) {
+    if (lastActivityAt) {
+        const activityMs = lastActivityAt instanceof Date
+            ? lastActivityAt.getTime()
+            : new Date(lastActivityAt).getTime()
+        if (Number.isFinite(activityMs)) return lastActivityAt
+    }
+    return startedAt
+}
+
 function elapsedMilliseconds(startedAt: string | Date, now: Date) {
     const startedAtMs = startedAt instanceof Date
         ? startedAt.getTime()
@@ -19,8 +29,8 @@ export function isStaleOpenSession(
 }
 
 /**
- * Human-readable age for a trainer alert. The stale threshold is kept out of
- * the copy so two sessions opened at different moments never look identical.
+ * Human-readable time since the last meaningful session activity. The stale
+ * threshold is kept out of the copy so alerts never all say “hace 6 horas”.
  */
 export function formatOpenSessionAge(startedAt: string | Date, now = new Date()) {
     const elapsedMs = elapsedMilliseconds(startedAt, now)

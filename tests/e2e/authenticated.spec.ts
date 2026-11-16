@@ -178,20 +178,20 @@ test('el alumno entra a su portal y no al panel del entrenador', async ({ page }
     // No se puede marcar el día completo por accidente si todavía faltan series.
     await page.getByRole('button', { name: 'Finalizar entrenamiento' }).click()
     const incompleteDialog = page.getByRole('dialog')
-    await expect(incompleteDialog.getByRole('heading', { name: '¿Finalizar entrenamiento incompleto?' })).toBeVisible()
-    await expect(incompleteDialog.getByText('Te quedan 2 de 3 series sin registrar.', { exact: false })).toBeVisible()
+    await expect(incompleteDialog.getByRole('heading', { name: '¿Terminaste por hoy?' })).toBeVisible()
+    await expect(incompleteDialog.getByText('Guardaste 1 de 3 series.', { exact: false })).toBeVisible()
     await incompleteDialog.getByRole('button', { name: 'Seguir entrenando' }).click()
     await expect(page.getByRole('heading', { name: 'Entrenamiento guardado' })).toHaveCount(0)
 
     // Si decide terminar, persiste como incompleto y no completa falsamente la semana.
     await page.getByRole('button', { name: 'Finalizar entrenamiento' }).click()
-    await page.getByRole('dialog').getByRole('button', { name: 'Finalizar incompleto' }).click()
-    await expect(page.getByRole('heading', { name: 'Entrenamiento finalizado con pendientes' })).toBeVisible({ timeout: 15_000 })
+    await page.getByRole('dialog').getByRole('button', { name: 'Terminar como parcial' }).click()
+    await expect(page.getByRole('heading', { name: 'Sesión guardada como parcial' })).toBeVisible({ timeout: 15_000 })
     await page.getByRole('button', { name: 'Volver a la rutina' }).click()
     await expect(page.getByText('Semana completada ✓')).toHaveCount(0)
-    await expect(page.getByText('Series pendientes · todavía no cuenta como completado')).toBeVisible()
-    await page.getByRole('link', { name: 'Completar →' }).click()
-    await expect(page.getByText('Incompleta · editable')).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByText('Sesión parcial · cuenta como actividad, pero no completa el día')).toBeVisible()
+    await page.getByRole('link', { name: 'Completar pendientes →' }).click()
+    await expect(page.getByText('Parcial · editable')).toBeVisible({ timeout: 15_000 })
 
     // El peso solo no alcanza: las repeticiones son obligatorias.
     await page.getByLabel('Peso serie 2').fill('37.5')
@@ -203,7 +203,9 @@ test('el alumno entra a su portal y no al panel del entrenador', async ({ page }
     await expect(page.getByRole('button', { name: 'Guardar serie 3' })).toContainText('Actualizar', { timeout: 20_000 })
     await expect(page.getByText('3 de 3 series', { exact: true }).first()).toBeVisible({ timeout: 20_000 })
 
-    await page.getByRole('button', { name: 'Finalizar entrenamiento' }).click()
+    const readyDialog = page.getByRole('dialog')
+    await expect(readyDialog.getByRole('heading', { name: 'Todas las series listas' })).toBeVisible()
+    await readyDialog.getByRole('button', { name: 'Finalizar entrenamiento' }).click()
 
     await expect(page.getByRole('heading', { name: 'Entrenamiento guardado' })).toBeVisible({ timeout: 15_000 })
     await page.getByRole('button', { name: 'Sí', exact: true }).click()

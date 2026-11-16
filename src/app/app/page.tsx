@@ -173,13 +173,18 @@ export default async function AppHomePage() {
                         const dayName = day.name?.trim()
                             || day.title?.trim()
                             || `Entrenamiento ${dayPosition + 1}`
-                        const href = `/app/train?${selectedMonthId ? `month=${selectedMonthId}&` : ''}week=${selectedWeekId}&day=${day.id}`
+                        const status = progress?.statusByDayId.get(day.id) ?? 'pending'
+                        const sessionId = progress?.sessionIdByDayId.get(day.id) ?? null
+                        const scheduleQuery = `${selectedMonthId ? `month=${selectedMonthId}&` : ''}week=${selectedWeekId}&day=${day.id}`
+                        const href = sessionId && (status === 'partial' || status === 'completed')
+                            ? `/app/train?session=${sessionId}&source=home&${scheduleQuery}`
+                            : `/app/train?${scheduleQuery}`
 
                         return {
                             id: day.id,
                             name: dayName,
                             scheduledDate,
-                            status: progress?.statusByDayId.get(day.id) ?? 'pending',
+                            status,
                             exerciseCount: dayExercises.length,
                             totalSets: dayExercises.reduce((sum, exercise) => sum + (exercise.sets ?? 3), 0),
                             href,
@@ -199,7 +204,7 @@ export default async function AppHomePage() {
 
                     selectedHomeDay = unfinishedDays.find((day) => day.status === 'in_progress')
                         ?? unfinishedDays.find((day) => day.scheduledDate === today)
-                        ?? unfinishedDays.find((day) => day.status === 'incomplete')
+                        ?? unfinishedDays.find((day) => day.status === 'partial')
                         ?? overdueDay
                         ?? upcomingDay
                         ?? unfinishedDays[0]

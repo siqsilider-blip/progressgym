@@ -1,7 +1,7 @@
 import type { createClient } from '@/lib/supabase/server'
 import { getBuenosAiresDateString, getCurrentBuenosAiresWeek } from '@/lib/buenosAiresDate'
 import {
-    getRoutineDayProgressStatus,
+    getRoutineDayProgress,
     type RoutineDayProgressStatus,
     type WorkoutSessionProgressRow,
 } from '@/lib/trainingDomain'
@@ -12,9 +12,10 @@ type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>
 
 export type RoutineWeekProgress = {
     statusByDayId: Map<string, RoutineDayProgressStatus>
+    sessionIdByDayId: Map<string, string>
     completedDayIds: Set<string>
     inProgressDayIds: Set<string>
-    incompleteDayIds: Set<string>
+    partialDayIds: Set<string>
     weekStart: string
     weekEnd: string
 }
@@ -33,56 +34,69 @@ export async function getStudentRoutineWeekProgress(
     const { weekStart, weekEnd } = programWeekRange ?? getCurrentBuenosAiresWeek()
     const today = getBuenosAiresDateString()
     const statusByDayId = new Map<string, RoutineDayProgressStatus>()
+    const sessionIdByDayId = new Map<string, string>()
     const completedDayIds = new Set<string>()
     const inProgressDayIds = new Set<string>()
-    const incompleteDayIds = new Set<string>()
+    const partialDayIds = new Set<string>()
 
     for (const dayId of routineDayIds) statusByDayId.set(dayId, 'pending')
 
     if (routineDayIds.length === 0) {
-        return { statusByDayId, completedDayIds, inProgressDayIds, incompleteDayIds, weekStart, weekEnd }
+        return { statusByDayId, sessionIdByDayId, completedDayIds, inProgressDayIds, partialDayIds, weekStart, weekEnd }
     }
 
-    const [activeResult, completedResult] = await Promise.all([
-        supabase
-            .from('workout_sessions')
-            .select('routine_day_id, performed_date, status, completed_manually, completion_status')
-            .eq('student_id', studentId)
-            .eq('status', 'in_progress')
-            .eq('performed_date', today)
-            .in('routine_day_id', routineDayIds),
-        supabase
-            .from('workout_sessions')
-            .select('routine_day_id, performed_date, status, completed_manually, completion_status')
-            .eq('student_id', studentId)
-            .eq('status', 'completed')
-            .eq('completed_manually', true)
-            .gte('performed_date', weekStart)
-            .lte('performed_date', weekEnd)
-            .in('routine_day_id', routineDayIds),
-    ])
+    const sessionsResult = await supabase
+        .from('workout_sessions')
+        .select('id, routine_day_id, performed_date, started_at, status, completed_manually, completion_status')
+        .eq('student_id', studentId)
+        .in('status', ['in_progress', 'completed'])
+        .gte('performed_date', weekStart)
+        .lte('performed_date', weekEnd)
+        .in('routine_day_id', routineDayIds)
 
-    if (activeResult.error) throw activeResult.error
-    if (completedResult.error) throw completedResult.error
+    if (sessionsResult.error) throw sessionsResult.error
 
-    const sessions: WorkoutSessionProgressRow[] = [
-        ...((completedResult.data as WorkoutSessionProgressRow[] | null) ?? []),
-        ...((activeResult.data as WorkoutSessionProgressRow[] | null) ?? []),
-    ]
+    const sessions = ((sessionsResult.data as WorkoutSessionProgressRow[] | null) ?? [])
+    const sessionIds = sessions.map((session) => session.id).filter((id): id is string => Boolean(id))
+    const recordedSetKeysBySession = new Map<string, Set<string>>()
+
+    if (sessionIds.length > 0) {
+        const { data: logs, error: logsError } = await supabase
+            .from('exercise_logs')
+            .select('workout_session_id, routine_day_exercise_id, set_index, reps')
+            .in('workout_session_id', sessionIds)
+            .gt('reps', 0)
+
+        if (logsError) throw logsError
+
+        for (const log of logs ?? []) {
+            if (!log.workout_session_id || !log.routine_day_exercise_id || log.set_index == null || log.set_index < 0) continue
+            const keys = recordedSetKeysBySession.get(log.workout_session_id) ?? new Set<string>()
+            keys.add(`${log.routine_day_exercise_id}:${log.set_index}`)
+            recordedSetKeysBySession.set(log.workout_session_id, keys)
+        }
+    }
+
+    const sessionsWithActivity: WorkoutSessionProgressRow[] = sessions.map((session) => ({
+        ...session,
+        recorded_sets: session.id ? (recordedSetKeysBySession.get(session.id)?.size ?? 0) : 0,
+    }))
 
     for (const dayId of routineDayIds) {
-        const status = getRoutineDayProgressStatus({
+        const progress = getRoutineDayProgress({
             dayId,
-            sessions,
+            sessions: sessionsWithActivity,
             today,
             weekStart,
             weekEnd,
         })
+        const status = progress.status
         statusByDayId.set(dayId, status)
+        if (progress.sessionId) sessionIdByDayId.set(dayId, progress.sessionId)
         if (status === 'completed') completedDayIds.add(dayId)
-        if (status === 'incomplete') incompleteDayIds.add(dayId)
+        if (status === 'partial') partialDayIds.add(dayId)
         if (status === 'in_progress') inProgressDayIds.add(dayId)
     }
 
-    return { statusByDayId, completedDayIds, inProgressDayIds, incompleteDayIds, weekStart, weekEnd }
+    return { statusByDayId, sessionIdByDayId, completedDayIds, inProgressDayIds, partialDayIds, weekStart, weekEnd }
 }

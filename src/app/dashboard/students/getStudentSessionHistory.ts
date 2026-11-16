@@ -28,19 +28,19 @@ export async function getStudentSessionHistory(
     limit = 20
 ): Promise<SessionHistoryItem[]> {
     const supabase = await createClient()
+    const sessionFetchLimit = Math.max(limit * 4, 100)
 
     // Traer primero las sesiones recientes. Antes se descargaba el índice
     // completo de logs solo para descubrir IDs, algo que empeoraba a medida
     // que crecía el historial del alumno.
     const { data: sessions, error: sessionsError } = await supabase
         .from('workout_sessions')
-        .select('id, performed_date, started_at, finished_at, duration_seconds, routine_day_id, notes, completion_status')
+        .select('id, performed_date, started_at, finished_at, duration_seconds, routine_day_id, notes, completed_manually, completion_status')
         .eq('student_id', studentId)
         .eq('status', 'completed')
-        .eq('completed_manually', true)
         .order('performed_date', { ascending: false })
         .order('started_at', { ascending: false })
-        .limit(limit)
+        .limit(sessionFetchLimit)
 
     if (sessionsError || !sessions || sessions.length === 0) return []
 
@@ -180,7 +180,9 @@ export async function getStudentSessionHistory(
             performedDate: session.performed_date ?? String(session.started_at ?? '').split('T')[0],
             startedAt: session.started_at ?? '',
             durationSeconds: session.duration_seconds ?? null,
-            completionStatus: session.completion_status === 'incomplete' ? 'incomplete' : 'complete',
+            completionStatus: session.completed_manually === true && session.completion_status === 'complete'
+                ? 'complete' as const
+                : 'incomplete' as const,
             dayLabel: session.routine_day_id
                 ? (dayLabelMap.get(session.routine_day_id) ?? 'Sesión')
                 : 'Sesión',
@@ -189,4 +191,5 @@ export async function getStudentSessionHistory(
             exercises,
         }
         })
+        .slice(0, limit)
 }
