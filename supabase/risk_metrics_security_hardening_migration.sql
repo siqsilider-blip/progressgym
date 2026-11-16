@@ -45,11 +45,23 @@ begin
       E'#variable_conflict use_column\nbegin\n\n  if auth.uid() is null then\n    raise exception ''No autenticado'';\n  end if;'
     );
 
+    -- pg_get_functiondef/prosrc puede conservar BEGIN en mayúsculas, CRLF o
+    -- espacios distintos después de la directiva de resolución de nombres.
+    -- Esta variante tolerante mantiene intacto el resto de la función.
     if function_body = original_body then
       function_body := regexp_replace(
         function_body,
-        '^[[:space:]]*begin',
-        E'begin\n\n  if auth.uid() is null then\n    raise exception ''No autenticado'';\n  end if;',
+        '(#variable_conflict[[:space:]]+use_column[[:space:]]*begin)',
+        E'\\1\n\n  if auth.uid() is null then\n    raise exception ''No autenticado'';\n  end if;',
+        'i'
+      );
+    end if;
+
+    if function_body = original_body then
+      function_body := regexp_replace(
+        function_body,
+        '(^|[\r\n])([[:space:]]*)begin([[:space:]]*)',
+        E'\\1\\2begin\n\n  if auth.uid() is null then\n    raise exception ''No autenticado'';\n  end if;\\3',
         'i'
       );
     end if;
