@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { getAccountDeletionAccessState } from '@/lib/account-deletion/access'
 
 type InvitationVerificationType = 'signup' | 'recovery'
 
@@ -26,6 +27,20 @@ export async function acceptStudentInvitation(formData: FormData) {
     if (error) {
         console.error('[auth/invitation] verifyOtp error:', error)
         redirect('/forgot-password?message=El enlace no es válido o expiró. Pedile uno nuevo a tu entrenador.')
+    }
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    if (userError || !user) {
+        await supabase.auth.signOut()
+        redirect('/forgot-password?message=El enlace no es válido o expiró. Pedile uno nuevo a tu entrenador.')
+    }
+
+    const accessState = await getAccountDeletionAccessState(supabase, user.id)
+    if (accessState !== 'allowed') {
+        await supabase.auth.signOut()
+        redirect(accessState === 'blocked'
+            ? '/account-deletion?pending=1'
+            : '/account-deletion?verification=1')
     }
 
     redirect('/reset-password?invite=1')

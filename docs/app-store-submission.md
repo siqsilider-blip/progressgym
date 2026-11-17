@@ -60,7 +60,10 @@ Preparar de 3 a 6 capturas reales, sin datos personales, para el tamaño princip
 
 ## Antes del empaquetado iOS
 
-- [ ] Ejecutar `supabase/account_deletion_migration.sql` en producción.
+- [ ] Ejecutar `supabase/account_deletion_processor_migration.sql` en producción.
+- [ ] Revisar y resolver las solicitudes históricas que queden en `needs_review`.
+- [ ] Ejecutar `supabase/student_deactivation_migration.sql` en producción.
+- [ ] Configurar `CRON_SECRET` en Vercel Production y confirmar el cron diario.
 - [ ] Probar una solicitud de eliminación con una cuenta descartable.
 - [ ] Confirmar que privacidad, términos, soporte y eliminación son públicos.
 - [ ] Confirmar que el correo de soporte recibe mensajes.

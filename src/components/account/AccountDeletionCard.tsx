@@ -21,7 +21,17 @@ export default function AccountDeletionCard({ compact = false }: { compact?: boo
                 setError(result.error)
                 return
             }
-            window.location.assign('/account-deletion?requested=1')
+            try {
+                for (let index = window.localStorage.length - 1; index >= 0; index -= 1) {
+                    const key = window.localStorage.key(index)
+                    if (key?.startsWith('progrezzia:')) window.localStorage.removeItem(key)
+                }
+            } catch {
+                // Safari y algunos WebViews pueden bloquear localStorage. La
+                // solicitud ya fue registrada, así que la salida debe seguir.
+            } finally {
+                window.location.assign('/account-deletion?requested=1')
+            }
         })
     }
 
@@ -44,7 +54,7 @@ export default function AccountDeletionCard({ compact = false }: { compact?: boo
                 <div>
                     <p className="text-sm font-bold text-red-500">Solicitar eliminación</p>
                     <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                        Se cerrará tu sesión y eliminaremos la cuenta y sus datos dentro de 7 días. Podés contactar a soporte durante ese plazo.
+                        Se cerrarán tus sesiones y programaremos la eliminación para dentro de 7 días. Podés contactar a soporte durante ese plazo.
                     </p>
                 </div>
                 <button type="button" onClick={() => { setExpanded(false); setError(''); setConfirmation('') }} className="rounded-lg p-1 text-muted-foreground hover:bg-white/5" aria-label="Cancelar eliminación">

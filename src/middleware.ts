@@ -22,6 +22,7 @@ export async function middleware(request: NextRequest) {
         pathname === '/account-deletion' ||
         pathname === '/api/health' ||
         pathname === '/api/android/assetlinks' ||
+        pathname === '/api/internal/account-deletions/process' ||
         pathname === '/.well-known/assetlinks.json' ||
         pathname.startsWith('/auth')
 

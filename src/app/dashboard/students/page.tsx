@@ -55,6 +55,7 @@ export default async function StudentsPage() {
         .from('students')
         .select('id, first_name, last_name, email, active_plan, created_at')
         .eq('trainer_id', user.id)
+        .neq('active_plan', 'inactive')
 
     if (studentsError) {
         return (

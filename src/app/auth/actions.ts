@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+import { getAccountDeletionAccessState } from '@/lib/account-deletion/access'
 
 // El role de un profile nuevo lo decide EXCLUSIVAMENTE este código server-side,
 // nunca el cliente. Por eso este insert corre con supabaseAdmin (bypassea RLS)
@@ -24,15 +25,14 @@ async function stopPendingDeletionLogin(
     supabase: Awaited<ReturnType<typeof createClient>>,
     userId: string
 ) {
-    const { data, error } = await supabase
-        .from('account_deletion_requests')
-        .select('status')
-        .eq('user_id', userId)
-        .eq('status', 'pending')
-        .maybeSingle()
+    const accessState = await getAccountDeletionAccessState(supabase, userId)
 
-    // Mientras la migración aún no exista, el login sigue funcionando.
-    if (!error && data) {
+    if (accessState === 'verification_failed') {
+        await supabase.auth.signOut()
+        redirect('/account-deletion?verification=1')
+    }
+
+    if (accessState === 'blocked') {
         await supabase.auth.signOut()
         redirect('/account-deletion?pending=1')
     }
@@ -124,19 +124,22 @@ export async function loginTrainer(formData: FormData) {
         redirect('/login/trainer?message=Email o contraseña incorrectos')
     }
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) {
-        await stopPendingDeletionLogin(supabase, user.id)
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', user.id)
-            .maybeSingle()
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    if (userError || !user) {
+        await supabase.auth.signOut()
+        redirect('/login/trainer?message=No se pudo verificar tu sesión. Intentá de nuevo.')
+    }
 
-        if (profile?.role === 'student') {
-            await supabase.auth.signOut()
-            redirect('/login/trainer?message=Esta cuenta es de alumno. Usá el login de alumno.')
-        }
+    await stopPendingDeletionLogin(supabase, user.id)
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .maybeSingle()
+
+    if (profile?.role === 'student') {
+        await supabase.auth.signOut()
+        redirect('/login/trainer?message=Esta cuenta es de alumno. Usá el login de alumno.')
     }
 
     redirect('/dashboard')
@@ -155,24 +158,27 @@ export async function loginStudent(formData: FormData) {
         redirect('/login/student?message=Email o contraseña incorrectos')
     }
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) {
-        await stopPendingDeletionLogin(supabase, user.id)
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('role, student_id')
-            .eq('id', user.id)
-            .maybeSingle()
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    if (userError || !user) {
+        await supabase.auth.signOut()
+        redirect('/login/student?message=No se pudo verificar tu sesión. Intentá de nuevo.')
+    }
 
-        if (profile?.role !== 'student') {
-            await supabase.auth.signOut()
-            redirect('/login/student?message=Esta cuenta es de entrenador. Usá el login de entrenador.')
-        }
+    await stopPendingDeletionLogin(supabase, user.id)
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, student_id')
+        .eq('id', user.id)
+        .maybeSingle()
 
-        if (!profile.student_id) {
-            await supabase.auth.signOut()
-            redirect('/login/student?message=Tu acceso todavía no está vinculado a una ficha. Pedile una nueva invitación a tu entrenador.')
-        }
+    if (profile?.role !== 'student') {
+        await supabase.auth.signOut()
+        redirect('/login/student?message=Esta cuenta es de entrenador. Usá el login de entrenador.')
+    }
+
+    if (!profile.student_id) {
+        await supabase.auth.signOut()
+        redirect('/login/student?message=Tu acceso todavía no está vinculado a una ficha. Pedile una nueva invitación a tu entrenador.')
     }
 
     redirect('/app')
@@ -191,22 +197,25 @@ export async function login(formData: FormData) {
         redirect('/login?message=Email o contraseña incorrectos')
     }
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) {
-        await stopPendingDeletionLogin(supabase, user.id)
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('role, student_id')
-            .eq('id', user.id)
-            .maybeSingle()
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    if (userError || !user) {
+        await supabase.auth.signOut()
+        redirect('/login?message=No se pudo verificar tu sesión. Intentá de nuevo.')
+    }
 
-        if (profile?.role === 'student') {
-            if (!profile.student_id) {
-                await supabase.auth.signOut()
-                redirect('/login/student?message=Tu acceso todavía no está vinculado a una ficha. Pedile una nueva invitación a tu entrenador.')
-            }
-            redirect('/app')
+    await stopPendingDeletionLogin(supabase, user.id)
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, student_id')
+        .eq('id', user.id)
+        .maybeSingle()
+
+    if (profile?.role === 'student') {
+        if (!profile.student_id) {
+            await supabase.auth.signOut()
+            redirect('/login/student?message=Tu acceso todavía no está vinculado a una ficha. Pedile una nueva invitación a tu entrenador.')
         }
+        redirect('/app')
     }
 
     redirect('/dashboard')
@@ -268,6 +277,8 @@ export async function updatePassword(formData: FormData) {
     if (authError || !user) {
         redirect('/forgot-password?message=El link expiró. Pedí uno nuevo.')
     }
+
+    await stopPendingDeletionLogin(supabase, user.id)
 
     const { error } = await supabase.auth.updateUser({ password })
 

@@ -22,6 +22,7 @@ export const getTrainerStudents = cache(async (): Promise<TrainerStudentSummary[
         .from('students')
         .select('id, first_name, last_name, phone')
         .eq('trainer_id', user.id)
+        .neq('active_plan', 'inactive')
 
     if (error) {
         console.error('Error fetching trainer students:', error)

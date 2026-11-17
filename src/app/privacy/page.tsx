@@ -12,7 +12,7 @@ export default function PrivacyPage() {
         <LegalPage
             title="Política de privacidad"
             description="Esta política explica qué información utiliza Progrezzia para brindar el servicio de entrenamiento y cómo podés ejercer tus derechos."
-            updatedAt="27 de septiembre de 2026"
+            updatedAt="17 de noviembre de 2026"
             sections={[
                 {
                     title: '1. Información que tratamos',
@@ -55,7 +55,7 @@ export default function PrivacyPage() {
                 {
                     title: '6. Conservación y eliminación',
                     paragraphs: [
-                        'Conservamos la información mientras la cuenta esté activa. Las fotografías pueden eliminarse individualmente desde Progreso. También podés iniciar la eliminación definitiva desde Configuración o Perfil. La solicitud se procesa dentro de 7 días y elimina la cuenta y sus datos asociados, salvo aquello que debamos conservar por una obligación legal aplicable.',
+                        'Conservamos la información mientras la cuenta esté activa. Las fotografías pueden eliminarse individualmente desde Progreso. También podés iniciar la eliminación definitiva desde Configuración o Perfil. La eliminación se programa para 7 días después de solicitarla y borra la cuenta y sus datos asociados, salvo aquello que debamos conservar por una obligación legal aplicable.',
                     ],
                 },
                 {
