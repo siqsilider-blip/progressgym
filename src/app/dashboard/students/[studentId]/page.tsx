@@ -154,12 +154,56 @@ export default async function StudentProfilePage(props: PageProps) {
         `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim() || 'Alumno'
 
     return (
-        <div className="mx-auto max-w-3xl space-y-3 p-4 pb-44 md:p-6">
+        <div className="mx-auto w-full max-w-[1500px] space-y-4 p-4 pb-44 md:p-6 lg:pb-8 xl:p-8">
             <DashboardPageHeader
                 title={fullName}
                 subtitle="Perfil del alumno"
                 backHref="/dashboard/students"
             />
+
+            <nav className="hidden grid-cols-5 gap-2 rounded-2xl border border-border bg-card p-2 lg:grid" aria-label="Acciones del alumno">
+                <Link
+                    href={`/dashboard/messages?student=${studentId}`}
+                    className="rounded-xl border border-primary/30 bg-primary/10 px-3 py-2.5 text-center text-xs font-semibold text-primary transition hover:bg-primary/20"
+                >
+                    Mensajes
+                </Link>
+                {assignedRoutineId ? (
+                    <Link
+                        href={`/dashboard/routines/${assignedRoutineId}`}
+                        className="rounded-xl border border-border bg-secondary px-3 py-2.5 text-center text-xs font-semibold text-secondary-foreground transition hover:bg-muted"
+                    >
+                        Editar rutina
+                    </Link>
+                ) : (
+                    <Link
+                        href={`/dashboard/students/${params.studentId}/assign-routine`}
+                        className="rounded-xl border border-border bg-secondary px-3 py-2.5 text-center text-xs font-semibold text-secondary-foreground transition hover:bg-muted"
+                    >
+                        Asignar rutina
+                    </Link>
+                )}
+                <Link
+                    href={`/dashboard/students/${params.studentId}/progress`}
+                    className="rounded-xl border border-border bg-secondary px-3 py-2.5 text-center text-xs font-semibold text-secondary-foreground transition hover:bg-muted"
+                >
+                    Progreso
+                </Link>
+                <Link
+                    href={trainHref}
+                    className="rounded-xl bg-primary px-3 py-2.5 text-center text-xs font-semibold text-primary-foreground transition hover:brightness-110"
+                >
+                    Entrenar
+                </Link>
+                <Link
+                    href={`/dashboard/students/${params.studentId}/history`}
+                    className="rounded-xl border border-border bg-secondary px-3 py-2.5 text-center text-xs font-semibold text-secondary-foreground transition hover:bg-muted"
+                >
+                    Historial
+                </Link>
+            </nav>
+
+            <div className="grid gap-3 lg:grid-cols-2 lg:items-start">
 
             {assignedRoutineId && programStartedOn && activeRoutineName && (
                 <ProgramScheduleCard
@@ -277,7 +321,9 @@ export default async function StudentProfilePage(props: PageProps) {
                 </section>
             )}
 
-            <ProgressPhotoGallery photos={progressPhotos} role="trainer" />
+            <div className="lg:col-span-2">
+                <ProgressPhotoGallery photos={progressPhotos} role="trainer" />
+            </div>
 
             {feedbackResult.data && (
                 <section className={`rounded-2xl border p-4 ${feedbackResult.data.had_pain ? 'border-amber-500/30 bg-amber-500/[0.07]' : 'border-border bg-card'}`}>
@@ -328,7 +374,9 @@ export default async function StudentProfilePage(props: PageProps) {
                 </div>
             </details>
 
-            <div className="fixed bottom-16 left-0 right-0 z-30 border-t border-border bg-background/95 backdrop-blur md:bottom-0">
+            </div>
+
+            <div className="fixed bottom-16 left-0 right-0 z-30 border-t border-border bg-background/95 backdrop-blur md:bottom-0 lg:hidden">
                 <div className="mx-auto grid max-w-xl grid-cols-2 gap-2 px-4 py-3">
                     <Link
                         href={`/dashboard/messages?student=${studentId}`}

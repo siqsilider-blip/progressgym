@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { ChevronRight, Dumbbell, Plus, Search } from 'lucide-react'
 import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
+import TrainerPageShell from '@/components/dashboard/TrainerPageShell'
 
 type Student = {
     id: string
@@ -23,6 +24,8 @@ type Props = {
     routines: Routine[]
     error: string | null
 }
+
+type RoutineFilter = 'all' | 'assigned' | 'pending'
 
 function getStudentName(student: Student) {
     return `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim() || 'Sin nombre'
@@ -47,6 +50,7 @@ function SectionHeading({ label, count }: { label: string; count: number }) {
 
 export default function RoutinesClient({ students, routines, error }: Props) {
     const [search, setSearch] = useState('')
+    const [routineFilter, setRoutineFilter] = useState<RoutineFilter>('all')
 
     const routineByStudentId = useMemo(() => {
         const map = new Map<string, Routine>()
@@ -58,11 +62,15 @@ export default function RoutinesClient({ students, routines, error }: Props) {
 
     const filtered = useMemo(() => {
         const q = search.toLowerCase().trim()
-        if (!q) return students
-        return students.filter((s) =>
-            getStudentName(s).toLowerCase().includes(q)
-        )
-    }, [students, search])
+        return students.filter((student) => {
+            const hasRoutine = routineByStudentId.has(student.id)
+            const matchesSearch = !q || getStudentName(student).toLowerCase().includes(q)
+            const matchesFilter = routineFilter === 'all'
+                || (routineFilter === 'assigned' && hasRoutine)
+                || (routineFilter === 'pending' && !hasRoutine)
+            return matchesSearch && matchesFilter
+        })
+    }, [students, search, routineFilter, routineByStudentId])
 
     const withRoutine = filtered.filter((s) => routineByStudentId.has(s.id))
     const withoutRoutine = filtered.filter((s) => !routineByStudentId.has(s.id))
@@ -81,8 +89,7 @@ export default function RoutinesClient({ students, routines, error }: Props) {
     }
 
     return (
-        <div className="bg-background p-4 pb-24 md:p-6">
-            <div className="mx-auto max-w-3xl space-y-3">
+        <TrainerPageShell className="space-y-4">
 
                 {/* Header */}
                 <DashboardPageHeader
@@ -99,15 +106,36 @@ export default function RoutinesClient({ students, routines, error }: Props) {
                 />
 
                 {/* Buscador */}
-                <div className="relative">
-                    <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                    <input
-                        type="text"
-                        placeholder="Buscar por nombre..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="h-9 w-full rounded-lg border border-white/[0.07] bg-white/[0.025] pl-9 pr-3 text-xs text-foreground placeholder:text-muted-foreground/60 outline-none transition focus:border-primary/60 focus:bg-white/[0.04]"
-                    />
+                <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        <input
+                            type="text"
+                            placeholder="Buscar alumno..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="h-10 w-full rounded-xl border border-white/[0.07] bg-white/[0.025] pl-10 pr-3 text-sm text-foreground placeholder:text-muted-foreground/60 outline-none transition focus:border-primary/60 focus:bg-white/[0.04]"
+                        />
+                    </div>
+                    <div className="grid grid-cols-3 gap-1 rounded-xl border border-white/[0.07] bg-white/[0.025] p-1">
+                        {([
+                            { value: 'all', label: 'Todos' },
+                            { value: 'assigned', label: 'Con rutina' },
+                            { value: 'pending', label: 'Pendientes' },
+                        ] as const).map((filter) => (
+                            <button
+                                key={filter.value}
+                                type="button"
+                                onClick={() => setRoutineFilter(filter.value)}
+                                className={`h-8 rounded-lg px-3 text-[11px] font-semibold transition ${routineFilter === filter.value
+                                    ? 'bg-primary text-primary-foreground'
+                                    : 'text-muted-foreground hover:bg-white/[0.04] hover:text-foreground'
+                                    }`}
+                            >
+                                {filter.label}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 {/* Sin resultados */}
@@ -120,9 +148,65 @@ export default function RoutinesClient({ students, routines, error }: Props) {
                     </div>
                 )}
 
+                {filtered.length > 0 && (
+                    <section className="hidden overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.025] xl:block">
+                        <div className="grid grid-cols-[minmax(13rem,1.2fr)_minmax(14rem,1fr)_8rem_minmax(18rem,auto)] items-center gap-4 border-b border-white/[0.07] bg-white/[0.025] px-4 py-3 text-[11px] font-bold uppercase tracking-[0.12em] text-white/35">
+                            <span>Alumno</span>
+                            <span>Programa</span>
+                            <span>Estado</span>
+                            <span className="text-right">Acciones</span>
+                        </div>
+                        <div className="divide-y divide-white/[0.06]">
+                            {filtered.map((student) => {
+                                const routine = routineByStudentId.get(student.id)
+                                const name = getStudentName(student)
+                                const isActive = student.active_plan === 'active' || student.active_plan === true
+
+                                return (
+                                    <div key={student.id} className="grid grid-cols-[minmax(13rem,1.2fr)_minmax(14rem,1fr)_8rem_minmax(18rem,auto)] items-center gap-4 px-4 py-3 transition hover:bg-white/[0.035]">
+                                        <Link href={`/dashboard/students/${student.id}`} className="flex min-w-0 items-center gap-3">
+                                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/12 text-xs font-bold text-primary">
+                                                {getInitials(student)}
+                                            </span>
+                                            <span className="truncate text-sm font-semibold text-zinc-100">{name}</span>
+                                        </Link>
+                                        <div className="min-w-0">
+                                            <p className="truncate text-sm font-medium text-zinc-200">{routine?.name ?? 'Sin rutina asignada'}</p>
+                                            <p className="mt-0.5 text-[11px] text-zinc-500">{routine ? 'Disponible para editar' : 'Requiere planificación'}</p>
+                                        </div>
+                                        <span className={`inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${isActive ? 'bg-emerald-500/10 text-emerald-300' : 'bg-white/[0.05] text-white/40'}`}>
+                                            <span className={`h-1.5 w-1.5 rounded-full ${isActive ? 'bg-emerald-400' : 'bg-zinc-600'}`} />
+                                            {isActive ? 'Activo' : 'Inactivo'}
+                                        </span>
+                                        <div className="flex items-center justify-end gap-2">
+                                            <Link href={`/dashboard/students/${student.id}`} className="rounded-lg border border-white/[0.08] px-3 py-2 text-[11px] font-semibold text-white/55 transition hover:bg-white/[0.05] hover:text-white">
+                                                Perfil
+                                            </Link>
+                                            {routine ? (
+                                                <>
+                                                    <Link href={`/dashboard/students/${student.id}/train`} className="rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-3 py-2 text-[11px] font-semibold text-emerald-300 transition hover:bg-emerald-500/15">
+                                                        Entrenar
+                                                    </Link>
+                                                    <Link href={`/dashboard/routines/${routine.id}`} className="rounded-lg bg-primary px-3 py-2 text-[11px] font-semibold text-primary-foreground transition hover:brightness-110">
+                                                        Editar rutina
+                                                    </Link>
+                                                </>
+                                            ) : (
+                                                <Link href={`/dashboard/students/${student.id}/assign-routine`} className="rounded-lg bg-primary px-3 py-2 text-[11px] font-semibold text-primary-foreground transition hover:brightness-110">
+                                                    Asignar rutina
+                                                </Link>
+                                            )}
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </section>
+                )}
+
                 {/* Con rutina */}
                 {withRoutine.length > 0 && (
-                    <section className="space-y-1.5">
+                    <section className="space-y-1.5 xl:hidden">
                         <SectionHeading label="Con rutina" count={withRoutine.length} />
                         <div className="divide-y divide-white/[0.06] overflow-hidden rounded-xl border border-white/[0.07] bg-white/[0.025]">
                             {withRoutine.map((student) => {
@@ -166,7 +250,7 @@ export default function RoutinesClient({ students, routines, error }: Props) {
 
                 {/* Sin rutina */}
                 {withoutRoutine.length > 0 && (
-                    <section className="space-y-1.5">
+                    <section className="space-y-1.5 xl:hidden">
                         <SectionHeading label="Pendientes" count={withoutRoutine.length} />
                         <div className="divide-y divide-white/[0.06] overflow-hidden rounded-xl border border-amber-500/10 bg-amber-500/[0.025]">
                             {withoutRoutine.map((student) => {
@@ -194,7 +278,6 @@ export default function RoutinesClient({ students, routines, error }: Props) {
                         </div>
                     </section>
                 )}
-            </div>
-        </div>
+        </TrainerPageShell>
     )
 }

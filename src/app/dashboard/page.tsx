@@ -8,6 +8,7 @@ import { getRecentWorkoutActivity } from './getRecentWorkoutActivity'
 import RecentWorkoutActivityCard from './RecentWorkoutActivityCard'
 import { getTrainerProfile } from '@/lib/getTrainerProfile'
 import type { WeightUnit } from '@/lib/weight'
+import TrainerPageShell from '@/components/dashboard/TrainerPageShell'
 
 export default async function DashboardPage() {
     const [
@@ -25,7 +26,7 @@ export default async function DashboardPage() {
     const weightUnit = (trainerProfile?.weight_unit ?? 'kg') as WeightUnit
 
     return (
-        <div className="mx-auto max-w-6xl space-y-3 p-4 pb-24 md:space-y-4 md:p-6">
+        <TrainerPageShell className="space-y-3 md:space-y-4">
             <section className="flex items-center justify-between gap-3">
                 <div>
                     <h1 className="text-xl font-black tracking-tight text-white md:text-2xl">
@@ -69,12 +70,13 @@ export default async function DashboardPage() {
 
             <TrainerDashboardCards stats={stats} riskCount={alerts.length} />
 
-            <AtRiskStudentsCard alerts={alerts} />
-
-            <RecentWorkoutActivityCard
-                activity={recentActivity ?? []}
-                weightUnit={weightUnit}
-            />
-        </div>
+            <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(22rem,0.85fr)] xl:items-start">
+                <AtRiskStudentsCard alerts={alerts} />
+                <RecentWorkoutActivityCard
+                    activity={recentActivity ?? []}
+                    weightUnit={weightUnit}
+                />
+            </div>
+        </TrainerPageShell>
     )
 }

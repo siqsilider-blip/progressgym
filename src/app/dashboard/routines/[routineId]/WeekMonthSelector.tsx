@@ -244,7 +244,7 @@ export default function WeekMonthSelector({
                     <span className="text-[10px] text-muted-foreground">{weeksForMonth.length} en total</span>
                 </div>
 
-                <nav aria-label="Semanas del mesociclo" className="flex snap-x gap-2 overflow-x-auto pb-1 2xl:grid 2xl:max-h-[19rem] 2xl:grid-cols-1 2xl:overflow-y-auto 2xl:pr-1">
+                <nav aria-label="Semanas del mesociclo" className="flex snap-x gap-2 overflow-x-auto pb-1 xl:grid xl:max-h-[19rem] xl:grid-cols-1 xl:overflow-y-auto xl:pr-1">
                     {weeksForMonth.map((week) => {
                         const active = week.id === selectedWeek?.id
                         return (
@@ -253,7 +253,7 @@ export default function WeekMonthSelector({
                                 href={plannerUrl(routineId, { month: selectedMonth?.id, week: week.id })}
                                 aria-current={active ? 'page' : undefined}
                                 data-testid={`routine-week-${week.id}`}
-                                className={`min-w-[9.5rem] snap-start rounded-lg border px-3 py-2.5 text-left transition 2xl:min-w-0 ${active
+                                className={`min-w-[9.5rem] snap-start rounded-lg border px-3 py-2.5 text-left transition xl:min-w-0 ${active
                                     ? 'border-primary bg-primary/10 text-foreground ring-1 ring-primary/20'
                                     : 'border-border bg-background text-foreground hover:border-primary/40 hover:bg-muted/30'
                                     }`}

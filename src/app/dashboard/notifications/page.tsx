@@ -17,7 +17,7 @@ export default async function TrainerNotificationsPage() {
         .limit(80)
 
     return (
-        <main className="mx-auto max-w-3xl space-y-4 px-4 py-5 md:px-6 md:py-7">
+        <main className="mx-auto w-full max-w-6xl space-y-4 px-4 py-5 md:px-6 md:py-7 xl:px-8">
             <DashboardPageHeader
                 title="Avisos"
                 subtitle="Mensajes y controles que requieren tu atención"

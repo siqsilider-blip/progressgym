@@ -241,7 +241,7 @@ export default function ContactsClient({
     return (
         <>
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-2 lg:max-w-2xl">
                 <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-3">
                     <p className="text-xs text-muted-foreground">Hoy</p>
                     <p className="mt-1 text-xl font-black text-foreground">
@@ -263,7 +263,7 @@ export default function ContactsClient({
             </div>
 
             {/* Contact list */}
-            <div className="space-y-2">
+            <div className="grid gap-3 xl:grid-cols-2">
                 {sorted.map((c) => {
                     const nextDate = c.next_follow_up_at
                         ? parseDateOnly(String(c.next_follow_up_at).slice(0, 10))

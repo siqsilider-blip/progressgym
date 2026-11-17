@@ -409,9 +409,9 @@ export default async function RoutineDetailPage(props: PageProps) {
                 ) : (
                     <div
                         data-testid="routine-planner-workspace"
-                        className="grid min-w-0 gap-3 2xl:grid-cols-[17rem_minmax(0,1fr)] 2xl:items-start"
+                        className="grid min-w-0 gap-4 xl:grid-cols-[16rem_minmax(0,1fr)] xl:items-start"
                     >
-                        <aside className="min-w-0 space-y-3 2xl:sticky 2xl:top-4">
+                        <aside className="min-w-0 space-y-3 xl:sticky xl:top-4">
                             <WeekMonthSelector
                                 routineId={routine.id}
                                 months={months}
@@ -442,7 +442,7 @@ export default async function RoutineDetailPage(props: PageProps) {
 
                                 <nav
                                     aria-label="Días de la semana"
-                                    className="flex snap-x gap-2 overflow-x-auto pb-1 2xl:grid 2xl:max-h-[24rem] 2xl:grid-cols-1 2xl:overflow-y-auto 2xl:pr-1"
+                                    className="flex snap-x gap-2 overflow-x-auto pb-1 xl:grid xl:max-h-[24rem] xl:grid-cols-1 xl:overflow-y-auto xl:pr-1"
                                 >
                                     {typedDays.map((day) => {
                                         const isActive = day.id === selectedDay?.id
@@ -459,7 +459,7 @@ export default async function RoutineDetailPage(props: PageProps) {
                                                 href={`/dashboard/routines/${routine.id}?week=${selectedWeek!.id}&day=${day.id}${selectedMonth?.id ? `&month=${selectedMonth.id}` : ''}`}
                                                 aria-current={isActive ? 'page' : undefined}
                                                 data-testid={`routine-day-${day.id}`}
-                                                className={`min-w-[10.5rem] snap-start rounded-lg border px-3 py-2.5 text-left transition 2xl:min-w-0 ${isActive
+                                                className={`min-w-[10.5rem] snap-start rounded-lg border px-3 py-2.5 text-left transition xl:min-w-0 ${isActive
                                                     ? 'border-primary bg-primary/10 ring-1 ring-primary/20'
                                                     : 'border-border bg-background hover:border-primary/40 hover:bg-muted/30'
                                                     }`}

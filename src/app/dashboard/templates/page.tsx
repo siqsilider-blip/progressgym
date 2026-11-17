@@ -108,7 +108,7 @@ export default async function TemplatesListPage(props: PageProps) {
     }
 
     return (
-        <div className="mx-auto max-w-3xl space-y-4 px-4 pb-24 text-foreground md:p-6">
+        <div className="mx-auto w-full max-w-7xl space-y-4 px-4 pb-24 text-foreground md:p-6 xl:px-8 xl:pb-8">
             <DashboardPageHeader
                 title="Templates"
                 subtitle={`${templateList.length} programas reutilizables`}
@@ -184,7 +184,7 @@ export default async function TemplatesListPage(props: PageProps) {
                     </Link>
                 </div>
             ) : (
-                <div className="space-y-2">
+                <div className="grid gap-3 lg:grid-cols-2">
                     {templateList.map((template) => {
                         const stats = statsByTemplate.get(template.id) ?? { weeks: 0, exercises: 0 }
                         const isClassified = hasMatchingCriteria({

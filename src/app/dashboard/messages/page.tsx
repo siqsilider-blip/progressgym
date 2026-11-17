@@ -150,7 +150,7 @@ export default async function TrainerMessagesPage(props: PageProps) {
     }
 
     return (
-        <main className="mx-auto w-full min-w-0 max-w-6xl space-y-4 overflow-x-hidden p-4 pb-28 md:p-6">
+        <main className="mx-auto w-full min-w-0 max-w-[1600px] space-y-4 overflow-x-hidden p-4 pb-28 md:p-6 xl:px-8 xl:pb-8">
             {conversationId && <ReadMarker conversationId={conversationId} />}
 
             <header>
@@ -234,7 +234,7 @@ export default async function TrainerMessagesPage(props: PageProps) {
                     <p className="mt-1 text-xs text-white/35">Cuando agregues uno, vas a poder conversar desde acá.</p>
                 </section>
             ) : (
-                <div className="grid min-w-0 gap-3 md:grid-cols-[260px_minmax(0,1fr)]">
+                <div className="grid min-w-0 gap-3 md:grid-cols-[260px_minmax(0,1fr)] xl:min-h-[calc(100dvh-12rem)] xl:grid-cols-[18rem_minmax(0,1fr)]">
                     <div className="md:hidden">
                         <StudentConversationPicker
                             selectedStudentId={selectedStudent?.id ?? ''}
@@ -249,7 +249,7 @@ export default async function TrainerMessagesPage(props: PageProps) {
                         />
                     </div>
 
-                    <aside className="hidden min-w-0 rounded-2xl border border-white/[0.07] bg-white/[0.03] p-2 md:block">
+                    <aside className="hidden min-w-0 rounded-2xl border border-white/[0.07] bg-white/[0.03] p-2 md:block xl:sticky xl:top-0 xl:max-h-[calc(100dvh-12rem)] xl:overflow-y-auto">
                         <p className="px-2 pb-2 pt-1 text-[10px] font-bold uppercase tracking-widest text-white/30">Alumnos</p>
                         <div className="space-y-1">
                             {orderedStudents.map((student) => {
@@ -267,13 +267,13 @@ export default async function TrainerMessagesPage(props: PageProps) {
                         </div>
                     </aside>
 
-                    <section className="min-w-0 overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.03] p-3">
+                    <section className="min-w-0 overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.03] p-3 xl:flex xl:max-h-[calc(100dvh-12rem)] xl:flex-col">
                         <div className="border-b border-white/[0.06] px-1 pb-3">
                             <h2 className="text-sm font-bold text-white">{selectedStudent?.first_name} {selectedStudent?.last_name}</h2>
                             <p className="text-[10px] text-white/35">Conversación privada</p>
                         </div>
 
-                        <div className="min-h-44 min-w-0 space-y-2 py-3 md:min-h-72">
+                        <div className="min-h-44 min-w-0 space-y-2 py-3 md:min-h-72 xl:min-h-0 xl:flex-1 xl:overflow-y-auto xl:pr-2">
                             {messages.length ? messages.map((message) => {
                                 const own = message.sender_role === 'trainer'
                                 const exerciseName = message.routine_day_exercise_id
@@ -303,7 +303,7 @@ export default async function TrainerMessagesPage(props: PageProps) {
                         </div>
 
                         {selectedStudent && (
-                            <div className="border-t border-white/[0.06] pt-3 [--background:#1a1a1a] [--border:rgba(255,255,255,0.1)] [--foreground:white] [--muted-foreground:rgba(255,255,255,0.4)]">
+                            <div className="border-t border-white/[0.06] bg-[#151515] pt-3 [--background:#1a1a1a] [--border:rgba(255,255,255,0.1)] [--foreground:white] [--muted-foreground:rgba(255,255,255,0.4)] xl:sticky xl:bottom-0">
                                 <MessageComposer
                                     studentId={selectedStudent.id}
                                     placeholder={`Responderle a ${selectedStudent.first_name}…`}

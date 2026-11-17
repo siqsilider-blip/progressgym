@@ -14,6 +14,7 @@ import {
     MessageSquare,
     MessageCircle,
     Bell,
+    Zap,
 } from 'lucide-react'
 
 type SidebarClientProps = {
@@ -106,7 +107,7 @@ export default function SidebarClient({
     return (
         <>
             {/* ── Sidebar desktop ── */}
-            <aside className="hidden md:flex md:w-64 md:flex-col md:border-r border-white/[0.06] bg-[#111111] text-white">
+            <aside className="hidden border-white/[0.06] bg-[#111111] text-white lg:sticky lg:top-0 lg:flex lg:h-dvh lg:w-64 lg:shrink-0 lg:flex-col lg:overflow-y-auto lg:border-r">
                 <div className="border-b border-white/[0.06] px-6 py-6">
                     <Link href="/dashboard" prefetch className="block">
                         <div className="flex items-center gap-2.5">
@@ -123,6 +124,25 @@ export default function SidebarClient({
                                 <p className="text-[10px] text-white/30">Panel del entrenador</p>
                             </div>
                         </div>
+                    </Link>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 border-b border-white/[0.06] px-3 py-3">
+                    <Link
+                        href="/dashboard/new"
+                        prefetch
+                        className="flex h-10 items-center justify-center gap-2 rounded-xl bg-primary text-xs font-bold text-primary-foreground transition hover:brightness-110"
+                    >
+                        <Plus className="h-3.5 w-3.5" />
+                        Nuevo
+                    </Link>
+                    <Link
+                        href="/dashboard/train"
+                        prefetch
+                        className="flex h-10 items-center justify-center gap-2 rounded-xl border border-emerald-500/25 bg-emerald-500/10 text-xs font-bold text-emerald-300 transition hover:bg-emerald-500/15"
+                    >
+                        <Zap className="h-3.5 w-3.5" />
+                        Entrenar
                     </Link>
                 </div>
 
@@ -184,7 +204,7 @@ export default function SidebarClient({
             </aside>
 
             {/* ── Header mobile ── */}
-            <div className="fixed inset-x-0 top-0 z-40 flex h-14 items-center justify-between border-b border-white/[0.06] px-4 md:hidden bg-[#111111]/95 backdrop-blur">
+            <div className="fixed inset-x-0 top-0 z-40 flex h-14 items-center justify-between border-b border-white/[0.06] px-4 lg:hidden bg-[#111111]/95 backdrop-blur">
                 <Link href="/dashboard" prefetch className="flex items-center gap-2">
                     <div
                         className="flex h-6 w-6 items-center justify-center rounded-lg"
@@ -223,7 +243,7 @@ export default function SidebarClient({
             </div>
 
             {/* ── Nav mobile bottom ── */}
-            <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-white/[0.06] md:hidden bg-[#111111]/95 backdrop-blur">
+            <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-white/[0.06] lg:hidden bg-[#111111]/95 backdrop-blur">
                 <div className="grid grid-cols-5">
                     {navItems.filter((item) => item.mobile !== false).map((item) => {
                         const Icon = item.icon

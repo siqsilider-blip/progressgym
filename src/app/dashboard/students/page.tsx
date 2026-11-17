@@ -180,7 +180,7 @@ export default async function StudentsPage() {
     }
 
     return (
-        <div className="mx-auto max-w-6xl space-y-4 p-4 pb-24 md:p-6">
+        <div className="mx-auto w-full max-w-[1600px] space-y-4 p-4 pb-24 md:p-6 xl:px-8 xl:pb-8">
 
             {/* Header */}
             <DashboardPageHeader

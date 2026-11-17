@@ -26,12 +26,12 @@ export default async function DashboardLayout({
     if (profile?.role !== 'trainer') redirect('/login')
 
     return (
-        <div className="trainer-shell min-h-screen bg-[#111111] md:flex">
+        <div className="trainer-shell min-h-screen bg-[#111111] lg:flex lg:h-dvh lg:overflow-hidden">
             <Suspense fallback={null}>
                 <DashboardNavigationTracker />
             </Suspense>
             <Sidebar />
-            <main className="w-full flex-1 overflow-y-auto pt-14 pb-20 md:pt-0 md:pb-0">
+            <main className="min-w-0 w-full flex-1 overflow-y-auto pt-14 pb-20 lg:pt-0 lg:pb-0">
                 {children}
             </main>
         </div>

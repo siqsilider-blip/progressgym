@@ -193,7 +193,7 @@ export default function TrainSelectorClient({
     ]
 
     return (
-        <div className="mx-auto max-w-2xl space-y-4 p-4 pb-24 md:p-6">
+        <div className="mx-auto w-full max-w-7xl space-y-4 p-4 pb-24 md:p-6 xl:px-8 xl:pb-8">
             <DashboardPageHeader
                 title="Entrenar"
                 subtitle="Elegí quién entrena ahora"
@@ -274,7 +274,7 @@ export default function TrainSelectorClient({
                                 {bucketedStudents[key].length}
                             </span>
                         </div>
-                        <div className="space-y-2">
+                        <div className="grid gap-2 lg:grid-cols-2 2xl:grid-cols-3">
                             {bucketedStudents[key].map((student) => (
                                 <StudentCard
                                     key={student.id}
@@ -299,7 +299,7 @@ export default function TrainSelectorClient({
                             {studentsWithoutRoutine.length}
                         </span>
                     </div>
-                    <div className="space-y-2">
+                    <div className="grid gap-2 lg:grid-cols-2 2xl:grid-cols-3">
                         {studentsWithoutRoutine.map((student) => (
                             <StudentCard
                                 key={student.id}

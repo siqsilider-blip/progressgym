@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { CirclePlay, Pencil } from 'lucide-react'
 import { createExercise, listExercises, deleteExercise, updateExercise } from './actions'
 import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
+import TrainerPageShell from '@/components/dashboard/TrainerPageShell'
 
 type Exercise = {
     id: string
@@ -167,7 +168,7 @@ export default function ExercisesPage() {
     const selectCls = 'h-10 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none'
 
     return (
-        <div className="mx-auto max-w-2xl space-y-4 p-4 pb-24 md:p-6">
+        <TrainerPageShell className="space-y-4">
             {/* Header */}
             <DashboardPageHeader
                 title="Ejercicios"
@@ -184,32 +185,34 @@ export default function ExercisesPage() {
             />
 
             {/* Search */}
-            <input
-                type="text"
-                placeholder="Buscar ejercicio..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full rounded-xl border border-border bg-input px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary transition"
-            />
+            <div className="grid gap-2 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+                <input
+                    type="text"
+                    placeholder="Buscar por ejercicio o grupo muscular..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="h-10 w-full rounded-xl border border-border bg-input px-4 text-sm text-foreground placeholder:text-muted-foreground outline-none transition focus:border-primary"
+                />
 
-            <div className="flex gap-2 overflow-x-auto pb-1" aria-label="Filtrar por demostración">
-                {([
-                    { value: 'all', label: `Todos ${items.length}` },
-                    { value: 'missing', label: `Sin video ${videosMissing}` },
-                    { value: 'ready', label: `Con video ${videosReady}` },
-                ] as const).map((filter) => (
-                    <button
-                        key={filter.value}
-                        type="button"
-                        onClick={() => setVideoFilter(filter.value)}
-                        className={`min-h-10 shrink-0 rounded-xl px-3 text-xs font-semibold transition ${videoFilter === filter.value
-                            ? 'bg-primary text-primary-foreground'
-                            : 'border border-border bg-secondary text-muted-foreground hover:bg-muted'
-                            }`}
-                    >
-                        {filter.label}
-                    </button>
-                ))}
+                <div className="flex gap-1 overflow-x-auto rounded-xl border border-border bg-card p-1" aria-label="Filtrar por demostración">
+                    {([
+                        { value: 'all', label: `Todos ${items.length}` },
+                        { value: 'missing', label: `Sin video ${videosMissing}` },
+                        { value: 'ready', label: `Con video ${videosReady}` },
+                    ] as const).map((filter) => (
+                        <button
+                            key={filter.value}
+                            type="button"
+                            onClick={() => setVideoFilter(filter.value)}
+                            className={`h-8 shrink-0 rounded-lg px-3 text-[11px] font-semibold transition ${videoFilter === filter.value
+                                ? 'bg-primary text-primary-foreground'
+                                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                                }`}
+                        >
+                            {filter.label}
+                        </button>
+                    ))}
+                </div>
             </div>
 
             {/* List */}
@@ -220,11 +223,11 @@ export default function ExercisesPage() {
                     {search ? 'Sin resultados.' : 'No hay ejercicios todavía.'}
                 </p>
             ) : (
-                <div className="flex flex-col gap-2">
+                <div className="grid gap-2 lg:grid-cols-2 2xl:grid-cols-3">
                     {filtered.map((x) => {
                         const initials = x.name.slice(0, 2).toUpperCase()
                         return (
-                            <div key={x.id} className="flex items-center justify-between gap-3 rounded-xl border border-white/[0.07] bg-white/[0.025] px-3 py-2.5 transition hover:bg-white/[0.04]">
+                            <div key={x.id} className="flex min-h-20 items-center justify-between gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.025] px-4 py-3 transition hover:border-primary/20 hover:bg-white/[0.04]">
                                 <div className="flex min-w-0 items-center gap-3">
                                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-xs font-bold text-primary">
                                         {initials}
@@ -278,7 +281,7 @@ export default function ExercisesPage() {
                     onClick={() => setEditingExercise(null)}
                 >
                     <div
-                        className="w-full max-w-lg rounded-t-3xl border-t border-border bg-background p-5 shadow-2xl md:rounded-2xl md:border"
+                        className="w-full max-w-lg rounded-t-3xl border-t border-border bg-background p-5 shadow-2xl md:max-w-2xl md:rounded-2xl md:border md:p-6"
                         style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 20px)' }}
                         onClick={(e) => e.stopPropagation()}
                     >
@@ -382,7 +385,7 @@ export default function ExercisesPage() {
                     onClick={() => setShowForm(false)}
                 >
                     <div
-                        className="w-full max-w-lg rounded-t-3xl border-t border-border bg-background p-5 shadow-2xl md:rounded-2xl md:border"
+                        className="w-full max-w-lg rounded-t-3xl border-t border-border bg-background p-5 shadow-2xl md:max-w-2xl md:rounded-2xl md:border md:p-6"
                         style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 20px)' }}
                         onClick={(e) => e.stopPropagation()}
                     >
@@ -459,6 +462,6 @@ export default function ExercisesPage() {
                     </div>
                 </div>
             )}
-        </div>
+        </TrainerPageShell>
     )
 }

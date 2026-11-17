@@ -23,7 +23,7 @@ export default async function WorkoutsPage() {
     const weightUnit = (trainerProfile?.weight_unit ?? 'kg') as WeightUnit
 
     return (
-        <div className="mx-auto max-w-3xl space-y-4 p-4 pb-24 md:p-6">
+        <div className="mx-auto w-full max-w-6xl space-y-4 p-4 pb-24 md:p-6 xl:px-8 xl:pb-8">
             <DashboardPageHeader
                 title="Actividad"
                 subtitle={`${activity.length} registros recientes`}
