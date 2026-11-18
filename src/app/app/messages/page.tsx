@@ -5,6 +5,7 @@ import { getStudentAppContext } from '@/lib/auth/student'
 import MessageComposer from '@/components/coaching/MessageComposer'
 import ReadMarker from '@/components/coaching/ReadMarker'
 import { getRoutineExerciseNameMap } from '@/lib/coaching/getRoutineExerciseNames'
+import StudentMessageThread from '@/components/student/StudentMessageThread'
 
 type MessageRow = {
     id: string
@@ -67,13 +68,13 @@ export default async function StudentMessagesPage() {
     )
 
     return (
-        <main className="mx-auto max-w-lg px-4 pb-28 pt-5">
+        <main className="mx-auto max-w-lg px-4 pb-32 pt-5">
             {conversationId && <ReadMarker conversationId={conversationId} />}
 
             <header>
-                <p className="text-xs font-medium text-brand-soft">Seguimiento</p>
-                <h1 className="mt-1 text-2xl font-black text-foreground">Mensajes</h1>
-                <p className="mt-1 text-xs text-muted-foreground">Conversación privada con {trainerName}.</p>
+                <p className="text-sm font-bold text-brand-soft">Tu entrenador</p>
+                <h1 className="mt-1 text-2xl font-black text-foreground">{trainerName}</h1>
+                <p className="mt-1 text-sm text-muted-foreground">Preguntá, contá una molestia o pedí una alternativa.</p>
             </header>
 
             {conversationResult.error && (
@@ -82,7 +83,8 @@ export default async function StudentMessagesPage() {
                 </div>
             )}
 
-            <section className="mt-4 min-h-64 space-y-2 rounded-2xl border border-border bg-card p-3">
+            <section className="mt-4 overflow-hidden rounded-2xl border border-border bg-card">
+                <StudentMessageThread>
                 {typedMessages.length ? (
                     typedMessages.map((message) => {
                         const own = message.sender_role === 'student'
@@ -92,18 +94,18 @@ export default async function StudentMessagesPage() {
                         return (
                             <article key={message.id} className={`flex ${own ? 'justify-end' : 'justify-start'}`}>
                                 <div className={`max-w-[86%] rounded-2xl px-3.5 py-2.5 ${own ? 'rounded-br-md bg-primary text-primary-foreground' : 'rounded-bl-md border border-border bg-background text-foreground'}`}>
-                                    <div className="mb-1 flex items-center gap-2 text-[9px] font-bold uppercase tracking-wide opacity-70">
+                                    <div className="mb-1 flex items-center gap-2 text-[11px] font-bold uppercase tracking-wide opacity-70">
                                         <span>{own ? 'Vos' : trainerName}</span>
                                         <span>·</span>
                                         <span>{TOPIC_LABELS[message.topic] ?? 'Mensaje'}</span>
                                     </div>
                                     {message.routine_day_exercise_id && (
-                                        <p className="mb-1.5 inline-flex max-w-full rounded-md border border-current/15 bg-black/10 px-2 py-1 text-[10px] font-bold leading-4 opacity-80">
+                                        <p className="mb-1.5 inline-flex max-w-full rounded-md border border-current/15 bg-black/10 px-2 py-1 text-xs font-bold leading-4 opacity-80">
                                             Ejercicio · {exerciseName ?? 'Ejercicio de la rutina'}
                                         </p>
                                     )}
                                     <p className="whitespace-pre-wrap text-sm leading-5">{message.body}</p>
-                                    <p className="mt-1 text-right text-[9px] opacity-60">{formatMessageDate(message.created_at)}</p>
+                                    <p className="mt-1 text-right text-[11px] opacity-60">{formatMessageDate(message.created_at)}</p>
                                 </div>
                             </article>
                         )
@@ -112,12 +114,13 @@ export default async function StudentMessagesPage() {
                     <div className="flex min-h-56 flex-col items-center justify-center px-6 text-center">
                         <MessageCircle className="h-8 w-8 text-primary" />
                         <p className="mt-3 text-sm font-bold text-foreground">Consultá cuando lo necesites</p>
-                        <p className="mt-1 text-xs leading-5 text-muted-foreground">Podés preguntar por un ejercicio, informar una molestia o pedir una alternativa.</p>
+                        <p className="mt-1 text-sm leading-5 text-muted-foreground">Podés preguntar por un ejercicio, informar una molestia o pedir una alternativa.</p>
                     </div>
                 )}
+                </StudentMessageThread>
             </section>
 
-            <section className="mt-3 rounded-2xl border border-border bg-card p-3">
+            <section className="sticky bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px))] z-20 mt-3 rounded-2xl border border-border bg-card p-3 shadow-[0_-8px_30px_-18px_rgba(0,0,0,0.8)]">
                 <MessageComposer placeholder="Escribile a tu entrenador…" />
             </section>
         </main>

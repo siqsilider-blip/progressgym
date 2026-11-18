@@ -78,7 +78,6 @@ export default async function AppHomePage() {
     let totalProgramWeeks = 0
     let homeTrainingDays: StudentHomeTrainingDay[] = []
     let selectedHomeDay: StudentHomeTrainingDay | null = null
-    let selectedExercises: { name: string; sets: number; reps: string | null }[] = []
 
     if (assignment?.routineId) {
         const [routineResult, schedule] = await Promise.all([
@@ -114,7 +113,7 @@ export default async function AppHomePage() {
                     const dayIds = days.map((day) => day.id)
                     const { data: weekExercises, error: weekExercisesError } = await supabase
                         .from('routine_day_exercises')
-                        .select('routine_day_id, sets, reps, exercise_id')
+                        .select('routine_day_id, sets, reps')
                         .in('routine_day_id', dayIds)
                         .order('position', { ascending: true })
                     if (weekExercisesError) throw weekExercisesError
@@ -125,35 +124,19 @@ export default async function AppHomePage() {
                     const trainingDays = days.filter((day) => daysWithExercises.has(day.id))
                     totalTrainingDays = trainingDays.length
 
-                    const exerciseIds = [
-                        ...new Set((weekExercises ?? []).map((exercise) => exercise.exercise_id).filter(Boolean)),
-                    ]
-                    const [progress, exercisesResult] = await Promise.all([
-                        trainingDays.length > 0
-                            ? getStudentRoutineWeekProgress(
-                                supabase,
-                                studentId,
-                                trainingDays.map((day) => day.id),
-                                schedule.selectedWeekStart && schedule.selectedWeekEnd
-                                    ? {
-                                        weekStart: schedule.selectedWeekStart,
-                                        weekEnd: schedule.selectedWeekEnd,
-                                    }
-                                    : null
-                            )
-                            : Promise.resolve(null),
-                        exerciseIds.length > 0
-                            ? supabase
-                                .from('exercises')
-                                .select('id, name')
-                                .in('id', exerciseIds)
-                            : Promise.resolve({ data: [] }),
-                    ])
-                    if ('error' in exercisesResult && exercisesResult.error) throw exercisesResult.error
-
-                    const exMap = new Map(
-                        (exercisesResult.data ?? []).map((exercise) => [exercise.id, exercise.name])
-                    )
+                    const progress = trainingDays.length > 0
+                        ? await getStudentRoutineWeekProgress(
+                            supabase,
+                            studentId,
+                            trainingDays.map((day) => day.id),
+                            schedule.selectedWeekStart && schedule.selectedWeekEnd
+                                ? {
+                                    weekStart: schedule.selectedWeekStart,
+                                    weekEnd: schedule.selectedWeekEnd,
+                                }
+                                : null
+                        )
+                        : null
                     const trainingWeekdays = assignment.trainingWeekdays
                     const hasRealSchedule = Boolean(
                         trainingWeekdays && trainingWeekdays.length >= trainingDays.length
@@ -211,15 +194,6 @@ export default async function AppHomePage() {
                         ?? homeTrainingDays[0]
                         ?? null
 
-                    if (selectedHomeDay) {
-                        selectedExercises = (weekExercises ?? [])
-                            .filter((exercise) => exercise.routine_day_id === selectedHomeDay?.id)
-                            .map((exercise) => ({
-                                name: exMap.get(exercise.exercise_id) ?? 'Ejercicio',
-                                sets: exercise.sets ?? 3,
-                                reps: exercise.reps != null ? String(exercise.reps) : null,
-                            }))
-                    }
                 }
             }
         }
@@ -245,7 +219,6 @@ export default async function AppHomePage() {
             progressPhotoDue={progressPhotoDue}
             trainingDays={homeTrainingDays}
             selectedDay={selectedHomeDay}
-            selectedExercises={selectedExercises}
             completedDays={completedDays}
             totalTrainingDays={totalTrainingDays}
             weekCompleted={weekCompleted}

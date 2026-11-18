@@ -7,10 +7,8 @@ import {
     CheckCircle2,
     ChevronRight,
     ClipboardCheck,
-    Clock3,
     Dumbbell,
     Sparkles,
-    Trophy,
 } from 'lucide-react'
 import {
     formatSpanishDayLabel,
@@ -28,12 +26,6 @@ export type StudentHomeTrainingDay = {
     href: string
 }
 
-type ExercisePreview = {
-    name: string
-    sets: number
-    reps: string | null
-}
-
 type Props = {
     greeting: string
     firstName: string
@@ -46,7 +38,6 @@ type Props = {
     progressPhotoDue: boolean
     trainingDays: StudentHomeTrainingDay[]
     selectedDay: StudentHomeTrainingDay | null
-    selectedExercises: ExercisePreview[]
     completedDays: number
     totalTrainingDays: number
     weekCompleted: boolean
@@ -92,7 +83,6 @@ export default function StudentHomeDashboard({
     progressPhotoDue,
     trainingDays,
     selectedDay,
-    selectedExercises,
     completedDays,
     totalTrainingDays,
     weekCompleted,
@@ -100,25 +90,23 @@ export default function StudentHomeDashboard({
     totalProgramWeeks,
 }: Props) {
     const copy = primaryCopy(selectedDay, today)
-    const preview = selectedExercises.slice(0, 3)
-    const remainingExercises = Math.max(0, selectedExercises.length - preview.length)
     const progress = totalTrainingDays > 0 ? Math.round((completedDays / totalTrainingDays) * 100) : 0
     const needsCheckIn = !weeklyCheckinCompleted || progressPhotoDue
+    const hasVisibleRoutine = Boolean(routineName && (selectedDay || weekCompleted))
+    const showOnboardingTask = hasVisibleRoutine && !onboardingCompleted
+    const showCheckInTask = hasVisibleRoutine && onboardingCompleted && needsCheckIn
 
     return (
         <main className="px-4 pb-28 pt-5 md:px-6">
-            <div className="mx-auto max-w-lg space-y-5">
+            <div className="mx-auto max-w-lg space-y-4">
                 <header className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
                         <p className="text-sm font-bold text-brand-soft">
                             {sentenceCase(formatSpanishLongDateLabel(today))}
                         </p>
-                        <h1 className="mt-1 text-[1.65rem] font-black leading-tight tracking-tight text-foreground">
+                        <h1 className="mt-1 text-2xl font-black leading-tight tracking-tight text-foreground">
                             {greeting}, {firstName}
                         </h1>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                            {routineName ? 'Tu entrenamiento, claro y a mano.' : 'Tu espacio de entrenamiento.'}
-                        </p>
                     </div>
                     <Link
                         href="/app/notifications"
@@ -148,13 +136,12 @@ export default function StudentHomeDashboard({
                                 <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
                                 Semana completada
                             </span>
-                            <h2 className="mt-4 text-2xl font-black tracking-tight text-foreground">¡Excelente trabajo!</h2>
-                            <p className="mt-1 text-sm font-bold text-foreground">{routineName}</p>
-                            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                                Completaste {completedDays} de {totalTrainingDays} entrenamientos. Tu calendario y tus registros quedan disponibles para revisar.
+                            <h2 className="mt-3 text-2xl font-black tracking-tight text-foreground">¡Excelente trabajo!</h2>
+                            <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                                Completaste los {totalTrainingDays} entrenamientos de esta semana.
                             </p>
-                            <Link href={routineHref} className="mt-5 flex min-h-12 items-center justify-between rounded-2xl bg-emerald-500 px-4 text-sm font-black text-black transition active:scale-[0.98]">
-                                Ver semana completa
+                            <Link href={routineHref} className="mt-4 flex min-h-12 items-center justify-between rounded-2xl bg-emerald-500 px-4 text-sm font-black text-black transition active:scale-[0.98]">
+                                Revisar mi semana
                                 <ChevronRight className="h-5 w-5" aria-hidden="true" />
                             </Link>
                         </div>
@@ -177,64 +164,18 @@ export default function StudentHomeDashboard({
                             <h2 className="mt-4 text-[1.65rem] font-black leading-tight tracking-tight text-foreground">
                                 {selectedDay.name}
                             </h2>
-                            <p className="mt-1 text-sm font-semibold text-brand-soft">
-                                {routineName}{totalProgramWeeks > 1 ? ` · Semana ${programWeekNumber} de ${totalProgramWeeks}` : ''}
-                            </p>
-                            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
+                            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
                                 <span className="inline-flex items-center gap-1.5">
                                     <Dumbbell className="h-4 w-4 text-primary" aria-hidden="true" />
                                     {selectedDay.exerciseCount} ejercicios
                                 </span>
-                                <span className="inline-flex items-center gap-1.5">
-                                    <Clock3 className="h-4 w-4 text-primary" aria-hidden="true" />
-                                    {selectedDay.totalSets} series
-                                </span>
+                                {totalProgramWeeks > 1 && <span>Semana {programWeekNumber} de {totalProgramWeeks}</span>}
                             </div>
 
-                            <Link href={selectedDay.href} className="mt-5 flex min-h-14 items-center justify-between rounded-2xl bg-primary px-5 text-base font-black text-primary-foreground shadow-lg shadow-primary/15 transition active:scale-[0.98]">
+                            <Link href={selectedDay.href} className="mt-4 flex min-h-14 items-center justify-between rounded-2xl bg-primary px-5 text-base font-black text-primary-foreground shadow-lg shadow-primary/15 transition active:scale-[0.98]">
                                 {copy.action}
                                 <ChevronRight className="h-5 w-5" aria-hidden="true" />
                             </Link>
-
-                            {preview.length > 0 && (
-                                <div className="mt-4 rounded-2xl border border-border/80 bg-background/65 p-3.5">
-                                    <p className="text-xs font-black uppercase tracking-wider text-muted-foreground">Vista rápida</p>
-                                    <div className="mt-2.5 space-y-2">
-                                        {preview.map((exercise, index) => (
-                                            <div key={`${exercise.name}-${index}`} className="flex items-center justify-between gap-3 text-sm">
-                                                <span className="min-w-0 truncate font-semibold text-foreground">
-                                                    {index + 1}. {exercise.name}
-                                                </span>
-                                                <span className="shrink-0 text-xs font-semibold text-muted-foreground">
-                                                    {exercise.sets} × {exercise.reps ?? '—'}
-                                                </span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    {remainingExercises > 0 && (
-                                        <p className="mt-2 text-xs font-semibold text-brand-soft">+ {remainingExercises} ejercicios más</p>
-                                    )}
-                                </div>
-                            )}
-
-                            <div className="mt-4">
-                                <div className="flex items-center justify-between gap-3 text-sm">
-                                    <span className="font-bold text-foreground">Tu semana</span>
-                                    <span className="font-semibold text-muted-foreground">{completedDays} de {totalTrainingDays}</span>
-                                </div>
-                                <div
-                                    role="progressbar"
-                                    aria-label="Progreso semanal"
-                                    aria-valuemin={0}
-                                    aria-valuemax={100}
-                                    aria-valuenow={progress}
-                                    aria-valuetext={`${completedDays} de ${totalTrainingDays} entrenamientos completados`}
-                                    className="mt-2 h-2 overflow-hidden rounded-full bg-muted"
-                                >
-                                    <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${progress}%` }} />
-                                </div>
-                            </div>
-
                         </div>
                     </section>
                 ) : (
@@ -259,18 +200,37 @@ export default function StudentHomeDashboard({
                 )}
 
                 {trainingDays.length > 0 && (
-                    <section aria-labelledby="student-week-heading">
-                        <div className="flex items-center justify-between gap-3">
-                            <div>
-                                <p className="text-xs font-black uppercase tracking-wider text-brand-soft">Plan semanal</p>
-                                <h2 id="student-week-heading" className="mt-0.5 text-lg font-black text-foreground">Tus entrenamientos</h2>
+                    <section className="overflow-hidden rounded-2xl border border-border bg-card" aria-labelledby="student-week-heading">
+                        <div className="p-4 pb-3">
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <h2 id="student-week-heading" className="text-base font-black text-foreground">Tus entrenamientos</h2>
+                                    <p className="mt-0.5 text-sm text-muted-foreground">
+                                        {completedDays} de {totalTrainingDays} entrenamientos
+                                        {totalProgramWeeks > 1 ? ` · Semana ${programWeekNumber} de ${totalProgramWeeks}` : ''}
+                                    </p>
+                                </div>
+                                <Link href={routineHref} className="inline-flex min-h-11 shrink-0 items-center gap-1 px-1 text-sm font-black text-primary">
+                                    Ver calendario
+                                    <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                                </Link>
                             </div>
-                            <Link href={routineHref} className="inline-flex min-h-11 items-center gap-1 text-sm font-black text-primary">
-                                Ver calendario
-                                <ChevronRight className="h-4 w-4" aria-hidden="true" />
-                            </Link>
+                            <div
+                                role="progressbar"
+                                aria-label="Progreso semanal"
+                                aria-valuemin={0}
+                                aria-valuemax={100}
+                                aria-valuenow={progress}
+                                aria-valuetext={`${completedDays} de ${totalTrainingDays} entrenamientos completados`}
+                                className="mt-3 h-2 overflow-hidden rounded-full bg-muted"
+                            >
+                                <div
+                                    className={`h-full rounded-full transition-all ${weekCompleted ? 'bg-emerald-500' : 'bg-primary'}`}
+                                    style={{ width: `${progress}%` }}
+                                />
+                            </div>
                         </div>
-                        <div className="mt-3 grid [grid-template-columns:repeat(auto-fit,minmax(96px,1fr))] gap-2.5">
+                        <div className="divide-y divide-border border-t border-border">
                             {trainingDays.map((day) => {
                                 const status = dayStatus(day, today)
                                 const active = selectedDay?.id === day.id && !weekCompleted
@@ -279,83 +239,81 @@ export default function StudentHomeDashboard({
                                         key={day.id}
                                         href={day.href}
                                         aria-label={`${day.name}, ${day.scheduledDate ? formatSpanishLongDateLabel(day.scheduledDate) : 'sin fecha'}, ${status.label}`}
-                                        className={`min-w-0 rounded-2xl border p-3 transition active:scale-[0.98] ${active
-                                            ? 'border-primary/55 bg-primary/[0.09] shadow-sm'
-                                            : day.status === 'completed'
-                                                ? 'border-emerald-500/20 bg-emerald-500/[0.05]'
-                                                : 'border-border bg-card'
-                                            }`}
+                                        className={`flex min-h-14 items-center gap-3 px-4 py-2.5 transition active:bg-muted/70 ${active ? 'bg-primary/[0.07]' : ''}`}
                                     >
-                                        <div className="flex items-center justify-between gap-2">
-                                            <span className="text-xs font-black capitalize text-muted-foreground">
+                                        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${day.status === 'completed' ? 'bg-emerald-500/10' : active ? 'bg-primary/10' : 'bg-muted'}`}>
+                                            {day.status === 'completed'
+                                                ? <Check className="h-5 w-5 text-emerald-400" aria-hidden="true" />
+                                                : <span className={`h-2.5 w-2.5 rounded-full ${status.dot}`} />}
+                                        </span>
+                                        <span className="min-w-0 flex-1">
+                                            <span className="block text-xs font-bold capitalize text-muted-foreground">
                                                 {day.scheduledDate ? formatSpanishDayLabel(day.scheduledDate) : 'Sin fecha'}
                                             </span>
-                                            {day.status === 'completed'
-                                                ? <Check className="h-4 w-4 text-emerald-400" aria-hidden="true" />
-                                                : <span className={`h-2 w-2 rounded-full ${status.dot}`} />}
-                                        </div>
-                                        <p className="mt-2 line-clamp-2 min-h-10 text-sm font-black leading-5 text-foreground">{day.name}</p>
-                                        <p className={`mt-1 text-xs font-bold ${status.tone}`}>{status.label}</p>
+                                            <span className="mt-0.5 block truncate text-sm font-black text-foreground">{day.name}</span>
+                                        </span>
+                                        <span className={`shrink-0 text-xs font-bold ${status.tone}`}>{status.label}</span>
                                     </Link>
                                 )
                             })}
                         </div>
-                        {totalProgramWeeks > 1 && (
-                            <p className="mt-2.5 text-xs font-semibold text-muted-foreground">
-                                Semana {programWeekNumber} de {totalProgramWeeks} · el calendario avanza automáticamente.
-                            </p>
-                        )}
                     </section>
                 )}
 
-                {(!onboardingCompleted || needsCheckIn) && (
-                    <section className="rounded-2xl border border-border bg-card p-3.5" aria-labelledby="student-actions-heading">
-                        <div className="flex items-center gap-2 px-1">
-                            <Sparkles className="h-4 w-4 text-primary" aria-hidden="true" />
-                            <h2 id="student-actions-heading" className="text-sm font-black text-foreground">Para vos</h2>
-                        </div>
-                        <div className="mt-2 space-y-1.5">
-                            {!onboardingCompleted && (
-                                <Link href="/app/onboarding" className="flex min-h-14 items-center gap-3 rounded-xl px-2.5 transition hover:bg-muted/60">
-                                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><ClipboardCheck className="h-5 w-5" /></span>
-                                    <span className="min-w-0 flex-1">
-                                        <span className="block text-sm font-black text-foreground">Completá tu ficha inicial</span>
-                                        <span className="block text-xs text-muted-foreground">Objetivos, disponibilidad y cuidados.</span>
-                                    </span>
-                                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                                </Link>
-                            )}
-                            {needsCheckIn && (
-                                <Link href="/app/check-in" prefetch className="flex min-h-14 items-center gap-3 rounded-xl px-2.5 transition hover:bg-muted/60">
-                                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                                        {progressPhotoDue ? <Camera className="h-5 w-5" /> : <ClipboardCheck className="h-5 w-5" />}
-                                    </span>
-                                    <span className="min-w-0 flex-1">
-                                        <span className="block text-sm font-black text-foreground">
-                                            {progressPhotoDue ? 'Actualizá tu progreso' : 'Control semanal · 1 minuto'}
-                                        </span>
-                                        <span className="block text-xs text-muted-foreground">
-                                            {progressPhotoDue ? 'Control, medidas y fotos privadas.' : 'Energía, descanso, estrés y molestias.'}
-                                        </span>
-                                    </span>
-                                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                                </Link>
-                            )}
-                        </div>
+                {(showOnboardingTask || showCheckInTask) && (
+                    <section className="rounded-2xl border border-border bg-card p-3" aria-labelledby="student-actions-heading">
+                        <Link
+                            href={showOnboardingTask ? '/app/onboarding' : '/app/check-in'}
+                            prefetch
+                            className="flex min-h-14 items-center gap-3 rounded-xl px-1.5 transition active:bg-muted/60"
+                        >
+                            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                {showOnboardingTask
+                                    ? <ClipboardCheck className="h-5 w-5" aria-hidden="true" />
+                                    : progressPhotoDue
+                                        ? <Camera className="h-5 w-5" aria-hidden="true" />
+                                        : <Sparkles className="h-5 w-5" aria-hidden="true" />}
+                            </span>
+                            <span className="min-w-0 flex-1">
+                                <span id="student-actions-heading" className="block text-sm font-black text-foreground">
+                                    {showOnboardingTask
+                                        ? 'Completá tu ficha inicial'
+                                        : progressPhotoDue
+                                            ? 'Actualizá tu progreso'
+                                            : 'Control semanal · 1 minuto'}
+                                </span>
+                                <span className="block text-xs leading-5 text-muted-foreground">
+                                    {showOnboardingTask
+                                        ? 'Objetivos, disponibilidad y cuidados.'
+                                        : progressPhotoDue
+                                            ? 'Control, medidas y fotos privadas.'
+                                            : 'Contanos cómo te sentiste esta semana.'}
+                                </span>
+                            </span>
+                            <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden="true" />
+                        </Link>
                     </section>
                 )}
 
-                <section className="grid grid-cols-2 gap-3" aria-label="Accesos de seguimiento">
-                    <Link href="/app/progress" prefetch className="rounded-2xl border border-border bg-card p-4 transition active:scale-[0.98]">
-                        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><BarChart3 className="h-5 w-5" /></span>
-                        <p className="mt-3 text-sm font-black text-foreground">Mi progreso</p>
-                        <p className="mt-1 text-xs leading-5 text-muted-foreground">Medidas, fotos y evolución.</p>
+                <section className="overflow-hidden rounded-2xl border border-border bg-card" aria-label="Progreso e historial">
+                    <Link href="/app/progress" prefetch className="flex min-h-16 items-center gap-3 px-4 py-3 transition active:bg-muted/60">
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                            <BarChart3 className="h-5 w-5" aria-hidden="true" />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                            <span className="block text-sm font-black text-foreground">Mi progreso</span>
+                            <span className="block text-xs leading-5 text-muted-foreground">Medidas, fotos y evolución.</span>
+                        </span>
+                        <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden="true" />
                     </Link>
-                    <Link href="/app/logros" prefetch className="rounded-2xl border border-border bg-card p-4 transition active:scale-[0.98]">
-                        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-400"><Trophy className="h-5 w-5" /></span>
-                        <p className="mt-3 text-sm font-black text-foreground">Mis logros</p>
-                        <p className="mt-1 text-xs leading-5 text-muted-foreground">Constancia y objetivos.</p>
-                    </Link>
+                    <div className="grid grid-cols-2 border-t border-border">
+                        <Link href="/app/history" prefetch className="flex min-h-12 items-center justify-center border-r border-border px-3 text-sm font-bold text-foreground transition active:bg-muted/60">
+                            Historial
+                        </Link>
+                        <Link href="/app/logros" prefetch className="flex min-h-12 items-center justify-center px-3 text-sm font-bold text-foreground transition active:bg-muted/60">
+                            Logros
+                        </Link>
+                    </div>
                 </section>
             </div>
         </main>

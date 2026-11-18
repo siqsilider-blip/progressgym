@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
-import { AlertTriangle, Check, ChevronDown, ChevronUp, Clock3, MessageCircle, RefreshCw, Trophy, WifiOff } from 'lucide-react'
+import { AlertTriangle, Check, ChevronDown, ChevronRight, ChevronUp, CircleHelp, Clock3, RefreshCw, Trophy, WifiOff } from 'lucide-react'
 import { completeSession, saveSet } from '@/app/dashboard/students/[studentId]/train/train-focused-actions'
 import ExerciseDemo from '@/app/dashboard/students/[studentId]/train/ExerciseDemo'
 import MessageComposer from '@/components/coaching/MessageComposer'
@@ -41,6 +41,7 @@ type SetState = {
     reps: string
     rpe: string
     saved: boolean
+    confirmed: boolean
     dirty: boolean
     queued: boolean
     isPr: boolean
@@ -105,6 +106,7 @@ function createInitialSets(exercises: ExerciseData[]): SetState[][] {
                 reps: reps != null ? String(reps) : '',
                 rpe: rpe != null ? String(rpe) : '',
                 saved,
+                confirmed: saved,
                 dirty: false,
                 queued: false,
                 isPr: false,
@@ -121,6 +123,12 @@ function formatDuration(seconds: number | null) {
     const hours = Math.floor(minutes / 60)
     const rest = minutes % 60
     return rest > 0 ? `${hours} h ${rest} min` : `${hours} h`
+}
+
+function formatRestTime(seconds: number) {
+    const minutes = Math.floor(seconds / 60)
+    const remainder = seconds % 60
+    return `${minutes}:${String(remainder).padStart(2, '0')}`
 }
 
 function validateSet(exercise: ExerciseData, set: SetState) {
@@ -354,6 +362,7 @@ export default function StudentWorkoutView({
                         weight: entry.weight,
                         reps: entry.reps,
                         rpe: entry.rpe,
+                        confirmed: false,
                         dirty: true,
                         queued: Boolean(entry.queued),
                         error: null,
@@ -425,10 +434,19 @@ export default function StudentWorkoutView({
                 : exerciseSets.map((set, currentSetIndex) =>
                     currentSetIndex !== setIndex
                         ? set
-                        : { ...set, [field]: value, dirty: true, error: null }
+                        : { ...set, [field]: value, confirmed: false, dirty: true, error: null }
                 )
         ))
         setGlobalError(null)
+    }
+
+    function openNextExercise(exerciseIndex: number) {
+        const nextExercise = exercises[exerciseIndex + 1]
+        if (!nextExercise) return
+        setOpenExerciseId(nextExercise.id)
+        window.setTimeout(() => {
+            document.getElementById(`exercise-${nextExercise.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }, 50)
     }
 
     async function saveOneSet(exerciseIndex: number, setIndex: number, automatic = false) {
@@ -452,6 +470,25 @@ export default function StudentWorkoutView({
                             : item
                     )
             ))
+            return
+        }
+
+        // El autoguardado protege los datos. Esta confirmación separada le da a
+        // la alumna una acción clara para indicar que terminó la serie e iniciar
+        // el descanso, sin volver a escribir ni duplicar el registro.
+        if (!automatic && set.saved && !set.dirty) {
+            updateSets((previous) => previous.map((exerciseSets, currentExerciseIndex) =>
+                currentExerciseIndex !== exerciseIndex
+                    ? exerciseSets
+                    : exerciseSets.map((item, currentSetIndex) =>
+                        currentSetIndex === setIndex
+                            ? { ...item, confirmed: true }
+                            : item
+                    )
+            ))
+            if (!set.confirmed && !completedSession && !incompleteSession && exercise.restSeconds > 0) {
+                beginRest(exercise.restSeconds, exercise.exerciseName)
+            }
             return
         }
 
@@ -562,7 +599,7 @@ export default function StudentWorkoutView({
                     : exerciseSets.map((item, currentSetIndex) =>
                         currentSetIndex === setIndex
                             ? valuesUnchanged
-                                ? { ...item, saved: true, dirty: false, queued: false, isPr, error: null }
+                                ? { ...item, saved: true, confirmed: automatic ? item.confirmed : true, dirty: false, queued: false, isPr, error: null }
                                 : { ...item, saved: true, dirty: true, queued: false, error: null }
                             : item
                     )
@@ -857,11 +894,11 @@ export default function StudentWorkoutView({
         <main className="mx-auto max-w-lg px-4 pb-40 pt-4">
             <div className="flex items-start justify-between gap-3">
                 <div>
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-primary">Entrenamiento</p>
+                    <p className="text-xs font-bold uppercase tracking-wider text-primary">Entrenamiento</p>
                     <h1 className="mt-0.5 text-xl font-black text-foreground">{dayLabel}</h1>
                 </div>
-                {completedSession && <span className="rounded-full bg-emerald-500/10 px-3 py-1.5 text-[11px] font-bold text-emerald-500">Finalizada · editable</span>}
-                {incompleteSession && <span className="rounded-full bg-amber-500/10 px-3 py-1.5 text-[11px] font-bold text-amber-500">Parcial · editable</span>}
+                {completedSession && <span className="rounded-full bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-500">Finalizada · editable</span>}
+                {incompleteSession && <span className="rounded-full bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-500">Incompleta · editable</span>}
             </div>
 
             <div className="mt-3">
@@ -917,8 +954,8 @@ export default function StudentWorkoutView({
                 <div className="sticky top-[86px] z-20 mt-3 flex items-center gap-3 rounded-xl border border-primary/25 bg-background/95 px-3 py-2.5 shadow-lg backdrop-blur">
                     <Clock3 className="h-5 w-5 text-primary" aria-hidden="true" />
                     <div className="min-w-0 flex-1">
-                        <p className="text-xs font-bold text-foreground">Descanso · {restTimeLeft}s</p>
-                        <p className="truncate text-[10px] text-muted-foreground">{restExerciseName}</p>
+                        <p className="text-sm font-black text-foreground">Descanso · {formatRestTime(restTimeLeft)}</p>
+                        <p className="truncate text-xs text-muted-foreground">{restExerciseName}</p>
                     </div>
                     <button type="button" onClick={stopRest} className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-foreground">Omitir</button>
                 </div>
@@ -941,7 +978,7 @@ export default function StudentWorkoutView({
                                     const isOpen = openExerciseId === exercise.id
 
                                     return (
-                                        <article key={exercise.id} className={`overflow-hidden rounded-2xl border bg-card ${isOpen ? 'border-primary/35' : 'border-border'}`}>
+                                        <article id={`exercise-${exercise.id}`} key={exercise.id} className={`scroll-mt-24 overflow-hidden rounded-2xl border bg-card ${isOpen ? 'border-primary/40 shadow-sm' : 'border-border'}`}>
                                             <button
                                                 type="button"
                                                 onClick={() => setOpenExerciseId(isOpen ? null : exercise.id)}
@@ -953,7 +990,7 @@ export default function StudentWorkoutView({
                                                 </span>
                                                     <span className="min-w-0 flex-1">
                                                     <span className="block truncate text-sm font-bold text-foreground">{exercise.exerciseName}</span>
-                                                    <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                                                    <span className="mt-0.5 block text-xs text-muted-foreground">
                                                             {exercise.setsCount}{exercise.targetReps ? ` × ${exercise.targetReps}${exercise.isCardio ? ' min' : ' reps'}` : ' series'} · {completed}/{exercise.setsCount} listas
                                                     </span>
                                                 </span>
@@ -972,10 +1009,10 @@ export default function StudentWorkoutView({
 
                                                     <div className="mt-3">
                                                         <div className={`mb-1.5 grid items-end gap-2 px-2 ${exercise.isCardio ? 'grid-cols-[2rem_minmax(0,1fr)_4.75rem]' : 'grid-cols-[2rem_minmax(0,1fr)_minmax(0,1fr)_4.75rem]'}`}>
-                                                            <span className="text-center text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Serie</span>
-                                                            {!exercise.isCardio && <span className="text-center text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Peso</span>}
-                                                            <span className="text-center text-[10px] font-bold uppercase tracking-wide text-muted-foreground">{exercise.isCardio ? 'Minutos' : 'Reps'}</span>
-                                                            <span className="text-center text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Guardar</span>
+                                                            <span className="text-center text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Serie</span>
+                                                            {!exercise.isCardio && <span className="text-center text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Peso</span>}
+                                                            <span className="text-center text-[11px] font-bold uppercase tracking-wide text-muted-foreground">{exercise.isCardio ? 'Minutos' : 'Reps'}</span>
+                                                            <span className="text-center text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Estado</span>
                                                         </div>
 
                                                         <div className="space-y-2">
@@ -998,7 +1035,7 @@ export default function StudentWorkoutView({
                                                                                 value={set.weight}
                                                                                 disabled={finishing}
                                                                                 onChange={(event) => updateField(exerciseIndex, setIndex, 'weight', event.target.value)}
-                                                                                className="h-10 min-w-0 w-full rounded-lg border border-border bg-background px-2 text-center text-base font-bold text-foreground outline-none focus:border-primary"
+                                                                                className="h-12 min-w-0 w-full rounded-xl border border-border bg-background px-2 text-center text-base font-bold text-foreground outline-none focus:border-primary"
                                                                             />
                                                                         )}
 
@@ -1010,27 +1047,33 @@ export default function StudentWorkoutView({
                                                                             value={set.reps}
                                                                             disabled={finishing}
                                                                             onChange={(event) => updateField(exerciseIndex, setIndex, 'reps', event.target.value)}
-                                                                            className="h-10 min-w-0 w-full rounded-lg border border-border bg-background px-2 text-center text-base font-bold text-foreground outline-none focus:border-primary"
+                                                                            className="h-12 min-w-0 w-full rounded-xl border border-border bg-background px-2 text-center text-base font-bold text-foreground outline-none focus:border-primary"
                                                                         />
 
                                                                         <button
                                                                             type="button"
                                                                             aria-label={`Guardar serie ${setIndex + 1}`}
                                                                             onClick={() => saveOneSet(exerciseIndex, setIndex)}
-                                                                            disabled={finishing || savingKey != null || set.queued || (!set.dirty && set.saved)}
-                                                                            className={`inline-flex h-10 w-full items-center justify-center rounded-lg px-1 text-xs font-bold disabled:opacity-55 ${set.queued ? 'bg-amber-700 text-white' : set.saved && !set.dirty ? 'bg-emerald-700 text-white' : 'bg-primary text-primary-foreground'}`}
+                                                                            disabled={finishing || savingKey != null || set.queued || (!set.dirty && set.saved && set.confirmed)}
+                                                                            className={`inline-flex h-12 w-full items-center justify-center rounded-xl px-1 text-[11px] font-black leading-4 disabled:opacity-70 ${set.queued ? 'bg-amber-700 text-white' : set.saved && !set.dirty ? 'bg-emerald-700 text-white' : 'bg-primary text-primary-foreground'}`}
                                                                         >
-                                                                            {savingKey === key ? 'Guardando…' : set.queued ? 'Pendiente' : set.saved ? 'Actualizar' : 'Guardar'}
+                                                                            {savingKey === key
+                                                                                ? 'Guardando…'
+                                                                                : set.queued
+                                                                                    ? 'Pendiente'
+                                                                                    : set.saved && !set.dirty
+                                                                                        ? set.confirmed ? 'Lista ✓' : 'Marcar lista'
+                                                                                        : set.saved ? 'Guardar cambio' : 'Guardar'}
                                                                         </button>
                                                                     </div>
 
                                                                     <div className={`mt-1 grid gap-2 pl-10 pr-[5.25rem] ${exercise.isCardio ? 'grid-cols-1' : 'grid-cols-2'}`}>
                                                                         {!exercise.isCardio && (
-                                                                            <span className="truncate text-center text-[11px] text-muted-foreground">
+                                                                            <span className="truncate text-center text-xs text-muted-foreground">
                                                                                 {exercise.previousWeights[setIndex] != null ? `Anterior ${exercise.previousWeights[setIndex]} ${weightUnit}` : 'Sin peso anterior'}
                                                                             </span>
                                                                         )}
-                                                                        <span className="truncate text-center text-[11px] text-muted-foreground">
+                                                                        <span className="truncate text-center text-xs text-muted-foreground">
                                                                             {exercise.previousReps[setIndex] != null
                                                                                 ? `Anterior ${exercise.previousReps[setIndex]} ${exercise.isCardio ? 'min' : 'reps'}`
                                                                                 : exercise.targetReps ? `Objetivo ${exercise.targetReps}` : 'Sin registro anterior'}
@@ -1039,11 +1082,11 @@ export default function StudentWorkoutView({
 
                                                                     <div className="mt-1.5 flex items-center justify-between gap-2 pl-10">
                                                                         <details className="min-w-0 flex-1">
-                                                                            <summary className="cursor-pointer list-none text-[10px] font-medium text-muted-foreground underline decoration-dotted underline-offset-2">
+                                                                            <summary className="cursor-pointer list-none text-xs font-medium text-muted-foreground underline decoration-dotted underline-offset-2">
                                                                                 {set.rpe ? `Esfuerzo ${set.rpe}/10` : 'Agregar esfuerzo (opcional)'}
                                                                             </summary>
                                                                             <label className="mt-2 flex items-center gap-2">
-                                                                                <span className="text-[10px] text-muted-foreground">Esfuerzo</span>
+                                                                                <span className="text-xs text-muted-foreground">Esfuerzo</span>
                                                                                 <select
                                                                                     aria-label="Esfuerzo opcional"
                                                                                     value={set.rpe}
@@ -1056,7 +1099,7 @@ export default function StudentWorkoutView({
                                                                                 </select>
                                                                             </label>
                                                                         </details>
-                                                                        <span className={`shrink-0 text-[9px] font-bold ${set.queued || set.dirty ? 'text-amber-500' : set.saved ? 'text-emerald-500' : 'text-muted-foreground'}`}>
+                                                                        <span className={`shrink-0 text-[11px] font-bold ${set.queued || set.dirty ? 'text-amber-500' : set.saved ? 'text-emerald-500' : 'text-muted-foreground'}`}>
                                                                             {set.queued
                                                                                 ? isOnline
                                                                                     ? 'Por sincronizar'
@@ -1065,12 +1108,14 @@ export default function StudentWorkoutView({
                                                                                     ? draftStorageStatus === 'unavailable'
                                                                                         ? 'No cierres la app'
                                                                                         : hasSafeLocalDraft ? 'Borrador guardado' : 'Guardando borrador…'
-                                                                                    : set.saved ? 'Guardada ✓' : 'Pendiente'}
+                                                                                    : set.saved
+                                                                                        ? set.confirmed ? 'Lista ✓' : 'Guardada automáticamente'
+                                                                                        : 'Pendiente'}
                                                                         </span>
                                                                     </div>
 
-                                                                    {set.isPr && <p className="mt-2 flex items-center gap-1 text-[10px] font-bold text-amber-500"><Trophy className="h-3.5 w-3.5" /> Nuevo mejor peso</p>}
-                                                                    {set.error && <p className="mt-2 text-[11px] font-medium text-red-500">{set.error}</p>}
+                                                                    {set.isPr && <p className="mt-2 flex items-center gap-1 text-xs font-bold text-amber-500"><Trophy className="h-3.5 w-3.5" /> Nuevo mejor peso</p>}
+                                                                    {set.error && <p className="mt-2 text-xs font-medium text-red-500">{set.error}</p>}
                                                                 </div>
                                                             )
                                                         })}
@@ -1103,8 +1148,8 @@ export default function StudentWorkoutView({
                                                     </details>
 
                                                     <details className="mt-3 rounded-xl border border-border bg-background/60">
-                                                        <summary className="flex min-h-10 cursor-pointer list-none items-center gap-2 px-3 text-xs font-semibold text-primary">
-                                                            <MessageCircle className="h-4 w-4" />
+                                                        <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-3 text-sm font-semibold text-primary">
+                                                            <CircleHelp className="h-4 w-4" />
                                                             Tengo una duda sobre este ejercicio
                                                         </summary>
                                                         <div className="border-t border-border p-3">
@@ -1117,6 +1162,17 @@ export default function StudentWorkoutView({
                                                             />
                                                         </div>
                                                     </details>
+
+                                                    {completed === exercise.setsCount && exerciseIndex < exercises.length - 1 && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => openNextExercise(exerciseIndex)}
+                                                            className="mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-4 text-sm font-black text-primary"
+                                                        >
+                                                            Siguiente ejercicio
+                                                            <ChevronRight className="h-5 w-5" aria-hidden="true" />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             )}
                                         </article>

@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { ChevronDown } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { getStudentSessionHistory } from '@/app/dashboard/students/getStudentSessionHistory'
 import { formatWeight, type WeightUnit } from '@/lib/weight'
@@ -69,7 +70,6 @@ export default async function AppHistoryPage() {
                     <StudentPageHeader
                         title="Historial"
                         subtitle="Entrenamientos registrados"
-                        action={sessions.length > 0 ? <span className="text-sm font-bold text-primary">{completedSessions.length} completos</span> : null}
                     />
                 </div>
 
@@ -77,15 +77,15 @@ export default async function AppHistoryPage() {
                     <div className="mb-4 grid grid-cols-3 gap-2">
                         <div className="rounded-xl border border-border bg-card p-2.5 text-center">
                             <p className="text-base font-black text-primary">{completedSessions.length}</p>
-                            <p className="text-[10px] text-muted-foreground">Completos</p>
+                            <p className="text-[11px] text-muted-foreground">Completos</p>
                         </div>
                         <div className="rounded-xl border border-border bg-card p-2.5 text-center">
                             <p className="text-base font-black text-emerald-400">{totalSets}</p>
-                            <p className="text-[10px] text-muted-foreground">Series totales</p>
+                            <p className="text-[11px] text-muted-foreground">Series totales</p>
                         </div>
                         <div className="rounded-xl border border-border bg-card p-2.5 text-center">
                             <p className="text-base font-black text-amber-400">{avgDuration ? `${avgDuration}m` : '—'}</p>
-                            <p className="text-[10px] text-muted-foreground">Duración media</p>
+                            <p className="text-[11px] text-muted-foreground">Duración media</p>
                         </div>
                     </div>
                 )}
@@ -103,65 +103,78 @@ export default async function AppHistoryPage() {
                                 <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">{monthLabel}</p>
                                 <div className="space-y-2.5">
                                     {monthSessions.map((session) => (
-                                        <div key={session.sessionId} className="rounded-xl border border-border bg-card p-3.5">
-                                            <div className="flex items-start justify-between gap-3">
-                                                <div>
-                                                    <p className="text-sm font-bold text-card-foreground">{session.dayLabel}</p>
-                                                    <p className="mt-0.5 text-xs text-muted-foreground">{formatDate(session.performedDate)}</p>
-                                                    {session.completionStatus === 'incomplete' && (
-                                                        <p className="mt-1 text-[10px] font-bold text-amber-500">Sesión parcial · cuenta como actividad</p>
-                                                    )}
+                                        <details key={session.sessionId} className="group overflow-hidden rounded-xl border border-border bg-card">
+                                            <summary className="cursor-pointer list-none p-3.5 [&::-webkit-details-marker]:hidden">
+                                                <div className="flex items-start justify-between gap-3">
+                                                    <div className="min-w-0">
+                                                        <p className="truncate text-sm font-bold text-card-foreground">{session.dayLabel}</p>
+                                                        <p className="mt-0.5 text-xs text-muted-foreground">{formatDate(session.performedDate)}</p>
+                                                        {session.completionStatus === 'incomplete' && (
+                                                            <p className="mt-1 text-[11px] font-bold text-amber-500">Completaste parte del entrenamiento</p>
+                                                        )}
+                                                    </div>
+                                                    <span className="flex min-h-9 shrink-0 items-center gap-1.5 rounded-lg bg-secondary px-2.5 text-[11px] font-bold text-secondary-foreground">
+                                                        <span className="group-open:hidden">Ver detalle</span>
+                                                        <span className="hidden group-open:inline">Ocultar</span>
+                                                        <ChevronDown className="h-4 w-4 transition group-open:rotate-180" />
+                                                    </span>
                                                 </div>
-                                                <div className="flex shrink-0 items-center gap-2">
+                                                <div className="mt-2 flex flex-wrap items-center gap-1.5">
                                                     {session.durationSeconds && (
-                                                        <span className="rounded-lg bg-secondary px-2 py-1 text-[10px] font-medium text-secondary-foreground">
+                                                        <span className="rounded-lg bg-secondary px-2 py-1 text-[11px] font-medium text-secondary-foreground">
                                                             ⏱ {formatDuration(session.durationSeconds)}
                                                         </span>
                                                     )}
-                                                    <span className="rounded-lg bg-primary/10 px-2 py-1 text-[10px] font-semibold text-brand-soft">
+                                                    <span className="rounded-lg bg-primary/10 px-2 py-1 text-[11px] font-semibold text-brand-soft">
                                                         {session.totalSets} series
                                                     </span>
+                                                    <span className="rounded-lg bg-muted/50 px-2 py-1 text-[11px] font-medium text-muted-foreground">
+                                                        {session.exercises.length} {session.exercises.length === 1 ? 'ejercicio' : 'ejercicios'}
+                                                    </span>
                                                 </div>
-                                            </div>
-                                            {session.exercises.length > 0 && (
-                                                <div className="mt-3 space-y-1.5">
-                                                    {session.exercises.map((ex, idx) => (
-                                                        <div key={idx} className="flex items-center justify-between gap-3 rounded-xl bg-muted/40 px-3 py-2">
-                                                            <div className="min-w-0">
-                                                                <p className="truncate text-xs font-medium text-card-foreground">
-                                                                    {ex.exerciseName}
-                                                                    {ex.avgRpe !== null && (
-                                                                        <span className="ml-1 rounded-md bg-zinc-100 px-1 py-0.5 text-[9px] font-medium text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
-                                                                            RPE {ex.avgRpe}
-                                                                        </span>
-                                                                    )}
-                                                                </p>
-                                                                <p className="text-[10px] text-muted-foreground">{ex.sets} series</p>
+                                            </summary>
+
+                                            <div className="border-t border-border px-3.5 pb-3.5 pt-3">
+                                                {session.exercises.length > 0 && (
+                                                    <div className="space-y-1.5">
+                                                        {session.exercises.map((ex, idx) => (
+                                                            <div key={idx} className="flex items-center justify-between gap-3 rounded-xl bg-muted/40 px-3 py-2.5">
+                                                                <div className="min-w-0">
+                                                                    <p className="truncate text-xs font-medium text-card-foreground">
+                                                                        {ex.exerciseName}
+                                                                        {ex.avgRpe !== null && (
+                                                                            <span className="ml-1 rounded-md bg-zinc-100 px-1 py-0.5 text-[10px] font-medium text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
+                                                                                RPE {ex.avgRpe}
+                                                                            </span>
+                                                                        )}
+                                                                    </p>
+                                                                    <p className="text-[11px] text-muted-foreground">{ex.sets} series</p>
+                                                                </div>
+                                                                {!ex.isCardio && ex.bestWeight !== null && (
+                                                                    <p className="shrink-0 text-xs font-bold text-emerald-500">
+                                                                        {formatWeight(ex.bestWeight, weightUnit)}
+                                                                    </p>
+                                                                )}
                                                             </div>
-                                                            {!ex.isCardio && ex.bestWeight !== null && (
-                                                                <p className="shrink-0 text-xs font-bold text-emerald-500">
-                                                                    {formatWeight(ex.bestWeight, weightUnit)}
-                                                                </p>
-                                                            )}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                            {session.note && (
-                                                <div className="mt-3 rounded-xl border border-border bg-muted/30 px-3 py-2">
-                                                    <p className="text-[10px] font-medium text-muted-foreground">Nota</p>
-                                                    <p className="mt-0.5 text-xs text-card-foreground">{session.note}</p>
-                                                </div>
-                                            )}
-                                            {session.routineDayId && session.routineWeekId && (
-                                                <Link
-                                                    href={`/app/train?session=${session.sessionId}&source=history`}
-                                                    className="mt-3 inline-flex min-h-10 items-center rounded-xl border border-primary/25 bg-primary/10 px-3 text-xs font-bold text-primary"
-                                                >
-                                                    Revisar / editar sesión
-                                                </Link>
-                                            )}
-                                        </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                                {session.note && (
+                                                    <div className="mt-3 rounded-xl border border-border bg-muted/30 px-3 py-2.5">
+                                                        <p className="text-[11px] font-medium text-muted-foreground">Nota</p>
+                                                        <p className="mt-0.5 text-xs leading-5 text-card-foreground">{session.note}</p>
+                                                    </div>
+                                                )}
+                                                {session.routineDayId && session.routineWeekId && (
+                                                    <Link
+                                                        href={`/app/train?session=${session.sessionId}&source=history`}
+                                                        className="mt-3 inline-flex min-h-11 items-center rounded-xl border border-primary/25 bg-primary/10 px-3 text-xs font-bold text-primary"
+                                                    >
+                                                        Revisar / editar sesión
+                                                    </Link>
+                                                )}
+                                            </div>
+                                        </details>
                                     ))}
                                 </div>
                             </div>

@@ -6,7 +6,7 @@ import StudentPageHeader from '@/components/student/StudentPageHeader'
 import { getStudentAppContext } from '@/lib/auth/student'
 import AccountDeletionCard from '@/components/account/AccountDeletionCard'
 import { getActiveStudentRoutine } from '@/lib/getActiveStudentRoutine'
-import { Bell } from 'lucide-react'
+import { Bell, CalendarDays, ChevronRight, MessageCircle, Target, Trophy } from 'lucide-react'
 
 export default async function AppProfilePage() {
     const supabase = await createClient()
@@ -64,11 +64,11 @@ export default async function AppProfilePage() {
                         <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/15 text-sm font-black text-primary">
                             {initials}
                         </div>
-                        <div>
+                        <div className="min-w-0">
                             <p className="text-sm font-bold text-foreground">{fullName}</p>
-                            <p className="text-xs text-muted-foreground">{profile?.email ?? user.email}</p>
+                            <p className="truncate text-xs text-muted-foreground">{profile?.email ?? user.email}</p>
                             {memberSince && (
-                                <p className="mt-0.5 text-[10px] text-muted-foreground">
+                                <p className="mt-0.5 text-[11px] text-muted-foreground">
                                     Miembro desde {memberSince}
                                 </p>
                             )}
@@ -76,52 +76,42 @@ export default async function AppProfilePage() {
                     </div>
                 </div>
 
-                {/* ── Info del entrenador ── */}
-                {trainer?.name && (
-                    <div className="rounded-xl border border-border bg-card p-3.5">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                            Mi entrenador
-                        </p>
-                        <div className="mt-2 flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-sm font-bold text-brand-soft">
-                                {trainer.name.charAt(0).toUpperCase()}
-                            </div>
-                            <div>
-                                <p className="text-sm font-bold text-card-foreground">{trainer.name}</p>
-                                <p className="text-[10px] text-muted-foreground">Tu entrenador asignado</p>
-                            </div>
-                        </div>
+                <section className="overflow-hidden rounded-2xl border border-border bg-card">
+                    <div className="border-b border-border px-4 py-3">
+                        <p className="text-xs font-black uppercase tracking-wider text-brand-soft">Mi plan</p>
+                        {routine?.name && <p className="mt-1 text-base font-black text-foreground">{routine.name}</p>}
+                        {trainer?.name && <p className="mt-1 text-sm text-muted-foreground">Con {trainer.name}</p>}
                     </div>
-                )}
+                    <Link href="/app/rutina" prefetch className="flex min-h-14 items-center gap-3 border-b border-border px-4 text-sm font-bold text-foreground">
+                        <CalendarDays className="h-5 w-5 text-primary" />
+                        <span className="flex-1">Ver mi rutina</span>
+                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                    </Link>
+                    <Link href="/app/messages" prefetch className="flex min-h-14 items-center gap-3 px-4 text-sm font-bold text-foreground">
+                        <MessageCircle className="h-5 w-5 text-primary" />
+                        <span className="flex-1">Escribir a mi entrenador</span>
+                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                    </Link>
+                </section>
 
-                {/* ── Rutina actual ── */}
-                {routine?.name && (
-                    <div className="rounded-xl border border-border bg-card p-3.5">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                            Rutina actual
-                        </p>
-                        <p className="mt-1.5 text-sm font-bold text-card-foreground">{routine.name}</p>
-                        <p className="mt-0.5 text-[10px] text-muted-foreground">Programa activo</p>
-                    </div>
-                )}
-
-                <Link href="/app/logros" prefetch={true} className="flex items-center justify-between rounded-xl border border-border bg-card px-3.5 py-3 text-sm font-semibold text-foreground">
-                    <span>Ver mis logros</span>
-                    <span className="text-primary">→</span>
-                </Link>
-
-                <Link href="/app/notifications" prefetch={true} className="flex items-center justify-between rounded-xl border border-border bg-card px-3.5 py-3 text-sm font-semibold text-foreground">
-                    <span className="flex items-center gap-2">
-                        <Bell className="h-4 w-4 text-primary" />
-                        Avisos
-                    </span>
-                    <span className="text-primary">→</span>
-                </Link>
-
-                <Link href="/app/onboarding" prefetch={true} className="flex items-center justify-between rounded-xl border border-border bg-card px-3.5 py-3 text-sm font-semibold text-foreground">
-                    <span>Mis objetivos y disponibilidad</span>
-                    <span className="text-primary">→</span>
-                </Link>
+                <section className="overflow-hidden rounded-2xl border border-border bg-card">
+                    <p className="border-b border-border px-4 py-3 text-xs font-black uppercase tracking-wider text-brand-soft">Mi cuenta</p>
+                    <Link href="/app/logros" prefetch className="flex min-h-14 items-center gap-3 border-b border-border px-4 text-sm font-semibold text-foreground">
+                        <Trophy className="h-5 w-5 text-primary" />
+                        <span className="flex-1">Mis logros</span>
+                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                    </Link>
+                    <Link href="/app/notifications" prefetch className="flex min-h-14 items-center gap-3 border-b border-border px-4 text-sm font-semibold text-foreground">
+                        <Bell className="h-5 w-5 text-primary" />
+                        <span className="flex-1">Avisos</span>
+                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                    </Link>
+                    <Link href="/app/onboarding" prefetch className="flex min-h-14 items-center gap-3 px-4 text-sm font-semibold text-foreground">
+                        <Target className="h-5 w-5 text-primary" />
+                        <span className="flex-1">Objetivos y disponibilidad</span>
+                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                    </Link>
+                </section>
 
                 <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 py-1 text-[11px] text-muted-foreground">
                     <Link href="/privacy">Privacidad</Link>

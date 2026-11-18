@@ -2,17 +2,24 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { BarChart2, CalendarDays, Clock, Home, MessageCircle, User } from 'lucide-react'
+import { BarChart2, CalendarDays, Home, MessageCircle, User } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 
 const navItems = [
-    { href: '/app', icon: Home, label: 'Inicio', exact: true },
-    { href: '/app/rutina', icon: CalendarDays, label: 'Rutina', exact: false },
-    { href: '/app/progress', icon: BarChart2, label: 'Progreso', exact: false },
-    { href: '/app/history', icon: Clock, label: 'Historial', exact: false },
-    { href: '/app/messages', icon: MessageCircle, label: 'Mensajes', exact: false },
-    { href: '/app/profile', icon: User, label: 'Perfil', exact: false },
+    { href: '/app', icon: Home, label: 'Inicio' },
+    { href: '/app/rutina', icon: CalendarDays, label: 'Rutina' },
+    { href: '/app/progress', icon: BarChart2, label: 'Progreso' },
+    { href: '/app/messages', icon: MessageCircle, label: 'Mensajes' },
+    { href: '/app/profile', icon: User, label: 'Perfil' },
 ]
+
+function activeSection(pathname: string) {
+    if (pathname.startsWith('/app/train') || pathname.startsWith('/app/rutina')) return '/app/rutina'
+    if (pathname.startsWith('/app/progress') || pathname.startsWith('/app/history') || pathname.startsWith('/app/check-in') || pathname.startsWith('/app/logros')) return '/app/progress'
+    if (pathname.startsWith('/app/messages')) return '/app/messages'
+    if (pathname.startsWith('/app/profile') || pathname.startsWith('/app/notifications') || pathname.startsWith('/app/onboarding')) return '/app/profile'
+    return '/app'
+}
 
 export default function StudentAppShell({
     children,
@@ -25,6 +32,7 @@ export default function StudentAppShell({
 }) {
     const pathname = usePathname()
     const router = useRouter()
+    const currentSection = activeSection(pathname)
 
     if (!studentId) {
         return (
@@ -54,15 +62,15 @@ export default function StudentAppShell({
             {children}
 
             <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/95 backdrop-blur">
-                <div className="mx-auto grid max-w-lg grid-cols-6 items-center px-1 pt-2" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
-                    {navItems.map(({ href, icon: Icon, label, exact }) => {
-                        const isActive = exact ? pathname === href : pathname.startsWith(href)
+                <div className="mx-auto grid max-w-lg grid-cols-5 items-center px-2 pt-1.5" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
+                    {navItems.map(({ href, icon: Icon, label }) => {
+                        const isActive = currentSection === href
                         return (
                             <Link
                                 key={href}
                                 href={href}
                                 prefetch={true}
-                                className={`flex min-w-0 flex-col items-center gap-0.5 rounded-xl px-1 py-2 transition ${
+                                className={`flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1 py-1.5 transition ${
                                     isActive
                                         ? 'text-brand-soft'
                                         : 'text-muted-foreground hover:text-foreground'
@@ -76,7 +84,7 @@ export default function StudentAppShell({
                                         </span>
                                     )}
                                 </span>
-                                <span className={`max-w-full truncate text-[10px] font-medium ${isActive ? 'font-bold' : ''}`}>
+                                <span className={`max-w-full truncate text-xs font-medium ${isActive ? 'font-bold' : ''}`}>
                                     {label}
                                 </span>
                             </Link>

@@ -105,8 +105,7 @@ test('el alumno entra a su portal y no al panel del entrenador', async ({ page }
 
     await page.goto('/app/rutina')
     await expect(page.getByText(routineName, { exact: false }).first()).toBeVisible()
-    await expect(page.getByText(exerciseName, { exact: true })).toBeVisible()
-    await page.getByRole('button', { name: 'Mes', exact: true }).click()
+    await page.getByRole('button', { name: 'Ver calendario mensual', exact: true }).click()
     await expect(page.getByText(formatSpanishMonthLabel(getBuenosAiresDateString()), { exact: true })).toBeVisible()
     await page.getByRole('link', { name: /Entrenar/ }).click()
 
@@ -173,7 +172,7 @@ test('el alumno entra a su portal y no al panel del entrenador', async ({ page }
     // Sin conexión, el autoguardado queda en cola y se sincroniza al volver internet.
     await expect(page.getByText('Sin conexión · guardado', { exact: true })).toBeVisible({ timeout: 5_000 })
     await page.context().setOffline(false)
-    await expect(page.getByRole('button', { name: 'Guardar serie 1' })).toContainText('Actualizar', { timeout: 20_000 })
+    await expect(page.getByRole('button', { name: 'Guardar serie 1' })).toContainText('Marcar lista', { timeout: 20_000 })
 
     // No se puede marcar el día completo por accidente si todavía faltan series.
     await page.getByRole('button', { name: 'Finalizar entrenamiento' }).click()
@@ -189,18 +188,18 @@ test('el alumno entra a su portal y no al panel del entrenador', async ({ page }
     await expect(page.getByRole('heading', { name: 'Sesión guardada como parcial' })).toBeVisible({ timeout: 15_000 })
     await page.getByRole('button', { name: 'Volver a la rutina' }).click()
     await expect(page.getByText('Semana completada ✓')).toHaveCount(0)
-    await expect(page.getByText('Sesión parcial · cuenta como actividad, pero no completa el día')).toBeVisible()
+    await expect(page.getByText('Incompleto', { exact: true }).first()).toBeVisible()
     await page.getByRole('link', { name: 'Completar pendientes →' }).click()
-    await expect(page.getByText('Parcial · editable')).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByText('Incompleta · editable')).toBeVisible({ timeout: 15_000 })
 
     // El peso solo no alcanza: las repeticiones son obligatorias.
     await page.getByLabel('Peso serie 2').fill('37.5')
     await page.getByRole('button', { name: 'Guardar serie 2' }).click()
     await expect(page.getByText('Ingresá las repeticiones realizadas.', { exact: true })).toBeVisible()
     await page.getByLabel('Repeticiones serie 2').fill('10')
-    await expect(page.getByRole('button', { name: 'Guardar serie 2' })).toContainText('Actualizar', { timeout: 20_000 })
+    await expect(page.getByRole('button', { name: 'Guardar serie 2' })).toContainText('Marcar lista', { timeout: 20_000 })
     await page.getByLabel('Repeticiones serie 3').fill('9')
-    await expect(page.getByRole('button', { name: 'Guardar serie 3' })).toContainText('Actualizar', { timeout: 20_000 })
+    await expect(page.getByRole('button', { name: 'Guardar serie 3' })).toContainText('Marcar lista', { timeout: 20_000 })
     await expect(page.getByText('3 de 3 series', { exact: true }).first()).toBeVisible({ timeout: 20_000 })
 
     const readyDialog = page.getByRole('dialog')
@@ -215,7 +214,7 @@ test('el alumno entra a su portal y no al panel del entrenador', async ({ page }
 
     await page.reload()
     await expect(page.getByText('Finalizada · editable')).toBeVisible({ timeout: 15_000 })
-    await expect(page.getByRole('button', { name: 'Guardar serie 1' })).toContainText('Actualizar')
+    await expect(page.getByRole('button', { name: 'Guardar serie 1' })).toContainText('Lista ✓')
 
     await page.goto('/app/rutina')
     const completedWeekLabel = page.getByText('Semana completada ✓')
@@ -278,12 +277,14 @@ test('el alumno entra a su portal y no al panel del entrenador', async ({ page }
 
     await page.goto('/app/history')
     await expect(page.getByRole('heading', { name: 'Historial' })).toBeVisible()
-    await expect(page.getByText(exerciseName, { exact: true }).first()).toBeVisible()
+    const historicalSessionCard = page.locator('details').filter({ has: page.locator(`a[href*="session=${historicalSession!.id}"]`) })
+    await historicalSessionCard.locator('summary').click()
+    await expect(historicalSessionCard.getByText(exerciseName, { exact: true }).first()).toBeVisible()
 
-    const historicalSessionLink = page.locator(`a[href="/app/train?session=${historicalSession!.id}"]`)
+    const historicalSessionLink = historicalSessionCard.locator(`a[href*="session=${historicalSession!.id}"]`)
     await expect(historicalSessionLink).toBeVisible()
     await historicalSessionLink.click()
-    await expect(page).toHaveURL(new RegExp(`/app/train\\?session=${historicalSession!.id}$`))
+    await expect(page).toHaveURL(new RegExp(`/app/train\\?session=${historicalSession!.id}&source=history$`))
     await expect(page.getByText('Sesión del 15/01/2025', { exact: true })).toBeVisible()
     await expect(page.getByText('Finalizada · editable', { exact: true })).toBeVisible()
     await expect(page.getByLabel('Peso serie 1')).toHaveValue('12')
@@ -347,7 +348,7 @@ test('el alumno entra a su portal y no al panel del entrenador', async ({ page }
     expect(historicalSessionCleanup.error).toBeNull()
 
     await page.goto('/app/progress')
-    await expect(page.getByRole('heading', { name: 'Progreso' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Progreso', exact: true })).toBeVisible()
 
     await page.goto('/app/profile')
     await expect(page.getByRole('heading', { name: 'Perfil' })).toBeVisible()
@@ -429,12 +430,13 @@ test('el check-in y la conversación privada llegan de alumno a entrenador y vue
     await logIn(page, 'student', studentEmail)
     await page.goto('/app/check-in')
 
-    await expect(page.getByRole('heading', { name: '¿Cómo estuvo tu semana?' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Control semanal' })).toBeVisible()
     await page.getByRole('button', { name: 'Buena', exact: true }).click()
     await page.getByRole('button', { name: 'Bien', exact: true }).click()
     await page.getByRole('button', { name: 'Poco', exact: true }).click()
     await page.getByRole('button', { name: 'Justos', exact: true }).click()
     await page.getByLabel('¿Querés contarle algo más a tu entrenador?').fill('Check-in automático E2E')
+    await page.getByText('Fotos de progreso (opcional)', { exact: true }).click()
     const photoInputs = page.locator('input[type="file"]')
     await expect(photoInputs).toHaveCount(3)
     await photoInputs.first().setInputFiles('public/icon-192.png')
@@ -445,6 +447,7 @@ test('el check-in y la conversación privada llegan de alumno a entrenador y vue
     await page.getByRole('button', { name: 'Enviar control semanal' }).click()
     await expect(page.getByText('Control enviado a tu entrenador.')).toBeVisible({ timeout: 15_000 })
     await page.reload()
+    await page.getByText('Fotos de progreso (opcional)', { exact: true }).click()
     await expect(page.getByAltText('Foto guardada: Frente')).toBeVisible({ timeout: 15_000 })
 
     await page.goto('/app/messages')
@@ -615,7 +618,6 @@ test('asignar un template crea un programa completo que el alumno puede abrir', 
     await page.goto('/app/rutina')
 
     await expect(page.getByText(new RegExp(`^${templateName} · Semana 1 de 1$`))).toBeVisible()
-    await expect(page.getByText(exerciseName, { exact: true })).toBeVisible()
     await expect(page.getByRole('link', { name: /Entrenar/ })).toBeVisible()
 })
 

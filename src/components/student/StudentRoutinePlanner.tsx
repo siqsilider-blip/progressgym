@@ -18,11 +18,9 @@ import {
 import { saveActiveTrainingWeekdays } from '@/app/app/rutina/actions'
 import {
     buildMondayFirstMonthGrid,
-    enumerateDateRange,
     formatSpanishLongDateLabel,
     formatSpanishMonthLabel,
     formatSpanishWeekRange,
-    getIsoWeekday,
     type IsoWeekday,
 } from '@/lib/routineCalendar'
 
@@ -100,7 +98,7 @@ function monthKey(date: string | null | undefined) {
 function statusLabel(status: RoutinePlannerStatus) {
     if (status === 'completed') return 'Completado'
     if (status === 'in_progress') return 'En curso'
-    if (status === 'partial') return 'Parcial'
+    if (status === 'partial') return 'Incompleto'
     return 'Programado'
 }
 
@@ -109,6 +107,13 @@ function ctaLabel(status: RoutinePlannerStatus) {
     if (status === 'in_progress') return 'Continuar →'
     if (status === 'partial') return 'Completar pendientes →'
     return 'Entrenar →'
+}
+
+function buildTrainHref(day: RoutinePlannerDay, week: RoutinePlannerWeek, view: PlannerView) {
+    const scheduleQuery = `${week.monthId ? `month=${week.monthId}&` : ''}week=${week.id}&day=${day.id}&view=${view}`
+    return day.sessionId && (day.status === 'partial' || day.status === 'completed')
+        ? `/app/train?session=${day.sessionId}&source=routine&${scheduleQuery}`
+        : `/app/train?${scheduleQuery}`
 }
 
 function TrainingDayIcon({ status }: { status: RoutinePlannerStatus }) {
@@ -217,10 +222,7 @@ function TrainingWeekdayEditor({
 
 function DayDetail({ day, week, view }: { day: RoutinePlannerDay; week: RoutinePlannerWeek; view: PlannerView }) {
     const totalSets = day.exercises.reduce((sum, exercise) => sum + exercise.sets, 0)
-    const scheduleQuery = `${week.monthId ? `month=${week.monthId}&` : ''}week=${week.id}&day=${day.id}&view=${view}`
-    const trainHref = day.sessionId && (day.status === 'partial' || day.status === 'completed')
-        ? `/app/train?session=${day.sessionId}&source=routine&${scheduleQuery}`
-        : `/app/train?${scheduleQuery}`
+    const trainHref = buildTrainHref(day, week, view)
     const dateHeading = day.scheduledDate ? formatSpanishLongDateLabel(day.scheduledDate) : `Entrenamiento ${day.dayIndex}`
 
     return (
@@ -235,7 +237,7 @@ function DayDetail({ day, week, view }: { day: RoutinePlannerDay; week: RoutineP
             <div className="p-4">
                 <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                        <p className="text-[11px] font-black uppercase tracking-[0.1em] text-primary">
+                        <p className="text-xs font-black uppercase tracking-[0.1em] text-primary">
                             {dateHeading} · Entrenamiento {day.dayIndex}
                         </p>
                         <h2 className="mt-1.5 text-xl font-black leading-6 text-foreground">{day.name || `Día ${day.dayIndex}`}</h2>
@@ -246,7 +248,7 @@ function DayDetail({ day, week, view }: { day: RoutinePlannerDay; week: RoutineP
                             </p>
                         )}
                     </div>
-                    <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-black ${day.status === 'completed'
+                    <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-black ${day.status === 'completed'
                         ? 'bg-emerald-500/10 text-emerald-400'
                         : day.status === 'partial'
                             ? 'bg-amber-500/10 text-amber-400'
@@ -278,7 +280,7 @@ function DayDetail({ day, week, view }: { day: RoutinePlannerDay; week: RoutineP
 
                 <Link
                     href={trainHref}
-                    prefetch
+                    prefetch={false}
                     className={`mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-xl text-sm font-black transition active:scale-[0.99] ${day.status === 'completed'
                         ? 'border border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
                         : 'bg-primary text-primary-foreground'
@@ -288,6 +290,51 @@ function DayDetail({ day, week, view }: { day: RoutinePlannerDay; week: RoutineP
                     {ctaLabel(day.status)}
                 </Link>
             </div>
+        </article>
+    )
+}
+
+function WeekDayListItem({
+    day,
+    week,
+    selected,
+}: {
+    day: RoutinePlannerDay
+    week: RoutinePlannerWeek
+    selected: boolean
+}) {
+    const totalSets = day.exercises.reduce((sum, exercise) => sum + exercise.sets, 0)
+    const dateLabel = day.scheduledDate
+        ? formatSpanishLongDateLabel(day.scheduledDate)
+        : `Entrenamiento ${day.dayIndex}`
+    const trainHref = buildTrainHref(day, week, 'week')
+
+    return (
+        <article className={`rounded-2xl border bg-card p-4 shadow-sm ${selected ? 'border-primary/50 ring-1 ring-primary/15' : day.status === 'completed' ? 'border-emerald-500/25' : day.status === 'partial' ? 'border-amber-500/30' : 'border-border'}`}>
+            <div className="flex items-start gap-3">
+                <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-sm font-black ${day.status === 'completed' ? 'bg-emerald-500/15 text-emerald-400' : day.status === 'partial' ? 'bg-amber-500/15 text-amber-400' : 'bg-primary/10 text-primary'}`}>
+                    {day.status === 'completed' ? <Check className="h-5 w-5" aria-hidden="true" /> : day.dayIndex}
+                </span>
+                <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{dateLabel}</p>
+                        <span className={`rounded-full px-2.5 py-1 text-xs font-black ${day.status === 'completed' ? 'bg-emerald-500/10 text-emerald-400' : day.status === 'partial' ? 'bg-amber-500/10 text-amber-400' : day.status === 'in_progress' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
+                            {statusLabel(day.status)}
+                        </span>
+                    </div>
+                    <h2 className="mt-1 text-base font-black leading-5 text-foreground">{day.name || `Día ${day.dayIndex}`}</h2>
+                    <p className="mt-1 text-sm text-muted-foreground">{day.exercises.length} ejercicios · {totalSets} series</p>
+                </div>
+            </div>
+
+            <Link
+                href={trainHref}
+                prefetch={false}
+                className={`mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-4 text-sm font-black transition active:scale-[0.99] ${day.status === 'completed' ? 'border border-emerald-500/30 bg-emerald-500/10 text-emerald-400' : 'bg-primary text-primary-foreground'}`}
+            >
+                {day.status !== 'completed' && <Dumbbell className="h-4 w-4" aria-hidden="true" />}
+                {ctaLabel(day.status)}
+            </Link>
         </article>
     )
 }
@@ -405,9 +452,15 @@ export default function StudentRoutinePlanner({
                 <TrainingWeekdayEditor requiredTrainingDays={requiredTrainingDays} initialWeekdays={trainingWeekdays ?? []} onCancel={() => setEditingSchedule(false)} />
             ) : (
                 <>
-                    <div className="grid grid-cols-2 rounded-xl border border-border bg-card p-1" aria-label="Vista de rutina">
-                        <button type="button" onClick={() => setView('week')} className={`h-11 rounded-lg text-sm font-black transition ${view === 'week' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>Semana</button>
-                        <button type="button" onClick={() => setView('month')} className={`h-11 rounded-lg text-sm font-black transition ${view === 'month' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>Mes</button>
+                    <div className="flex justify-end">
+                        <button
+                            type="button"
+                            onClick={() => setView(view === 'week' ? 'month' : 'week')}
+                            className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-card px-4 text-sm font-bold text-foreground"
+                        >
+                            <CalendarDays className="h-4 w-4 text-primary" aria-hidden="true" />
+                            {view === 'week' ? 'Ver calendario mensual' : 'Volver al plan semanal'}
+                        </button>
                     </div>
 
                     {view === 'week' && selectedWeek ? (
@@ -435,49 +488,27 @@ export default function StudentRoutinePlanner({
                                     <button type="button" aria-label="Semana siguiente" disabled={selectedWeekIndex >= weeks.length - 1} onClick={() => selectWeek(selectedWeekIndex + 1)} className="flex h-11 w-11 items-center justify-center rounded-xl border border-border bg-background text-foreground disabled:opacity-30"><ChevronRight className="h-5 w-5" /></button>
                                 </div>
 
-                                {selectedWeek.weekStart && selectedWeek.weekEnd && (
-                                    <div className="mt-3 grid grid-cols-7 gap-1">
-                                        {enumerateDateRange(selectedWeek.weekStart, selectedWeek.weekEnd).map((date) => {
-                                            const entry = scheduledByDate.get(date)
-                                            const active = entry?.day.id === selectedDayId
-                                            const isToday = date === today
-                                            const weekday = WEEKDAYS.find((option) => option.value === getIsoWeekday(date))
-                                            return entry ? (
-                                                <button
-                                                    key={date}
-                                                    type="button"
-                                                    onClick={() => selectScheduledDate(date)}
-                                                    aria-label={`${weekday?.label} ${Number(date.slice(8))}, ${statusLabel(entry.day.status)}`}
-                                                    className={`flex min-h-[64px] min-w-0 flex-col items-center justify-center rounded-xl border px-0.5 transition ${active
-                                                        ? 'border-primary bg-primary text-primary-foreground'
-                                                        : entry.day.status === 'completed'
-                                                            ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
-                                                            : entry.day.status === 'partial'
-                                                                ? 'border-amber-500/30 bg-amber-500/10 text-amber-400'
-                                                                : 'border-primary/25 bg-primary/[0.06] text-foreground'
-                                                        }`}
-                                                >
-                                                    <span className="text-[10px] font-bold uppercase">{weekday?.short}</span>
-                                                    <span className="mt-0.5 text-base font-black">{Number(date.slice(8))}</span>
-                                                    <span className="mt-0.5"><TrainingDayIcon status={entry.day.status} /></span>
-                                                </button>
-                                            ) : (
-                                                <div key={date} aria-label={`${weekday?.label} ${Number(date.slice(8))}, descanso${isToday ? ', hoy' : ''}`} className={`flex min-h-[64px] min-w-0 flex-col items-center justify-center rounded-xl border border-transparent text-muted-foreground ${isToday ? 'bg-muted/70 ring-1 ring-primary/40' : 'bg-muted/25'}`}>
-                                                    <span className="text-[10px] font-bold uppercase">{weekday?.short}</span>
-                                                    <span className="mt-0.5 text-base font-black">{Number(date.slice(8))}</span>
-                                                    <span className="mt-1 text-[8px] font-bold">Libre</span>
-                                                </div>
-                                            )
-                                        })}
-                                    </div>
-                                )}
-
                                 {!selectedWeek.isCurrent && weeks.some((week) => week.isCurrent) && (
                                     <button type="button" onClick={() => selectWeek(weeks.findIndex((week) => week.isCurrent))} className="mt-3 w-full text-center text-xs font-bold text-primary">Volver a la semana actual</button>
                                 )}
                             </section>
 
-                            {selectedDay && <DayDetail day={selectedDay} week={selectedWeek} view={view} />}
+                            <section aria-labelledby="weekly-training-title">
+                                <div className="mb-2 px-1">
+                                    <h2 id="weekly-training-title" className="text-base font-black text-foreground">Tus entrenamientos</h2>
+                                    <p className="mt-0.5 text-sm text-muted-foreground">Elegí el día que querés hacer o revisar.</p>
+                                </div>
+                                <div className="space-y-3">
+                                    {selectedWeek.days.map((day) => (
+                                        <WeekDayListItem
+                                            key={day.id}
+                                            day={day}
+                                            week={selectedWeek}
+                                            selected={day.id === selectedDayId}
+                                        />
+                                    ))}
+                                </div>
+                            </section>
                         </>
                     ) : view === 'month' ? (
                         <>
@@ -488,7 +519,7 @@ export default function StudentRoutinePlanner({
                                     <button type="button" aria-label="Mes siguiente" onClick={() => moveMonth(1)} className="flex h-11 w-11 items-center justify-center rounded-xl border border-border bg-background"><ChevronRight className="h-5 w-5" /></button>
                                 </div>
                                 <div className="mt-4 grid grid-cols-7 gap-1 text-center">
-                                    {WEEKDAYS.map((option) => <span key={option.value} className="py-1 text-[10px] font-black uppercase text-muted-foreground">{option.short}</span>)}
+                                    {WEEKDAYS.map((option) => <span key={option.value} className="py-1 text-xs font-black uppercase text-muted-foreground">{option.short}</span>)}
                                     {monthCells.map((cell) => {
                                         const entry = scheduledByDate.get(cell.date)
                                         const active = entry?.day.id === selectedDayId
@@ -521,7 +552,7 @@ export default function StudentRoutinePlanner({
                                         )
                                     })}
                                 </div>
-                                <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t border-border pt-3 text-[10px] font-bold text-muted-foreground">
+                                <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t border-border pt-3 text-xs font-bold text-muted-foreground">
                                     <span className="inline-flex items-center gap-1"><Check className="h-3 w-3 text-emerald-400" /> Completado</span>
                                     <span className="inline-flex items-center gap-1"><Circle className="h-2 w-2 fill-primary text-primary" /> Programado</span>
                                     <span className="inline-flex items-center gap-1"><AlertTriangle className="h-3 w-3 text-amber-400" /> Pendiente</span>

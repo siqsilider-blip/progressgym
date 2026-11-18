@@ -290,27 +290,73 @@ export default function WeeklyCheckinForm({
                 </div>
             </details>
 
-            <section className="rounded-2xl border border-border bg-card p-4">
-                <div className="flex items-start justify-between gap-3">
+            <details className="group rounded-2xl border border-border bg-card p-4">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
+                    <div className="flex min-w-0 items-center gap-2.5">
+                        <Camera className="h-5 w-5 shrink-0 text-brand-soft" />
+                        <div className="min-w-0">
+                            <p className="text-sm font-bold text-foreground">Fotos de progreso (opcional)</p>
+                            <p className="mt-0.5 text-[11px] text-muted-foreground">Frente, perfil y espalda</p>
+                        </div>
+                    </div>
+                    <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition group-open:rotate-180" />
+                </summary>
+
+                <div className="mt-3 border-t border-border pt-3">
                     <div>
-                        <p className="text-sm font-bold text-foreground">Foto de progreso (opcional)</p>
-                        <p className="mt-1 text-[11px] leading-4 text-muted-foreground">Queda privada entre vos y tu entrenador. No hace falta subirla todas las semanas: lo ideal es cada 4 semanas, con luz, distancia y postura parecidas.</p>
+                        <p className="text-xs leading-5 text-muted-foreground">Quedan privadas entre vos y tu entrenador. No hace falta subirlas todas las semanas: lo ideal es cada 4 semanas, con luz, distancia y postura parecidas.</p>
                     </div>
-                    <Camera className="h-5 w-5 shrink-0 text-brand-soft" />
-                </div>
 
-                <p className="mt-3 text-[11px] font-semibold text-foreground">Podés cargar una, dos o las tres posiciones. Si agregás una nueva, la anterior queda guardada en tu historial.</p>
-                <div className="mt-2 grid grid-cols-3 gap-2">
-                    {PHOTO_POSES.map(({ value, label }) => {
-                        const selected = photos[value]
-                        const saved = savedPhotos.find((photo) => photo.pose === value)
-                        return (
-                            <div key={value} className="relative overflow-hidden rounded-xl border border-border bg-background">
-                                <p className="px-2 py-2 text-center text-[10px] font-bold uppercase tracking-wide text-muted-foreground">{label}</p>
-                                {selected ? (
-                                    <>
-                                        <label className="relative block aspect-[3/4] cursor-pointer overflow-hidden bg-black">
-                                            <Image src={selected.preview} alt={`Vista previa: ${label}`} fill unoptimized className="object-cover" />
+                    <p className="mt-3 text-[11px] font-semibold leading-4 text-foreground">Podés cargar una, dos o las tres posiciones. Si agregás una nueva, la anterior queda guardada en tu historial.</p>
+                    <div className="mt-2 grid grid-cols-3 gap-2">
+                        {PHOTO_POSES.map(({ value, label }) => {
+                            const selected = photos[value]
+                            const saved = savedPhotos.find((photo) => photo.pose === value)
+                            return (
+                                <div key={value} className="relative overflow-hidden rounded-xl border border-border bg-background">
+                                    <p className="px-2 py-2 text-center text-[11px] font-bold uppercase tracking-wide text-muted-foreground">{label}</p>
+                                    {selected ? (
+                                        <>
+                                            <label className="relative block aspect-[3/4] cursor-pointer overflow-hidden bg-black">
+                                                <Image src={selected.preview} alt={`Vista previa: ${label}`} fill unoptimized className="object-cover" />
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    className="sr-only"
+                                                    onChange={(event) => {
+                                                        selectPhoto(value, event.target.files?.[0] ?? null)
+                                                        event.target.value = ''
+                                                    }}
+                                                />
+                                            </label>
+                                            <button type="button" onClick={() => removePhoto(value)} aria-label={`Quitar foto de ${label}`} className="absolute right-1.5 top-8 flex h-8 w-8 items-center justify-center rounded-full bg-black/75 text-white">
+                                                <X className="h-4 w-4" />
+                                            </button>
+                                            <p className="px-1 py-1.5 text-center text-[10px] font-semibold text-brand-soft">Tocá para cambiar</p>
+                                        </>
+                                    ) : saved ? (
+                                        <>
+                                            <label className="relative block aspect-[3/4] cursor-pointer overflow-hidden bg-black">
+                                                <Image src={saved.url} alt={`Foto guardada: ${label}`} fill unoptimized className="object-cover" />
+                                                <span className="absolute bottom-1.5 left-1/2 -translate-x-1/2 rounded-full bg-emerald-500 px-2 py-1 text-[9px] font-black uppercase tracking-wide text-black">Guardada</span>
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    className="sr-only"
+                                                    onChange={(event) => {
+                                                        selectPhoto(value, event.target.files?.[0] ?? null)
+                                                        event.target.value = ''
+                                                    }}
+                                                />
+                                            </label>
+                                            <p className={`px-1 py-1.5 text-center text-[10px] font-semibold leading-3 ${saved.marketingConsent ? 'text-emerald-500' : 'text-muted-foreground'}`}>
+                                                {saved.marketingConsent ? 'Autorizada · tocá para actualizar' : 'Privada · tocá para actualizar'}
+                                            </p>
+                                        </>
+                                    ) : (
+                                        <label className="flex aspect-[3/4] cursor-pointer flex-col items-center justify-center gap-2 border-t border-dashed border-primary/25 bg-primary/[0.04] px-1 text-center text-[11px] font-bold text-brand-soft">
+                                            <Camera className="h-5 w-5" />
+                                            Agregar
                                             <input
                                                 type="file"
                                                 accept="image/*"
@@ -321,62 +367,25 @@ export default function WeeklyCheckinForm({
                                                 }}
                                             />
                                         </label>
-                                        <button type="button" onClick={() => removePhoto(value)} aria-label={`Quitar foto de ${label}`} className="absolute right-1.5 top-8 flex h-7 w-7 items-center justify-center rounded-full bg-black/75 text-white">
-                                            <X className="h-4 w-4" />
-                                        </button>
-                                        <p className="px-1 py-1.5 text-center text-[9px] font-semibold text-brand-soft">Tocá para cambiar</p>
-                                    </>
-                                ) : saved ? (
-                                    <>
-                                        <label className="relative block aspect-[3/4] cursor-pointer overflow-hidden bg-black">
-                                            <Image src={saved.url} alt={`Foto guardada: ${label}`} fill unoptimized className="object-cover" />
-                                            <span className="absolute bottom-1.5 left-1/2 -translate-x-1/2 rounded-full bg-emerald-500 px-2 py-1 text-[8px] font-black uppercase tracking-wide text-black">Guardada</span>
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                className="sr-only"
-                                                onChange={(event) => {
-                                                    selectPhoto(value, event.target.files?.[0] ?? null)
-                                                    event.target.value = ''
-                                                }}
-                                            />
-                                        </label>
-                                        <p className={`px-1 py-1.5 text-center text-[8px] font-semibold ${saved.marketingConsent ? 'text-emerald-500' : 'text-muted-foreground'}`}>
-                                            {saved.marketingConsent ? 'Autorizada · tocá para actualizar' : 'Privada · tocá para actualizar'}
-                                        </p>
-                                    </>
-                                ) : (
-                                    <label className="flex aspect-[3/4] cursor-pointer flex-col items-center justify-center gap-2 border-t border-dashed border-primary/25 bg-primary/[0.04] px-1 text-center text-[10px] font-bold text-brand-soft">
-                                        <Camera className="h-5 w-5" />
-                                        Agregar
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            className="sr-only"
-                                            onChange={(event) => {
-                                                selectPhoto(value, event.target.files?.[0] ?? null)
-                                                event.target.value = ''
-                                            }}
-                                        />
-                                    </label>
-                                )}
-                            </div>
-                        )
-                    })}
-                </div>
-
-                {selectedPhotoCount > 0 && (
-                    <div className="mt-3 space-y-3">
-                        <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-border bg-background p-3">
-                            <input type="checkbox" checked={marketingConsent} onChange={(event) => setMarketingConsent(event.target.checked)} className="mt-0.5 h-4 w-4 accent-primary" />
-                            <span className="text-[11px] leading-4 text-muted-foreground">
-                                Autorizo voluntariamente a <strong className="text-foreground">{trainerName}</strong> a usar esta foto, junto con otras fotos autorizadas, para mostrar mi progreso en redes sociales. Puedo retirar el permiso cuando quiera.
-                            </span>
-                        </label>
-                        {!marketingConsent && <p className="text-[10px] text-muted-foreground">Si no marcás la autorización, la foto seguirá siendo privada y no podrá exportarse para marketing.</p>}
+                                    )}
+                                </div>
+                            )
+                        })}
                     </div>
-                )}
-            </section>
+
+                    {selectedPhotoCount > 0 && (
+                        <div className="mt-3 space-y-3">
+                            <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-border bg-background p-3">
+                                <input type="checkbox" checked={marketingConsent} onChange={(event) => setMarketingConsent(event.target.checked)} className="mt-0.5 h-4 w-4 accent-primary" />
+                                <span className="text-xs leading-5 text-muted-foreground">
+                                    Autorizo voluntariamente a <strong className="text-foreground">{trainerName}</strong> a usar esta foto, junto con otras fotos autorizadas, para mostrar mi progreso en redes sociales. Puedo retirar el permiso cuando quiera.
+                                </span>
+                            </label>
+                            {!marketingConsent && <p className="text-[11px] leading-4 text-muted-foreground">Si no marcás la autorización, la foto seguirá siendo privada y no podrá exportarse para marketing.</p>}
+                        </div>
+                    )}
+                </div>
+            </details>
 
             {error && <p className="rounded-xl bg-red-500/10 px-3 py-2 text-xs font-medium text-red-500">{error}</p>}
             {saved && (
