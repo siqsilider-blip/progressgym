@@ -411,7 +411,7 @@ export default async function RoutineDetailPage(props: PageProps) {
                         data-testid="routine-planner-workspace"
                         className="grid min-w-0 gap-4 xl:grid-cols-[16rem_minmax(0,1fr)] xl:items-start"
                     >
-                        <aside className="min-w-0 space-y-3 xl:sticky xl:top-4">
+                        <aside className="min-w-0 space-y-3 xl:sticky xl:top-4 xl:max-h-[calc(100dvh-2rem)] xl:overflow-y-auto xl:pr-1">
                             <WeekMonthSelector
                                 routineId={routine.id}
                                 months={months}

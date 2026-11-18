@@ -4,15 +4,15 @@ import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
 
 export default function NewDashboardPage() {
     return (
-        <div className="p-4 pb-24 md:p-6">
-            <div className="mx-auto max-w-2xl space-y-4">
+        <div className="p-4 pb-24 md:p-6 xl:px-8 xl:pb-8">
+            <div className="mx-auto w-full max-w-5xl space-y-4">
                 <DashboardPageHeader
                     title="Nuevo"
                     subtitle="Elegí qué querés crear"
                     backHref="/dashboard"
                 />
 
-                <div className="space-y-2">
+                <div className="grid gap-3 lg:grid-cols-2">
                     <Link
                         href="/dashboard/students/new"
                         className="group flex items-center justify-between rounded-xl border border-white/[0.07] bg-white/[0.025] p-3 transition hover:border-primary/30 hover:bg-white/[0.04]"

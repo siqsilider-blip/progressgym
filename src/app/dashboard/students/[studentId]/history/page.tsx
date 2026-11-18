@@ -80,8 +80,8 @@ export default async function StudentHistoryPage(props: PageProps) {
         : null
 
     return (
-        <div className="p-4 pb-24 md:p-6">
-            <div className="mx-auto max-w-2xl space-y-4">
+        <div className="p-4 pb-24 md:p-6 xl:px-8 xl:pb-8">
+            <div className="mx-auto w-full max-w-7xl space-y-4">
 
                 {/* ── Header ── */}
                 <DashboardPageHeader
@@ -135,7 +135,7 @@ export default async function StudentHistoryPage(props: PageProps) {
                                     {monthLabel}
                                 </p>
 
-                                <div className="space-y-2.5">
+                                <div className="grid gap-3 xl:grid-cols-2">
                                     {monthSessions.map((session) => (
                                         <div
                                             key={session.sessionId}

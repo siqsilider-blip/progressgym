@@ -58,14 +58,14 @@ export default function SettingsClient({ email, theme, initialSettings }: Props)
 
     return (
         <div className={`min-h-screen ${isLight ? 'bg-zinc-100' : 'bg-zinc-950'}`} style={{ paddingBottom: 'calc(72px + 4rem + env(safe-area-inset-bottom, 0px))' }}>
-            <div className="mx-auto w-full max-w-2xl space-y-4 px-4 py-4 md:px-6 md:py-6">
+            <div className="mx-auto w-full max-w-6xl space-y-4 px-4 py-4 md:px-6 md:py-6 xl:px-8">
                 <DashboardPageHeader
                     title="Configuración"
                     subtitle="Preferencias de tu cuenta"
                     backHref="/dashboard"
                 />
 
-                <div className="space-y-4">
+                <div className="grid gap-4 xl:grid-cols-2 xl:items-start">
 
                     {/* ── Perfil ── */}
                     <Section title="Perfil" desc="Datos de tu cuenta." icon={<User className="h-5 w-5" />} iconBox={iconBox} card={card} sectionTitle={sectionTitle} sectionDesc={sectionDesc}>
@@ -206,12 +206,11 @@ export default function SettingsClient({ email, theme, initialSettings }: Props)
 
             {/* ── Sticky save bar ── */}
             <div
-                className={`fixed left-0 right-0 z-40 border-t px-4 py-3 backdrop-blur-sm ${isLight
+                className={`fixed bottom-[calc(72px+env(safe-area-inset-bottom,0px))] left-0 right-0 z-40 border-t px-4 py-3 backdrop-blur-sm lg:bottom-0 lg:left-64 ${isLight
                     ? 'border-zinc-200 bg-white/90'
                     : 'border-zinc-800 bg-zinc-950/90'}`}
-                style={{ bottom: 'calc(72px + env(safe-area-inset-bottom, 0px))' }}
             >
-                <div className="mx-auto flex max-w-2xl items-center gap-3">
+                <div className="mx-auto flex max-w-6xl items-center gap-3">
                     {status === 'success' && (
                         <p className="text-sm font-medium text-emerald-500">
                             ✓ Cambios guardados

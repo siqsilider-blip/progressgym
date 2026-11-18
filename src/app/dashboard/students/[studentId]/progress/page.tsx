@@ -31,8 +31,8 @@ export default async function StudentProgressPage(props: PageProps) {
     const totalPRs = progressData.length
 
     return (
-        <div className="p-4 pb-24 md:p-6">
-            <div className="mx-auto max-w-2xl space-y-4">
+        <div className="p-4 pb-24 md:p-6 xl:px-8 xl:pb-8">
+            <div className="mx-auto w-full max-w-7xl space-y-4">
                 {/* Header */}
                 <DashboardPageHeader
                     title="Progreso"
@@ -72,7 +72,7 @@ export default async function StudentProgressPage(props: PageProps) {
                         </p>
                     </div>
                 ) : (
-                    <div className="space-y-3">
+                    <div className="grid gap-3 xl:grid-cols-2">
                         {progressData.map((exercise, index) => (
                             <ExerciseProgressCard
                                 key={exercise.exerciseId}

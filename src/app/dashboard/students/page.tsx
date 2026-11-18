@@ -33,19 +33,6 @@ type ActiveAssignment = {
 type RoutineSummary = { id: string; name: string | null }
 type RoutineWeekRow = { routine_id: string }
 
-function getRiskStyles(level: StudentRisk['level']) {
-    switch (level) {
-        case 'critical': return { badge: 'border-red-500/30 bg-red-500/10 text-red-400', label: 'Crítico' }
-        case 'high': return { badge: 'border-orange-500/30 bg-orange-500/10 text-orange-400', label: 'Alto' }
-        case 'medium': return { badge: 'border-yellow-500/30 bg-yellow-500/10 text-yellow-300', label: 'Medio' }
-        default: return { badge: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400', label: 'Bajo' }
-    }
-}
-
-function getInitials(first: string | null, last: string | null) {
-    return `${(first?.[0] ?? '').toUpperCase()}${(last?.[0] ?? '').toUpperCase()}` || '?'
-}
-
 export default async function StudentsPage() {
     const supabase = await createClient()
     const user = await getServerUser()
@@ -214,90 +201,7 @@ export default async function StudentsPage() {
                     </Link>
                 </div>
             ) : (
-                <>
-                    {/* Mobile */}
-                    <div className="md:hidden">
-                        <StudentsList students={studentsWithRisk} operationsByStudentId={operationsByStudentId} />
-                    </div>
-
-                    {/* Desktop */}
-                    <div className="hidden overflow-hidden rounded-2xl border border-white/[0.07] md:block">
-                        {/* Header tabla */}
-                        <div className="grid grid-cols-12 gap-4 border-b px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-white/25"
-                            style={{ borderColor: 'rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)' }}>
-                            <div className="col-span-4">Alumno</div>
-                            <div className="col-span-2">Riesgo</div>
-                            <div className="col-span-3">Programa</div>
-                            <div className="col-span-3 text-right">Acciones</div>
-                        </div>
-
-                        <div className="divide-y divide-white/5">
-                            {studentsWithRisk.map((student) => {
-                                const fullName = `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim() || 'Sin nombre'
-                                const initials = getInitials(student.first_name, student.last_name)
-                                const riskStyles = student.risk ? getRiskStyles(student.risk.level) : null
-                                const operation = operationsByStudentId[student.id]
-                                const hasProgram = Boolean(operation?.routineId)
-
-                                return (
-                                    <div key={student.id} className="grid grid-cols-12 gap-4 px-5 py-3.5 text-sm transition hover:bg-white/[0.02]">
-                                        <div className="col-span-4 flex items-center gap-3">
-                                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-black text-brand-soft"
-                                                style={{ background: 'rgba(201,135,150,0.2)', border: '1px solid rgba(201,135,150,0.25)' }}>
-                                                {initials}
-                                            </div>
-                                            <span className="font-semibold text-white">{fullName}</span>
-                                        </div>
-
-                                        <div className="col-span-2 flex items-center">
-                                            {riskStyles ? (
-                                                <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold ${riskStyles.badge}`}>
-                                                    {riskStyles.label}
-                                                </span>
-                                            ) : (
-                                                <span className="text-xs text-white/30">Sin datos</span>
-                                            )}
-                                        </div>
-
-                                        <div className="col-span-3 flex items-center">
-                                            {operation?.hasActiveSession ? (
-                                                <span className="text-xs font-semibold text-primary">Sesión en curso</span>
-                                            ) : hasProgram ? (
-                                                <div className="min-w-0">
-                                                    <p className="truncate text-xs font-medium text-white/60">{operation.routineName}</p>
-                                                    <p className={`text-[10px] ${operation.isFinalWeek ? 'font-semibold text-amber-400' : 'text-white/30'}`}>
-                                                        Semana {operation.programWeekNumber} de {operation.totalProgramWeeks}
-                                                    </p>
-                                                </div>
-                                            ) : (
-                                                <span className="text-xs font-semibold text-rose-400">Sin programa</span>
-                                            )}
-                                        </div>
-
-                                        <div className="col-span-3 flex items-center justify-end gap-2">
-                                            <Link
-                                                href={`/dashboard/students/${student.id}`}
-                                                className="rounded-lg border px-3 py-1.5 text-xs font-medium text-white/60 transition hover:text-white hover:bg-white/[0.06]"
-                                                style={{ borderColor: 'rgba(255,255,255,0.1)' }}
-                                            >
-                                                Ver perfil
-                                            </Link>
-                                            <Link
-                                                href={hasProgram
-                                                    ? `/dashboard/students/${student.id}/train`
-                                                    : `/dashboard/students/${student.id}/assign-routine`}
-                                                className="rounded-lg px-3 py-1.5 text-xs font-bold text-[#111111] transition hover:opacity-90"
-                                                style={{ background: 'linear-gradient(135deg, #c98796, #e9a0ad)' }}
-                                            >
-                                                {operation?.hasActiveSession ? 'Continuar' : hasProgram ? 'Entrenar' : 'Asignar'}
-                                            </Link>
-                                        </div>
-                                    </div>
-                                )
-                            })}
-                        </div>
-                    </div>
-                </>
+                <StudentsList students={studentsWithRisk} operationsByStudentId={operationsByStudentId} />
             )}
         </div>
     )

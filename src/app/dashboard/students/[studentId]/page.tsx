@@ -161,7 +161,7 @@ export default async function StudentProfilePage(props: PageProps) {
                 backHref="/dashboard/students"
             />
 
-            <nav className="hidden grid-cols-5 gap-2 rounded-2xl border border-border bg-card p-2 lg:grid" aria-label="Acciones del alumno">
+            <nav className="hidden grid-cols-5 gap-2 rounded-2xl border border-border bg-background/90 p-2 shadow-lg shadow-black/10 backdrop-blur lg:sticky lg:top-0 lg:z-20 lg:grid" aria-label="Acciones del alumno">
                 <Link
                     href={`/dashboard/messages?student=${studentId}`}
                     className="rounded-xl border border-primary/30 bg-primary/10 px-3 py-2.5 text-center text-xs font-semibold text-primary transition hover:bg-primary/20"
@@ -203,177 +203,197 @@ export default async function StudentProfilePage(props: PageProps) {
                 </Link>
             </nav>
 
-            <div className="grid gap-3 lg:grid-cols-2 lg:items-start">
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start xl:grid-cols-[minmax(0,1fr)_23rem]">
+                <main className="min-w-0 space-y-3">
+                    <StudentRiskCard risk={risk} />
 
-            {assignedRoutineId && programStartedOn && activeRoutineName && (
-                <ProgramScheduleCard
-                    studentId={studentId}
-                    routineName={activeRoutineName}
-                    programStartedOn={programStartedOn}
-                    currentWeekLabel={currentWeekLabel}
-                    programWeekNumber={programWeekNumber}
-                    totalProgramWeeks={totalProgramWeeks}
-                />
-            )}
-
-            <StudentContactCard
-                studentId={studentId}
-                phone={student.phone ?? null}
-            />
-
-            {!linkedProfile && (
-                <StudentInvitationCard
-                    studentId={studentId}
-                    defaultEmail={student.email ?? null}
-                    linkedEmail={null}
-                    highlight={searchParams?.setup === 'invite'}
-                />
-            )}
-
-            {onboardingCompleted && onboarding ? (
-                <section className="rounded-2xl border border-primary/25 bg-primary/[0.06] p-4">
-                    <div className="flex items-start justify-between gap-3">
-                        <div>
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Ficha inicial</p>
-                            <h2 className="mt-1 text-sm font-black text-foreground">Objetivos y disponibilidad</h2>
-                        </div>
-                        <span className="rounded-full bg-emerald-500/10 px-2 py-1 text-[9px] font-bold text-emerald-400">Completada</span>
-                    </div>
-                    <div className="mt-3 flex flex-wrap gap-1.5">
-                        {onboarding.goals.map((goal) => (
-                            <span key={goal} className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[10px] font-bold text-brand-soft">
-                                {labelFor(ONBOARDING_GOALS, goal)}
-                            </span>
-                        ))}
-                    </div>
-                    <div className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
-                        <OnboardingMetric label="Experiencia" value={labelFor(ONBOARDING_EXPERIENCE, onboarding.experience_level)} />
-                        <OnboardingMetric label="Disponibilidad" value={`${onboarding.training_days_per_week} días · ${onboarding.session_minutes} min`} />
-                        <OnboardingMetric label="Lugar" value={labelFor(ONBOARDING_LOCATIONS, onboarding.training_location)} />
-                        <OnboardingMetric
-                            label="Equipamiento"
-                            value={onboarding.available_equipment.length
-                                ? onboarding.available_equipment.map((item) => labelFor(ONBOARDING_EQUIPMENT, item)).join(', ')
-                                : 'Sin especificar'}
+                    {assignedRoutineId && programStartedOn && activeRoutineName ? (
+                        <ProgramScheduleCard
+                            studentId={studentId}
+                            routineName={activeRoutineName}
+                            programStartedOn={programStartedOn}
+                            currentWeekLabel={currentWeekLabel}
+                            programWeekNumber={programWeekNumber}
+                            totalProgramWeeks={totalProgramWeeks}
                         />
-                    </div>
-                    {(onboarding.limitations || onboarding.preferences) && (
-                        <div className="mt-3 space-y-2 border-t border-primary/15 pt-3 text-xs leading-5">
-                            {onboarding.limitations && (
-                                <p><span className="font-bold text-amber-400">Cuidados: </span><span className="text-muted-foreground">{onboarding.limitations}</span></p>
+                    ) : (
+                        <section className="rounded-2xl border border-dashed border-primary/30 bg-primary/[0.045] p-4">
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Programa</p>
+                            <h2 className="mt-1 text-base font-black text-foreground">Sin programa asignado</h2>
+                            <p className="mt-1 max-w-2xl text-xs leading-5 text-muted-foreground">
+                                {onboardingCompleted
+                                    ? 'La ficha inicial está lista. Elegí un template o creá un programa para empezar.'
+                                    : linkedProfile
+                                        ? 'La cuenta ya está vinculada. Cuando complete su ficha inicial vas a poder elegir el programa con más información.'
+                                        : 'Primero enviá el acceso para que complete objetivos, experiencia y disponibilidad.'}
+                            </p>
+                            {onboardingCompleted ? (
+                                <Link
+                                    href={`/dashboard/students/${studentId}/assign-routine`}
+                                    className="mt-3 inline-flex min-h-10 items-center justify-center rounded-xl bg-primary px-4 text-xs font-bold text-primary-foreground transition hover:brightness-110"
+                                >
+                                    Elegir programa
+                                </Link>
+                            ) : !linkedProfile ? (
+                                <a
+                                    href="#student-access"
+                                    className="mt-3 inline-flex min-h-10 items-center justify-center rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-4 text-xs font-bold text-emerald-400 transition hover:bg-emerald-500/15"
+                                >
+                                    Enviar acceso primero
+                                </a>
+                            ) : (
+                                <span className="mt-3 inline-flex min-h-9 items-center rounded-xl border border-amber-500/20 bg-amber-500/[0.06] px-3 text-xs font-semibold text-amber-400">
+                                    Esperando ficha inicial
+                                </span>
                             )}
-                            {onboarding.preferences && (
-                                <p><span className="font-bold text-foreground">Preferencias: </span><span className="text-muted-foreground">{onboarding.preferences}</span></p>
+                        </section>
+                    )}
+
+                    <StudentMonthlySummaryCard
+                        studentId={studentId}
+                        studentName={fullName}
+                        studentPhone={student.phone ?? null}
+                        sessions={currentSessions}
+                        previousSessions={previousSessions}
+                        checkins={currentCheckins.length}
+                        weightChange={weightChange}
+                        waistChange={waistChange}
+                        painReports={currentCheckins.filter((checkin) => checkin.had_pain).length}
+                    />
+
+                    {latestWeeklyCheckin && (
+                        <section className={`rounded-2xl border p-4 ${latestWeeklyCheckin.had_pain ? 'border-amber-500/30 bg-amber-500/[0.07]' : 'border-border bg-card'}`}>
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Check-in semanal</p>
+                                    <h2 className="mt-1 text-sm font-bold text-foreground">
+                                        {latestWeeklyCheckin.had_pain ? '⚠️ Requiere atención' : 'Estado general del alumno'}
+                                    </h2>
+                                </div>
+                                <span className="shrink-0 text-[10px] text-muted-foreground">
+                                    Semana del {formatCheckinDate(latestWeeklyCheckin.week_start)}
+                                </span>
+                            </div>
+                            <div className="mt-3 grid grid-cols-4 gap-1.5 text-center">
+                                <CheckinMetric label="Energía" value={latestWeeklyCheckin.energy} />
+                                <CheckinMetric label="Sueño" value={latestWeeklyCheckin.sleep_quality} />
+                                <CheckinMetric label="Estrés" value={latestWeeklyCheckin.stress} inverse />
+                                <CheckinMetric label="Exigencia" value={latestWeeklyCheckin.training_difficulty} inverse />
+                            </div>
+                            {(latestWeeklyCheckin.body_weight != null || latestWeeklyCheckin.waist_cm != null) && (
+                                <p className="mt-3 text-[11px] text-muted-foreground">
+                                    {latestWeeklyCheckin.body_weight != null ? `Peso ${latestWeeklyCheckin.body_weight} kg` : ''}
+                                    {latestWeeklyCheckin.body_weight != null && latestWeeklyCheckin.waist_cm != null ? ' · ' : ''}
+                                    {latestWeeklyCheckin.waist_cm != null ? `Cintura ${latestWeeklyCheckin.waist_cm} cm` : ''}
+                                </p>
                             )}
+                            {(latestWeeklyCheckin.pain_details || latestWeeklyCheckin.comment) && (
+                                <p className={`mt-3 text-xs leading-5 ${latestWeeklyCheckin.had_pain ? 'font-medium text-amber-500' : 'text-muted-foreground'}`}>
+                                    {latestWeeklyCheckin.pain_details || latestWeeklyCheckin.comment}
+                                </p>
+                            )}
+                        </section>
+                    )}
+
+                    {feedbackResult.data && (
+                        <section className={`rounded-2xl border p-4 ${feedbackResult.data.had_pain ? 'border-amber-500/30 bg-amber-500/[0.07]' : 'border-border bg-card'}`}>
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Último control</p>
+                                    <h2 className="mt-1 text-sm font-bold text-foreground">
+                                        {feedbackResult.data.had_pain ? '⚠️ Informó una molestia' : 'Evaluación del entrenamiento'}
+                                    </h2>
+                                </div>
+                                <span className="shrink-0 text-[10px] text-muted-foreground">
+                                    {new Intl.DateTimeFormat('es-AR', { day: '2-digit', month: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date(feedbackResult.data.created_at))}
+                                </span>
+                            </div>
+                            <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                                <div className="rounded-xl bg-background/60 px-3 py-2"><span className="text-muted-foreground">Energía</span><strong className="ml-2 text-foreground">{feedbackResult.data.energy ?? '—'}/5</strong></div>
+                                <div className="rounded-xl bg-background/60 px-3 py-2"><span className="text-muted-foreground">Dificultad</span><strong className="ml-2 text-foreground">{feedbackResult.data.difficulty ?? '—'}/5</strong></div>
+                            </div>
+                            {(feedbackResult.data.pain_details || feedbackResult.data.comment) && (
+                                <p className="mt-3 text-xs leading-5 text-muted-foreground">{feedbackResult.data.pain_details || feedbackResult.data.comment}</p>
+                            )}
+                        </section>
+                    )}
+
+                    <ProgressPhotoGallery photos={progressPhotos} role="trainer" />
+                </main>
+
+                <aside className="min-w-0 space-y-3 lg:sticky lg:top-20 lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto lg:pr-1">
+                    {onboardingCompleted && onboarding ? (
+                        <section className="rounded-2xl border border-primary/25 bg-primary/[0.06] p-4">
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Ficha inicial</p>
+                                    <h2 className="mt-1 text-sm font-black text-foreground">Objetivos y disponibilidad</h2>
+                                </div>
+                                <span className="rounded-full bg-emerald-500/10 px-2 py-1 text-[9px] font-bold text-emerald-400">Completada</span>
+                            </div>
+                            <div className="mt-3 flex flex-wrap gap-1.5">
+                                {onboarding.goals.map((goal) => (
+                                    <span key={goal} className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[10px] font-bold text-brand-soft">
+                                        {labelFor(ONBOARDING_GOALS, goal)}
+                                    </span>
+                                ))}
+                            </div>
+                            <div className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
+                                <OnboardingMetric label="Experiencia" value={labelFor(ONBOARDING_EXPERIENCE, onboarding.experience_level)} />
+                                <OnboardingMetric label="Disponibilidad" value={`${onboarding.training_days_per_week} días · ${onboarding.session_minutes} min`} />
+                                <OnboardingMetric label="Lugar" value={labelFor(ONBOARDING_LOCATIONS, onboarding.training_location)} />
+                                <OnboardingMetric
+                                    label="Equipamiento"
+                                    value={onboarding.available_equipment.length
+                                        ? onboarding.available_equipment.map((item) => labelFor(ONBOARDING_EQUIPMENT, item)).join(', ')
+                                        : 'Sin especificar'}
+                                />
+                            </div>
+                            {(onboarding.limitations || onboarding.preferences) && (
+                                <div className="mt-3 space-y-2 border-t border-primary/15 pt-3 text-xs leading-5">
+                                    {onboarding.limitations && (
+                                        <p><span className="font-bold text-amber-400">Cuidados: </span><span className="text-muted-foreground">{onboarding.limitations}</span></p>
+                                    )}
+                                    {onboarding.preferences && (
+                                        <p><span className="font-bold text-foreground">Preferencias: </span><span className="text-muted-foreground">{onboarding.preferences}</span></p>
+                                    )}
+                                </div>
+                            )}
+                        </section>
+                    ) : linkedProfile ? (
+                        <section className="rounded-xl border border-amber-500/20 bg-amber-500/[0.05] px-3.5 py-3">
+                            <p className="text-xs font-bold text-amber-400">Ficha inicial pendiente</p>
+                            <p className="mt-0.5 text-[10px] leading-4 text-muted-foreground">El alumno todavía no completó sus objetivos y disponibilidad.</p>
+                        </section>
+                    ) : null}
+
+                    <StudentContactCard
+                        studentId={studentId}
+                        phone={student.phone ?? null}
+                    />
+
+                    <StudentInvitationCard
+                        studentId={studentId}
+                        defaultEmail={student.email ?? null}
+                        linkedEmail={linkedProfile?.email ?? null}
+                        highlight={searchParams?.setup === 'invite'}
+                    />
+
+                    <details className="rounded-xl border border-border bg-card px-3.5 py-3 text-sm">
+                        <summary className="cursor-pointer font-semibold text-muted-foreground">Más opciones</summary>
+                        <div className="mt-3 space-y-3 border-t border-border pt-3">
+                            {!assignedRoutineId && !onboardingCompleted && (
+                                <Link
+                                    href={`/dashboard/students/${studentId}/assign-routine`}
+                                    className="block rounded-xl border border-border bg-secondary px-3 py-2.5 text-center text-xs font-semibold text-secondary-foreground"
+                                >
+                                    Asignar programa igualmente
+                                </Link>
+                            )}
+                            <DeleteStudentButton studentId={params.studentId} />
                         </div>
-                    )}
-                </section>
-            ) : linkedProfile ? (
-                <section className="rounded-xl border border-amber-500/20 bg-amber-500/[0.05] px-3.5 py-3">
-                    <p className="text-xs font-bold text-amber-400">Ficha inicial pendiente</p>
-                    <p className="mt-0.5 text-[10px] leading-4 text-muted-foreground">El alumno todavía no completó sus objetivos y disponibilidad.</p>
-                </section>
-            ) : null}
-
-            <StudentMonthlySummaryCard
-                studentId={studentId}
-                studentName={fullName}
-                studentPhone={student.phone ?? null}
-                sessions={currentSessions}
-                previousSessions={previousSessions}
-                checkins={currentCheckins.length}
-                weightChange={weightChange}
-                waistChange={waistChange}
-                painReports={currentCheckins.filter((checkin) => checkin.had_pain).length}
-            />
-
-            {latestWeeklyCheckin && (
-                <section className={`rounded-2xl border p-4 ${latestWeeklyCheckin.had_pain ? 'border-amber-500/30 bg-amber-500/[0.07]' : 'border-border bg-card'}`}>
-                    <div className="flex items-start justify-between gap-3">
-                        <div>
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Check-in semanal</p>
-                            <h2 className="mt-1 text-sm font-bold text-foreground">
-                                {latestWeeklyCheckin.had_pain ? '⚠️ Requiere atención' : 'Estado general del alumno'}
-                            </h2>
-                        </div>
-                        <span className="shrink-0 text-[10px] text-muted-foreground">
-                            Semana del {formatCheckinDate(latestWeeklyCheckin.week_start)}
-                        </span>
-                    </div>
-                    <div className="mt-3 grid grid-cols-4 gap-1.5 text-center">
-                        <CheckinMetric label="Energía" value={latestWeeklyCheckin.energy} />
-                        <CheckinMetric label="Sueño" value={latestWeeklyCheckin.sleep_quality} />
-                        <CheckinMetric label="Estrés" value={latestWeeklyCheckin.stress} inverse />
-                        <CheckinMetric label="Exigencia" value={latestWeeklyCheckin.training_difficulty} inverse />
-                    </div>
-                    {(latestWeeklyCheckin.body_weight != null || latestWeeklyCheckin.waist_cm != null) && (
-                        <p className="mt-3 text-[11px] text-muted-foreground">
-                            {latestWeeklyCheckin.body_weight != null ? `Peso ${latestWeeklyCheckin.body_weight} kg` : ''}
-                            {latestWeeklyCheckin.body_weight != null && latestWeeklyCheckin.waist_cm != null ? ' · ' : ''}
-                            {latestWeeklyCheckin.waist_cm != null ? `Cintura ${latestWeeklyCheckin.waist_cm} cm` : ''}
-                        </p>
-                    )}
-                    {(latestWeeklyCheckin.pain_details || latestWeeklyCheckin.comment) && (
-                        <p className={`mt-3 text-xs leading-5 ${latestWeeklyCheckin.had_pain ? 'font-medium text-amber-500' : 'text-muted-foreground'}`}>
-                            {latestWeeklyCheckin.pain_details || latestWeeklyCheckin.comment}
-                        </p>
-                    )}
-                </section>
-            )}
-
-            <div className="lg:col-span-2">
-                <ProgressPhotoGallery photos={progressPhotos} role="trainer" />
-            </div>
-
-            {feedbackResult.data && (
-                <section className={`rounded-2xl border p-4 ${feedbackResult.data.had_pain ? 'border-amber-500/30 bg-amber-500/[0.07]' : 'border-border bg-card'}`}>
-                    <div className="flex items-start justify-between gap-3">
-                        <div>
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Último control</p>
-                            <h2 className="mt-1 text-sm font-bold text-foreground">
-                                {feedbackResult.data.had_pain ? '⚠️ Informó una molestia' : 'Evaluación del entrenamiento'}
-                            </h2>
-                        </div>
-                        <span className="shrink-0 text-[10px] text-muted-foreground">
-                            {new Intl.DateTimeFormat('es-AR', { day: '2-digit', month: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date(feedbackResult.data.created_at))}
-                        </span>
-                    </div>
-                    <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                        <div className="rounded-xl bg-background/60 px-3 py-2"><span className="text-muted-foreground">Energía</span><strong className="ml-2 text-foreground">{feedbackResult.data.energy ?? '—'}/5</strong></div>
-                        <div className="rounded-xl bg-background/60 px-3 py-2"><span className="text-muted-foreground">Dificultad</span><strong className="ml-2 text-foreground">{feedbackResult.data.difficulty ?? '—'}/5</strong></div>
-                    </div>
-                    {(feedbackResult.data.pain_details || feedbackResult.data.comment) && (
-                        <p className="mt-3 text-xs leading-5 text-muted-foreground">{feedbackResult.data.pain_details || feedbackResult.data.comment}</p>
-                    )}
-                </section>
-            )}
-
-            {linkedProfile && (
-                <StudentInvitationCard
-                    studentId={studentId}
-                    defaultEmail={student.email ?? null}
-                    linkedEmail={linkedProfile.email ?? null}
-                    highlight={searchParams?.setup === 'invite'}
-                />
-            )}
-
-            <StudentRiskCard risk={risk} />
-
-            <details className="rounded-xl border border-border bg-card px-3.5 py-3 text-sm">
-                <summary className="cursor-pointer font-semibold text-muted-foreground">Más opciones</summary>
-                <div className="mt-3 space-y-3 border-t border-border pt-3">
-                    {!assignedRoutineId && !onboardingCompleted && (
-                        <Link
-                            href={`/dashboard/students/${studentId}/assign-routine`}
-                            className="block rounded-xl border border-border bg-secondary px-3 py-2.5 text-center text-xs font-semibold text-secondary-foreground"
-                        >
-                            Asignar programa igualmente
-                        </Link>
-                    )}
-                    <DeleteStudentButton studentId={params.studentId} />
-                </div>
-            </details>
-
+                    </details>
+                </aside>
             </div>
 
             <div className="fixed bottom-16 left-0 right-0 z-30 border-t border-border bg-background/95 backdrop-blur md:bottom-0 lg:hidden">

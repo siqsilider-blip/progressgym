@@ -89,11 +89,11 @@ export default function DesktopRoutineExerciseTable({
     const rowGrid = showHistory ? ROW_GRID_WITH_HISTORY : ROW_GRID_WITHOUT_HISTORY
 
     return (
-        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-            <div className="overflow-x-auto">
+        <div className="flex max-h-[calc(100dvh-14rem)] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+            <div className="min-h-0 flex-1 overflow-auto">
                 <div className={showHistory ? 'min-w-[980px]' : 'min-w-[850px]'}>
                     <div
-                        className={`grid ${rowGrid} items-center gap-2 border-b border-border bg-muted/35 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground`}
+                        className={`sticky top-0 z-20 grid ${rowGrid} items-center gap-2 border-b border-border bg-card px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground shadow-sm`}
                     >
                         <span>#</span>
                         <span>Ejercicio</span>
@@ -413,7 +413,7 @@ function DesktopExerciseRow({
 
                     <button
                         type="submit"
-                        disabled={isPending || !replacementExerciseId}
+                        disabled={isPending || !isDirty || !replacementExerciseId}
                         className="flex h-8 items-center gap-1 rounded-md bg-primary px-2.5 text-[11px] font-semibold text-primary-foreground transition disabled:bg-secondary disabled:text-muted-foreground"
                     >
                         {isPending ? (
