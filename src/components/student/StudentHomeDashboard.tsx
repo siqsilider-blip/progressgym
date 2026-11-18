@@ -11,16 +11,17 @@ import {
     Sparkles,
 } from 'lucide-react'
 import {
-    formatSpanishDayLabel,
     formatSpanishLongDateLabel,
 } from '@/lib/routineCalendar'
 import type { RoutineDayProgressStatus } from '@/lib/studentRoutineWeekProgress'
 
+export type StudentHomeDayAvailability = 'available' | 'continue' | 'review' | 'locked_today'
+
 export type StudentHomeTrainingDay = {
     id: string
     name: string
-    scheduledDate: string | null
     status: RoutineDayProgressStatus
+    availability: StudentHomeDayAvailability
     exerciseCount: number
     totalSets: number
     href: string
@@ -38,6 +39,7 @@ type Props = {
     progressPhotoDue: boolean
     trainingDays: StudentHomeTrainingDay[]
     selectedDay: StudentHomeTrainingDay | null
+    suggestedTrainingDays: string[]
     completedDays: number
     totalTrainingDays: number
     weekCompleted: boolean
@@ -49,26 +51,22 @@ function sentenceCase(value: string) {
     return value ? value.charAt(0).toLocaleUpperCase('es-AR') + value.slice(1) : value
 }
 
-function primaryCopy(day: StudentHomeTrainingDay | null, today: string) {
+function primaryCopy(day: StudentHomeTrainingDay | null) {
     if (!day) return { eyebrow: 'Tu entrenamiento', action: 'Abrir rutina' }
+    if (day.status === 'completed') return { eyebrow: 'Entrenamiento de hoy completado', action: 'Revisar entrenamiento' }
     if (day.status === 'in_progress') return { eyebrow: 'Sesión en curso', action: 'Continuar entrenamiento' }
     if (day.status === 'partial') return { eyebrow: 'Sesión parcial', action: 'Completar pendientes' }
-    if (day.scheduledDate === today) return { eyebrow: 'Entrenamiento de hoy', action: 'Empezar entrenamiento' }
-    if (day.scheduledDate && day.scheduledDate < today) return { eyebrow: 'Entrenamiento pendiente', action: 'Completar entrenamiento' }
-    return { eyebrow: 'Próximo entrenamiento', action: 'Ver entrenamiento' }
+    return { eyebrow: 'Tu entrenamiento', action: 'Empezar entrenamiento' }
 }
 
-function dayStatus(day: StudentHomeTrainingDay, today: string) {
+function dayStatus(day: StudentHomeTrainingDay) {
+    if (day.availability === 'locked_today') return { label: 'Disponible mañana', tone: 'text-muted-foreground', dot: 'bg-muted-foreground' }
     if (day.status === 'completed') return { label: 'Hecho', tone: 'text-emerald-400', dot: 'bg-emerald-400' }
     if (day.status === 'in_progress') return { label: 'En curso', tone: 'text-primary', dot: 'bg-primary' }
     if (day.status === 'partial') {
         return { label: 'Parcial', tone: 'text-amber-400', dot: 'bg-amber-400' }
     }
-    if (day.scheduledDate && day.scheduledDate < today) {
-        return { label: 'Pendiente', tone: 'text-amber-400', dot: 'bg-amber-400' }
-    }
-    if (day.scheduledDate === today) return { label: 'Hoy', tone: 'text-primary', dot: 'bg-primary' }
-    return { label: 'Programado', tone: 'text-muted-foreground', dot: 'bg-muted-foreground' }
+    return { label: 'Disponible', tone: 'text-primary', dot: 'bg-primary' }
 }
 
 export default function StudentHomeDashboard({
@@ -83,16 +81,17 @@ export default function StudentHomeDashboard({
     progressPhotoDue,
     trainingDays,
     selectedDay,
+    suggestedTrainingDays,
     completedDays,
     totalTrainingDays,
     weekCompleted,
     programWeekNumber,
     totalProgramWeeks,
 }: Props) {
-    const copy = primaryCopy(selectedDay, today)
+    const copy = primaryCopy(selectedDay)
     const progress = totalTrainingDays > 0 ? Math.round((completedDays / totalTrainingDays) * 100) : 0
     const needsCheckIn = !weeklyCheckinCompleted || progressPhotoDue
-    const hasVisibleRoutine = Boolean(routineName && (selectedDay || weekCompleted))
+    const hasVisibleRoutine = Boolean(routineName && (trainingDays.length > 0 || weekCompleted))
     const showOnboardingTask = hasVisibleRoutine && !onboardingCompleted
     const showCheckInTask = hasVisibleRoutine && onboardingCompleted && needsCheckIn
 
@@ -154,11 +153,6 @@ export default function StudentHomeDashboard({
                                 <span className="rounded-full bg-primary/12 px-3 py-1.5 text-xs font-black uppercase tracking-wide text-primary">
                                     {copy.eyebrow}
                                 </span>
-                                {selectedDay.scheduledDate && (
-                                    <span className="text-sm font-semibold text-muted-foreground">
-                                        {sentenceCase(formatSpanishLongDateLabel(selectedDay.scheduledDate))}
-                                    </span>
-                                )}
                             </div>
 
                             <h2 className="mt-4 text-[1.65rem] font-black leading-tight tracking-tight text-foreground">
@@ -174,6 +168,30 @@ export default function StudentHomeDashboard({
 
                             <Link href={selectedDay.href} className="mt-4 flex min-h-14 items-center justify-between rounded-2xl bg-primary px-5 text-base font-black text-primary-foreground shadow-lg shadow-primary/15 transition active:scale-[0.98]">
                                 {copy.action}
+                                <ChevronRight className="h-5 w-5" aria-hidden="true" />
+                            </Link>
+                        </div>
+                    </section>
+                ) : routineName && trainingDays.length > 0 ? (
+                    <section className="relative overflow-hidden rounded-[1.75rem] border border-primary/30 bg-card p-5 shadow-[0_18px_50px_-30px_rgba(201,135,150,0.8)]">
+                        <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-primary/15 blur-3xl" />
+                        <div className="relative">
+                            <span className="inline-flex rounded-full bg-primary/12 px-3 py-1.5 text-xs font-black uppercase tracking-wide text-primary">
+                                Tu elección
+                            </span>
+                            <h2 className="mt-3 text-2xl font-black leading-tight tracking-tight text-foreground">
+                                Elegí tu entrenamiento de hoy
+                            </h2>
+                            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                                Podés comenzar por cualquiera de los que todavía están pendientes. Al guardar la primera serie, los demás se habilitan mañana.
+                            </p>
+                            {suggestedTrainingDays.length > 0 && (
+                                <p className="mt-3 text-xs font-bold text-muted-foreground">
+                                    Días sugeridos: <span className="text-foreground">{suggestedTrainingDays.join(' · ')}</span>
+                                </p>
+                            )}
+                            <Link href={routineHref} className="mt-4 flex min-h-14 items-center justify-between rounded-2xl bg-primary px-5 text-base font-black text-primary-foreground shadow-lg shadow-primary/15 transition active:scale-[0.98]">
+                                Ver entrenamientos disponibles
                                 <ChevronRight className="h-5 w-5" aria-hidden="true" />
                             </Link>
                         </div>
@@ -209,6 +227,11 @@ export default function StudentHomeDashboard({
                                         {completedDays} de {totalTrainingDays} entrenamientos
                                         {totalProgramWeeks > 1 ? ` · Semana ${programWeekNumber} de ${totalProgramWeeks}` : ''}
                                     </p>
+                                    {suggestedTrainingDays.length > 0 && (
+                                        <p className="mt-1 text-xs font-semibold text-muted-foreground">
+                                            Días sugeridos: {suggestedTrainingDays.join(' · ')}
+                                        </p>
+                                    )}
                                 </div>
                                 <Link href={routineHref} className="inline-flex min-h-11 shrink-0 items-center gap-1 px-1 text-sm font-black text-primary">
                                     Ver calendario
@@ -232,27 +255,46 @@ export default function StudentHomeDashboard({
                         </div>
                         <div className="divide-y divide-border border-t border-border">
                             {trainingDays.map((day) => {
-                                const status = dayStatus(day, today)
+                                const status = dayStatus(day)
                                 const active = selectedDay?.id === day.id && !weekCompleted
-                                return (
-                                    <Link
-                                        key={day.id}
-                                        href={day.href}
-                                        aria-label={`${day.name}, ${day.scheduledDate ? formatSpanishLongDateLabel(day.scheduledDate) : 'sin fecha'}, ${status.label}`}
-                                        className={`flex min-h-14 items-center gap-3 px-4 py-2.5 transition active:bg-muted/70 ${active ? 'bg-primary/[0.07]' : ''}`}
-                                    >
+                                const rowContent = (
+                                    <>
                                         <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${day.status === 'completed' ? 'bg-emerald-500/10' : active ? 'bg-primary/10' : 'bg-muted'}`}>
                                             {day.status === 'completed'
                                                 ? <Check className="h-5 w-5 text-emerald-400" aria-hidden="true" />
                                                 : <span className={`h-2.5 w-2.5 rounded-full ${status.dot}`} />}
                                         </span>
                                         <span className="min-w-0 flex-1">
-                                            <span className="block text-xs font-bold capitalize text-muted-foreground">
-                                                {day.scheduledDate ? formatSpanishDayLabel(day.scheduledDate) : 'Sin fecha'}
+                                            <span className="block text-xs font-bold text-muted-foreground">
+                                                {day.status === 'completed' ? 'Completado esta semana' : day.status === 'partial' ? 'Sesión parcial' : 'Entrenamiento pendiente'}
                                             </span>
                                             <span className="mt-0.5 block truncate text-sm font-black text-foreground">{day.name}</span>
                                         </span>
-                                        <span className={`shrink-0 text-xs font-bold ${status.tone}`}>{status.label}</span>
+                                        <span className={`shrink-0 text-right text-xs font-bold ${status.tone}`}>{status.label}</span>
+                                    </>
+                                )
+
+                                if (day.availability === 'locked_today') {
+                                    return (
+                                        <div
+                                            key={day.id}
+                                            aria-label={`${day.name}, ${status.label}`}
+                                            aria-disabled="true"
+                                            className="flex min-h-14 items-center gap-3 px-4 py-2.5 opacity-70"
+                                        >
+                                            {rowContent}
+                                        </div>
+                                    )
+                                }
+
+                                return (
+                                    <Link
+                                        key={day.id}
+                                        href={day.href}
+                                        aria-label={`${day.name}, ${status.label}`}
+                                        className={`flex min-h-14 items-center gap-3 px-4 py-2.5 transition active:bg-muted/70 ${active ? 'bg-primary/[0.07]' : ''}`}
+                                    >
+                                        {rowContent}
                                     </Link>
                                 )
                             })}

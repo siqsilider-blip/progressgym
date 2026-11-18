@@ -1,7 +1,11 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { startWorkoutSession } from '@/app/dashboard/students/[studentId]/train/workout-session'
+import {
+    startWorkoutSession,
+    WorkoutSessionStartError,
+    type WorkoutSessionStartBlockReason,
+} from '@/app/dashboard/students/[studentId]/train/workout-session'
 import { getExerciseMaxWeights } from '@/app/dashboard/students/[studentId]/train/train-focused-actions'
 import StudentWorkoutView from './StudentWorkoutView'
 import { getRoutineSchedule } from '@/lib/getRoutineSchedule'
@@ -104,6 +108,47 @@ function HistoricalSessionUnavailable() {
                 Volver al historial
             </Link>
         </div>
+    )
+}
+
+function WorkoutStartBlocked({
+    reason,
+    routineHref,
+}: {
+    reason: WorkoutSessionStartBlockReason
+    routineHref: string
+}) {
+    const copy = reason === 'next_day_required'
+        ? {
+            title: 'Ya elegiste tu entrenamiento de hoy',
+            body: 'Podés continuar o revisar esa sesión. El próximo entrenamiento se habilita mañana.',
+        }
+        : reason === 'day_already_used'
+            ? {
+                title: 'Este entrenamiento ya está hecho esta semana',
+                body: 'Podés revisarlo o editarlo desde tu rutina, pero no volver a iniciarlo hasta la próxima semana.',
+            }
+            : reason === 'week_not_current'
+                ? {
+                    title: 'Este entrenamiento no corresponde a la semana actual',
+                    body: 'Volvé a tu rutina para elegir uno de los entrenamientos disponibles esta semana.',
+                }
+                : {
+                    title: 'Esta sesión ya se cerró',
+                    body: 'Volvé a tu rutina para continuar con el entrenamiento disponible.',
+                }
+
+    return (
+        <main className="mx-auto max-w-lg px-4 pb-28 pt-8 text-center">
+            <div className="rounded-3xl border border-primary/25 bg-card p-6 shadow-sm">
+                <p className="text-4xl" aria-hidden="true">📅</p>
+                <h1 className="mt-4 text-xl font-black text-foreground">{copy.title}</h1>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">{copy.body}</p>
+                <Link href={routineHref} className="mt-5 flex min-h-12 items-center justify-center rounded-2xl bg-primary px-5 text-sm font-black text-primary-foreground">
+                    Volver a mi rutina
+                </Link>
+            </div>
+        </main>
     )
 }
 
@@ -382,20 +427,29 @@ export default async function AppTrainPage(props: PageProps) {
     let workoutSessionId: string | null = null
     let sessionJustCompleted = false
     let sessionCompletionStatus: 'complete' | 'incomplete' | null = null
+    let workoutStartBlockReason: WorkoutSessionStartBlockReason | null = null
     if (historicalSession && selectedDayId && exercisesForDay.length > 0) {
         workoutSessionId = historicalSession.id
         sessionJustCompleted = historicalSession.completionStatus === 'complete'
         sessionCompletionStatus = historicalSession.completionStatus
     } else if (selectedDayId && exercisesForDay.length > 0) {
-        const sessionResult = await startWorkoutSession({
-            studentId,
-            trainerId: student.trainer_id,
-            routineDayId: selectedDayId,
-            allowCompleted: Boolean(searchParams?.day),
-        })
-        workoutSessionId = sessionResult.sessionId
-        sessionJustCompleted = sessionResult.justCompleted
-        sessionCompletionStatus = sessionResult.completionStatus
+        try {
+            const sessionResult = await startWorkoutSession({
+                studentId,
+                trainerId: student.trainer_id,
+                routineDayId: selectedDayId,
+                allowCompleted: Boolean(searchParams?.day),
+            })
+            workoutSessionId = sessionResult.sessionId
+            sessionJustCompleted = sessionResult.justCompleted
+            sessionCompletionStatus = sessionResult.completionStatus
+        } catch (error) {
+            if (error instanceof WorkoutSessionStartError) {
+                workoutStartBlockReason = error.reason
+            } else {
+                throw error
+            }
+        }
     }
 
     const logsByExerciseId = new Map<string, {
@@ -566,6 +620,10 @@ export default async function AppTrainPage(props: PageProps) {
                 ? 'Volver a la rutina'
                 : 'Volver al historial'
         : 'Volver a la rutina'
+
+    if (workoutStartBlockReason) {
+        return <WorkoutStartBlocked reason={workoutStartBlockReason} routineHref={routineReturnHref} />
+    }
 
     if (!selectedDay || exercisesForDay.length === 0) {
         return (

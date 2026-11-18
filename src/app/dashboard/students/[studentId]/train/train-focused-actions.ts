@@ -47,7 +47,16 @@ export async function saveSet(payload: {
 
         if (error) {
             console.error('Error guardando set:', error)
-            return { ok: false, error: error.message, action: null }
+            const friendlyError = error.message.includes('WORKOUT_NEXT_DAY_REQUIRED')
+                ? 'Ya elegiste otro entrenamiento hoy. El próximo se habilita mañana.'
+                : error.message.includes('WORKOUT_DAY_ALREADY_USED_THIS_WEEK')
+                    ? 'Este entrenamiento ya fue realizado esta semana.'
+                    : error.message.includes('WORKOUT_WEEK_NOT_CURRENT')
+                        ? 'Este entrenamiento no corresponde a la semana actual.'
+                        : error.message.includes('WORKOUT_SESSION_EXPIRED')
+                            ? 'Esta sesión ya venció. Volvé a tu rutina para continuar.'
+                            : error.message
+            return { ok: false, error: friendlyError, action: null }
         }
 
         return {

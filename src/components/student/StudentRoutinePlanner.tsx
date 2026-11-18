@@ -12,12 +12,12 @@ import {
     Circle,
     Dumbbell,
     Loader2,
-    Play,
     Settings2,
 } from 'lucide-react'
 import { saveActiveTrainingWeekdays } from '@/app/app/rutina/actions'
 import {
     buildMondayFirstMonthGrid,
+    formatSpanishDayLabel,
     formatSpanishLongDateLabel,
     formatSpanishMonthLabel,
     formatSpanishWeekRange,
@@ -36,10 +36,18 @@ export type RoutinePlannerDay = {
     id: string
     name: string
     dayIndex: number
-    scheduledDate: string | null
     status: RoutinePlannerStatus
     sessionId: string | null
+    canStart: boolean
+    blockedReason: string | null
     exercises: RoutinePlannerExercise[]
+}
+
+export type RoutinePlannerScheduledDate = {
+    date: string
+    status: RoutinePlannerStatus
+    dayId: string | null
+    suggested: boolean
 }
 
 export type RoutinePlannerWeek = {
@@ -50,6 +58,7 @@ export type RoutinePlannerWeek = {
     weekStart: string | null
     weekEnd: string | null
     isCurrent: boolean
+    scheduledDates: RoutinePlannerScheduledDate[]
     days: RoutinePlannerDay[]
 }
 
@@ -78,15 +87,14 @@ const WEEKDAYS: { value: IsoWeekday; short: string; label: string }[] = [
     { value: 7, short: 'Dom', label: 'Domingo' },
 ]
 
-function chooseInitialDay(week: RoutinePlannerWeek | undefined, requestedDayId: string | null, today: string) {
+function chooseInitialDay(week: RoutinePlannerWeek | undefined, requestedDayId: string | null) {
     if (!week) return null
     const requested = week.days.find((day) => day.id === requestedDayId)
     if (requested) return requested.id
 
-    return week.days.find((day) => day.status === 'in_progress')?.id
-        ?? week.days.find((day) => day.scheduledDate === today)?.id
-        ?? week.days.find((day) => day.status !== 'completed' && (day.scheduledDate ?? '') >= today)?.id
-        ?? week.days.find((day) => day.status !== 'completed')?.id
+    return week.days.find((day) => day.status === 'in_progress' && day.canStart)?.id
+        ?? week.days.find((day) => day.canStart && day.status !== 'completed')?.id
+        ?? week.days.find((day) => day.status === 'completed')?.id
         ?? week.days[0]?.id
         ?? null
 }
@@ -116,11 +124,49 @@ function buildTrainHref(day: RoutinePlannerDay, week: RoutinePlannerWeek, view: 
         : `/app/train?${scheduleQuery}`
 }
 
-function TrainingDayIcon({ status }: { status: RoutinePlannerStatus }) {
-    if (status === 'completed') return <Check className="h-3.5 w-3.5" aria-hidden="true" />
-    if (status === 'in_progress') return <Play className="h-3.5 w-3.5" aria-hidden="true" />
-    if (status === 'partial') return <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
-    return <Circle className="h-2.5 w-2.5 fill-current" aria-hidden="true" />
+function TrainingAction({
+    day,
+    week,
+    view,
+    className,
+}: {
+    day: RoutinePlannerDay
+    week: RoutinePlannerWeek
+    view: PlannerView
+    className: string
+}) {
+    const completed = day.status === 'completed'
+    const partialReview = day.status === 'partial' && Boolean(day.sessionId)
+    const reviewable = completed || partialReview
+
+    if (!reviewable && !day.canStart) {
+        return (
+            <div
+                role="status"
+                className={`${className} cursor-not-allowed border border-border bg-muted/45 text-muted-foreground`}
+            >
+                {day.blockedReason ?? 'No disponible'}
+            </div>
+        )
+    }
+
+    return (
+        <Link
+            href={buildTrainHref(day, week, view)}
+            prefetch={false}
+            className={`${className} ${completed
+                ? 'border border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
+                : partialReview
+                    ? 'border border-amber-500/30 bg-amber-500/10 text-amber-400'
+                : 'bg-primary text-primary-foreground'
+                }`}
+        >
+            {partialReview
+                ? <AlertTriangle className="h-4 w-4" aria-hidden="true" />
+                : !reviewable && <Dumbbell className="h-4 w-4" aria-hidden="true" />}
+            {ctaLabel(day.status)}
+        </Link>
+    )
 }
 
 function TrainingWeekdayEditor({
@@ -220,80 +266,6 @@ function TrainingWeekdayEditor({
     )
 }
 
-function DayDetail({ day, week, view }: { day: RoutinePlannerDay; week: RoutinePlannerWeek; view: PlannerView }) {
-    const totalSets = day.exercises.reduce((sum, exercise) => sum + exercise.sets, 0)
-    const trainHref = buildTrainHref(day, week, view)
-    const dateHeading = day.scheduledDate ? formatSpanishLongDateLabel(day.scheduledDate) : `Entrenamiento ${day.dayIndex}`
-
-    return (
-        <article className={`overflow-hidden rounded-2xl border bg-card shadow-sm ${day.status === 'completed'
-            ? 'border-emerald-500/30'
-            : day.status === 'partial'
-                ? 'border-amber-500/35'
-                : day.status === 'in_progress'
-                    ? 'border-primary/45'
-                    : 'border-border'
-            }`}>
-            <div className="p-4">
-                <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                        <p className="text-xs font-black uppercase tracking-[0.1em] text-primary">
-                            {dateHeading} · Entrenamiento {day.dayIndex}
-                        </p>
-                        <h2 className="mt-1.5 text-xl font-black leading-6 text-foreground">{day.name || `Día ${day.dayIndex}`}</h2>
-                        <p className="mt-1.5 text-sm text-muted-foreground">{day.exercises.length} ejercicios · {totalSets} series</p>
-                        {day.status === 'partial' && (
-                            <p className="mt-2 text-xs font-bold text-amber-400">
-                                Sesión parcial · cuenta como actividad, pero no completa el día
-                            </p>
-                        )}
-                    </div>
-                    <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-black ${day.status === 'completed'
-                        ? 'bg-emerald-500/10 text-emerald-400'
-                        : day.status === 'partial'
-                            ? 'bg-amber-500/10 text-amber-400'
-                            : day.status === 'in_progress'
-                                ? 'bg-primary/10 text-primary'
-                                : 'bg-muted text-muted-foreground'
-                        }`}>
-                        <TrainingDayIcon status={day.status} />
-                        {statusLabel(day.status)}
-                    </span>
-                </div>
-
-                <div className="mt-4 space-y-2">
-                    {day.exercises.slice(0, 3).map((exercise, index) => (
-                        <div key={`${exercise.name}-${index}`} className="flex items-center justify-between gap-3 rounded-xl bg-muted/45 px-3 py-2.5">
-                            <div className="flex min-w-0 items-center gap-2.5">
-                                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-black text-primary">{index + 1}</span>
-                                <p className="truncate text-sm font-bold text-foreground">{exercise.name}</p>
-                            </div>
-                            <p className="shrink-0 text-xs font-medium text-muted-foreground">{exercise.sets} × {exercise.reps ?? '—'}</p>
-                        </div>
-                    ))}
-                    {day.exercises.length > 3 && (
-                        <p className="px-1 pt-0.5 text-xs font-semibold text-muted-foreground">
-                            + {day.exercises.length - 3} {day.exercises.length === 4 ? 'ejercicio más' : 'ejercicios más'}
-                        </p>
-                    )}
-                </div>
-
-                <Link
-                    href={trainHref}
-                    prefetch={false}
-                    className={`mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-xl text-sm font-black transition active:scale-[0.99] ${day.status === 'completed'
-                        ? 'border border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
-                        : 'bg-primary text-primary-foreground'
-                        }`}
-                >
-                    {day.status !== 'completed' && <Dumbbell className="h-4 w-4" aria-hidden="true" />}
-                    {ctaLabel(day.status)}
-                </Link>
-            </div>
-        </article>
-    )
-}
-
 function WeekDayListItem({
     day,
     week,
@@ -304,11 +276,6 @@ function WeekDayListItem({
     selected: boolean
 }) {
     const totalSets = day.exercises.reduce((sum, exercise) => sum + exercise.sets, 0)
-    const dateLabel = day.scheduledDate
-        ? formatSpanishLongDateLabel(day.scheduledDate)
-        : `Entrenamiento ${day.dayIndex}`
-    const trainHref = buildTrainHref(day, week, 'week')
-
     return (
         <article className={`rounded-2xl border bg-card p-4 shadow-sm ${selected ? 'border-primary/50 ring-1 ring-primary/15' : day.status === 'completed' ? 'border-emerald-500/25' : day.status === 'partial' ? 'border-amber-500/30' : 'border-border'}`}>
             <div className="flex items-start gap-3">
@@ -317,7 +284,7 @@ function WeekDayListItem({
                 </span>
                 <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{dateLabel}</p>
+                        <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Entrenamiento {day.dayIndex}</p>
                         <span className={`rounded-full px-2.5 py-1 text-xs font-black ${day.status === 'completed' ? 'bg-emerald-500/10 text-emerald-400' : day.status === 'partial' ? 'bg-amber-500/10 text-amber-400' : day.status === 'in_progress' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
                             {statusLabel(day.status)}
                         </span>
@@ -327,14 +294,12 @@ function WeekDayListItem({
                 </div>
             </div>
 
-            <Link
-                href={trainHref}
-                prefetch={false}
-                className={`mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-4 text-sm font-black transition active:scale-[0.99] ${day.status === 'completed' ? 'border border-emerald-500/30 bg-emerald-500/10 text-emerald-400' : 'bg-primary text-primary-foreground'}`}
-            >
-                {day.status !== 'completed' && <Dumbbell className="h-4 w-4" aria-hidden="true" />}
-                {ctaLabel(day.status)}
-            </Link>
+            <TrainingAction
+                day={day}
+                week={week}
+                view="week"
+                className="mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-4 text-sm font-black transition active:scale-[0.99]"
+            />
         </article>
     )
 }
@@ -359,23 +324,22 @@ export default function StudentRoutinePlanner({
     const [view, setView] = useState<PlannerView>(initialView)
     const [selectedWeekId, setSelectedWeekId] = useState(firstWeekId)
     const initialWeek = weeks.find((week) => week.id === firstWeekId)
-    const [selectedDayId, setSelectedDayId] = useState<string | null>(() => chooseInitialDay(initialWeek, initialDayId, today))
+    const [selectedDayId, setSelectedDayId] = useState<string | null>(() => chooseInitialDay(initialWeek, initialDayId))
     const [visibleMonth, setVisibleMonth] = useState(monthKey(initialWeek?.weekStart) || monthKey(today))
+    const [selectedScheduleDate, setSelectedScheduleDate] = useState(today)
     const [editingSchedule, setEditingSchedule] = useState(false)
 
     const selectedWeekIndex = Math.max(0, weeks.findIndex((week) => week.id === selectedWeekId))
     const selectedWeek = weeks[selectedWeekIndex]
-    const selectedDay = selectedWeek?.days.find((day) => day.id === selectedDayId) ?? selectedWeek?.days[0] ?? null
     const completedCount = selectedWeek?.days.filter((day) => day.status === 'completed').length ?? 0
     const weekTotal = selectedWeek?.days.length ?? 0
     const progressPercent = weekTotal > 0 ? Math.round((completedCount / weekTotal) * 100) : 0
 
-    const allScheduledDays = useMemo(() => weeks.flatMap((week) => week.days
-        .filter((day) => day.scheduledDate)
-        .map((day) => ({ day, week }))), [weeks])
+    const allScheduledDates = useMemo(() => weeks.flatMap((week) => week.scheduledDates
+        .map((slot) => ({ slot, week }))), [weeks])
     const scheduledByDate = useMemo(() => new Map(
-        allScheduledDays.map((entry) => [entry.day.scheduledDate as string, entry])
-    ), [allScheduledDays])
+        allScheduledDates.map((entry) => [entry.slot.date, entry])
+    ), [allScheduledDates])
     const monthCells = useMemo(() => buildMondayFirstMonthGrid(`${visibleMonth}-01`).weeks.flat(), [visibleMonth])
     const programMonthKeys = useMemo(() => Array.from(new Set(
         weeks.flatMap((week) => [monthKey(week.weekStart), monthKey(week.weekEnd)]).filter(Boolean)
@@ -397,7 +361,8 @@ export default function StudentRoutinePlanner({
         const next = weeks[index]
         if (!next) return
         setSelectedWeekId(next.id)
-        setSelectedDayId(chooseInitialDay(next, null, today))
+        setSelectedDayId(chooseInitialDay(next, null))
+        setSelectedScheduleDate(next.scheduledDates.find((slot) => slot.date >= today)?.date ?? next.scheduledDates[0]?.date ?? today)
         if (next.weekStart) setVisibleMonth(monthKey(next.weekStart))
     }
 
@@ -405,7 +370,8 @@ export default function StudentRoutinePlanner({
         const entry = scheduledByDate.get(date)
         if (!entry) return
         setSelectedWeekId(entry.week.id)
-        setSelectedDayId(entry.day.id)
+        setSelectedDayId(entry.slot.dayId ?? chooseInitialDay(entry.week, null))
+        setSelectedScheduleDate(date)
     }
 
     function moveMonth(delta: number) {
@@ -415,9 +381,9 @@ export default function StudentRoutinePlanner({
         setVisibleMonth(next)
     }
 
-    const nextTraining = allScheduledDays
-        .filter((entry) => entry.day.scheduledDate && entry.day.scheduledDate > (selectedDay?.scheduledDate ?? today))
-        .sort((a, b) => (a.day.scheduledDate ?? '').localeCompare(b.day.scheduledDate ?? ''))[0]
+    const nextTraining = allScheduledDates
+        .filter((entry) => entry.slot.date >= today && entry.slot.status === 'pending')
+        .sort((a, b) => a.slot.date.localeCompare(b.slot.date))[0]
 
     return (
         <div className="space-y-4">
@@ -476,6 +442,16 @@ export default function StudentRoutinePlanner({
                                 <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
                                     <div className={`h-full rounded-full ${progressPercent === 100 ? 'bg-emerald-500' : 'bg-primary'}`} style={{ width: `${progressPercent}%` }} />
                                 </div>
+                                {selectedWeek.scheduledDates.some((slot) => slot.suggested) && (
+                                    <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3">
+                                        <span className="text-xs font-bold text-muted-foreground">Días sugeridos:</span>
+                                        {selectedWeek.scheduledDates.filter((slot) => slot.suggested).map((slot) => (
+                                            <span key={slot.date} className="rounded-full bg-muted px-2.5 py-1 text-xs font-black capitalize text-foreground">
+                                                {formatSpanishDayLabel(slot.date)}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
                             </section>
 
                             <section className="rounded-2xl border border-border bg-card p-3">
@@ -496,7 +472,9 @@ export default function StudentRoutinePlanner({
                             <section aria-labelledby="weekly-training-title">
                                 <div className="mb-2 px-1">
                                     <h2 id="weekly-training-title" className="text-base font-black text-foreground">Tus entrenamientos</h2>
-                                    <p className="mt-0.5 text-sm text-muted-foreground">Elegí el día que querés hacer o revisar.</p>
+                                    <p className="mt-0.5 text-sm leading-5 text-muted-foreground">
+                                        Elegí con cuál querés entrenar hoy. Cuando guardes tu primera serie, los demás se habilitan mañana.
+                                    </p>
                                 </div>
                                 <div className="space-y-3">
                                     {selectedWeek.days.map((day) => (
@@ -522,7 +500,7 @@ export default function StudentRoutinePlanner({
                                     {WEEKDAYS.map((option) => <span key={option.value} className="py-1 text-xs font-black uppercase text-muted-foreground">{option.short}</span>)}
                                     {monthCells.map((cell) => {
                                         const entry = scheduledByDate.get(cell.date)
-                                        const active = entry?.day.id === selectedDayId
+                                        const active = Boolean(entry && entry.week.id === selectedWeekId && entry.slot.date === selectedScheduleDate)
                                         const isToday = cell.date === today
                                         return (
                                             <button
@@ -530,14 +508,14 @@ export default function StudentRoutinePlanner({
                                                 type="button"
                                                 disabled={!entry}
                                                 onClick={() => entry && selectScheduledDate(cell.date)}
-                                                aria-label={entry ? `${formatSpanishLongDateLabel(cell.date)}, ${statusLabel(entry.day.status)}` : formatSpanishLongDateLabel(cell.date)}
+                                                aria-label={entry ? `${formatSpanishLongDateLabel(cell.date)}, ${statusLabel(entry.slot.status)}` : formatSpanishLongDateLabel(cell.date)}
                                                 className={`relative flex min-h-11 items-center justify-center rounded-xl border text-sm font-bold ${!cell.isCurrentMonth
                                                     ? 'border-transparent text-muted-foreground/25'
                                                     : active
                                                         ? 'border-primary bg-primary text-primary-foreground'
-                                                        : entry?.day.status === 'completed'
+                                                        : entry?.slot.status === 'completed'
                                                             ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-400'
-                                                            : entry?.day.status === 'partial'
+                                                            : entry?.slot.status === 'partial'
                                                                 ? 'border-amber-500/25 bg-amber-500/10 text-amber-400'
                                                                 : entry
                                                                     ? 'border-primary/20 bg-primary/[0.06] text-foreground'
@@ -547,7 +525,7 @@ export default function StudentRoutinePlanner({
                                                     }`}
                                             >
                                                 {cell.dayNumber}
-                                                {entry && <span className={`absolute bottom-1 h-1.5 w-1.5 rounded-full ${active ? 'bg-primary-foreground' : entry.day.status === 'completed' ? 'bg-emerald-400' : entry.day.status === 'partial' ? 'bg-amber-400' : 'bg-primary'}`} />}
+                                                {entry && <span className={`absolute bottom-1 h-1.5 w-1.5 rounded-full ${active ? 'bg-primary-foreground' : entry.slot.status === 'completed' ? 'bg-emerald-400' : entry.slot.status === 'partial' ? 'bg-amber-400' : 'bg-primary'}`} />}
                                             </button>
                                         )
                                     })}
@@ -559,13 +537,30 @@ export default function StudentRoutinePlanner({
                                 </div>
                             </section>
 
-                            {selectedDay && selectedWeek && <DayDetail day={selectedDay} week={selectedWeek} view={view} />}
+                            {selectedWeek && (
+                                <section aria-labelledby="monthly-training-options-title">
+                                    <div className="mb-2 px-1">
+                                        <h2 id="monthly-training-options-title" className="text-base font-black text-foreground">Elegí tu entrenamiento</h2>
+                                        <p className="mt-0.5 text-sm leading-5 text-muted-foreground">Las fechas del calendario son sugeridas; el contenido lo elegís vos entre lo que falta esta semana.</p>
+                                    </div>
+                                    <div className="space-y-3">
+                                        {selectedWeek.days.map((day) => (
+                                            <WeekDayListItem
+                                                key={day.id}
+                                                day={day}
+                                                week={selectedWeek}
+                                                selected={day.id === selectedDayId}
+                                            />
+                                        ))}
+                                    </div>
+                                </section>
+                            )}
                         </>
                     ) : null}
 
-                    {nextTraining?.day.scheduledDate && (
+                    {nextTraining?.slot.date && (
                         <p className="rounded-xl border border-border bg-card/60 px-3 py-2.5 text-sm text-muted-foreground">
-                            <span className="font-bold text-foreground">Próximo:</span> {nextTraining.day.name} · {formatSpanishLongDateLabel(nextTraining.day.scheduledDate)}
+                            <span className="font-bold text-foreground">Próximo día sugerido:</span> {formatSpanishLongDateLabel(nextTraining.slot.date)}
                         </p>
                     )}
 

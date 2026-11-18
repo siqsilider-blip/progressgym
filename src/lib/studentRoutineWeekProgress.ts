@@ -1,6 +1,7 @@
 import type { createClient } from '@/lib/supabase/server'
 import { getBuenosAiresDateString, getCurrentBuenosAiresWeek } from '@/lib/buenosAiresDate'
 import {
+    getTodayWorkoutActivity,
     getRoutineDayProgress,
     type RoutineDayProgressStatus,
     type WorkoutSessionProgressRow,
@@ -16,6 +17,8 @@ export type RoutineWeekProgress = {
     completedDayIds: Set<string>
     inProgressDayIds: Set<string>
     partialDayIds: Set<string>
+    todayActivityDayId: string | null
+    todayActivitySessionId: string | null
     weekStart: string
     weekEnd: string
 }
@@ -42,7 +45,17 @@ export async function getStudentRoutineWeekProgress(
     for (const dayId of routineDayIds) statusByDayId.set(dayId, 'pending')
 
     if (routineDayIds.length === 0) {
-        return { statusByDayId, sessionIdByDayId, completedDayIds, inProgressDayIds, partialDayIds, weekStart, weekEnd }
+        return {
+            statusByDayId,
+            sessionIdByDayId,
+            completedDayIds,
+            inProgressDayIds,
+            partialDayIds,
+            todayActivityDayId: null,
+            todayActivitySessionId: null,
+            weekStart,
+            weekEnd,
+        }
     }
 
     const sessionsResult = await supabase
@@ -81,6 +94,7 @@ export async function getStudentRoutineWeekProgress(
         ...session,
         recorded_sets: session.id ? (recordedSetKeysBySession.get(session.id)?.size ?? 0) : 0,
     }))
+    const todayActivity = getTodayWorkoutActivity({ sessions: sessionsWithActivity, today })
 
     for (const dayId of routineDayIds) {
         const progress = getRoutineDayProgress({
@@ -98,5 +112,15 @@ export async function getStudentRoutineWeekProgress(
         if (status === 'in_progress') inProgressDayIds.add(dayId)
     }
 
-    return { statusByDayId, sessionIdByDayId, completedDayIds, inProgressDayIds, partialDayIds, weekStart, weekEnd }
+    return {
+        statusByDayId,
+        sessionIdByDayId,
+        completedDayIds,
+        inProgressDayIds,
+        partialDayIds,
+        todayActivityDayId: todayActivity?.dayId ?? null,
+        todayActivitySessionId: todayActivity?.sessionId ?? null,
+        weekStart,
+        weekEnd,
+    }
 }

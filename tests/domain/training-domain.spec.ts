@@ -3,6 +3,7 @@ import {
     getProgramCyclePosition,
     getRoutineDayProgress,
     getRoutineDayProgressStatus,
+    getTodayWorkoutActivity,
     getWorkoutCompletionKind,
     hasMeaningfulWorkoutActivity,
     isCompletedWorkoutSession,
@@ -163,6 +164,161 @@ test.describe('training completion domain', () => {
             completion_status: null,
             recorded_sets: 0,
         })).toBe(false)
+    })
+})
+
+test.describe('daily workout selection', () => {
+    test('keeps every routine available when there is no meaningful activity today', () => {
+        expect(getTodayWorkoutActivity({
+            today,
+            sessions: [{
+                id: 'empty-session',
+                routine_day_id: 'day-2',
+                performed_date: today,
+                started_at: '2026-11-15T12:00:00.000Z',
+                status: 'in_progress',
+                completed_manually: false,
+                completion_status: null,
+                recorded_sets: 0,
+            }],
+        })).toBeNull()
+    })
+
+    test('selects the routine that received a saved set today', () => {
+        expect(getTodayWorkoutActivity({
+            today,
+            sessions: [{
+                id: 'active-session',
+                routine_day_id: 'day-3',
+                performed_date: today,
+                started_at: '2026-11-15T12:00:00.000Z',
+                status: 'in_progress',
+                completed_manually: false,
+                completion_status: null,
+                recorded_sets: 1,
+            }],
+        })).toEqual({ dayId: 'day-3', sessionId: 'active-session' })
+    })
+
+    test('does not carry yesterday selection into the next day', () => {
+        expect(getTodayWorkoutActivity({
+            today,
+            sessions: [{
+                id: 'yesterday-session',
+                routine_day_id: 'day-1',
+                performed_date: '2026-11-14',
+                started_at: '2026-11-14T12:00:00.000Z',
+                status: 'completed',
+                completed_manually: true,
+                completion_status: 'complete',
+                recorded_sets: 12,
+            }],
+        })).toBeNull()
+    })
+
+    test('an explicit manual completion consumes today even without recorded set metadata', () => {
+        expect(getTodayWorkoutActivity({
+            today,
+            sessions: [{
+                id: 'completed-session',
+                routine_day_id: 'day-1',
+                performed_date: today,
+                started_at: '2026-11-15T12:00:00.000Z',
+                status: 'completed',
+                completed_manually: true,
+                completion_status: 'complete',
+                recorded_sets: 0,
+            }],
+        })).toEqual({ dayId: 'day-1', sessionId: 'completed-session' })
+    })
+
+    test('an empty opening can be changed, but the first saved set locks the daily choice', () => {
+        const date = '2026-11-12'
+        const emptyOpening: WorkoutSessionProgressRow = {
+            id: 'empty-day-1',
+            routine_day_id: 'day-1',
+            performed_date: date,
+            started_at: '2026-11-12T12:00:00.000Z',
+            status: 'in_progress',
+            completed_manually: false,
+            completion_status: null,
+            recorded_sets: 0,
+        }
+
+        expect(getTodayWorkoutActivity({ today: date, sessions: [emptyOpening] })).toBeNull()
+
+        const firstSavedSet: WorkoutSessionProgressRow = {
+            id: 'chosen-day-2',
+            routine_day_id: 'day-2',
+            performed_date: date,
+            started_at: '2026-11-12T12:05:00.000Z',
+            status: 'in_progress',
+            completed_manually: false,
+            completion_status: null,
+            recorded_sets: 1,
+        }
+
+        const selected = getTodayWorkoutActivity({
+            today: date,
+            sessions: [emptyOpening, firstSavedSet],
+        })
+
+        expect(selected).toEqual({ dayId: 'day-2', sessionId: 'chosen-day-2' })
+        expect(['day-1', 'day-2', 'day-3'].filter((candidate) => candidate !== selected?.dayId))
+            .toEqual(['day-1', 'day-3'])
+    })
+
+    test('the following day unlocks only the remaining workouts in the program week', () => {
+        const firstDay = '2026-11-12'
+        const nextDay = '2026-11-13'
+        const sessions: WorkoutSessionProgressRow[] = [{
+            id: 'completed-day-2',
+            routine_day_id: 'day-2',
+            performed_date: firstDay,
+            started_at: '2026-11-12T12:00:00.000Z',
+            status: 'completed',
+            completed_manually: true,
+            completion_status: 'complete',
+            recorded_sets: 12,
+        }]
+
+        expect(getTodayWorkoutActivity({ today: nextDay, sessions })).toBeNull()
+
+        const statuses = new Map(['day-1', 'day-2', 'day-3'].map((routineDayId) => [
+            routineDayId,
+            getRoutineDayProgressStatus({
+                dayId: routineDayId,
+                sessions,
+                today: nextDay,
+                weekStart: '2026-11-09',
+                weekEnd: '2026-11-15',
+            }),
+        ]))
+
+        expect(statuses.get('day-2')).toBe('completed')
+        expect([...statuses].filter(([, status]) => status === 'pending').map(([routineDayId]) => routineDayId))
+            .toEqual(['day-1', 'day-3'])
+    })
+
+    test('a partially recorded workout cannot become a new pending choice again that week', () => {
+        const sessions: WorkoutSessionProgressRow[] = [{
+            id: 'partial-day-1',
+            routine_day_id: 'day-1',
+            performed_date: '2026-11-10',
+            started_at: '2026-11-10T12:00:00.000Z',
+            status: 'completed',
+            completed_manually: false,
+            completion_status: null,
+            recorded_sets: 1,
+        }]
+
+        expect(getRoutineDayProgressStatus({
+            dayId: 'day-1',
+            sessions,
+            today: '2026-11-13',
+            weekStart: '2026-11-09',
+            weekEnd: '2026-11-15',
+        })).toBe('partial')
     })
 })
 

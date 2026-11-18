@@ -12,7 +12,8 @@ import { getActiveStudentRoutine } from '@/lib/getActiveStudentRoutine'
 import { getRoutineSchedule } from '@/lib/getRoutineSchedule'
 import { resolveWeekdayDateInProgramWeek, type IsoWeekday } from '@/lib/routineCalendar'
 import { createClient } from '@/lib/supabase/server'
-import { getRoutineDayProgress, type WorkoutSessionProgressRow } from '@/lib/trainingDomain'
+import { getStudentRoutineWeekProgress } from '@/lib/studentRoutineWeekProgress'
+import { getRoutineDayProgress, getWorkoutCompletionKind, type WorkoutSessionProgressRow } from '@/lib/trainingDomain'
 
 type PageProps = {
     searchParams?: Promise<{
@@ -191,6 +192,26 @@ export default async function AppRoutinePage(props: PageProps) {
         && requiredTrainingDays > 0
     )
 
+    const currentWeekIndex = schedule.orderedWeeks.findIndex((week) => week.id === schedule.currentWeek?.id)
+    const currentWeekRange = assignment.programStartedOn && currentWeekIndex >= 0
+        ? getProgramWeekDateRange(
+            assignment.programStartedOn,
+            schedule.currentCycleStartWeekIndex + currentWeekIndex
+        )
+        : null
+    const currentWeekDayIds = currentWeekIndex >= 0
+        ? (trainingDaysByWeek.get(schedule.orderedWeeks[currentWeekIndex]?.id) ?? []).map((day) => day.id)
+        : []
+    const currentWeekProgress = currentWeekDayIds.length > 0
+        ? await getStudentRoutineWeekProgress(
+            supabase,
+            studentId,
+            currentWeekDayIds,
+            currentWeekRange
+        )
+        : null
+    const todayActivityDayId = currentWeekProgress?.todayActivityDayId ?? null
+
     const plannerWeeks: RoutinePlannerWeek[] = schedule.orderedWeeks.map((week, weekIndex) => {
         const range = assignment.programStartedOn
             ? getProgramWeekDateRange(
@@ -199,6 +220,51 @@ export default async function AppRoutinePage(props: PageProps) {
             )
             : null
         const weekDays = trainingDaysByWeek.get(week.id) ?? []
+        const weekDayIds = new Set(weekDays.map((day) => day.id))
+        const plannedDates = range && hasRealSchedule
+            ? (trainingWeekdays ?? []).slice(0, weekDays.length).map((weekday) => resolveWeekdayDateInProgramWeek(range.weekStart, weekday as IsoWeekday))
+            : []
+        const sessionsForWeek = range
+            ? sessions.filter((session) => (
+                Boolean(session.routine_day_id && weekDayIds.has(session.routine_day_id))
+                && Boolean(session.performed_date)
+                && session.performed_date! >= range.weekStart
+                && session.performed_date! <= range.weekEnd
+            ))
+            : []
+        const actualDates = sessionsForWeek
+            .filter((session) => (
+                (session.status === 'in_progress' && session.performed_date === today)
+                || getWorkoutCompletionKind(session) !== null
+            ))
+            .map((session) => session.performed_date)
+            .filter((date): date is string => Boolean(date))
+        const scheduledDates: RoutinePlannerWeek['scheduledDates'] = Array.from(new Set([...plannedDates, ...actualDates]))
+            .sort()
+            .map((date) => {
+                const datedSessions = sessionsForWeek
+                    .filter((session) => session.performed_date === date)
+                    .sort((left, right) => String(right.started_at ?? '').localeCompare(String(left.started_at ?? '')))
+                const active = datedSessions.find((session) => session.status === 'in_progress' && date === today)
+                const completed = datedSessions.find((session) => getWorkoutCompletionKind(session) === 'complete')
+                const partial = datedSessions.find((session) => getWorkoutCompletionKind(session) === 'partial')
+                const explainingSession = active ?? completed ?? partial ?? null
+                const status: RoutinePlannerStatus = active
+                    ? 'in_progress'
+                    : completed
+                        ? 'completed'
+                        : partial
+                            ? 'partial'
+                            : 'pending'
+
+                return {
+                    date,
+                    status,
+                    dayId: explainingSession?.routine_day_id ?? null,
+                    suggested: plannedDates.includes(date),
+                }
+            })
+        const isCurrent = week.id === schedule.currentWeek?.id
         return {
             id: week.id,
             monthId: week.routine_month_id,
@@ -206,12 +272,9 @@ export default async function AppRoutinePage(props: PageProps) {
             programWeekNumber: weekIndex + 1,
             weekStart: range?.weekStart ?? null,
             weekEnd: range?.weekEnd ?? null,
-            isCurrent: week.id === schedule.currentWeek?.id,
+            isCurrent,
+            scheduledDates,
             days: weekDays.map((day, dayPosition) => {
-                const weekday = hasRealSchedule ? trainingWeekdays?.[dayPosition] : null
-                const scheduledDate = range && weekday
-                    ? resolveWeekdayDateInProgramWeek(range.weekStart, weekday as IsoWeekday)
-                    : null
                 const progress = range
                     ? getRoutineDayProgress({
                         dayId: day.id,
@@ -225,9 +288,16 @@ export default async function AppRoutinePage(props: PageProps) {
                     id: day.id,
                     name: day.name?.trim() || `Entrenamiento ${dayPosition + 1}`,
                     dayIndex: dayPosition + 1,
-                    scheduledDate,
                     status: progress.status satisfies RoutinePlannerStatus,
                     sessionId: progress.sessionId,
+                    canStart: isCurrent
+                        && progress.status !== 'completed'
+                        && (!todayActivityDayId || todayActivityDayId === day.id),
+                    blockedReason: !isCurrent
+                        ? 'Disponible en su semana'
+                        : todayActivityDayId && todayActivityDayId !== day.id
+                            ? 'Disponible mañana'
+                            : null,
                     exercises: exercisesByDay.get(day.id) ?? [],
                 }
             }),

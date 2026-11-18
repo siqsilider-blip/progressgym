@@ -26,6 +26,11 @@ export type WorkoutSessionProgressRow = {
     recorded_sets?: number | null
 }
 
+export type TodayWorkoutActivity = {
+    dayId: string
+    sessionId: string | null
+}
+
 /**
  * A training day is complete only when the student explicitly finished it and
  * every planned set was registered. Auto-closed or partially completed
@@ -66,6 +71,39 @@ export function hasMeaningfulWorkoutActivity(
     session: Pick<WorkoutSessionProgressRow, 'status' | 'completed_manually' | 'completion_status' | 'recorded_sets'>
 ) {
     return getWorkoutCompletionKind(session) !== null
+}
+
+/**
+ * Returns the routine selected through real activity on the requested date.
+ * Opening a workout and leaving it empty is deliberately ignored so the
+ * student can correct an accidental choice before saving the first set.
+ */
+export function getTodayWorkoutActivity(input: {
+    sessions: readonly WorkoutSessionProgressRow[]
+    today: string
+}): TodayWorkoutActivity | null {
+    const meaningfulToday = input.sessions
+        .filter((session) => (
+            typeof session.routine_day_id === 'string'
+            && session.routine_day_id.length > 0
+            && session.performed_date === input.today
+            && (
+                (session.status === WORKOUT_SESSION_STATUS.completed
+                    && session.completed_manually === true)
+                || (session.recorded_sets ?? 0) > 0
+            )
+        ))
+        .sort((left, right) => (
+            String(right.started_at ?? '').localeCompare(String(left.started_at ?? ''))
+        ))
+
+    const selected = meaningfulToday[0]
+    if (!selected?.routine_day_id) return null
+
+    return {
+        dayId: selected.routine_day_id,
+        sessionId: selected.id ?? null,
+    }
 }
 
 export function getRoutineDayProgress(input: {

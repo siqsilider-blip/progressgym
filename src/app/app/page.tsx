@@ -6,7 +6,16 @@ import { getStudentRoutineWeekProgress } from '@/lib/studentRoutineWeekProgress'
 import { getBuenosAiresDateString, getBuenosAiresHour, getCurrentBuenosAiresWeek, getElapsedProgramWeekIndex } from '@/lib/buenosAiresDate'
 import { getActiveStudentRoutine } from '@/lib/getActiveStudentRoutine'
 import { getStudentAppContext } from '@/lib/auth/student'
-import { resolveWeekdayDateInProgramWeek, type IsoWeekday } from '@/lib/routineCalendar'
+
+const WEEKDAY_SHORT: Record<number, string> = {
+    1: 'Lun',
+    2: 'Mar',
+    3: 'Mié',
+    4: 'Jue',
+    5: 'Vie',
+    6: 'Sáb',
+    7: 'Dom',
+}
 
 export default async function AppHomePage() {
     const supabase = await createClient()
@@ -78,6 +87,10 @@ export default async function AppHomePage() {
     let totalProgramWeeks = 0
     let homeTrainingDays: StudentHomeTrainingDay[] = []
     let selectedHomeDay: StudentHomeTrainingDay | null = null
+    const suggestedTrainingDays = Array.from(new Set(assignment?.trainingWeekdays ?? []))
+        .sort((left, right) => left - right)
+        .map((weekday) => WEEKDAY_SHORT[weekday])
+        .filter((weekday): weekday is string => Boolean(weekday))
 
     if (assignment?.routineId) {
         const [routineResult, schedule] = await Promise.all([
@@ -137,27 +150,23 @@ export default async function AppHomePage() {
                                 : null
                         )
                         : null
-                    const trainingWeekdays = assignment.trainingWeekdays
-                    const hasRealSchedule = Boolean(
-                        trainingWeekdays && trainingWeekdays.length >= trainingDays.length
-                    )
-
                     homeTrainingDays = trainingDays.map((day, dayPosition) => {
                         const dayExercises = (weekExercises ?? []).filter(
                             (exercise) => exercise.routine_day_id === day.id
                         )
-                        const weekday = hasRealSchedule ? trainingWeekdays?.[dayPosition] : undefined
-                        const scheduledDate = schedule.selectedWeekStart && weekday
-                            ? resolveWeekdayDateInProgramWeek(
-                                schedule.selectedWeekStart,
-                                weekday as IsoWeekday
-                            )
-                            : null
                         const dayName = day.name?.trim()
                             || day.title?.trim()
                             || `Entrenamiento ${dayPosition + 1}`
                         const status = progress?.statusByDayId.get(day.id) ?? 'pending'
                         const sessionId = progress?.sessionIdByDayId.get(day.id) ?? null
+                        const todayActivityDayId = progress?.todayActivityDayId ?? null
+                        const availability = status === 'completed'
+                            ? 'review' as const
+                            : todayActivityDayId && todayActivityDayId !== day.id
+                                ? 'locked_today' as const
+                                : status === 'in_progress'
+                                    ? 'continue' as const
+                                    : 'available' as const
                         const scheduleQuery = `${selectedMonthId ? `month=${selectedMonthId}&` : ''}week=${selectedWeekId}&day=${day.id}`
                         const href = sessionId && (status === 'partial' || status === 'completed')
                             ? `/app/train?session=${sessionId}&source=home&${scheduleQuery}`
@@ -166,8 +175,8 @@ export default async function AppHomePage() {
                         return {
                             id: day.id,
                             name: dayName,
-                            scheduledDate,
                             status,
+                            availability,
                             exerciseCount: dayExercises.length,
                             totalSets: dayExercises.reduce((sum, exercise) => sum + (exercise.sets ?? 3), 0),
                             href,
@@ -177,22 +186,16 @@ export default async function AppHomePage() {
                     completedDays = homeTrainingDays.filter((day) => day.status === 'completed').length
                     weekCompleted = totalTrainingDays > 0 && completedDays === totalTrainingDays
 
-                    const unfinishedDays = homeTrainingDays.filter((day) => day.status !== 'completed')
-                    const overdueDay = unfinishedDays
-                        .filter((day) => day.scheduledDate && day.scheduledDate < today)
-                        .sort((left, right) => (right.scheduledDate ?? '').localeCompare(left.scheduledDate ?? ''))[0]
-                    const upcomingDay = unfinishedDays
-                        .filter((day) => day.scheduledDate && day.scheduledDate > today)
-                        .sort((left, right) => (left.scheduledDate ?? '').localeCompare(right.scheduledDate ?? ''))[0]
+                    const todayActivityDay = progress?.todayActivityDayId
+                        ? homeTrainingDays.find((day) => day.id === progress.todayActivityDayId) ?? null
+                        : null
+                    const actionableDays = homeTrainingDays.filter((day) => (
+                        day.availability === 'available' || day.availability === 'continue'
+                    ))
 
-                    selectedHomeDay = unfinishedDays.find((day) => day.status === 'in_progress')
-                        ?? unfinishedDays.find((day) => day.scheduledDate === today)
-                        ?? unfinishedDays.find((day) => day.status === 'partial')
-                        ?? overdueDay
-                        ?? upcomingDay
-                        ?? unfinishedDays[0]
-                        ?? homeTrainingDays[0]
-                        ?? null
+                    selectedHomeDay = homeTrainingDays.find((day) => day.availability === 'continue')
+                        ?? todayActivityDay
+                        ?? (actionableDays.length === 1 ? actionableDays[0] : null)
 
                 }
             }
@@ -219,6 +222,7 @@ export default async function AppHomePage() {
             progressPhotoDue={progressPhotoDue}
             trainingDays={homeTrainingDays}
             selectedDay={selectedHomeDay}
+            suggestedTrainingDays={suggestedTrainingDays}
             completedDays={completedDays}
             totalTrainingDays={totalTrainingDays}
             weekCompleted={weekCompleted}

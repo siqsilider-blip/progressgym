@@ -1,6 +1,28 @@
 import { createClient } from '@/lib/supabase/server'
 import { getBuenosAiresDateString } from '@/lib/buenosAiresDate'
 
+export type WorkoutSessionStartBlockReason =
+    | 'next_day_required'
+    | 'day_already_used'
+    | 'week_not_current'
+    | 'session_expired'
+
+export class WorkoutSessionStartError extends Error {
+    constructor(public readonly reason: WorkoutSessionStartBlockReason) {
+        super(reason)
+        this.name = 'WorkoutSessionStartError'
+    }
+}
+
+function getStartBlockReason(message: string | undefined): WorkoutSessionStartBlockReason | null {
+    if (!message) return null
+    if (message.includes('WORKOUT_NEXT_DAY_REQUIRED')) return 'next_day_required'
+    if (message.includes('WORKOUT_DAY_ALREADY_USED_THIS_WEEK')) return 'day_already_used'
+    if (message.includes('WORKOUT_WEEK_NOT_CURRENT')) return 'week_not_current'
+    if (message.includes('WORKOUT_SESSION_EXPIRED')) return 'session_expired'
+    return null
+}
+
 export async function startWorkoutSession(payload: {
     studentId: string
     trainerId: string
@@ -65,6 +87,8 @@ export async function startWorkoutSession(payload: {
     const session = data?.[0]
     if (error || !session?.session_id) {
         console.error('Error creando workout_session:', error)
+        const blockReason = getStartBlockReason(error?.message)
+        if (blockReason) throw new WorkoutSessionStartError(blockReason)
         throw new Error('WORKOUT_SESSION_START_FAILED')
     }
 
