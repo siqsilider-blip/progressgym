@@ -128,6 +128,7 @@ export default async function AppProgressPage() {
                                     exercise={exercise}
                                     weightUnit={weightUnit}
                                     rank={index}
+                                    collapsible
                                 />
                             ))}
                         </div>

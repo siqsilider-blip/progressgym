@@ -82,6 +82,7 @@ type Props = {
     showPrs?: boolean
     initialSummary?: boolean
     initialIncomplete?: boolean
+    restTimerEnabled?: boolean
 }
 
 const BLOCKS: { id: RoutineBlock; label: string; emoji: string }[] = [
@@ -169,6 +170,7 @@ export default function StudentWorkoutView({
     showPrs = true,
     initialSummary = false,
     initialIncomplete = false,
+    restTimerEnabled = true,
 }: Props) {
     const router = useRouter()
     const [sets, setSets] = React.useState<SetState[][]>(() => createInitialSets(exercises))
@@ -486,7 +488,7 @@ export default function StudentWorkoutView({
                             : item
                     )
             ))
-            if (!set.confirmed && !completedSession && !incompleteSession && exercise.restSeconds > 0) {
+            if (!set.confirmed && restTimerEnabled && !completedSession && exercise.restSeconds > 0) {
                 beginRest(exercise.restSeconds, exercise.exerciseName)
             }
             return
@@ -610,7 +612,7 @@ export default function StudentWorkoutView({
                 && latestSet?.saved !== true
                 && savedBefore + 1 >= totalPlannedSets
 
-            if (valuesUnchanged && startRest && !completesPlan && !cameFromRecoveredDraft && !completedSession && !incompleteSession && !set.saved && exercise.restSeconds > 0) {
+            if (valuesUnchanged && startRest && !completesPlan && !cameFromRecoveredDraft && restTimerEnabled && !completedSession && !set.saved && exercise.restSeconds > 0) {
                 beginRest(exercise.restSeconds, exercise.exerciseName)
             }
             return valuesUnchanged
@@ -950,14 +952,17 @@ export default function StudentWorkoutView({
                 </p>
             )}
 
-            {restTimeLeft > 0 && (
-                <div className="sticky top-[86px] z-20 mt-3 flex items-center gap-3 rounded-xl border border-primary/25 bg-background/95 px-3 py-2.5 shadow-lg backdrop-blur">
-                    <Clock3 className="h-5 w-5 text-primary" aria-hidden="true" />
+            {restTimerEnabled && !completedSession && restTimeLeft > 0 && (
+                <div className="sticky top-[82px] z-30 mt-3 flex items-center gap-3 rounded-2xl border border-primary/40 bg-background/95 px-4 py-3 shadow-xl backdrop-blur">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                        <Clock3 className="h-5 w-5" aria-hidden="true" />
+                    </span>
                     <div className="min-w-0 flex-1">
-                        <p className="text-sm font-black text-foreground">Descanso · {formatRestTime(restTimeLeft)}</p>
-                        <p className="truncate text-xs text-muted-foreground">{restExerciseName}</p>
+                        <p className="text-xs font-black uppercase tracking-wide text-primary">Descanso</p>
+                        <p className="text-2xl font-black tabular-nums text-foreground">{formatRestTime(restTimeLeft)}</p>
+                        <p className="truncate text-xs text-muted-foreground">Antes de la próxima serie · {restExerciseName}</p>
                     </div>
-                    <button type="button" onClick={stopRest} className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-foreground">Omitir</button>
+                    <button type="button" onClick={stopRest} className="min-h-11 rounded-xl border border-border bg-secondary px-3 text-sm font-bold text-foreground">Omitir</button>
                 </div>
             )}
 
@@ -1062,8 +1067,8 @@ export default function StudentWorkoutView({
                                                                                 : set.queued
                                                                                     ? 'Pendiente'
                                                                                     : set.saved && !set.dirty
-                                                                                        ? set.confirmed ? 'Lista ✓' : 'Marcar lista'
-                                                                                        : set.saved ? 'Guardar cambio' : 'Guardar'}
+                                                                                        ? set.confirmed ? 'Lista ✓' : restTimerEnabled && !completedSession ? 'Listo' : 'Guardada ✓'
+                                                                                        : restTimerEnabled && !completedSession ? 'Listo' : set.saved ? 'Guardar cambio' : 'Guardar'}
                                                                         </button>
                                                                     </div>
 

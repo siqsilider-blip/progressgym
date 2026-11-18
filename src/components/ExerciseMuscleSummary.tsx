@@ -36,9 +36,9 @@ export default function ExerciseMuscleSummary({ exerciseName, muscleGroup, categ
                         </div>
 
                         {profile.secondary.length > 0 && (
-                            <div className="min-w-0 rounded-xl border border-primary/15 bg-primary/[0.05] px-3.5 py-3">
+                            <div className="min-w-0 rounded-xl border border-[#9ea7b4]/30 bg-[#9ea7b4]/[0.08] px-3.5 py-3">
                                 <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-                                    <span className="h-3 w-3 shrink-0 rounded-full bg-[#d9d9d9] opacity-70" aria-hidden="true" />
+                                    <span className="h-3 w-3 shrink-0 rounded-full bg-[#9ea7b4] ring-2 ring-[#9ea7b4]/25" aria-hidden="true" />
                                     Músculos que ayudan
                                 </div>
                                 <p className="mt-1.5 break-words text-sm font-medium leading-6 text-foreground/80">
@@ -49,7 +49,7 @@ export default function ExerciseMuscleSummary({ exerciseName, muscleGroup, categ
                     </div>
 
                     <p className="mt-3 text-xs leading-5 text-muted-foreground">
-                        Rosa: trabajo principal · Gris: músculos de apoyo.
+                        Rosa: trabajo principal · Gris claro: músculos de apoyo · Gris oscuro: resto del cuerpo.
                     </p>
                 </div>
             ) : (

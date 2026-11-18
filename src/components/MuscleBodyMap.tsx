@@ -31,6 +31,15 @@ const BODY_PARTS: Record<MuscleId, Slug[]> = {
     hip_flexors: ['quadriceps', 'adductors'],
 }
 
+// Tres niveles deliberadamente separados: la silueta queda oscura, los
+// músculos de apoyo usan un gris frío claro y el trabajo principal conserva
+// el rosa de marca. Los contornos evitan que grupos contiguos se mezclen.
+const BODY_BASE_FILL = '#24262b'
+const SECONDARY_FILL = '#9ea7b4'
+const SECONDARY_STROKE = '#e7eaf0'
+const PRIMARY_FILL = '#c98796'
+const PRIMARY_STROKE = '#f6dce2'
+
 function buildBodyData(primary: MuscleId[], secondary: MuscleId[]): ExtendedBodyPart[] {
     const parts = new Map<Slug, ExtendedBodyPart>()
 
@@ -38,8 +47,8 @@ function buildBodyData(primary: MuscleId[], secondary: MuscleId[]): ExtendedBody
         for (const slug of BODY_PARTS[muscle]) {
             parts.set(slug, {
                 slug,
-                color: 'rgba(217, 217, 217, 0.65)',
-                styles: { fill: 'rgba(217, 217, 217, 0.65)', stroke: '#111111', strokeWidth: 1.5 },
+                color: SECONDARY_FILL,
+                styles: { fill: SECONDARY_FILL, stroke: SECONDARY_STROKE, strokeWidth: 2 },
             })
         }
     }
@@ -48,8 +57,8 @@ function buildBodyData(primary: MuscleId[], secondary: MuscleId[]): ExtendedBody
         for (const slug of BODY_PARTS[muscle]) {
             parts.set(slug, {
                 slug,
-                color: '#c98796',
-                styles: { fill: '#c98796', stroke: '#111111', strokeWidth: 2.2 },
+                color: PRIMARY_FILL,
+                styles: { fill: PRIMARY_FILL, stroke: PRIMARY_STROKE, strokeWidth: 2.2 },
             })
         }
     }
@@ -80,7 +89,10 @@ export default function MuscleBodyMap({ primary, secondary, className = '' }: Pr
         >
             {views.map((view) => (
                 <div key={view} className="flex min-w-0 flex-col items-center">
-                    <div className="rounded-2xl bg-gradient-to-b from-primary/[0.06] to-transparent px-2 pt-2">
+                    <div
+                        className="rounded-2xl border border-white/[0.04] px-2 pt-2"
+                        style={{ background: `linear-gradient(180deg, rgba(201,135,150,0.08), ${BODY_BASE_FILL}22 48%, transparent)` }}
+                    >
                         <AnatomyBodyModel
                             data={bodyData}
                             view={view}

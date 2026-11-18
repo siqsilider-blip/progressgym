@@ -68,23 +68,26 @@ export default async function StudentMessagesPage() {
     )
 
     return (
-        <main className="mx-auto max-w-lg px-4 pb-32 pt-5">
+        <main
+            className="mx-auto flex max-w-lg flex-col overflow-hidden px-4 pb-3 pt-5"
+            style={{ height: 'calc(100dvh - 4.75rem - env(safe-area-inset-bottom, 0px))' }}
+        >
             {conversationId && <ReadMarker conversationId={conversationId} />}
 
-            <header>
+            <header className="shrink-0">
                 <p className="text-sm font-bold text-brand-soft">Tu entrenador</p>
                 <h1 className="mt-1 text-2xl font-black text-foreground">{trainerName}</h1>
                 <p className="mt-1 text-sm text-muted-foreground">Preguntá, contá una molestia o pedí una alternativa.</p>
             </header>
 
             {conversationResult.error && (
-                <div className="mt-4 rounded-2xl border border-amber-500/25 bg-amber-500/10 p-4 text-xs leading-5 text-amber-500">
+                <div className="mt-4 shrink-0 rounded-2xl border border-amber-500/25 bg-amber-500/10 p-4 text-xs leading-5 text-amber-500">
                     La mensajería se habilitará cuando se aplique la migración de seguimiento.
                 </div>
             )}
 
-            <section className="mt-4 overflow-hidden rounded-2xl border border-border bg-card">
-                <StudentMessageThread>
+            <section className="mt-4 min-h-0 flex-1 overflow-hidden rounded-2xl border border-border bg-card">
+                <StudentMessageThread scrollKey={typedMessages[typedMessages.length - 1]?.id ?? 'empty'}>
                 {typedMessages.length ? (
                     typedMessages.map((message) => {
                         const own = message.sender_role === 'student'
@@ -120,7 +123,7 @@ export default async function StudentMessagesPage() {
                 </StudentMessageThread>
             </section>
 
-            <section className="sticky bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px))] z-20 mt-3 rounded-2xl border border-border bg-card p-3 shadow-[0_-8px_30px_-18px_rgba(0,0,0,0.8)]">
+            <section className="z-20 mt-3 shrink-0 rounded-2xl border border-border bg-card p-3 shadow-[0_-8px_30px_-18px_rgba(0,0,0,0.8)]">
                 <MessageComposer placeholder="Escribile a tu entrenador…" />
             </section>
         </main>

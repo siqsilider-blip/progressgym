@@ -645,6 +645,7 @@ export default async function AppTrainPage(props: PageProps) {
                 showPrs={true}
                 initialSummary={sessionJustCompleted}
                 initialIncomplete={sessionCompletionStatus === 'incomplete'}
+                restTimerEnabled={!historicalSession || searchParams?.source === 'routine' || searchParams?.source === 'home'}
             />
         </div>
     )

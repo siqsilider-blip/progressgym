@@ -16,10 +16,10 @@ export default function AnatomyBodyModel({ data, view, scale }: AnatomyBodyModel
             side={view}
             gender="female"
             scale={scale}
-            defaultFill="var(--muted)"
-            defaultStroke="var(--background)"
-            defaultStrokeWidth={0.8}
-            border="var(--muted-foreground)"
+            defaultFill="#24262b"
+            defaultStroke="#111216"
+            defaultStrokeWidth={1.1}
+            border="#8b8f99"
         />
     )
 }

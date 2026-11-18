@@ -335,7 +335,7 @@ export default async function createAuthFixture() {
                 exercise_id: exercise.id,
                 sets: 1,
                 reps: 10,
-                rest_seconds: 0,
+                rest_seconds: 60,
                 position: 1,
                 block: 'main',
             })))
@@ -350,7 +350,7 @@ export default async function createAuthFixture() {
                 exercise_id: exercise.id,
                 sets: 3,
                 reps: 10,
-                rest_seconds: 0,
+                rest_seconds: 60,
                 position: 1,
                 block: 'activation',
             })

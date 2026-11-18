@@ -172,7 +172,11 @@ test('el alumno entra a su portal y no al panel del entrenador', async ({ page }
     // Sin conexión, el autoguardado queda en cola y se sincroniza al volver internet.
     await expect(page.getByText('Sin conexión · guardado', { exact: true })).toBeVisible({ timeout: 5_000 })
     await page.context().setOffline(false)
-    await expect(page.getByRole('button', { name: 'Guardar serie 1' })).toContainText('Marcar lista', { timeout: 20_000 })
+    const firstSetReadyButton = page.getByRole('button', { name: 'Guardar serie 1' })
+    await expect(firstSetReadyButton).toContainText('Listo', { timeout: 20_000 })
+    await firstSetReadyButton.click()
+    await expect(page.getByText('Descanso', { exact: true })).toBeVisible()
+    await page.getByRole('button', { name: 'Omitir' }).click()
 
     // No se puede marcar el día completo por accidente si todavía faltan series.
     await page.getByRole('button', { name: 'Finalizar entrenamiento' }).click()
@@ -197,9 +201,9 @@ test('el alumno entra a su portal y no al panel del entrenador', async ({ page }
     await page.getByRole('button', { name: 'Guardar serie 2' }).click()
     await expect(page.getByText('Ingresá las repeticiones realizadas.', { exact: true })).toBeVisible()
     await page.getByLabel('Repeticiones serie 2').fill('10')
-    await expect(page.getByRole('button', { name: 'Guardar serie 2' })).toContainText('Marcar lista', { timeout: 20_000 })
+    await expect(page.getByRole('button', { name: 'Guardar serie 2' })).toContainText('Listo', { timeout: 20_000 })
     await page.getByLabel('Repeticiones serie 3').fill('9')
-    await expect(page.getByRole('button', { name: 'Guardar serie 3' })).toContainText('Marcar lista', { timeout: 20_000 })
+    await expect(page.getByRole('button', { name: 'Guardar serie 3' })).toContainText('Listo', { timeout: 20_000 })
     await expect(page.getByText('3 de 3 series', { exact: true }).first()).toBeVisible({ timeout: 20_000 })
 
     const readyDialog = page.getByRole('dialog')

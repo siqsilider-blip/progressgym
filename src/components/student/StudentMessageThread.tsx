@@ -1,20 +1,31 @@
 'use client'
 
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useLayoutEffect, useRef, type ReactNode } from 'react'
 
-export default function StudentMessageThread({ children }: { children: ReactNode }) {
+export default function StudentMessageThread({
+    children,
+    scrollKey,
+}: {
+    children: ReactNode
+    scrollKey: string
+}) {
     const containerRef = useRef<HTMLDivElement | null>(null)
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         const container = containerRef.current
         if (!container) return
-        container.scrollTop = container.scrollHeight
-    }, [children])
+
+        const frame = window.requestAnimationFrame(() => {
+            container.scrollTo({ top: container.scrollHeight, behavior: 'auto' })
+        })
+
+        return () => window.cancelAnimationFrame(frame)
+    }, [scrollKey])
 
     return (
         <div
             ref={containerRef}
-            className="max-h-[calc(100dvh-22rem)] min-h-72 space-y-3 overflow-y-auto overscroll-contain px-3 py-4"
+            className="h-full min-h-0 space-y-3 overflow-y-auto overscroll-contain px-3 py-4"
             aria-live="polite"
         >
             {children}
