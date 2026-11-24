@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { getServerUser } from '@/lib/auth/server'
 import { getBuenosAiresDateString, getCurrentBuenosAiresWeek } from '@/lib/buenosAiresDate'
+import { TECHNIQUE_VIDEO_MAX_DURATION_SECONDS } from '@/lib/techniqueVideo'
 
 export type CoachingTopic =
     | 'general'
@@ -360,6 +361,131 @@ export async function registerProgressPhoto(payload: {
     revalidatePath('/app/progress')
     revalidatePath('/dashboard')
     return { ok: true, error: null, photoId: data }
+}
+
+export async function createTechniqueVideoSubmission(payload: {
+    workoutSessionId: string
+    routineDayExerciseId: string
+    durationSeconds: number
+    fileExtension: string
+    note: string
+}): Promise<{
+    ok: boolean
+    error: string | null
+    submissionId?: string
+    storagePath?: string
+}> {
+    const user = await getServerUser()
+    if (!user) return { ok: false, error: 'No autenticado.' }
+
+    const note = payload.note.trim()
+    const durationSeconds = Number(payload.durationSeconds)
+    const fileExtension = payload.fileExtension.trim().toLowerCase()
+
+    if (!payload.workoutSessionId || !payload.routineDayExerciseId) {
+        return { ok: false, error: 'No pudimos identificar el ejercicio.' }
+    }
+    if (!Number.isFinite(durationSeconds) || durationSeconds < 1 || durationSeconds > TECHNIQUE_VIDEO_MAX_DURATION_SECONDS) {
+        return { ok: false, error: 'El video debe durar entre 1 y 30 segundos.' }
+    }
+    if (!['mp4', 'mov', 'webm'].includes(fileExtension)) {
+        return { ok: false, error: 'El formato del video no es válido.' }
+    }
+    if (note.length > 500) {
+        return { ok: false, error: 'La consulta puede tener hasta 500 caracteres.' }
+    }
+
+    const supabase = await createClient()
+    const { data, error } = await supabase.rpc('create_technique_video_submission', {
+        p_workout_session_id: payload.workoutSessionId,
+        p_routine_day_exercise_id: payload.routineDayExerciseId,
+        p_duration_seconds: durationSeconds,
+        p_file_extension: fileExtension,
+        p_note: note || null,
+    })
+
+    const reservation = data && typeof data === 'object' && !Array.isArray(data)
+        ? data as Record<string, unknown>
+        : null
+    const submissionId = typeof reservation?.submission_id === 'string'
+        ? reservation.submission_id
+        : null
+    const storagePath = typeof reservation?.storage_path === 'string'
+        ? reservation.storage_path
+        : null
+
+    if (error || !submissionId || !storagePath || !storagePath.startsWith(`${user.id}/`)) {
+        console.error('[createTechniqueVideoSubmission]', error)
+        const message = error?.message ?? ''
+        return {
+            ok: false,
+            error: error?.code === 'PGRST202' || error?.code === '42P01'
+                ? 'Falta aplicar la migración de videos de técnica.'
+                : message.includes('Guarda primero una serie')
+                    ? 'Guardá al menos una serie de este ejercicio antes de enviar el video.'
+                    : message.includes('dos videos')
+                        ? 'Ya enviaste los dos videos de técnica disponibles esta semana.'
+                        : message.includes('cargas de video en proceso')
+                            ? 'Hay otras cargas en proceso. Reintentá en unos minutos.'
+                            : 'No pudimos preparar el envío del video.',
+        }
+    }
+
+    return { ok: true, error: null, submissionId, storagePath }
+}
+
+export async function finalizeTechniqueVideoSubmission(
+    submissionId: string
+): Promise<{ ok: boolean; error: string | null }> {
+    const user = await getServerUser()
+    if (!user || !submissionId) return { ok: false, error: 'No autenticado.' }
+
+    const supabase = await createClient()
+    const { data, error } = await supabase.rpc('finalize_technique_video_submission', {
+        p_submission_id: submissionId,
+    })
+
+    if (error || data !== true) {
+        console.error('[finalizeTechniqueVideoSubmission]', error)
+        const message = error?.message ?? ''
+        return {
+            ok: false,
+            error: error?.code === 'PGRST202' || error?.code === '42P01'
+                ? 'Falta aplicar la migración de videos de técnica.'
+                : message.includes('dos videos')
+                    ? 'Ya enviaste los dos videos de técnica disponibles esta semana.'
+                    : message.includes('limite permitido')
+                        ? 'El video supera los 50 MB permitidos.'
+                        : message.includes('formato')
+                            ? 'El formato del video no es compatible.'
+                            : message.includes('no fue encontrado')
+                                ? 'La carga no llegó a completarse. Revisá tu conexión e intentá nuevamente.'
+                                : 'No pudimos confirmar el envío del video.',
+        }
+    }
+
+    revalidatePath('/app/train')
+    revalidatePath('/app/messages')
+    revalidatePath('/dashboard')
+    revalidatePath('/dashboard/messages')
+    return { ok: true, error: null }
+}
+
+export async function cancelTechniqueVideoSubmission(
+    submissionId: string
+): Promise<{ ok: boolean; error: string | null }> {
+    const user = await getServerUser()
+    if (!user || !submissionId) return { ok: false, error: 'No autenticado.' }
+
+    const supabase = await createClient()
+    const { data, error } = await supabase.rpc('delete_technique_video_submission', {
+        p_submission_id: submissionId,
+    })
+    if (error || data !== true) {
+        console.error('[cancelTechniqueVideoSubmission]', error)
+        return { ok: false, error: 'No pudimos cancelar la carga.' }
+    }
+    return { ok: true, error: null }
 }
 
 export async function setProgressPhotoMarketingConsent(

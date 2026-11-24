@@ -2,9 +2,13 @@ import 'server-only'
 
 import { createAdminClient } from '@/lib/supabase/admin'
 
-const PHOTO_BUCKET = 'progress-photos'
 const PROCESSING_LIMIT = 10
 const STORAGE_BATCH_SIZE = 1000
+
+const STUDENT_STORAGE_SOURCES = [
+    { bucket: 'progress-photos', table: 'student_progress_photos' },
+    { bucket: 'technique-videos', table: 'technique_video_submissions' },
+] as const
 
 type AccountRole = 'student' | 'trainer'
 
@@ -68,23 +72,24 @@ async function requireRpcSuccess(
     if (error || data !== true) throw new AccountDeletionError(failureCode)
 }
 
-async function deleteStudentPhotoStorage(
+async function deleteStudentStorageSource(
     admin: ReturnType<typeof createAdminClient>,
-    request: ClaimedDeletion
+    request: ClaimedDeletion,
+    source: typeof STUDENT_STORAGE_SOURCES[number]
 ) {
     if (request.account_role !== 'student') return 0
     if (!request.subject_student_id) throw new AccountDeletionError('missing_student_link')
 
     const prefix = `${request.subject_user_id}/`
-    const { data: photoRows, error: photoRowsError } = await admin
-        .from('student_progress_photos')
+    const { data: storageRows, error: storageRowsError } = await admin
+        .from(source.table)
         .select('storage_path')
         .eq('student_id', request.subject_student_id)
 
-    if (photoRowsError) throw new AccountDeletionError('storage_metadata_read_failed')
+    if (storageRowsError) throw new AccountDeletionError('storage_metadata_read_failed')
 
     const registeredPaths = new Set<string>()
-    for (const row of photoRows ?? []) {
+    for (const row of storageRows ?? []) {
         const path = typeof row.storage_path === 'string' ? row.storage_path : ''
         if (!path.startsWith(prefix)) {
             throw new AccountDeletionError('storage_path_integrity_error')
@@ -97,7 +102,7 @@ async function deleteStudentPhotoStorage(
         for (let index = 0; index < paths.length; index += STORAGE_BATCH_SIZE) {
             const batch = paths.slice(index, index + STORAGE_BATCH_SIZE)
             if (batch.length === 0) continue
-            const { data, error } = await admin.storage.from(PHOTO_BUCKET).remove(batch)
+            const { data, error } = await admin.storage.from(source.bucket).remove(batch)
             if (error) throw new AccountDeletionError('storage_delete_failed')
             deletedCount += data?.length ?? batch.length
         }
@@ -106,10 +111,10 @@ async function deleteStudentPhotoStorage(
     await removePaths([...registeredPaths])
 
     // También elimina archivos huérfanos que existan físicamente pero hayan
-    // perdido su fila. Los uploads viven bajo <auth_user_id>/<uuid>.jpg.
+    // perdido su fila. Los uploads viven bajo <auth_user_id>/<uuid>.<ext>.
     for (let page = 0; page < 100; page += 1) {
         const { data, error } = await admin.storage
-            .from(PHOTO_BUCKET)
+            .from(source.bucket)
             .list(request.subject_user_id, {
                 limit: STORAGE_BATCH_SIZE,
                 offset: 0,
@@ -126,6 +131,17 @@ async function deleteStudentPhotoStorage(
     }
 
     throw new AccountDeletionError('storage_cleanup_limit_reached')
+}
+
+async function deleteStudentStorage(
+    admin: ReturnType<typeof createAdminClient>,
+    request: ClaimedDeletion
+) {
+    let deletedCount = 0
+    for (const source of STUDENT_STORAGE_SOURCES) {
+        deletedCount += await deleteStudentStorageSource(admin, request, source)
+    }
+    return deletedCount
 }
 
 async function processClaim(request: ClaimedDeletion) {
@@ -151,7 +167,7 @@ async function processClaim(request: ClaimedDeletion) {
     }
 
     if (!request.storage_deleted_at) {
-        const deletedCount = await deleteStudentPhotoStorage(admin, request)
+        const deletedCount = await deleteStudentStorage(admin, request)
         await requireRpcSuccess(rpc, 'mark_account_deletion_storage_deleted', {
             p_request_id: request.request_id,
             p_lease_token: request.lease_token,
@@ -180,7 +196,7 @@ async function processClaim(request: ClaimedDeletion) {
     // Se repite antes de CADA intento de Auth, incluso en reintentos que ya
     // tengan auth_delete_started_at. Así un objeto tardío nunca deja la cuenta
     // atascada permanentemente.
-    const finalStorageDeletedCount = await deleteStudentPhotoStorage(admin, request)
+    const finalStorageDeletedCount = await deleteStudentStorage(admin, request)
     await requireRpcSuccess(rpc, 'mark_account_deletion_storage_deleted', {
         p_request_id: request.request_id,
         p_lease_token: request.lease_token,

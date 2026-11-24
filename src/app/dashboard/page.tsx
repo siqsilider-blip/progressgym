@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ClipboardList, MessageSquare, Users, Zap } from 'lucide-react'
+import { ClipboardList, MessageSquare, Users, Video, Zap } from 'lucide-react'
 import TrainerDashboardCards from './TrainerDashboardCards'
 import AtRiskStudentsCard from './AtRiskStudentsCard'
 import { getTrainerDashboardStats } from './getTrainerDashboardStats'
@@ -47,19 +47,20 @@ export default async function DashboardPage() {
                 </Link>
             </section>
 
-            <nav className="grid grid-cols-4 gap-2" aria-label="Accesos rápidos">
+            <nav className="grid grid-cols-5 gap-2" aria-label="Accesos rápidos">
                 {[
                     { href: '/dashboard/train', icon: Zap, label: 'Entrenar', color: 'text-emerald-400' },
                     { href: '/dashboard/students', icon: Users, label: 'Alumnos', color: 'text-primary' },
                     { href: '/dashboard/routines', icon: ClipboardList, label: 'Rutinas', color: 'text-primary' },
                     { href: '/dashboard/messages', icon: MessageSquare, label: 'Mensajes', color: 'text-amber-400' },
+                    { href: '/dashboard/technique-videos', icon: Video, label: 'Videos', color: 'text-primary' },
                 ].map((item) => {
                     const Icon = item.icon
                     return (
                         <Link
                             key={item.href}
                             href={item.href}
-                            className="flex min-w-0 items-center justify-center gap-1.5 rounded-xl border border-white/[0.07] bg-white/[0.03] px-2 py-2.5 text-xs font-semibold text-white/65 transition hover:border-white/15 hover:bg-white/[0.06] hover:text-white"
+                            className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl border border-white/[0.07] bg-white/[0.03] px-1 py-2.5 text-[10px] font-semibold text-white/65 transition hover:border-white/15 hover:bg-white/[0.06] hover:text-white sm:flex-row sm:gap-1.5 sm:px-2 sm:text-xs"
                         >
                             <Icon className={`h-3.5 w-3.5 shrink-0 ${item.color}`} />
                             {item.label}

@@ -6,6 +6,7 @@ import { AlertTriangle, Check, ChevronDown, ChevronRight, ChevronUp, CircleHelp,
 import { completeSession, saveSet } from '@/app/dashboard/students/[studentId]/train/train-focused-actions'
 import ExerciseDemo from '@/app/dashboard/students/[studentId]/train/ExerciseDemo'
 import MessageComposer from '@/components/coaching/MessageComposer'
+import TechniqueVideoUploader from '@/components/coaching/TechniqueVideoUploader'
 import WorkoutFeedbackForm from '@/components/coaching/WorkoutFeedbackForm'
 import {
     cancelNativeRestNotice,
@@ -68,6 +69,7 @@ type DraftStorageStatus = 'checking' | 'available' | 'unavailable'
 type Props = {
     sessionId: string
     studentId: string
+    studentUserId: string
     studentName: string
     dayLabel: string
     performedAt: string
@@ -157,6 +159,7 @@ function validateSet(exercise: ExerciseData, set: SetState) {
 export default function StudentWorkoutView({
     sessionId,
     studentId,
+    studentUserId,
     dayLabel,
     performedAt,
     exercises,
@@ -1004,13 +1007,22 @@ export default function StudentWorkoutView({
 
                                             {isOpen && (
                                                 <div className="border-t border-border px-3.5 pb-3.5 pt-3">
-                                                    <ExerciseDemo
-                                                        exerciseName={exercise.exerciseName}
-                                                        videoUrl={exercise.video_url}
-                                                        instructions={exercise.instructions}
-                                                        muscleGroup={exercise.muscleGroup}
-                                                        category={exercise.category}
-                                                    />
+                                                    <div className="flex flex-wrap items-center gap-2">
+                                                        <ExerciseDemo
+                                                            exerciseName={exercise.exerciseName}
+                                                            videoUrl={exercise.video_url}
+                                                            instructions={exercise.instructions}
+                                                            muscleGroup={exercise.muscleGroup}
+                                                            category={exercise.category}
+                                                        />
+                                                        <TechniqueVideoUploader
+                                                            studentUserId={studentUserId}
+                                                            workoutSessionId={sessionId}
+                                                            routineDayExerciseId={exercise.id}
+                                                            exerciseName={exercise.exerciseName}
+                                                            canSubmit={exerciseSets.some((set) => set.confirmed)}
+                                                        />
+                                                    </div>
 
                                                     <div className="mt-3">
                                                         <div className={`mb-1.5 grid items-end gap-2 px-2 ${exercise.isCardio ? 'grid-cols-[2rem_minmax(0,1fr)_4.75rem]' : 'grid-cols-[2rem_minmax(0,1fr)_minmax(0,1fr)_4.75rem]'}`}>

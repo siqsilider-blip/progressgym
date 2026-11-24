@@ -15,6 +15,7 @@ import {
     MessageCircle,
     Bell,
     Zap,
+    Video,
 } from 'lucide-react'
 
 type SidebarClientProps = {
@@ -66,6 +67,15 @@ export default function SidebarClient({
             icon: MessageCircle,
             match: (path: string) =>
                 path === '/dashboard/messages' || path.startsWith('/dashboard/messages/'),
+        },
+        {
+            href: '/dashboard/technique-videos',
+            label: 'Videos de técnica',
+            mobileLabel: 'Técnica',
+            icon: Video,
+            mobile: false,
+            match: (path: string) =>
+                path === '/dashboard/technique-videos' || path.startsWith('/dashboard/technique-videos/'),
         },
         {
             href: '/dashboard/notifications',

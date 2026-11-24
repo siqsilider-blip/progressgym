@@ -25,9 +25,9 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>Progrezzia usa la cámara únicamente cuando elegís sacar una foto de progreso para compartirla con tu entrenador.</string>
+	<string>Progrezzia usa la cámara únicamente cuando elegís registrar una foto de progreso o un video corto de técnica para tu entrenador.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Progrezzia accede a las fotos que elegís para registrar tu progreso con tu entrenador.</string>
+	<string>Progrezzia accede solamente a las fotos o videos que elegís para compartir con tu entrenador.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

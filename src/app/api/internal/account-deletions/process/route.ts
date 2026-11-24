@@ -1,6 +1,7 @@
 import { timingSafeEqual } from 'node:crypto'
 import { NextResponse } from 'next/server'
 import { processDueAccountDeletions } from '@/lib/account-deletion/processor'
+import { cleanupExpiredTechniqueVideos } from '@/lib/technique-video-cleanup'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -22,8 +23,11 @@ export async function GET(request: Request) {
     }
 
     try {
-        const summary = await processDueAccountDeletions()
-        return NextResponse.json({ ok: true, ...summary })
+        // Se ejecutan en serie para evitar que la limpieza de un video compita
+        // con la eliminación completa de la misma cuenta.
+        const accountDeletions = await processDueAccountDeletions()
+        const techniqueVideos = await cleanupExpiredTechniqueVideos()
+        return NextResponse.json({ ok: true, ...accountDeletions, techniqueVideos })
     } catch (error) {
         console.error('[account-deletion] worker unavailable', {
             code: error instanceof Error ? error.message : 'unexpected_error',

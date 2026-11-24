@@ -689,6 +689,7 @@ export default async function AppTrainPage(props: PageProps) {
                 key={workoutSessionId}
                 sessionId={workoutSessionId}
                 studentId={studentId}
+                studentUserId={context.user.id}
                 studentName={fullName}
                 dayLabel={selectedDayLabel}
                 performedAt={performedAt}

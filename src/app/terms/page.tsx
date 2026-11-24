@@ -12,11 +12,11 @@ export default function TermsPage() {
         <LegalPage
             title="Términos de uso"
             description="Estas condiciones regulan el acceso y uso de Progrezzia por entrenadores y alumnos."
-            updatedAt="20 de septiembre de 2026"
+            updatedAt="18 de noviembre de 2026"
             sections={[
                 {
                     title: '1. El servicio',
-                    paragraphs: ['Progrezzia permite crear y asignar rutinas, registrar entrenamientos y consultar progreso. Algunas funciones dependen de que exista una vinculación activa entre entrenador y alumno.'],
+                    paragraphs: ['Progrezzia permite crear y asignar rutinas, registrar entrenamientos, consultar progreso y compartir contenido opcional de seguimiento con el entrenador vinculado. Algunas funciones dependen de que exista una vinculación activa entre entrenador y alumno.'],
                 },
                 {
                     title: '2. Cuentas',
@@ -31,6 +31,7 @@ export default function TermsPage() {
                     items: [
                         'No interferir con la seguridad o disponibilidad del servicio.',
                         'No cargar contenido ilegal, engañoso o que vulnere derechos de terceros.',
+                        'Compartir únicamente fotos o videos propios y relacionados con el seguimiento del entrenamiento.',
                         'No extraer datos de otros usuarios ni utilizar la aplicación con fines abusivos.',
                     ],
                 },
