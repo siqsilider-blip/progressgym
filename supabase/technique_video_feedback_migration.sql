@@ -209,8 +209,8 @@ begin
     where v.student_id = v_student_id and v.status in ('pending', 'reviewed')
       and (v.created_at at time zone 'America/Argentina/Buenos_Aires')::date
           between v_week_start and v_week_start + 6
-  ) >= 2 then
-    raise exception 'Ya enviaste los dos videos de tecnica disponibles esta semana.';
+  ) >= 3 then
+    raise exception 'Ya enviaste los tres videos de tecnica disponibles esta semana.';
   end if;
   if (
     select count(*) from public.technique_video_submissions v
@@ -305,8 +305,8 @@ begin
       and v.status in ('pending', 'reviewed')
       and (v.created_at at time zone 'America/Argentina/Buenos_Aires')::date
           between v_week_start and v_week_start + 6
-  ) >= 2 then
-    raise exception 'Ya enviaste los dos videos de tecnica disponibles esta semana.';
+  ) >= 3 then
+    raise exception 'Ya enviaste los tres videos de tecnica disponibles esta semana.';
   end if;
 
   update public.technique_video_submissions

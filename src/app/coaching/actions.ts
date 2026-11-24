@@ -423,8 +423,8 @@ export async function createTechniqueVideoSubmission(payload: {
                 ? 'Falta aplicar la migración de videos de técnica.'
                 : message.includes('Guarda primero una serie')
                     ? 'Guardá al menos una serie de este ejercicio antes de enviar el video.'
-                    : message.includes('dos videos')
-                        ? 'Ya enviaste los dos videos de técnica disponibles esta semana.'
+                    : message.includes('videos de tecnica disponibles')
+                        ? 'Ya enviaste los tres videos de técnica disponibles esta semana.'
                         : message.includes('cargas de video en proceso')
                             ? 'Hay otras cargas en proceso. Reintentá en unos minutos.'
                             : 'No pudimos preparar el envío del video.',
@@ -452,8 +452,8 @@ export async function finalizeTechniqueVideoSubmission(
             ok: false,
             error: error?.code === 'PGRST202' || error?.code === '42P01'
                 ? 'Falta aplicar la migración de videos de técnica.'
-                : message.includes('dos videos')
-                    ? 'Ya enviaste los dos videos de técnica disponibles esta semana.'
+                : message.includes('videos de tecnica disponibles')
+                    ? 'Ya enviaste los tres videos de técnica disponibles esta semana.'
                     : message.includes('limite permitido')
                         ? 'El video supera los 50 MB permitidos.'
                         : message.includes('formato')
