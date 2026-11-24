@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
-import { Camera, Check, Film, LoaderCircle, Send, Square, Trash2, Video, X } from 'lucide-react'
+import { Camera, Check, Film, LoaderCircle, RefreshCw, Send, Square, Trash2, Video, X } from 'lucide-react'
 import {
     cancelTechniqueVideoSubmission,
     createTechniqueVideoSubmission,
@@ -24,6 +24,7 @@ type SelectedVideo = {
 }
 
 type CameraState = 'idle' | 'requesting' | 'ready' | 'recording'
+type CameraFacing = 'environment' | 'user'
 
 type Props = {
     studentUserId: string
@@ -69,6 +70,7 @@ export default function TechniqueVideoUploader({
     const router = useRouter()
     const [open, setOpen] = React.useState(false)
     const [cameraState, setCameraState] = React.useState<CameraState>('idle')
+    const [cameraFacing, setCameraFacing] = React.useState<CameraFacing>('environment')
     const [recordingSeconds, setRecordingSeconds] = React.useState(0)
     const [selected, setSelected] = React.useState<SelectedVideo | null>(null)
     const [note, setNote] = React.useState('')
@@ -86,6 +88,7 @@ export default function TechniqueVideoUploader({
     const stopTimerRef = React.useRef<number | null>(null)
     const recordingStartedAtRef = React.useRef(0)
     const discardRecordingRef = React.useRef(false)
+    const cameraRequestIdRef = React.useRef(0)
 
     const clearRecordingTimers = React.useCallback(() => {
         if (elapsedTimerRef.current != null) window.clearInterval(elapsedTimerRef.current)
@@ -95,9 +98,13 @@ export default function TechniqueVideoUploader({
     }, [])
 
     const stopCameraTracks = React.useCallback(() => {
+        cameraRequestIdRef.current += 1
         streamRef.current?.getTracks().forEach((track) => track.stop())
         streamRef.current = null
-        if (cameraPreviewRef.current) cameraPreviewRef.current.srcObject = null
+        if (cameraPreviewRef.current) {
+            cameraPreviewRef.current.pause()
+            cameraPreviewRef.current.srcObject = null
+        }
     }, [])
 
     const stopCamera = React.useCallback((discardRecording = true) => {
@@ -145,6 +152,42 @@ export default function TechniqueVideoUploader({
         clearSelected()
     }, [clearSelected, stopCamera])
 
+    React.useEffect(() => {
+        if (cameraState !== 'ready' && cameraState !== 'recording') return
+
+        const preview = cameraPreviewRef.current
+        const stream = streamRef.current
+        if (!preview || !stream) return
+
+        let cancelled = false
+        const playPreview = () => {
+            if (cancelled || cameraPreviewRef.current !== preview || streamRef.current !== stream) return
+            preview.muted = true
+            preview.defaultMuted = true
+            preview.autoplay = true
+            preview.playsInline = true
+            preview.setAttribute('playsinline', 'true')
+            preview.setAttribute('webkit-playsinline', 'true')
+            preview.setAttribute('autoplay', 'true')
+            if (preview.srcObject !== stream) preview.srcObject = stream
+            void preview.play().catch(() => {
+                // Safari puede rechazar el primer intento antes de recibir metadata.
+                // loadedmetadata/canplay vuelven a intentarlo con el video ya listo.
+            })
+        }
+
+        const animationFrame = window.requestAnimationFrame(playPreview)
+        preview.addEventListener('loadedmetadata', playPreview)
+        preview.addEventListener('canplay', playPreview)
+
+        return () => {
+            cancelled = true
+            window.cancelAnimationFrame(animationFrame)
+            preview.removeEventListener('loadedmetadata', playPreview)
+            preview.removeEventListener('canplay', playPreview)
+        }
+    }, [cameraState])
+
     async function prepareVideo(file: File, knownDuration?: number) {
         setError('')
         const fileError = validateTechniqueVideoFile(file)
@@ -178,7 +221,7 @@ export default function TechniqueVideoUploader({
         })
     }
 
-    async function startCamera() {
+    async function startCamera(facing: CameraFacing = cameraFacing) {
         setError('')
         if (!canSubmit) {
             setError(`Guardá al menos una serie de ${exerciseName} antes de enviar el video.`)
@@ -191,30 +234,40 @@ export default function TechniqueVideoUploader({
             return
         }
 
+        stopCameraTracks()
+        const requestId = cameraRequestIdRef.current + 1
+        cameraRequestIdRef.current = requestId
+        setCameraFacing(facing)
         setCameraState('requesting')
         try {
             const stream = await navigator.mediaDevices.getUserMedia({
                 video: {
-                    facingMode: { ideal: 'environment' },
+                    facingMode: { ideal: facing },
                     width: { ideal: 1280, max: 1280 },
                     height: { ideal: 720, max: 720 },
                     frameRate: { ideal: 30, max: 30 },
                 },
                 audio: false,
             })
+            if (cameraRequestIdRef.current !== requestId) {
+                stream.getTracks().forEach((track) => track.stop())
+                return
+            }
             streamRef.current = stream
             setCameraState('ready')
-            window.setTimeout(() => {
-                if (!cameraPreviewRef.current) return
-                cameraPreviewRef.current.srcObject = stream
-                void cameraPreviewRef.current.play()
-            }, 0)
         } catch (cameraError) {
+            if (cameraRequestIdRef.current !== requestId) return
             console.error('[TechniqueVideoUploader] camera:', cameraError)
             stopCameraTracks()
             setCameraState('idle')
             setError('No pudimos abrir la cámara. Revisá el permiso o elegí un video de la galería.')
         }
+    }
+
+    function switchCamera() {
+        if (cameraState !== 'ready') return
+        const nextFacing: CameraFacing = cameraFacing === 'environment' ? 'user' : 'environment'
+        void startCamera(nextFacing)
     }
 
     function beginRecording() {
@@ -455,10 +508,32 @@ export default function TechniqueVideoUploader({
                                                 </div>
                                             ) : (
                                                 <>
-                                                    <video ref={cameraPreviewRef} muted playsInline className="aspect-[3/4] w-full object-cover" />
+                                                    <div className="relative aspect-[3/4] overflow-hidden bg-black">
+                                                        <video
+                                                            ref={cameraPreviewRef}
+                                                            autoPlay
+                                                            muted
+                                                            playsInline
+                                                            aria-label={`Vista previa de la cámara ${cameraFacing === 'environment' ? 'trasera' : 'frontal'}`}
+                                                            className="h-full w-full object-cover"
+                                                            style={{ transform: cameraFacing === 'user' ? 'scaleX(-1)' : undefined }}
+                                                        />
+                                                        {cameraState === 'ready' && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={switchCamera}
+                                                                aria-label={cameraFacing === 'environment' ? 'Cambiar a cámara frontal' : 'Cambiar a cámara trasera'}
+                                                                className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-black/65 text-white backdrop-blur"
+                                                            >
+                                                                <RefreshCw className="h-5 w-5" aria-hidden="true" />
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                     <div className="flex items-center justify-between gap-3 bg-black/90 p-3">
                                                         <span className="text-sm font-bold text-white">
-                                                            {cameraState === 'recording' ? `Grabando · ${recordingSeconds}/30 s` : 'Cámara lista'}
+                                                            {cameraState === 'recording'
+                                                                ? `Grabando · ${recordingSeconds}/30 s`
+                                                                : `${cameraFacing === 'environment' ? 'Cámara trasera' : 'Cámara frontal'} lista`}
                                                         </span>
                                                         {cameraState === 'recording' ? (
                                                             <button type="button" onClick={() => stopCamera(false)} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-red-600 px-4 text-sm font-black text-white">
