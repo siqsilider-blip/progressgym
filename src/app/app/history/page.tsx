@@ -137,8 +137,8 @@ export default async function AppHistoryPage() {
                                             <div className="border-t border-border px-3.5 pb-3.5 pt-3">
                                                 {session.exercises.length > 0 && (
                                                     <div className="space-y-1.5">
-                                                        {session.exercises.map((ex, idx) => (
-                                                            <div key={idx} className="flex items-center justify-between gap-3 rounded-xl bg-muted/40 px-3 py-2.5">
+                                                        {session.exercises.map((ex) => (
+                                                            <div key={ex.routineDayExerciseId} className="flex items-center justify-between gap-3 rounded-xl bg-muted/40 px-3 py-2.5">
                                                                 <div className="min-w-0">
                                                                     <p className="truncate text-xs font-medium text-card-foreground">
                                                                         {ex.exerciseName}

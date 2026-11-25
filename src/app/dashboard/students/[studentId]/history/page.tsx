@@ -1,223 +1,138 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { getStudentSessionHistory } from '../getStudentSessionHistory'
+import { getStudentSessionHistoryResult } from '@/app/dashboard/students/getStudentSessionHistory'
 import { getTrainerProfile } from '@/lib/getTrainerProfile'
-import { formatWeight, type WeightUnit } from '@/lib/weight'
+import type { WeightUnit } from '@/lib/weight'
 import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
 import { getServerUser } from '@/lib/auth/server'
+import TrainerStudentHistory from './TrainerStudentHistory'
 
 type PageProps = {
     params: Promise<{ studentId: string }>
 }
 
-function formatDate(dateStr: string) {
-    const d = new Date(dateStr + 'T00:00:00')
-    return d.toLocaleDateString('es-AR', {
-        weekday: 'short',
-        day: 'numeric',
-        month: 'short',
-    })
-}
-
-function formatDuration(seconds: number) {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    if (mins === 0) return `${secs}s`
-    if (secs === 0) return `${mins}m`
-    return `${mins}m ${secs}s`
-}
-
-function groupByMonth(sessions: Awaited<ReturnType<typeof getStudentSessionHistory>>) {
-    const groups = new Map<string, typeof sessions>()
-
-    for (const session of sessions) {
-        const date = new Date(session.performedDate + 'T00:00:00')
-        const key = date.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })
-
-        if (!groups.has(key)) groups.set(key, [])
-        groups.get(key)!.push(session)
-    }
-
-    return groups
-}
+const HISTORY_LIMIT = 50
 
 export default async function StudentHistoryPage(props: PageProps) {
-    const params = await props.params;
+    const params = await props.params
     const supabase = await createClient()
     const user = await getServerUser()
     if (!user) redirect('/login')
 
-    const [studentResult, sessions, trainerProfile] = await Promise.all([
-        supabase
-            .from('students')
-            .select('first_name, last_name')
-            .eq('id', params.studentId)
-            .eq('trainer_id', user.id)
-            .single(),
-        getStudentSessionHistory(params.studentId, 50),
+    // Validar primero que el alumno pertenezca al entrenador. Así no se
+    // consulta ningún historial antes de confirmar la relación.
+    const { data: student } = await supabase
+        .from('students')
+        .select('first_name, last_name')
+        .eq('id', params.studentId)
+        .eq('trainer_id', user.id)
+        .single()
+
+    if (!student) redirect('/dashboard/students')
+
+    const [historyResult, trainerProfile] = await Promise.all([
+        getStudentSessionHistoryResult(params.studentId, HISTORY_LIMIT),
         getTrainerProfile(),
     ])
 
-    const student = studentResult.data
-    if (!student) redirect('/dashboard/students')
-
+    const sessions = historyResult.sessions
     const weightUnit = (trainerProfile?.weight_unit ?? 'kg') as WeightUnit
-    const fullName = `${student?.first_name ?? ''} ${student?.last_name ?? ''}`.trim()
-
-    const grouped = groupByMonth(sessions)
-
+    const fullName = `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim()
     const completedSessions = sessions.filter((session) => session.completionStatus === 'complete')
-    const totalSessions = completedSessions.length
-    const totalSets = sessions.reduce((acc, s) => acc + s.totalSets, 0)
-    const avgDuration = completedSessions.filter(s => s.durationSeconds).length > 0
+    const partialSessions = sessions.length - completedSessions.length
+    const totalSets = sessions.reduce((total, session) => total + session.totalSets, 0)
+    const sessionsWithDuration = completedSessions.filter(
+        (session) => session.durationSeconds !== null && session.durationSeconds > 0
+    )
+    const avgDuration = sessionsWithDuration.length > 0
         ? Math.round(
-            completedSessions
-                .filter(s => s.durationSeconds)
-                .reduce((acc, s) => acc + (s.durationSeconds ?? 0), 0) /
-            completedSessions.filter(s => s.durationSeconds).length / 60
+            sessionsWithDuration.reduce(
+                (total, session) => total + (session.durationSeconds ?? 0),
+                0
+            ) / sessionsWithDuration.length / 60
         )
         : null
 
+    const subtitle = sessions.length === 0
+        ? fullName
+        : `${fullName} · ${sessions.length} ${sessions.length === 1 ? 'sesión visible' : 'sesiones visibles'}`
+
     return (
         <div className="p-4 pb-24 md:p-6 xl:px-8 xl:pb-8">
-            <div className="mx-auto w-full max-w-7xl space-y-4">
-
-                {/* ── Header ── */}
+            <div className="mx-auto w-full max-w-[1500px] space-y-4">
                 <DashboardPageHeader
                     title="Historial"
-                    subtitle={`${fullName} · ${totalSessions} ${totalSessions === 1 ? 'sesión completa' : 'sesiones completas'}`}
+                    subtitle={subtitle}
                     backHref={`/dashboard/students/${params.studentId}`}
                 />
 
-                {/* ── Stats row ── */}
-                {totalSessions > 0 && (
-                    <div className="grid grid-cols-3 gap-2">
-                        <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-2.5 text-center">
-                            <p className="text-xl font-black text-primary">{totalSessions}</p>
-                            <p className="text-[10px] text-muted-foreground">Sesiones</p>
-                        </div>
-                        <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-2.5 text-center">
-                            <p className="text-xl font-black text-emerald-400">{totalSets}</p>
-                            <p className="text-[10px] text-muted-foreground">Series totales</p>
-                        </div>
-                        <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-2.5 text-center">
-                            <p className="text-xl font-black text-amber-400">
-                                {avgDuration ? `${avgDuration}m` : '—'}
+                {sessions.length > 0 && (
+                    <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+                        <div className="rounded-xl border border-border bg-card p-3">
+                            <p className="text-[11px] font-medium text-muted-foreground">Sesiones visibles</p>
+                            <p className="mt-1 text-2xl font-black text-primary">{sessions.length}</p>
+                            <p className="mt-0.5 text-[11px] text-muted-foreground">
+                                {sessions.length === HISTORY_LIMIT ? `Últimas ${HISTORY_LIMIT}` : 'Historial disponible'}
                             </p>
-                            <p className="text-[10px] text-muted-foreground">Duración media</p>
+                        </div>
+                        <div className="rounded-xl border border-border bg-card p-3">
+                            <p className="text-[11px] font-medium text-muted-foreground">Estado</p>
+                            <p className="mt-1 text-2xl font-black text-emerald-500">{completedSessions.length}</p>
+                            <p className="mt-0.5 text-[11px] text-muted-foreground">
+                                Completas{partialSessions > 0 ? ` · ${partialSessions} parciales` : ''}
+                            </p>
+                        </div>
+                        <div className="rounded-xl border border-border bg-card p-3">
+                            <p className="text-[11px] font-medium text-muted-foreground">Series registradas</p>
+                            <p className="mt-1 text-2xl font-black text-card-foreground">{totalSets}</p>
+                            <p className="mt-0.5 text-[11px] text-muted-foreground">En las sesiones visibles</p>
+                        </div>
+                        <div className="rounded-xl border border-border bg-card p-3">
+                            <p className="text-[11px] font-medium text-muted-foreground">Duración media</p>
+                            <p className="mt-1 text-2xl font-black text-amber-500">
+                                {avgDuration !== null ? `${avgDuration}m` : '—'}
+                            </p>
+                            <p className="mt-0.5 text-[11px] text-muted-foreground">Solo sesiones completas</p>
                         </div>
                     </div>
                 )}
 
-                {/* ── Sin datos ── */}
-                {totalSessions === 0 ? (
-                    <div className="rounded-2xl border border-dashed border-border p-8 text-center">
+                {historyResult.error ? (
+                    <div className="rounded-2xl border border-red-500/20 bg-red-500/[0.06] p-8 text-center">
+                        <p className="text-sm font-semibold text-card-foreground">
+                            No pudimos cargar el historial
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">{historyResult.error}</p>
+                        <Link
+                            href={`/dashboard/students/${params.studentId}/history`}
+                            className="mt-4 inline-flex rounded-xl border border-border bg-secondary px-4 py-2.5 text-sm font-semibold text-secondary-foreground transition hover:bg-muted"
+                        >
+                            Reintentar
+                        </Link>
+                    </div>
+                ) : sessions.length === 0 ? (
+                    <div className="rounded-2xl border border-dashed border-border bg-card p-8 text-center">
                         <p className="text-4xl">🏋️</p>
                         <p className="mt-3 text-sm font-semibold text-card-foreground">
-                            Todavía no hay sesiones completadas
+                            Todavía no hay sesiones registradas
                         </p>
                         <p className="mt-1 text-xs text-muted-foreground">
-                            Las sesiones aparecen acá cuando la alumna finaliza sus entrenamientos.
+                            Acá aparecerán las sesiones completas y parciales que tengan series guardadas.
                         </p>
                         <Link
                             href={`/dashboard/students/${params.studentId}`}
-                            className="mt-4 inline-block rounded-xl border border-border bg-secondary px-4 py-2.5 text-sm font-semibold text-secondary-foreground transition hover:bg-muted"
+                            className="mt-4 inline-flex rounded-xl border border-border bg-secondary px-4 py-2.5 text-sm font-semibold text-secondary-foreground transition hover:bg-muted"
                         >
                             Volver al perfil
                         </Link>
                     </div>
                 ) : (
-                    <div className="space-y-6">
-                        {[...grouped.entries()].map(([monthLabel, monthSessions]) => (
-                            <div key={monthLabel}>
-                                <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-                                    {monthLabel}
-                                </p>
-
-                                <div className="grid gap-3 xl:grid-cols-2">
-                                    {monthSessions.map((session) => (
-                                        <div
-                                            key={session.sessionId}
-                                            className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-3"
-                                        >
-                                            <div className="flex items-start justify-between gap-3">
-                                                <div>
-                                                    <p className="text-sm font-bold text-card-foreground">
-                                                        {session.dayLabel}
-                                                    </p>
-                                                    <p className="mt-0.5 text-xs text-muted-foreground">
-                                                        {formatDate(session.performedDate)}
-                                                    </p>
-                                                    {session.completionStatus === 'incomplete' && (
-                                                        <p className="mt-1 text-[10px] font-bold text-amber-500">Sesión parcial · cuenta como actividad</p>
-                                                    )}
-                                                </div>
-
-                                                <div className="flex shrink-0 items-center gap-2">
-                                                    {session.durationSeconds && (
-                                                        <span className="rounded-lg bg-secondary px-2 py-1 text-[10px] font-medium text-secondary-foreground">
-                                                            ⏱ {formatDuration(session.durationSeconds)}
-                                                        </span>
-                                                    )}
-                                                    <span className="rounded-lg bg-primary/10 px-2 py-1 text-[10px] font-semibold text-brand-soft">
-                                                        {session.totalSets} series
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            {session.exercises.length > 0 && (
-                                                <div className="mt-3 space-y-1.5">
-                                                    {session.exercises.map((ex, idx) => (
-                                                        <div
-                                                            key={idx}
-                                                            className="flex items-center justify-between gap-3 rounded-xl bg-muted/40 px-3 py-2"
-                                                        >
-                                                            <div className="min-w-0">
-                                                                <p className="truncate text-xs font-medium text-card-foreground">
-                                                                    {ex.exerciseName}
-                                                                    {ex.avgRpe !== null && (
-                                                                        <span className="ml-1 rounded-md bg-zinc-100 px-1 py-0.5 text-[9px] font-medium text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
-                                                                            RPE {ex.avgRpe}
-                                                                        </span>
-                                                                    )}
-                                                                </p>
-                                                                <p className="text-[10px] text-muted-foreground">
-                                                                    {ex.sets} {ex.sets === 1 ? 'serie' : 'series'}
-                                                                </p>
-                                                            </div>
-
-                                                            <div className="shrink-0 text-right">
-                                                                {ex.isCardio ? (
-                                                                    ex.bestReps !== null && (
-                                                                        <p className="text-xs font-bold text-card-foreground">
-                                                                            {ex.bestReps} min
-                                                                        </p>
-                                                                    )
-                                                                ) : (
-                                                                    ex.bestWeight !== null && (
-                                                                        <p className="text-xs font-bold text-emerald-500">
-                                                                            {formatWeight(ex.bestWeight, weightUnit)}
-                                                                        </p>
-                                                                    )
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                            {session.note && (
-                                                <div className="mt-3 rounded-xl border border-border bg-muted/30 px-3 py-2">
-                                                    <p className="text-[10px] font-medium text-muted-foreground">Nota del alumno</p>
-                                                    <p className="mt-0.5 text-xs text-card-foreground">{session.note}</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                    <TrainerStudentHistory
+                        sessions={sessions}
+                        weightUnit={weightUnit}
+                        visibleLimit={HISTORY_LIMIT}
+                    />
                 )}
             </div>
         </div>

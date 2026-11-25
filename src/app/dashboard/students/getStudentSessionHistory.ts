@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 
 export type SessionExerciseSummary = {
+    routineDayExerciseId: string
+    position: number
     exerciseName: string
     sets: number
     bestWeight: number | null
@@ -23,10 +25,15 @@ export type SessionHistoryItem = {
     exercises: SessionExerciseSummary[]
 }
 
-export async function getStudentSessionHistory(
+export type StudentSessionHistoryResult = {
+    sessions: SessionHistoryItem[]
+    error: string | null
+}
+
+export async function getStudentSessionHistoryResult(
     studentId: string,
     limit = 20
-): Promise<SessionHistoryItem[]> {
+): Promise<StudentSessionHistoryResult> {
     const supabase = await createClient()
     const sessionFetchLimit = Math.max(limit * 4, 100)
 
@@ -42,7 +49,11 @@ export async function getStudentSessionHistory(
         .order('started_at', { ascending: false })
         .limit(sessionFetchLimit)
 
-    if (sessionsError || !sessions || sessions.length === 0) return []
+    if (sessionsError) {
+        console.error('No se pudo cargar el historial de sesiones:', sessionsError)
+        return { sessions: [], error: 'No pudimos cargar las sesiones en este momento.' }
+    }
+    if (!sessions || sessions.length === 0) return { sessions: [], error: null }
 
     const sessionIds = sessions.map((s) => s.id)
     const routineDayIds = [...new Set(sessions.map((s) => s.routine_day_id).filter(Boolean))]
@@ -56,13 +67,27 @@ export async function getStudentSessionHistory(
                 .from('routine_days')
                 .select('id, name, title, day_index, routine_week_id')
                 .in('id', routineDayIds)
-            : Promise.resolve({ data: [] }),
+            : Promise.resolve({
+                data: [] as Array<{
+                    id: string
+                    name: string | null
+                    title: string | null
+                    day_index: number | null
+                    routine_week_id: string | null
+                }>,
+                error: null,
+            }),
         supabase
             .from('exercise_logs')
             .select('workout_session_id, routine_day_exercise_id, weight, reps, rpe, set_index')
             .in('workout_session_id', sessionIds)
             .eq('student_id', studentId),
     ])
+
+    if (daysResult.error) {
+        console.error('No se pudieron cargar los días del historial:', daysResult.error)
+        return { sessions: [], error: 'No pudimos completar los datos del historial.' }
+    }
 
     for (const day of daysResult.data ?? []) {
         dayLabelMap.set(
@@ -73,25 +98,39 @@ export async function getStudentSessionHistory(
     }
 
     const logs = logsResult.data
-    if (logsResult.error || !logs) return []
+    if (logsResult.error) {
+        console.error('No se pudieron cargar las series del historial:', logsResult.error)
+        return { sessions: [], error: 'No pudimos cargar las series del historial.' }
+    }
+    if (!logs) return { sessions: [], error: 'No pudimos cargar las series del historial.' }
 
     // Traer routine_day_exercises + exercises para nombres.
     const rdeIds = [...new Set(logs.map((l) => l.routine_day_exercise_id).filter(Boolean))]
-    const exerciseNameMap = new Map<string, { name: string; isCardio: boolean }>()
+    const exerciseNameMap = new Map<string, { name: string; isCardio: boolean; position: number }>()
 
     if (rdeIds.length > 0) {
-        const { data: rdes } = await supabase
+        const { data: rdes, error: rdesError } = await supabase
             .from('routine_day_exercises')
-            .select('id, exercise_id')
+            .select('id, exercise_id, position')
             .in('id', rdeIds)
+
+        if (rdesError) {
+            console.error('No se pudo resolver el orden de ejercicios del historial:', rdesError)
+            return { sessions: [], error: 'No pudimos completar los ejercicios del historial.' }
+        }
 
         const exerciseIds = [...new Set((rdes ?? []).map((r) => r.exercise_id).filter(Boolean))]
 
         if (exerciseIds.length > 0) {
-            const { data: exercises } = await supabase
+            const { data: exercises, error: exercisesError } = await supabase
                 .from('exercises')
                 .select('id, name, metric_type')
                 .in('id', exerciseIds)
+
+            if (exercisesError) {
+                console.error('No se pudieron resolver los ejercicios del historial:', exercisesError)
+                return { sessions: [], error: 'No pudimos completar los ejercicios del historial.' }
+            }
 
             const exMap = new Map((exercises ?? []).map((e) => [e.id, e]))
 
@@ -102,6 +141,7 @@ export async function getStudentSessionHistory(
                     exerciseNameMap.set(rde.id, {
                         name: ex.name ?? 'Ejercicio',
                         isCardio: ex.metric_type === 'time',
+                        position: rde.position ?? Number.MAX_SAFE_INTEGER,
                     })
                 }
             }
@@ -120,15 +160,17 @@ export async function getStudentSessionHistory(
 
     // Las sesiones sin series no forman parte del historial visible, igual
     // que antes, pero ya no condicionan la consulta inicial.
-    return sessions
+    const history = sessions
         .filter((session) => logsBySession.has(session.id))
         .map((session) => {
         const sessionLogs = logsBySession.get(session.id) ?? []
 
         // Agrupar por ejercicio dentro de la sesión
         const exerciseGroups = new Map<string, {
+            id: string
             name: string
             isCardio: boolean
+            position: number
             weights: (number | null)[]
             reps: (number | null)[]
             rpes: (number | null)[]
@@ -141,8 +183,10 @@ export async function getStudentSessionHistory(
 
             if (!exerciseGroups.has(log.routine_day_exercise_id)) {
                 exerciseGroups.set(log.routine_day_exercise_id, {
+                    id: log.routine_day_exercise_id,
                     name: meta.name,
                     isCardio: meta.isCardio,
+                    position: meta.position,
                     weights: [],
                     reps: [],
                     rpes: [],
@@ -162,6 +206,8 @@ export async function getStudentSessionHistory(
             const validRpes = group.rpes.filter((r): r is number => r !== null)
 
             exercises.push({
+                routineDayExerciseId: group.id,
+                position: group.position,
                 exerciseName: group.name,
                 sets: group.weights.length,
                 bestWeight: validWeights.length > 0 ? Math.max(...validWeights) : null,
@@ -172,6 +218,8 @@ export async function getStudentSessionHistory(
                 isCardio: group.isCardio,
             })
         }
+
+        exercises.sort((a, b) => a.position - b.position)
 
         return {
             sessionId: session.id,
@@ -186,10 +234,20 @@ export async function getStudentSessionHistory(
             dayLabel: session.routine_day_id
                 ? (dayLabelMap.get(session.routine_day_id) ?? 'Sesión')
                 : 'Sesión',
-            totalSets: sessionLogs.length,
+            totalSets: exercises.reduce((total, exercise) => total + exercise.sets, 0),
             note: session.notes ?? null,
             exercises,
         }
         })
         .slice(0, limit)
+
+    return { sessions: history, error: null }
+}
+
+export async function getStudentSessionHistory(
+    studentId: string,
+    limit = 20
+): Promise<SessionHistoryItem[]> {
+    const result = await getStudentSessionHistoryResult(studentId, limit)
+    return result.sessions
 }
