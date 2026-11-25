@@ -1,15 +1,19 @@
 'use client'
 
-import { useState } from 'react'
+import { useId } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Dot } from 'recharts'
+import { convertWeightFromKgForInput, formatPreciseWeight, type WeightUnit } from '@/lib/weight'
 import type { ExerciseProgress } from './getStudentExerciseProgress'
 
 type Props = {
     exercise: ExerciseProgress
-    weightUnit: string
-    rank: number
-    collapsible?: boolean
+    weightUnit: WeightUnit
+    rank?: number
+    studentDisclosure?: {
+        open: boolean
+        onToggle: () => void
+    }
 }
 
 function formatDate(dateStr: string) {
@@ -23,8 +27,8 @@ const RANK_STYLES = [
     { border: 'border-amber-700/30', glow: 'shadow-amber-700/10', badge: 'bg-amber-700', icon: '🥉' },
 ]
 
-export default function ExerciseProgressCard({ exercise, weightUnit, rank, collapsible = false }: Props) {
-    const [open, setOpen] = useState(false)
+export default function ExerciseProgressCard({ exercise, weightUnit, rank = -1, studentDisclosure }: Props) {
+    const detailId = useId()
     const style = RANK_STYLES[rank] ?? { border: 'border-border', glow: '', badge: 'bg-primary', icon: '💪' }
     const lastIndex = exercise.logs.length - 1
 
@@ -33,7 +37,7 @@ export default function ExerciseProgressCard({ exercise, weightUnit, rank, colla
     const hasImprovement = exercise.progressKg > 0
 
     const header = (
-        <div className={`flex items-center justify-between gap-3 p-3.5 ${collapsible ? '' : 'pb-1'}`}>
+        <div className="flex items-center justify-between gap-3 p-3.5 pb-1">
             <div className="min-w-0">
                 <div className="flex items-center gap-2">
                     <span className="text-base" aria-hidden="true">{style.icon}</span>
@@ -42,23 +46,18 @@ export default function ExerciseProgressCard({ exercise, weightUnit, rank, colla
                     </h3>
                 </div>
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                    {collapsible
-                        ? `${exercise.totalSessions} registros · Mejor ${exercise.bestWeight}${weightUnit} · Último ${exercise.lastWeight}${weightUnit}`
-                        : `${exercise.totalSessions} registros · ${exercise.firstWeight}${weightUnit} → ${exercise.bestWeight}${weightUnit}`}
+                    {`${exercise.totalSessions} registros · ${exercise.firstWeight}${weightUnit} → ${exercise.bestWeight}${weightUnit}`}
                 </p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
                 <div className="text-right">
-                    <p className={`${collapsible ? 'text-base' : 'text-xl'} font-black ${hasImprovement ? 'text-emerald-500' : 'text-muted-foreground'}`}>
+                    <p className={`text-xl font-black ${hasImprovement ? 'text-emerald-500' : 'text-muted-foreground'}`}>
                         {hasImprovement ? `+${exercise.progressKg}${weightUnit}` : 'Sin mejora'}
                     </p>
                     <p className={`text-[11px] font-semibold ${hasImprovement && trendUp ? 'text-emerald-500' : 'text-zinc-400'}`}>
                         {hasImprovement ? `${trendUp ? '↑' : '→'} +${exercise.progressPercent}%` : 'Sin nueva marca'}
                     </p>
                 </div>
-                {collapsible && (
-                    <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden="true" />
-                )}
             </div>
         </div>
     )
@@ -77,6 +76,7 @@ export default function ExerciseProgressCard({ exercise, weightUnit, rank, colla
                         interval="preserveStartEnd"
                     />
                     <YAxis
+                        tickFormatter={studentDisclosure ? (weight) => String(convertWeightFromKgForInput(weight, weightUnit)) : undefined}
                         tick={{ fill: '#71717a', fontSize: 9 }}
                         axisLine={false}
                         tickLine={false}
@@ -91,7 +91,7 @@ export default function ExerciseProgressCard({ exercise, weightUnit, rank, colla
                             fontSize: 11,
                             padding: '4px 8px',
                         }}
-                        formatter={(v) => [`${v}${weightUnit}`, '']}
+                        formatter={(v) => [studentDisclosure ? formatPreciseWeight(Number(v), weightUnit) : `${v}${weightUnit}`, '']}
                     />
                     <Line
                         type="monotone"
@@ -118,21 +118,48 @@ export default function ExerciseProgressCard({ exercise, weightUnit, rank, colla
         </div>
     )
 
-    if (collapsible) {
+    if (studentDisclosure) {
+        const { open, onToggle } = studentDisclosure
         return (
-            <details
-                className={`group overflow-hidden rounded-xl border ${style.border} bg-white/[0.025] ${style.glow}`}
-                onToggle={(event) => setOpen(event.currentTarget.open)}
-            >
-                <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden">
-                    {header}
-                </summary>
-                {open && (
-                    <div className="border-t border-border/70 pt-2">
-                        {chart}
-                    </div>
-                )}
-            </details>
+            <div className="overflow-hidden rounded-xl border border-border bg-card">
+                <h3>
+                    <button
+                        type="button"
+                        aria-controls={detailId}
+                        aria-expanded={open}
+                        aria-labelledby={`${detailId}-title`}
+                        aria-describedby={`${detailId}-summary`}
+                        onClick={onToggle}
+                        className="flex min-h-14 w-full items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-left focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary"
+                    >
+                        <span className="min-w-0">
+                            <span id={`${detailId}-title`} className="block break-words text-sm font-bold leading-5 text-foreground">{exercise.exerciseName}</span>
+                            <span id={`${detailId}-summary`} className="mt-0.5 flex flex-wrap gap-x-2 text-xs font-normal text-muted-foreground">
+                                <span>Mejor {formatPreciseWeight(exercise.bestWeight, weightUnit)}</span>
+                                <span>Último {formatPreciseWeight(exercise.lastWeight, weightUnit)}</span>
+                            </span>
+                        </span>
+                        <span className="flex shrink-0 items-center gap-2">
+                            {hasImprovement && (
+                                <span className="rounded-md bg-emerald-500/10 px-1.5 py-1 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                                    +{formatPreciseWeight(Number(exercise.progressKg.toFixed(2)), weightUnit)}
+                                </span>
+                            )}
+                            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
+                        </span>
+                    </button>
+                </h3>
+                <div id={detailId} hidden={!open} className="border-t border-border/70 pt-2">
+                    {open && (
+                        <>
+                            <p className="px-3 pb-1 text-xs text-muted-foreground">
+                                {exercise.totalSessions} registros · Primera carga: {formatPreciseWeight(exercise.firstWeight, weightUnit)}
+                            </p>
+                            {chart}
+                        </>
+                    )}
+                </div>
+            </div>
         )
     }
 

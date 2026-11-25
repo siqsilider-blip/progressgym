@@ -3,13 +3,13 @@ import Link from 'next/link'
 import { Clock3, Trophy } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { getStudentExerciseProgress } from '@/app/dashboard/students/getStudentExerciseProgress'
-import { type WeightUnit } from '@/lib/weight'
-import ExerciseProgressCard from '@/app/dashboard/students/ExerciseProgressCard'
+import { formatPreciseWeight, type WeightUnit } from '@/lib/weight'
 import StudentPageHeader from '@/components/student/StudentPageHeader'
 import { getStudentAppContext } from '@/lib/auth/student'
 import WeeklyWellnessProgressCard, { type WeeklyWellnessPoint } from '@/components/coaching/WeeklyWellnessProgressCard'
 import ProgressPhotoGallery, { type ProgressPhotoItem } from '@/components/coaching/ProgressPhotoGallery'
 import { createProgressPhotoUrls, type ProgressPhotoRecord } from '@/lib/progressPhotoUrls'
+import StudentExerciseProgressList from './StudentExerciseProgressList'
 
 export default async function AppProgressPage() {
     const supabase = await createClient()
@@ -62,7 +62,7 @@ export default async function AppProgressPage() {
     const weightUnit = (trainerProfile?.weight_unit ?? 'kg') as WeightUnit
 
     const totalExercises = progressData.length
-    const bestProgress = progressData[0] ?? null
+    const bestProgress = progressData.find((exercise) => exercise.progressKg > 0)
 
     return (
         <div className="p-4 pb-24 md:p-6">
@@ -76,16 +76,17 @@ export default async function AppProgressPage() {
 
                 <section className="mb-3 rounded-2xl border border-border bg-card p-4">
                     <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Resumen</p>
-                    {bestProgress ? (
-                        <div className="mt-2 flex items-end justify-between gap-4">
+                    {totalExercises > 0 ? (
+                        <div className="mt-2 flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
                             <div className="min-w-0">
-                                <p className="text-sm font-black text-foreground">{totalExercises} {totalExercises === 1 ? 'ejercicio con evolución' : 'ejercicios con evolución'}</p>
-                                <p className="mt-1 truncate text-xs text-muted-foreground">Mayor avance: {bestProgress.exerciseName}</p>
+                                <p className="text-sm font-black text-foreground">{totalExercises} {totalExercises === 1 ? 'ejercicio para comparar' : 'ejercicios para comparar'}</p>
+                                {bestProgress && (
+                                    <p className="mt-1 text-xs text-muted-foreground">Mayor avance: {bestProgress.exerciseName}</p>
+                                )}
                             </div>
-                            <div className="shrink-0 text-right">
-                                <p className="text-lg font-black text-emerald-500">+{bestProgress.progressKg}{weightUnit}</p>
-                                <p className="text-[11px] font-semibold text-muted-foreground">{bestProgress.firstWeight}{weightUnit} → {bestProgress.bestWeight}{weightUnit}</p>
-                            </div>
+                            {bestProgress && (
+                                <p className="shrink-0 text-lg font-black text-emerald-500">+{formatPreciseWeight(Number(bestProgress.progressKg.toFixed(2)), weightUnit)}</p>
+                            )}
                         </div>
                     ) : (
                         <div className="mt-2">
@@ -111,7 +112,7 @@ export default async function AppProgressPage() {
                 <section>
                     <div className="mb-2">
                         <h2 className="text-base font-black text-foreground">Progreso por ejercicio</h2>
-                        <p className="mt-0.5 text-xs text-muted-foreground">Comparamos tu primer registro con tu mejor marca.</p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">Compará tu carga a lo largo del tiempo.</p>
                     </div>
 
                     {progressData.length === 0 ? (
@@ -121,17 +122,7 @@ export default async function AppProgressPage() {
                             <p className="mt-1 text-xs leading-5 text-muted-foreground">Después de al menos 2 entrenamientos del mismo ejercicio, el progreso aparece acá.</p>
                         </div>
                     ) : (
-                        <div className="space-y-3">
-                            {progressData.map((exercise, index) => (
-                                <ExerciseProgressCard
-                                    key={exercise.exerciseId}
-                                    exercise={exercise}
-                                    weightUnit={weightUnit}
-                                    rank={index}
-                                    collapsible
-                                />
-                            ))}
-                        </div>
+                        <StudentExerciseProgressList exercises={progressData} weightUnit={weightUnit} />
                     )}
                 </section>
 
