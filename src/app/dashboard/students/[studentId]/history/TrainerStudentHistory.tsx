@@ -111,7 +111,9 @@ function getBestResult(
     }
 
     const values: string[] = []
-    if (exercise.bestWeight !== null) values.push(`Máx. peso ${formatWeight(exercise.bestWeight, weightUnit)}`)
+    if (exercise.bestWeight !== null && exercise.bestWeight > 0) {
+        values.push(`Máx. peso ${formatWeight(exercise.bestWeight, weightUnit)}`)
+    }
     if (exercise.bestReps !== null) values.push(`Máx. reps ${exercise.bestReps}`)
     return values.length > 0 ? values.join(' · ') : '—'
 }
@@ -203,7 +205,7 @@ function DesktopSessionDetail({
             <div className="border-b border-border px-5 py-4">
                 <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
-                        <p className="flex items-center gap-1.5 text-xs capitalize text-muted-foreground">
+                        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                             <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
                             {formatDate(session.performedDate, true)}
                         </p>
