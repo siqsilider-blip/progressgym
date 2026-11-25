@@ -474,10 +474,18 @@ test('el check-in y la conversación privada llegan de alumno a entrenador y vue
 
     await page.context().clearCookies()
     await logIn(page, 'student', studentEmail)
+    const studentNav = page.getByRole('navigation', { name: 'Navegación del alumno' })
+    const unreadChat = studentNav.getByRole('link', { name: 'Mensajes, 1 mensaje sin leer' })
+    await expect(unreadChat).toBeVisible({ timeout: 15_000 })
+
     await page.goto('/app/notifications')
     await expect(page.getByText('Respuesta de tu entrenador', { exact: true })).toBeVisible({ timeout: 15_000 })
-    await page.goto('/app/messages')
+    await page.getByRole('button', { name: 'Marcar todo leído' }).click()
+    await expect(page.getByRole('button', { name: 'Marcar todo leído' })).toHaveCount(0)
+    await expect(unreadChat).toBeVisible()
+    await unreadChat.click()
     await expect(page.getByText('Respuesta privada E2E')).toBeVisible({ timeout: 15_000 })
+    await expect(studentNav.getByRole('link', { name: 'Mensajes', exact: true })).toHaveAttribute('aria-current', 'page', { timeout: 15_000 })
 })
 
 test('la biblioteca muestra la cobertura de videos', async ({ page }) => {

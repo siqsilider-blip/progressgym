@@ -57,11 +57,14 @@ export default async function StudentMessagesPage() {
             .from('coaching_messages')
             .select('id, sender_role, topic, body, routine_day_exercise_id, created_at')
             .eq('conversation_id', conversationId)
-            .order('created_at', { ascending: true })
+            .order('created_at', { ascending: false })
+            .order('id', { ascending: false })
             .limit(200)
         : { data: [] }
 
     const typedMessages = (messages as MessageRow[] | null) ?? []
+    const latestMessageId = typedMessages[0]?.id ?? null
+    typedMessages.reverse()
     const exerciseNameByRoutineExercise = await getRoutineExerciseNameMap(
         supabase,
         typedMessages.map((message) => message.routine_day_exercise_id)
@@ -72,7 +75,7 @@ export default async function StudentMessagesPage() {
             className="mx-auto flex max-w-lg flex-col overflow-hidden px-4 pb-3 pt-5"
             style={{ height: 'calc(100dvh - 4.75rem - env(safe-area-inset-bottom, 0px))' }}
         >
-            {conversationId && <ReadMarker conversationId={conversationId} />}
+            {conversationId && <ReadMarker conversationId={conversationId} latestMessageId={latestMessageId} />}
 
             <header className="shrink-0">
                 <p className="text-sm font-bold text-brand-soft">Tu entrenador</p>
@@ -87,7 +90,7 @@ export default async function StudentMessagesPage() {
             )}
 
             <section className="mt-4 min-h-0 flex-1 overflow-hidden rounded-2xl border border-border bg-card">
-                <StudentMessageThread scrollKey={typedMessages[typedMessages.length - 1]?.id ?? 'empty'}>
+                <StudentMessageThread scrollKey={latestMessageId ?? 'empty'}>
                 {typedMessages.length ? (
                     typedMessages.map((message) => {
                         const own = message.sender_role === 'student'

@@ -141,13 +141,14 @@ export async function sendCoachingMessage(payload: {
     return { ok: true, conversationId }
 }
 
-export async function markCoachingMessagesRead(conversationId: string) {
-    if (!conversationId) return
+export async function markCoachingMessagesRead(conversationId: string): Promise<number | null> {
+    if (!conversationId) return null
     const supabase = await createClient()
-    const { error } = await supabase.rpc('mark_coaching_messages_read', {
+    const { data, error } = await supabase.rpc('mark_coaching_messages_read', {
         p_conversation_id: conversationId,
     })
     if (error) console.error('[markCoachingMessagesRead]', error)
+    return !error && typeof data === 'number' ? data : null
 }
 
 export async function markNotificationTypeRead(type: string) {
