@@ -58,7 +58,8 @@ export async function getRoutineSchedule(
             .from('routine_weeks')
             .select('id, week_number, name, routine_month_id')
             .eq('routine_id', routineId)
-            .order('week_number', { ascending: true }),
+            .order('week_number', { ascending: true })
+            .order('id', { ascending: true }),
     ])
 
     if (monthsResult.error) throw monthsResult.error

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { getRoutineSchedule, type RoutineScheduleWeek } from '../../src/lib/getRoutineSchedule'
 import {
     getProgramCyclePosition,
     getRoutineDayProgress,
@@ -14,6 +15,36 @@ const dayId = 'day-1'
 const weekStart = '2026-11-09'
 const weekEnd = '2026-11-15'
 const today = '2026-11-15'
+
+test('internal week gaps and custom names do not create calendar gaps', async () => {
+    const weeks: RoutineScheduleWeek[] = [
+        { id: 'first', week_number: 1, name: null, routine_month_id: null },
+        { id: 'second', week_number: 4, name: 'Técnica', routine_month_id: null },
+        { id: 'third', week_number: 5, name: null, routine_month_id: null },
+    ]
+    const client = {
+        from(table: string) {
+            return Object.assign(Promise.resolve({ data: table === 'routine_weeks' ? weeks : [], error: null }), {
+                select() { return this },
+                eq() { return this },
+                order() { return this },
+            })
+        },
+    } as unknown as Parameters<typeof getRoutineSchedule>[0]
+    const options = { requestedWeekId: 'second', programStartedOn: '2999-01-01' }
+
+    const schedule = await getRoutineSchedule(client, 'routine', options)
+    expect(schedule.orderedWeeks.map((week) => week.id)).toEqual(['first', 'second', 'third'])
+    expect(schedule.totalProgramWeeks).toBe(3)
+    expect(schedule.selectedProgramWeekNumber).toBe(2)
+    expect(schedule.selectedWeekStart).toBe('2999-01-08')
+
+    weeks[1].name = 'Semana 9'
+    const renamed = await getRoutineSchedule(client, 'routine', options)
+    expect(renamed.selectedWeek?.name).toBe('Semana 9')
+    expect(renamed.selectedProgramWeekNumber).toBe(2)
+    expect(renamed.selectedWeekStart).toBe('2999-01-08')
+})
 
 function statusFor(sessions: WorkoutSessionProgressRow[]) {
     return getRoutineDayProgressStatus({ dayId, sessions, today, weekStart, weekEnd })

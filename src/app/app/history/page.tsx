@@ -165,7 +165,7 @@ export default async function AppHistoryPage() {
                                                         <p className="mt-0.5 text-xs leading-5 text-card-foreground">{session.note}</p>
                                                     </div>
                                                 )}
-                                                {session.routineDayId && session.routineWeekId && (
+                                                {session.canReview && (
                                                     <Link
                                                         href={`/app/train?session=${session.sessionId}&source=history`}
                                                         className="mt-3 inline-flex min-h-11 items-center rounded-xl border border-primary/25 bg-primary/10 px-3 text-xs font-bold text-primary"

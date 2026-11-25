@@ -8,7 +8,7 @@ type Props = {
     studentId: string
     routineName: string
     programStartedOn: string
-    currentWeekLabel: string
+    currentWeekName: string | null
     programWeekNumber: number
     totalProgramWeeks: number
 }
@@ -17,7 +17,7 @@ export default function ProgramScheduleCard({
     studentId,
     routineName,
     programStartedOn,
-    currentWeekLabel,
+    currentWeekName,
     programWeekNumber,
     totalProgramWeeks,
 }: Props) {
@@ -26,6 +26,9 @@ export default function ProgramScheduleCard({
     const [error, setError] = useState<string | null>(null)
     const [saved, setSaved] = useState(false)
     const [isPending, startTransition] = useTransition()
+    const weekLabel = totalProgramWeeks > 1
+        ? [currentWeekName, `Semana ${programWeekNumber} de ${totalProgramWeeks}`].filter(Boolean).join(' · ')
+        : currentWeekName || (totalProgramWeeks === 1 ? 'Semana 1' : 'Semana actual')
 
     function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault()
@@ -54,9 +57,7 @@ export default function ProgramScheduleCard({
                     </p>
                     <h2 className="mt-1 truncate text-base font-bold text-card-foreground">{routineName}</h2>
                     <p className="mt-1 text-xs text-muted-foreground">
-                        {totalProgramWeeks > 1
-                            ? `${currentWeekLabel} · Semana ${programWeekNumber} de ${totalProgramWeeks}`
-                            : currentWeekLabel}
+                        {weekLabel}
                     </p>
                 </div>
                 <span className="shrink-0 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-bold text-emerald-500">

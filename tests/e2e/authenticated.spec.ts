@@ -340,6 +340,24 @@ test('el alumno entra a su portal y no al panel del entrenador', async ({ page }
     expect(untouchedCurrentLogError).toBeNull()
     expect(Number(untouchedCurrentLog?.weight)).toBe(35)
 
+    const historicalDay = await admin.from('routine_days').select('routine_week_id').eq('id', routineDayId).single()
+    expect(historicalDay.error).toBeNull()
+    const historicalWeekId = historicalDay.data!.routine_week_id
+    expect(historicalWeekId).toBeTruthy()
+    const detachHistoricalDay = await admin.from('routine_days').update({ routine_week_id: null }).eq('id', routineDayId)
+    expect(detachHistoricalDay.error).toBeNull()
+
+    try {
+        await page.goto('/app/history')
+        await historicalSessionCard.locator('summary').click()
+        await historicalSessionLink.click()
+        await expect(page.getByText('Sesión del 15/01/2025', { exact: true })).toBeVisible()
+        await expect(page.getByLabel('Peso serie 1')).toHaveValue('13')
+    } finally {
+        const restoreHistoricalDay = await admin.from('routine_days').update({ routine_week_id: historicalWeekId }).eq('id', routineDayId)
+        expect(restoreHistoricalDay.error).toBeNull()
+    }
+
     const historicalLogsCleanup = await admin
         .from('exercise_logs')
         .delete()
@@ -713,4 +731,35 @@ test('el entrenador reordena y elimina días de un template sin perder su estruc
     await expect(page.getByText('Piernas E2E', { exact: true })).toHaveCount(0)
     await expect(dayTabs.nth(0)).toContainText('Torso E2E')
     await expect(dayTabs.nth(1)).toContainText('Movilidad E2E')
+})
+
+test('el planificador numera las semanas por posición después de eliminar una intermedia', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop-chromium', 'La mutación se prueba una sola vez por fixture.')
+
+    await logIn(page, 'trainer', trainerEmail)
+    await page.goto(`/dashboard/routines/${templateId}`)
+
+    const planner = page.getByTestId('planner-navigation')
+    const weekLinks = planner.getByRole('navigation', { name: 'Semanas del mesociclo' }).getByRole('link')
+    const addWeek = planner.getByRole('button', { name: 'Nueva semana' })
+    await expect(weekLinks).toHaveCount(1)
+    await addWeek.click()
+    await expect(weekLinks).toHaveCount(2)
+    await addWeek.click()
+    await expect(weekLinks).toHaveCount(3)
+    const lastWeekHref = await weekLinks.nth(2).getAttribute('href')
+
+    await weekLinks.nth(1).click()
+    await expect(weekLinks.nth(1)).toHaveAttribute('aria-current', 'page')
+    await planner.getByRole('button', { name: 'Eliminar', exact: true }).click()
+    await expect(planner.getByText('¿Eliminar Semana 2?', { exact: true })).toBeVisible()
+    await planner.getByRole('button', { name: 'Eliminar', exact: true }).last().click()
+
+    await expect(weekLinks).toHaveCount(2)
+    await expect(weekLinks.nth(1)).toContainText('Semana 2')
+    await expect(weekLinks.nth(1)).toHaveAttribute('href', lastWeekHref!)
+    await addWeek.click()
+    await expect(weekLinks).toHaveCount(3)
+    await expect(weekLinks.nth(2)).toContainText('Semana 3')
+    await expect(page.getByTestId('planner-days').getByText('Semana 3', { exact: true })).toBeVisible()
 })

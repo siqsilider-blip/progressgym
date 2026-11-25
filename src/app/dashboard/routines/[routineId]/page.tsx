@@ -138,7 +138,8 @@ export default async function RoutineDetailPage(props: PageProps) {
             .from('routine_weeks')
             .select('id, week_number, name, routine_month_id')
             .eq('routine_id', routine.id)
-            .order('week_number', { ascending: true }),
+            .order('week_number', { ascending: true })
+            .order('id', { ascending: true }),
     ])
 
     const student = studentResult.data
@@ -168,11 +169,11 @@ export default async function RoutineDetailPage(props: PageProps) {
     const selectedMonth: RoutineMonth | null =
         months.find((m) => m.id === searchParams?.month) ?? months[0] ?? null
 
-    const weeksForMonth = selectedMonth
+    const weeksForMonth = (selectedMonth
         ? weeks.filter((w) => w.routine_month_id === selectedMonth.id)
-        : weeks
+        : weeks).map((week, index) => ({ ...week, position: index + 1 }))
 
-    const selectedWeek: RoutineWeek | null =
+    const selectedWeek =
         weeksForMonth.find((w) => w.id === searchParams?.week) ?? weeksForMonth[0] ?? null
 
     let days: RoutineDay[] | null = null
@@ -410,7 +411,7 @@ export default async function RoutineDetailPage(props: PageProps) {
                             <WeekMonthSelector
                                 routineId={routine.id}
                                 months={months}
-                                weeks={weeks}
+                                weeks={weeksForMonth}
                                 selectedMonthId={selectedMonth?.id ?? null}
                                 selectedWeekId={selectedWeek?.id ?? null}
                                 addRoutineMonth={addRoutineMonth}
@@ -427,7 +428,7 @@ export default async function RoutineDetailPage(props: PageProps) {
                                     <div>
                                         <h2 className="text-sm font-bold text-foreground">Días de entrenamiento</h2>
                                         <p className="text-[11px] text-muted-foreground">
-                                            {selectedWeek ? `Semana ${selectedWeek.week_number}` : 'Sin semana seleccionada'}
+                                            {selectedWeek ? `Semana ${selectedWeek.position}` : 'Sin semana seleccionada'}
                                         </p>
                                     </div>
                                     <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-secondary-foreground">
@@ -489,7 +490,7 @@ export default async function RoutineDetailPage(props: PageProps) {
                                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                             <div className="min-w-0">
                                                 <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-primary">
-                                                    Semana {selectedWeek!.week_number} · Plan de entrenamiento
+                                                    Semana {selectedWeek!.position} · Plan de entrenamiento
                                                 </p>
                                                 <h2 className="mt-1 text-lg font-bold text-foreground">
                                                     {selectedDayDefaultTitle}

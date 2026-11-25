@@ -64,9 +64,11 @@ type ExerciseLog = {
 
 type RoutineBlock = 'activation' | 'main' | 'closing'
 
+type TrainingDay = { id: string; name: string | null; day_index: number | null }
+
 type HistoricalSessionSelection = {
     id: string
-    routineDayId: string
+    day: TrainingDay
     performedDate: string
     completionStatus: 'complete' | 'incomplete'
 }
@@ -173,7 +175,6 @@ export default async function AppTrainPage(props: PageProps) {
     let routineId: string
     let programStartedOn: string | null = null
     let requestedWeekId = searchParams?.week
-    let requestedMonthId = searchParams?.month
 
     if (requestedSessionId) {
         if (!UUID_PATTERN.test(requestedSessionId)) return <HistoricalSessionUnavailable />
@@ -210,28 +211,19 @@ export default async function AppTrainPage(props: PageProps) {
 
         const { data: sessionDay, error: sessionDayError } = await supabase
             .from('routine_days')
-            .select('id, routine_week_id')
+            .select('id, name, day_index, routine_id, routine_week_id')
             .eq('id', session.routine_day_id)
             .maybeSingle()
 
         if (sessionDayError) throwWorkoutLoadError('historical routine day', sessionDayError)
-        if (!sessionDay?.routine_week_id) return <HistoricalSessionUnavailable />
+        if (!sessionDay?.routine_id) return <HistoricalSessionUnavailable />
 
-        const { data: sessionWeek, error: sessionWeekError } = await supabase
-            .from('routine_weeks')
-            .select('id, routine_id, routine_month_id')
-            .eq('id', sessionDay.routine_week_id)
-            .maybeSingle()
-
-        if (sessionWeekError) throwWorkoutLoadError('historical routine week', sessionWeekError)
-        if (!sessionWeek?.routine_id) return <HistoricalSessionUnavailable />
-
-        routineId = sessionWeek.routine_id
-        requestedWeekId = sessionWeek.id
-        requestedMonthId = sessionWeek.routine_month_id ?? undefined
+        // A removed week can leave its day and the recorded session intact.
+        routineId = sessionDay.routine_id
+        requestedWeekId = sessionDay.routine_week_id ?? undefined
         historicalSession = {
             id: session.id,
-            routineDayId: session.routine_day_id,
+            day: sessionDay,
             performedDate,
             completionStatus: session.completed_manually === true && session.completion_status === 'complete'
                 ? 'complete'
@@ -270,19 +262,24 @@ export default async function AppTrainPage(props: PageProps) {
         throwWorkoutLoadError('routine', { routineId })
     }
 
-    const { selectedMonth, selectedWeek, selectedWeekStart, selectedWeekEnd } = await getRoutineSchedule(
-        supabase,
-        routineId,
-        {
-            requestedMonthId,
+    const schedule = historicalSession && !requestedWeekId
+        ? null
+        : await getRoutineSchedule(supabase, routineId, {
+            requestedMonthId: historicalSession ? undefined : searchParams?.month,
             requestedWeekId,
             programStartedOn,
-        }
-    )
+        })
+    const scheduledWeek = schedule?.selectedWeek ?? null
+    const selectedWeek = historicalSession && scheduledWeek?.id !== requestedWeekId ? null : scheduledWeek
+    const selectedMonth = selectedWeek ? schedule?.selectedMonth ?? null : null
+    const selectedWeekStart = schedule?.selectedWeekStart
+    const selectedWeekEnd = schedule?.selectedWeekEnd
+    const selectedWeekLabel = selectedWeek?.name?.trim()
+        || (selectedWeek && schedule?.selectedProgramWeekNumber ? `Sem. ${schedule.selectedProgramWeekNumber}` : null)
 
     // Días de la semana activa
-    let routineDays: { id: string; name: string | null; day_index: number | null }[] = []
-    if (selectedWeek) {
+    let routineDays: TrainingDay[] = historicalSession ? [historicalSession.day] : []
+    if (!historicalSession && selectedWeek) {
         const { data, error } = await supabase
             .from('routine_days')
             .select('id, name, day_index')
@@ -297,7 +294,7 @@ export default async function AppTrainPage(props: PageProps) {
     let selectedDayId: string | null = null
 
     if (historicalSession) {
-        selectedDayId = historicalSession.routineDayId
+        selectedDayId = historicalSession.day.id
     } else if (searchParams?.day && routineDays.some(d => d.id === searchParams.day)) {
         selectedDayId = searchParams.day
     } else {
@@ -608,7 +605,13 @@ export default async function AppTrainPage(props: PageProps) {
         : selectedDay?.day_index ? `Día ${selectedDay.day_index}` : 'Hoy'
 
     const fullName = `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim()
-    const routineReturnHref = `/app/rutina?${selectedMonth ? `month=${selectedMonth.id}&` : ''}week=${selectedWeek?.id}&day=${selectedDayId}&view=${searchParams?.view === 'month' ? 'month' : 'week'}`
+    const routineReturnParams = new URLSearchParams({ view: searchParams?.view === 'month' ? 'month' : 'week' })
+    if (selectedMonth) routineReturnParams.set('month', selectedMonth.id)
+    if (selectedWeek) {
+        routineReturnParams.set('week', selectedWeek.id)
+        if (selectedDayId) routineReturnParams.set('day', selectedDayId)
+    }
+    const routineReturnHref = `/app/rutina?${routineReturnParams}`
     const historicalReturnHref = searchParams?.source === 'home'
         ? '/app'
         : searchParams?.source === 'routine'
@@ -659,7 +662,7 @@ export default async function AppTrainPage(props: PageProps) {
                             <div className="min-w-0">
                                 <p className="truncate text-xs text-muted-foreground">
                                     {routine?.name}
-                                    {selectedWeek ? ` · ${selectedWeek.name || `Sem. ${selectedWeek.week_number}`}` : ''}
+                                    {selectedWeekLabel ? ` · ${selectedWeekLabel}` : ''}
                                 </p>
                                 <p className="mt-0.5 text-xs font-bold text-foreground">
                                     Sesión del {historicalSession.performedDate.split('-').reverse().join('/')}
@@ -675,7 +678,7 @@ export default async function AppTrainPage(props: PageProps) {
                             <p className="truncate text-xs text-muted-foreground">
                                 {routine?.name}
                                 {selectedMonth ? ` · ${selectedMonth.name || `Mes ${selectedMonth.month_number}`}` : ''}
-                                {selectedWeek ? ` · ${selectedWeek.name || `Sem. ${selectedWeek.week_number}`}` : ''}
+                                {selectedWeekLabel ? ` · ${selectedWeekLabel}` : ''}
                             </p>
                             <p className="mt-0.5 truncate text-sm font-bold text-foreground">{selectedDayLabel}</p>
                             </div>

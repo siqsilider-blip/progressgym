@@ -15,7 +15,7 @@ import {
 } from 'lucide-react'
 
 type Month = { id: string; month_number: number; name: string | null }
-type Week = { id: string; week_number: number; name: string | null; routine_month_id: string | null }
+type Week = { id: string; position: number; name: string | null }
 
 type Props = {
     routineId: string
@@ -72,10 +72,7 @@ export default function WeekMonthSelector({
     const [errorMessage, setErrorMessage] = React.useState<string | null>(null)
 
     const selectedMonth = months.find((month) => month.id === selectedMonthId) ?? months[0] ?? null
-    const weeksForMonth = selectedMonth
-        ? weeks.filter((week) => week.routine_month_id === selectedMonth.id)
-        : weeks
-    const selectedWeek = weeksForMonth.find((week) => week.id === selectedWeekId) ?? weeksForMonth[0] ?? null
+    const selectedWeek = weeks.find((week) => week.id === selectedWeekId) ?? weeks[0] ?? null
 
     React.useEffect(() => {
         setEditingMonth(false)
@@ -241,11 +238,11 @@ export default function WeekMonthSelector({
             <div className="mt-3 border-t border-border pt-3">
                 <div className="mb-2 flex items-center justify-between gap-2">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Semanas</p>
-                    <span className="text-[10px] text-muted-foreground">{weeksForMonth.length} en total</span>
+                    <span className="text-[10px] text-muted-foreground">{weeks.length} en total</span>
                 </div>
 
                 <nav aria-label="Semanas del mesociclo" className="flex snap-x gap-2 overflow-x-auto pb-1 xl:grid xl:max-h-[19rem] xl:grid-cols-1 xl:overflow-y-auto xl:pr-1">
-                    {weeksForMonth.map((week) => {
+                    {weeks.map((week) => {
                         const active = week.id === selectedWeek?.id
                         return (
                             <Link
@@ -258,7 +255,7 @@ export default function WeekMonthSelector({
                                     : 'border-border bg-background text-foreground hover:border-primary/40 hover:bg-muted/30'
                                     }`}
                             >
-                                <span className="block text-xs font-bold">Semana {week.week_number}</span>
+                                <span className="block text-xs font-bold">Semana {week.position}</span>
                                 <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
                                     {week.name?.trim() || (active ? 'Semana seleccionada' : 'Abrir planificación')}
                                 </span>
@@ -281,7 +278,7 @@ export default function WeekMonthSelector({
                             onKeyDown={(event) => {
                                 if (event.key === 'Escape') setEditingWeek(false)
                             }}
-                            placeholder={`Nombre opcional de Semana ${selectedWeek.week_number}`}
+                            placeholder={`Nombre opcional de Semana ${selectedWeek.position}`}
                             className="h-10 min-w-0 flex-1 rounded-lg border border-primary bg-background px-3 text-sm text-foreground outline-none"
                         />
                         <button type="submit" className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground" aria-label="Guardar nombre de la semana">
@@ -323,7 +320,7 @@ export default function WeekMonthSelector({
                         </form>
                         <button
                             type="button"
-                            disabled={weeksForMonth.length <= 1}
+                            disabled={weeks.length <= 1}
                             onClick={() => setConfirmDeleteWeek(true)}
                             className="flex h-9 items-center justify-center gap-1 rounded-lg border border-red-500/20 text-[11px] font-medium text-red-500 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-30"
                         >
@@ -335,7 +332,8 @@ export default function WeekMonthSelector({
 
                 {confirmDeleteWeek && selectedWeek && (
                     <div className="mt-2 rounded-lg border border-red-500/25 bg-red-500/5 p-2.5">
-                        <p className="text-xs text-foreground">¿Eliminar Semana {selectedWeek.week_number}?</p>
+                        <p className="text-xs text-foreground">¿Eliminar Semana {selectedWeek.position}?</p>
+                        <p className="mt-1 text-xs text-muted-foreground">Si la rutina está asignada, se recalcula el calendario del alumno.</p>
                         <div className="mt-2 flex gap-2">
                             <form action={deleteRoutineWeek}>
                                 <input type="hidden" name="routineId" value={routineId} />

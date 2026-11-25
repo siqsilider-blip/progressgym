@@ -13,8 +13,7 @@ export type SessionExerciseSummary = {
 
 export type SessionHistoryItem = {
     sessionId: string
-    routineDayId: string | null
-    routineWeekId: string | null
+    canReview: boolean
     performedDate: string
     startedAt: string
     durationSeconds: number | null
@@ -60,12 +59,11 @@ export async function getStudentSessionHistoryResult(
 
     // Traer labels y logs en paralelo.
     const dayLabelMap = new Map<string, string>()
-    const dayWeekMap = new Map<string, string>()
     const [daysResult, logsResult] = await Promise.all([
         routineDayIds.length > 0
             ? supabase
                 .from('routine_days')
-                .select('id, name, title, day_index, routine_week_id')
+                .select('id, name, title, day_index')
                 .in('id', routineDayIds)
             : Promise.resolve({
                 data: [] as Array<{
@@ -73,7 +71,6 @@ export async function getStudentSessionHistoryResult(
                     name: string | null
                     title: string | null
                     day_index: number | null
-                    routine_week_id: string | null
                 }>,
                 error: null,
             }),
@@ -94,7 +91,6 @@ export async function getStudentSessionHistoryResult(
             day.id,
             day.name?.trim() || day.title?.trim() || `Día ${day.day_index}`
         )
-        if (day.routine_week_id) dayWeekMap.set(day.id, day.routine_week_id)
     }
 
     const logs = logsResult.data
@@ -223,8 +219,8 @@ export async function getStudentSessionHistoryResult(
 
         return {
             sessionId: session.id,
-            routineDayId: session.routine_day_id ?? null,
-            routineWeekId: session.routine_day_id ? (dayWeekMap.get(session.routine_day_id) ?? null) : null,
+            canReview: Boolean(session.routine_day_id && dayLabelMap.has(session.routine_day_id))
+                && exercises.some((exercise) => (exercise.bestReps ?? 0) > 0),
             performedDate: session.performed_date ?? String(session.started_at ?? '').split('T')[0],
             startedAt: session.started_at ?? '',
             durationSeconds: session.duration_seconds ?? null,

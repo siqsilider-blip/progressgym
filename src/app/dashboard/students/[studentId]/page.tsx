@@ -126,9 +126,9 @@ export default async function StudentProfilePage(props: PageProps) {
     const programStartedOn = routineAssignment.data?.program_started_on ?? null
 
     let activeRoutineName: string | null = null
-    let currentWeekLabel = 'Semana 1'
-    let programWeekNumber = 1
-    let totalProgramWeeks = 1
+    let currentWeekName: string | null = null
+    let programWeekNumber = 0
+    let totalProgramWeeks = 0
 
     if (assignedRoutineId && programStartedOn) {
         const [routineResult, schedule] = await Promise.all([
@@ -142,10 +142,9 @@ export default async function StudentProfilePage(props: PageProps) {
         ])
 
         activeRoutineName = routineResult.data?.name ?? 'Rutina asignada'
-        currentWeekLabel = schedule.currentWeek?.name
-            || (schedule.currentWeek ? `Semana ${schedule.currentWeek.week_number}` : 'Semana actual')
-        programWeekNumber = schedule.programWeekNumber || 1
-        totalProgramWeeks = schedule.totalProgramWeeks || 1
+        currentWeekName = schedule.currentWeek?.name?.trim() || null
+        programWeekNumber = schedule.programWeekNumber
+        totalProgramWeeks = schedule.totalProgramWeeks
     }
 
     const fullName =
@@ -204,7 +203,7 @@ export default async function StudentProfilePage(props: PageProps) {
                             studentId={studentId}
                             routineName={activeRoutineName}
                             programStartedOn={programStartedOn}
-                            currentWeekLabel={currentWeekLabel}
+                            currentWeekName={currentWeekName}
                             programWeekNumber={programWeekNumber}
                             totalProgramWeeks={totalProgramWeeks}
                         />
