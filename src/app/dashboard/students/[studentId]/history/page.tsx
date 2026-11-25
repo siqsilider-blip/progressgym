@@ -118,13 +118,13 @@ export default async function StudentHistoryPage(props: PageProps) {
                             Todavía no hay sesiones completadas
                         </p>
                         <p className="mt-1 text-xs text-muted-foreground">
-                            Las sesiones aparecen acá después de finalizarlas en Entrenar.
+                            Las sesiones aparecen acá cuando la alumna finaliza sus entrenamientos.
                         </p>
                         <Link
-                            href={`/dashboard/students/${params.studentId}/train`}
-                            className="mt-4 inline-block rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary"
+                            href={`/dashboard/students/${params.studentId}`}
+                            className="mt-4 inline-block rounded-xl border border-border bg-secondary px-4 py-2.5 text-sm font-semibold text-secondary-foreground transition hover:bg-muted"
                         >
-                            Ir a entrenar
+                            Volver al perfil
                         </Link>
                     </div>
                 ) : (

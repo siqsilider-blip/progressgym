@@ -352,6 +352,7 @@ export default async function AppTrainPage(props: PageProps) {
         exercise_id: string | null
         sets: number | null
         reps: number | null
+        target_weight_kg: number | null
         rest_seconds: number | null
         position: number | null
         block: string | null
@@ -360,7 +361,7 @@ export default async function AppTrainPage(props: PageProps) {
     if (selectedDayId) {
         const { data: rde, error: routineExercisesError } = await supabase
             .from('routine_day_exercises')
-            .select('id, exercise_id, sets, reps, rest_seconds, position, block')
+            .select('id, exercise_id, sets, reps, target_weight_kg, rest_seconds, position, block')
             .eq('routine_day_id', selectedDayId)
             .order('position', { ascending: true, nullsFirst: false })
 
@@ -576,6 +577,7 @@ export default async function AppTrainPage(props: PageProps) {
             isCardio: meta?.metric_type === 'time',
             setsCount,
             targetReps: exercise.reps != null ? String(exercise.reps) : null,
+            targetWeightKg: exercise.target_weight_kg,
             restSeconds: exercise.rest_seconds ?? 60,
             previousWeights,
             previousReps,
@@ -705,6 +707,7 @@ export default async function AppTrainPage(props: PageProps) {
                 initialSummary={sessionJustCompleted}
                 initialIncomplete={sessionCompletionStatus === 'incomplete'}
                 restTimerEnabled={!historicalSession || searchParams?.source === 'routine' || searchParams?.source === 'home'}
+                showPlanReference={!historicalSession}
             />
         </div>
     )

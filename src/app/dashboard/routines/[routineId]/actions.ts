@@ -9,6 +9,26 @@ import {
     TEMPLATE_GOALS,
     TEMPLATE_LOCATIONS,
 } from '@/lib/templateMatching'
+import { convertWeightToKg, type WeightUnit } from '@/lib/weight'
+
+function parseTargetWeightKg(formData: FormData): { value: number | null; error?: string } {
+    const rawValue = String(formData.get('target_weight') ?? '').trim().replace(',', '.')
+    if (!rawValue) return { value: null }
+
+    const enteredWeight = Number(rawValue)
+    if (!Number.isFinite(enteredWeight) || enteredWeight <= 0) {
+        return { value: null, error: 'El peso sugerido debe ser mayor a 0.' }
+    }
+
+    const weightUnit: WeightUnit = formData.get('weight_unit') === 'lb' ? 'lb' : 'kg'
+    const weightKg = convertWeightToKg(enteredWeight, weightUnit)
+
+    if (!Number.isFinite(weightKg) || weightKg > 1000) {
+        return { value: null, error: 'El peso sugerido no es válido.' }
+    }
+
+    return { value: Number(weightKg.toFixed(2)) }
+}
 
 export async function addExerciseToRoutineDay(formData: FormData) {
     const supabase = await createClient()
@@ -21,6 +41,7 @@ export async function addExerciseToRoutineDay(formData: FormData) {
     const sets = formData.get('sets') as string
     const reps = formData.get('reps') as string
     const restSecondsRaw = formData.get('rest_seconds') as string
+    const targetWeight = parseTargetWeightKg(formData)
 
     const rawBlock = formData.get('block') as string | null
     const block: 'activation' | 'main' | 'closing' =
@@ -72,6 +93,8 @@ export async function addExerciseToRoutineDay(formData: FormData) {
         return { ok: false, error: 'Sets y reps inválidos' }
     }
 
+    if (targetWeight.error) return { ok: false, error: targetWeight.error }
+
     const { error: insertError } = await supabase
         .from('routine_day_exercises')
         .insert({
@@ -79,6 +102,7 @@ export async function addExerciseToRoutineDay(formData: FormData) {
             exercise_id: exercise.id,
             sets: setsNum,
             reps: repsNum,
+            target_weight_kg: targetWeight.value,
             rest_seconds: restSecondsNum,
             position: nextPosition,
             block,
@@ -148,6 +172,7 @@ export async function updateExerciseInRoutineDay(formData: FormData) {
     const sets = formData.get('sets') as string
     const reps = formData.get('reps') as string
     const restSecondsRaw = formData.get('rest_seconds') as string
+    const targetWeight = parseTargetWeightKg(formData)
     const rawBlock = formData.get('block') as string | null
     const replacementExerciseId = formData.get('replacementExerciseId') as string | null
     const block: 'activation' | 'main' | 'closing' =
@@ -183,12 +208,15 @@ export async function updateExerciseInRoutineDay(formData: FormData) {
     const repsNum = reps ? parseInt(reps, 10) : null
     const restSecondsNum = restSecondsRaw ? parseInt(restSecondsRaw, 10) : null
 
+    if (targetWeight.error) return { ok: false, error: targetWeight.error }
+
     const { error: updateError } = await supabase
         .from('routine_day_exercises')
         .update({
             exercise_id: replacementExercise.id,
             sets: setsNum,
             reps: repsNum,
+            target_weight_kg: targetWeight.value,
             rest_seconds: restSecondsNum,
             block,
         })
@@ -415,7 +443,7 @@ export async function duplicateRoutineDay(input: {
 
     const { data: sourceExercises, error: exercisesError } = await supabase
         .from('routine_day_exercises')
-        .select('exercise_id, sets, reps, rest_seconds, position, block')
+        .select('exercise_id, sets, reps, target_weight_kg, rest_seconds, position, block')
         .eq('routine_day_id', sourceDay.id)
         .order('position', { ascending: true })
 
@@ -432,6 +460,7 @@ export async function duplicateRoutineDay(input: {
                 exercise_id: exercise.exercise_id,
                 sets: exercise.sets,
                 reps: exercise.reps,
+                target_weight_kg: exercise.target_weight_kg,
                 rest_seconds: exercise.rest_seconds,
                 position: exercise.position,
                 block: exercise.block ?? 'main',
@@ -861,7 +890,7 @@ export async function duplicateRoutineWeek(formData: FormData) {
 
         const { data: exercises, error: exFetchError } = await supabase
             .from('routine_day_exercises')
-            .select('exercise_id, sets, reps, rest_seconds, position, block')
+            .select('exercise_id, sets, reps, target_weight_kg, rest_seconds, position, block')
             .eq('routine_day_id', sourceDay.id)
             .order('position', { ascending: true })
 
@@ -882,6 +911,7 @@ export async function duplicateRoutineWeek(formData: FormData) {
                     exercise_id: ex.exercise_id,
                     sets: ex.sets,
                     reps: ex.reps,
+                    target_weight_kg: ex.target_weight_kg,
                     rest_seconds: ex.rest_seconds,
                     position: ex.position,
                     block: ex.block ?? 'main',

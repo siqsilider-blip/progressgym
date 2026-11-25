@@ -14,7 +14,6 @@ import {
     MessageSquare,
     MessageCircle,
     Bell,
-    Zap,
     Video,
 } from 'lucide-react'
 
@@ -137,7 +136,7 @@ export default function SidebarClient({
                     </Link>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 border-b border-white/[0.06] px-3 py-3">
+                <div className="border-b border-white/[0.06] px-3 py-3">
                     <Link
                         href="/dashboard/new"
                         prefetch
@@ -145,14 +144,6 @@ export default function SidebarClient({
                     >
                         <Plus className="h-3.5 w-3.5" />
                         Nuevo
-                    </Link>
-                    <Link
-                        href="/dashboard/train"
-                        prefetch
-                        className="flex h-10 items-center justify-center gap-2 rounded-xl border border-emerald-500/25 bg-emerald-500/10 text-xs font-bold text-emerald-300 transition hover:bg-emerald-500/15"
-                    >
-                        <Zap className="h-3.5 w-3.5" />
-                        Entrenar
                     </Link>
                 </div>
 

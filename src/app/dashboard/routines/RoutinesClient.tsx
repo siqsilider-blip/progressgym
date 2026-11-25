@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ChevronRight, Dumbbell, Plus, Search } from 'lucide-react'
+import { ChevronRight, Plus, Search } from 'lucide-react'
 import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
 import TrainerPageShell from '@/components/dashboard/TrainerPageShell'
 
@@ -183,14 +183,9 @@ export default function RoutinesClient({ students, routines, error }: Props) {
                                                 Perfil
                                             </Link>
                                             {routine ? (
-                                                <>
-                                                    <Link href={`/dashboard/students/${student.id}/train`} className="rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-3 py-2 text-[11px] font-semibold text-emerald-300 transition hover:bg-emerald-500/15">
-                                                        Entrenar
-                                                    </Link>
-                                                    <Link href={`/dashboard/routines/${routine.id}`} className="rounded-lg bg-primary px-3 py-2 text-[11px] font-semibold text-primary-foreground transition hover:brightness-110">
-                                                        Editar rutina
-                                                    </Link>
-                                                </>
+                                                <Link href={`/dashboard/routines/${routine.id}`} className="rounded-lg bg-primary px-3 py-2 text-[11px] font-semibold text-primary-foreground transition hover:brightness-110">
+                                                    Editar rutina
+                                                </Link>
                                             ) : (
                                                 <Link href={`/dashboard/students/${student.id}/assign-routine`} className="rounded-lg bg-primary px-3 py-2 text-[11px] font-semibold text-primary-foreground transition hover:brightness-110">
                                                     Asignar rutina
@@ -230,13 +225,6 @@ export default function RoutinesClient({ students, routines, error }: Props) {
                                                     </div>
                                                     <p className="truncate text-[11px] text-zinc-500">{routine.name ?? 'Rutina asignada'}</p>
                                                 </div>
-                                        </Link>
-                                        <Link
-                                            href={`/dashboard/students/${student.id}/train`}
-                                            aria-label={`Entrenar a ${name}`}
-                                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground transition hover:bg-primary"
-                                        >
-                                            <Dumbbell className="h-3.5 w-3.5" />
                                         </Link>
                                         <Link href={`/dashboard/routines/${routine.id}`} aria-label={`Ver rutina de ${name}`} className="p-1 text-white/25 hover:text-white/60">
                                             <ChevronRight className="h-4 w-4" />

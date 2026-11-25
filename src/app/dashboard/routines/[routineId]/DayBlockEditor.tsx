@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { formatWeight, type WeightUnit } from '@/lib/weight'
+import { convertWeightFromKgForInput, formatPreciseWeight, formatWeight, type WeightUnit } from '@/lib/weight'
 import ExerciseProgressChart from '../../../../components/ExerciseProgressChart'
 
 export type Block = 'activation' | 'main' | 'closing'
@@ -31,6 +31,7 @@ export type DayExercise = {
     exercise_id: string
     sets: number | null
     reps: number | null
+    target_weight_kg: number | null
     rest_seconds: number | null
     position: number | null
     block: Block
@@ -178,6 +179,7 @@ export default function DayBlockEditor({
                                         defaultSets={defaultSets}
                                         defaultReps={defaultReps}
                                         defaultRest={defaultRest}
+                                        weightUnit={weightUnit}
                                         onCancel={() => setOpenAddBlock(null)}
                                         addAction={addAction}
                                         createExerciseAction={createExerciseAction}
@@ -234,7 +236,6 @@ function ExerciseRow({
     startTransition: (cb: () => void) => void
 }) {
     const relation = Array.isArray(exercise.exercise) ? exercise.exercise[0] : exercise.exercise
-    const isTime = relation?.metric_type === 'time'
     const router = useRouter()
     const searchParams = useSearchParams()
 
@@ -248,6 +249,7 @@ function ExerciseRow({
     const replacementExerciseId = replacementExercise?.id ?? (
         keepsCurrentExercise ? exercise.exercise_id : ''
     )
+    const isTime = (replacementExercise?.metric_type ?? relation?.metric_type) === 'time'
 
     if (isEditing) {
         return (
@@ -273,6 +275,7 @@ function ExerciseRow({
                     <input type="hidden" name="weekId" value={weekId} />
                     <input type="hidden" name="exerciseRowId" value={exercise.id} />
                     <input type="hidden" name="replacementExerciseId" value={replacementExerciseId} />
+                    <input type="hidden" name="weight_unit" value={weightUnit} />
                     {searchParams.get('month') && <input type="hidden" name="monthId" value={searchParams.get('month')!} />}
 
                     <div className="flex items-center justify-between">
@@ -301,8 +304,8 @@ function ExerciseRow({
                         )}
                     </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                        <div>
+                    <div className="grid grid-cols-2 gap-2">
+                        <div className="col-span-2">
                             <label className="mb-1 block text-[10px] font-medium text-muted-foreground">Bloque</label>
                             <select name="block" defaultValue={exercise.block} className="h-9 w-full rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary">
                                 {BLOCK_META.map(b => (
@@ -318,6 +321,12 @@ function ExerciseRow({
                             <label className="mb-1 block text-[10px] font-medium text-muted-foreground">{isTime ? 'Min' : 'Reps'}</label>
                             <input name="reps" type="number" min="1" step="1" defaultValue={exercise.reps ?? ''} required className="h-9 w-full rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary" />
                         </div>
+                        {!isTime && (
+                            <div>
+                                <label className="mb-1 block text-[10px] font-medium text-muted-foreground">Peso sugerido ({weightUnit})</label>
+                                <input name="target_weight" type="number" min="0.5" step={weightUnit === 'lb' ? 0.01 : 0.5} defaultValue={exercise.target_weight_kg == null ? '' : convertWeightFromKgForInput(exercise.target_weight_kg, weightUnit)} placeholder="Opcional" className="h-9 w-full rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary" />
+                            </div>
+                        )}
                         <div>
                             <label className="mb-1 block text-[10px] font-medium text-muted-foreground">Desc (s)</label>
                             <input name="rest_seconds" type="number" min="0" step="15" defaultValue={exercise.rest_seconds ?? ''} className="h-9 w-full rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary" />
@@ -383,20 +392,15 @@ function ExerciseRow({
             <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-primary/10 text-[10px] font-bold text-brand-soft">
                 {index + 1}
             </div>
-            <div className="min-w-0 flex-1 flex items-center justify-between gap-2">
+            <div className="min-w-0 flex-1">
                 <h3 className="truncate text-sm font-medium text-foreground">
                     {relation?.name ?? 'Ejercicio'}
                 </h3>
-                <div className="flex items-center gap-1.5 shrink-0">
-                    <span className="rounded bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-secondary-foreground">
-                        {exercise.sets ?? '-'} × {isTime ? exercise.reps != null ? `${exercise.reps}m` : '-' : `${exercise.reps ?? '-'}r`}
-                    </span>
-                    {exercise.rest_seconds && (
-                        <span className="rounded bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-secondary-foreground text-muted-foreground">
-                            {exercise.rest_seconds}s
-                        </span>
-                    )}
-                </div>
+                <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
+                    {exercise.sets ?? '-'} × {isTime ? exercise.reps != null ? `${exercise.reps} min` : '-' : `${exercise.reps ?? '-'} reps`}
+                    {!isTime && exercise.target_weight_kg != null ? ` · ${formatPreciseWeight(exercise.target_weight_kg, weightUnit)}` : ''}
+                    {exercise.rest_seconds ? ` · ${exercise.rest_seconds}s descanso` : ''}
+                </p>
             </div>
             <div className="flex shrink-0 items-center gap-0.5" onClick={(event) => event.stopPropagation()}>
                 <button
@@ -447,6 +451,7 @@ function AddExerciseForm({
     defaultSets,
     defaultReps,
     defaultRest,
+    weightUnit,
     onCancel,
     addAction,
     createExerciseAction,
@@ -460,6 +465,7 @@ function AddExerciseForm({
     defaultSets: number
     defaultReps: number
     defaultRest: number
+    weightUnit: WeightUnit
     onCancel: () => void
     addAction: (fd: FormData) => Promise<RoutineActionResult>
     createExerciseAction: (input: { routineId: string; name: string; category?: string; metricType?: 'reps' | 'time' }) => Promise<{ ok: boolean; exercise?: ExerciseOption; error?: string }>
@@ -476,6 +482,7 @@ function AddExerciseForm({
     const [createError, setCreateError] = useState<string | null>(null)
     const [sets, setSets] = useState(String(defaultSets))
     const [reps, setReps] = useState(String(defaultReps))
+    const [targetWeight, setTargetWeight] = useState('')
     const [restSeconds, setRestSeconds] = useState(String(defaultRest))
 
     const [errorMsg, setErrorMsg] = useState<string | null>(null)
@@ -554,6 +561,7 @@ function AddExerciseForm({
             <input type="hidden" name="routineDayId" value={routineDayId} />
             <input type="hidden" name="exercise_name" value={selectedExerciseName} />
             <input type="hidden" name="block" value={block} />
+            <input type="hidden" name="weight_unit" value={weightUnit} />
 
             <div className="flex items-center justify-between">
                 <p className="text-xs font-semibold text-primary dark:text-primary">Nuevo ejercicio</p>
@@ -699,7 +707,7 @@ function AddExerciseForm({
                 )}
             </div>
 
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
                 <div>
                     <label className="mb-1 block text-[10px] font-medium text-muted-foreground">Series</label>
                     <input name="sets" type="number" min="1" step="1" required value={sets} onChange={(e) => setSets(e.target.value)} className="h-9 w-full rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary" />
@@ -708,6 +716,12 @@ function AddExerciseForm({
                     <label className="mb-1 block text-[10px] font-medium text-muted-foreground">{isTimeExercise ? 'Min' : 'Reps'}</label>
                     <input name="reps" type="number" min="1" step="1" required value={reps} onChange={(e) => setReps(e.target.value)} className="h-9 w-full rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary" />
                 </div>
+                {!isTimeExercise && (
+                    <div>
+                        <label className="mb-1 block text-[10px] font-medium text-muted-foreground">Peso sugerido ({weightUnit})</label>
+                        <input name="target_weight" type="number" min="0.5" step={weightUnit === 'lb' ? 0.01 : 0.5} value={targetWeight} onChange={(e) => setTargetWeight(e.target.value)} placeholder="Opcional" className="h-9 w-full rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary" />
+                    </div>
+                )}
                 <div>
                     <label className="mb-1 block text-[10px] font-medium text-muted-foreground">Descanso (s)</label>
                     <input name="rest_seconds" type="number" min="0" step="15" value={restSeconds} onChange={(e) => setRestSeconds(e.target.value)} className="h-9 w-full rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary" />

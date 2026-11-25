@@ -13,6 +13,7 @@ import {
     scheduleNativeRestNotice,
     signalRestFinished,
 } from '@/lib/native/workout-rest'
+import { formatPreciseWeight, type WeightUnit } from '@/lib/weight'
 
 type RoutineBlock = 'activation' | 'main' | 'closing'
 
@@ -23,6 +24,7 @@ type ExerciseData = {
     isCardio: boolean
     setsCount: number
     targetReps: string | null
+    targetWeightKg: number | null
     restSeconds: number
     previousWeights: (number | null)[]
     previousReps: (number | null)[]
@@ -76,7 +78,7 @@ type Props = {
     exercises: ExerciseData[]
     maxWeights: Record<string, number>
     prDetectionAvailable: boolean
-    weightUnit: string
+    weightUnit: WeightUnit
     returnHref: string
     returnLabel?: string
     routineHref?: string
@@ -85,6 +87,7 @@ type Props = {
     initialSummary?: boolean
     initialIncomplete?: boolean
     restTimerEnabled?: boolean
+    showPlanReference?: boolean
 }
 
 const BLOCKS: { id: RoutineBlock; label: string; emoji: string }[] = [
@@ -174,6 +177,7 @@ export default function StudentWorkoutView({
     initialSummary = false,
     initialIncomplete = false,
     restTimerEnabled = true,
+    showPlanReference = true,
 }: Props) {
     const router = useRouter()
     const [sets, setSets] = React.useState<SetState[][]>(() => createInitialSets(exercises))
@@ -1023,6 +1027,14 @@ export default function StudentWorkoutView({
                                                             canSubmit={exerciseSets.some((set) => set.confirmed)}
                                                         />
                                                     </div>
+
+                                                    {showPlanReference && !exercise.isCardio && exercise.targetWeightKg != null && (
+                                                        <p className="mt-3 rounded-xl border border-primary/25 bg-primary/[0.06] px-3 py-2 text-sm text-foreground">
+                                                            <span className="font-semibold text-primary">Referencia de tu entrenador:</span>{' '}
+                                                            {formatPreciseWeight(exercise.targetWeightKg, weightUnit)}
+                                                            <span className="mt-0.5 block text-xs text-muted-foreground">Registrá abajo el peso que realmente uses.</span>
+                                                        </p>
+                                                    )}
 
                                                     <div className="mt-3">
                                                         <div className={`mb-1.5 grid items-end gap-2 px-2 ${exercise.isCardio ? 'grid-cols-[2rem_minmax(0,1fr)_4.75rem]' : 'grid-cols-[2rem_minmax(0,1fr)_minmax(0,1fr)_4.75rem]'}`}>

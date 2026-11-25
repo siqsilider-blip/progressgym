@@ -14,7 +14,7 @@ import {
     X,
 } from 'lucide-react'
 import ExerciseProgressChart from '@/components/ExerciseProgressChart'
-import { formatWeight, type WeightUnit } from '@/lib/weight'
+import { convertWeightFromKgForInput, formatWeight, type WeightUnit } from '@/lib/weight'
 import type {
     Block,
     DayExercise,
@@ -64,9 +64,9 @@ const BLOCK_META: Array<{ id: Block; label: string }> = [
 ]
 
 const ROW_GRID_WITH_HISTORY =
-    'grid-cols-[2rem_minmax(13rem,1.7fr)_minmax(8.5rem,0.75fr)_4.75rem_4.75rem_5.5rem_minmax(8rem,0.7fr)_9rem]'
+    'grid-cols-[2rem_minmax(13rem,1.7fr)_minmax(8.5rem,0.75fr)_4.5rem_4.5rem_5.25rem_5.25rem_minmax(8rem,0.7fr)_9rem]'
 const ROW_GRID_WITHOUT_HISTORY =
-    'grid-cols-[2rem_minmax(15rem,2fr)_minmax(8.5rem,0.8fr)_4.75rem_4.75rem_5.5rem_9rem]'
+    'grid-cols-[2rem_minmax(15rem,2fr)_minmax(8.5rem,0.8fr)_4.5rem_4.5rem_5.25rem_5.25rem_9rem]'
 
 export default function DesktopRoutineExerciseTable({
     routineId,
@@ -91,7 +91,7 @@ export default function DesktopRoutineExerciseTable({
     return (
         <div className="flex max-h-[calc(100dvh-14rem)] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm">
             <div className="min-h-0 flex-1 overflow-auto">
-                <div className={showHistory ? 'min-w-[980px]' : 'min-w-[850px]'}>
+                <div className={showHistory ? 'min-w-[1060px]' : 'min-w-[930px]'}>
                     <div
                         className={`sticky top-0 z-20 grid ${rowGrid} items-center gap-2 border-b border-border bg-card px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground shadow-sm`}
                     >
@@ -100,6 +100,7 @@ export default function DesktopRoutineExerciseTable({
                         <span>Sección</span>
                         <span>Series</span>
                         <span>Reps</span>
+                        <span>Peso sug. ({weightUnit})</span>
                         <span>Descanso</span>
                         {showHistory && <span>Último registro</span>}
                         <span className="text-right">Acciones</span>
@@ -160,6 +161,7 @@ export default function DesktopRoutineExerciseTable({
                 defaultSets={defaultSets}
                 defaultReps={defaultReps}
                 defaultRest={defaultRest}
+                weightUnit={weightUnit}
                 addAction={addAction}
                 createExerciseAction={createExerciseAction}
             />
@@ -208,6 +210,9 @@ function DesktopExerciseRow({
     const [block, setBlock] = useState<Block>(exercise.block)
     const [sets, setSets] = useState(String(exercise.sets ?? ''))
     const [reps, setReps] = useState(String(exercise.reps ?? ''))
+    const [targetWeight, setTargetWeight] = useState(
+        exercise.target_weight_kg == null ? '' : String(convertWeightFromKgForInput(exercise.target_weight_kg, weightUnit))
+    )
     const [rest, setRest] = useState(String(exercise.rest_seconds ?? ''))
     const [message, setMessage] = useState<string | null>(null)
     const [confirmDelete, setConfirmDelete] = useState(false)
@@ -221,8 +226,9 @@ function DesktopExerciseRow({
         setBlock(exercise.block)
         setSets(String(exercise.sets ?? ''))
         setReps(String(exercise.reps ?? ''))
+        setTargetWeight(exercise.target_weight_kg == null ? '' : String(convertWeightFromKgForInput(exercise.target_weight_kg, weightUnit)))
         setRest(String(exercise.rest_seconds ?? ''))
-    }, [exercise.block, exercise.reps, exercise.rest_seconds, exercise.sets, initialName])
+    }, [exercise.block, exercise.reps, exercise.rest_seconds, exercise.sets, exercise.target_weight_kg, initialName, weightUnit])
 
     const replacementExercise = exerciseOptions.find(
         (option) => option.name.toLocaleLowerCase() === name.trim().toLocaleLowerCase()
@@ -237,6 +243,7 @@ function DesktopExerciseRow({
         block !== exercise.block ||
         sets !== String(exercise.sets ?? '') ||
         reps !== String(exercise.reps ?? '') ||
+        targetWeight !== (exercise.target_weight_kg == null ? '' : String(convertWeightFromKgForInput(exercise.target_weight_kg, weightUnit))) ||
         rest !== String(exercise.rest_seconds ?? '')
     const latestLog = logs[0]
     const metricType = replacementExercise?.metric_type ?? relation?.metric_type
@@ -288,6 +295,7 @@ function DesktopExerciseRow({
                     value={replacementExerciseId}
                 />
                 <input type="hidden" name="exerciseId" value={exercise.id} />
+                <input type="hidden" name="weight_unit" value={weightUnit} />
                 {searchParams.get('month') && (
                     <input type="hidden" name="monthId" value={searchParams.get('month') ?? ''} />
                 )}
@@ -334,7 +342,8 @@ function DesktopExerciseRow({
 
                 <CompactNumberInput label={`Series de ${initialName}`} name="sets" value={sets} onChange={setSets} min={1} />
                 <CompactNumberInput label={`${isTime ? 'Minutos' : 'Repeticiones'} de ${initialName}`} name="reps" value={reps} onChange={setReps} min={1} />
-                <CompactNumberInput label={`Descanso de ${initialName}`} name="rest_seconds" value={rest} onChange={setRest} min={0} step={15} suffix="s" />
+                <CompactNumberInput label={`Peso sugerido de ${initialName}`} name="target_weight" value={isTime ? '' : targetWeight} onChange={setTargetWeight} min={0.5} step={weightUnit === 'lb' ? 0.01 : 0.5} suffix={weightUnit} required={false} disabled={isTime} placeholder={isTime ? '—' : 'Opc.'} />
+                <CompactNumberInput label={`Descanso de ${initialName}`} name="rest_seconds" value={rest} onChange={setRest} min={0} step={15} suffix="s" required={false} />
 
                 {historyEnabled && (
                     <button
@@ -449,6 +458,9 @@ function CompactNumberInput({
     min,
     step = 1,
     suffix,
+    required = true,
+    disabled = false,
+    placeholder,
 }: {
     label: string
     name: string
@@ -457,6 +469,9 @@ function CompactNumberInput({
     min: number
     step?: number
     suffix?: string
+    required?: boolean
+    disabled?: boolean
+    placeholder?: string
 }) {
     return (
         <div className="relative">
@@ -466,10 +481,12 @@ function CompactNumberInput({
                 type="number"
                 min={min}
                 step={step}
-                required={name !== 'rest_seconds'}
+                required={required}
+                disabled={disabled}
+                placeholder={placeholder}
                 value={value}
                 onChange={(event) => onChange(event.target.value)}
-                className="h-9 w-full rounded-md border border-border bg-background px-2 text-center text-xs font-semibold text-foreground outline-none focus:border-primary"
+                className="h-9 w-full rounded-md border border-border bg-background px-2 text-center text-xs font-semibold text-foreground outline-none focus:border-primary disabled:bg-muted/40 disabled:text-muted-foreground"
             />
             {suffix && value && (
                 <span className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-[9px] text-muted-foreground">
@@ -487,6 +504,7 @@ function DesktopAddExerciseRow({
     defaultSets,
     defaultReps,
     defaultRest,
+    weightUnit,
     addAction,
     createExerciseAction,
 }: {
@@ -496,6 +514,7 @@ function DesktopAddExerciseRow({
     defaultSets: number
     defaultReps: number
     defaultRest: number
+    weightUnit: WeightUnit
     addAction: (fd: FormData) => Promise<RoutineActionResult>
     createExerciseAction: Props['createExerciseAction']
 }) {
@@ -505,6 +524,7 @@ function DesktopAddExerciseRow({
     const [block, setBlock] = useState<Block>('main')
     const [sets, setSets] = useState(String(defaultSets))
     const [reps, setReps] = useState(String(defaultReps))
+    const [targetWeight, setTargetWeight] = useState('')
     const [rest, setRest] = useState(String(defaultRest))
     const [metricType, setMetricType] = useState<'reps' | 'time'>('reps')
     const [error, setError] = useState<string | null>(null)
@@ -526,6 +546,7 @@ function DesktopAddExerciseRow({
         setBlock('main')
         setSets(String(defaultSets))
         setReps(String(defaultReps))
+        setTargetWeight('')
         setRest(String(defaultRest))
         setMetricType('reps')
         setError(null)
@@ -559,11 +580,12 @@ function DesktopAddExerciseRow({
                         router.refresh()
                     })
                 }}
-                className="grid min-w-[800px] grid-cols-[minmax(14rem,1.7fr)_minmax(8.5rem,0.75fr)_4.75rem_4.75rem_5.5rem_7rem_auto] items-end gap-2"
+                className="grid min-w-[900px] grid-cols-[minmax(14rem,1.7fr)_minmax(8.5rem,0.75fr)_4.5rem_4.5rem_5.25rem_5.25rem_7rem_auto] items-end gap-2"
             >
                 <input type="hidden" name="routineId" value={routineId} />
                 <input type="hidden" name="routineDayId" value={routineDayId} />
                 <input type="hidden" name="exercise_name" value={name} />
+                <input type="hidden" name="weight_unit" value={weightUnit} />
 
                 <label className="space-y-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                     Ejercicio
@@ -600,7 +622,8 @@ function DesktopAddExerciseRow({
 
                 <LabeledNumber name="sets" label="Series" value={sets} onChange={setSets} min={1} />
                 <LabeledNumber name="reps" label={isTime ? 'Min' : 'Reps'} value={reps} onChange={setReps} min={1} />
-                <LabeledNumber name="rest_seconds" label="Desc. (s)" value={rest} onChange={setRest} min={0} step={15} />
+                <LabeledNumber name="target_weight" label={`Peso sug. (${weightUnit})`} value={isTime ? '' : targetWeight} onChange={setTargetWeight} min={0.5} step={weightUnit === 'lb' ? 0.01 : 0.5} required={false} disabled={isTime} placeholder={isTime ? '—' : 'Opc.'} />
+                <LabeledNumber name="rest_seconds" label="Desc. (s)" value={rest} onChange={setRest} min={0} step={15} required={false} />
 
                 <button
                     type="submit"
@@ -677,6 +700,9 @@ function LabeledNumber({
     onChange,
     min,
     step = 1,
+    required = true,
+    disabled = false,
+    placeholder,
 }: {
     name: string
     label: string
@@ -684,6 +710,9 @@ function LabeledNumber({
     onChange: (value: string) => void
     min: number
     step?: number
+    required?: boolean
+    disabled?: boolean
+    placeholder?: string
 }) {
     return (
         <label className="space-y-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -693,10 +722,12 @@ function LabeledNumber({
                 type="number"
                 min={min}
                 step={step}
-                required={name !== 'rest_seconds'}
+                required={required}
+                disabled={disabled}
+                placeholder={placeholder}
                 value={value}
                 onChange={(event) => onChange(event.target.value)}
-                className="h-9 w-full rounded-md border border-border bg-background px-2 text-center text-xs font-semibold normal-case tracking-normal text-foreground outline-none focus:border-primary"
+                className="h-9 w-full rounded-md border border-border bg-background px-2 text-center text-xs font-semibold normal-case tracking-normal text-foreground outline-none focus:border-primary disabled:bg-muted/40 disabled:text-muted-foreground"
             />
         </label>
     )

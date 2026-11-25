@@ -8,6 +8,14 @@ export function convertWeightFromKg(weightKg: number, unit: WeightUnit) {
     return weightKg
 }
 
+export function convertWeightFromKgForInput(weightKg: number, unit: WeightUnit) {
+    if (unit === 'lb') {
+        return Number((weightKg * 2.20462).toFixed(2))
+    }
+
+    return weightKg
+}
+
 export function convertWeightToKg(weight: number, unit: WeightUnit) {
     if (unit === 'lb') {
         return Number((weight / 2.20462).toFixed(2))
@@ -18,4 +26,8 @@ export function convertWeightToKg(weight: number, unit: WeightUnit) {
 
 export function formatWeight(weightKg: number, unit: WeightUnit) {
     return `${convertWeightFromKg(weightKg, unit)} ${unit}`
+}
+
+export function formatPreciseWeight(weightKg: number, unit: WeightUnit) {
+    return `${convertWeightFromKgForInput(weightKg, unit)} ${unit}`
 }

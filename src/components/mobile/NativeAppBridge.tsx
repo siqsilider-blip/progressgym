@@ -103,7 +103,6 @@ export default function NativeAppBridge() {
 
         const currentPath = pathnameRef.current
         const isWorkout = currentPath === '/app/train'
-          || /^\/dashboard\/students\/[^/]+\/train/.test(currentPath)
         if (elapsed >= RESUME_REFRESH_AFTER_MS && !isWorkout) router.refresh()
       })
       if (disposed) await stateHandle.remove()
@@ -145,7 +144,7 @@ export default function NativeAppBridge() {
         ({ notification }) => {
           const route = notification.extra?.route
           if (typeof route !== 'string') return
-          if (/^\/app\/train(?:\?|$)/.test(route) || /^\/dashboard\/students\/[^/]+\/train(?:\?|$)/.test(route)) {
+          if (/^\/app\/train(?:\?|$)/.test(route)) {
             router.push(route)
           }
         }

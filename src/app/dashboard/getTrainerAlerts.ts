@@ -414,7 +414,8 @@ export async function getTrainerAlerts(): Promise<TrainerAlert[]> {
                     studentName: fullName,
                     studentPhone: student.phone ?? null,
                     message: `${fullName} tiene una sesión abierta sin actividad ${formatOpenSessionAge(getSessionActivityAt(staleSession.started_at, staleSession.last_activity_at), now)}.`,
-                    actionHref: `/dashboard/students/${student.id}/train`,
+                    actionHref: `/dashboard/students/${student.id}`,
+                    actionLabel: 'Ver alumno',
                 })
             }
             continue

@@ -111,7 +111,6 @@ export async function updateProgramStartDate(formData: FormData): Promise<{
     }
 
     revalidatePath(`/dashboard/students/${studentId}`)
-    revalidatePath(`/dashboard/students/${studentId}/train`)
     revalidatePath('/app')
     revalidatePath('/app/rutina')
 

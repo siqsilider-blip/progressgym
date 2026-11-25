@@ -68,6 +68,7 @@ type RoutineDayExercise = {
     exercise_id: string
     sets: number | null
     reps: number | null
+    target_weight_kg: number | null
     rest_seconds: number | null
     position: number | null
     block?: 'activation' | 'main' | 'closing'
@@ -243,6 +244,7 @@ export default async function RoutineDetailPage(props: PageProps) {
                 exercise_id,
                 sets,
                 reps,
+                target_weight_kg,
                 rest_seconds,
                 position,
                 block,
@@ -349,7 +351,7 @@ export default async function RoutineDetailPage(props: PageProps) {
                                 {weeksForMonth.length} {weeksForMonth.length === 1 ? 'semana' : 'semanas'}
                             </p>
 
-                            {routine.routine_kind === 'template' ? (
+                            {routine.routine_kind === 'template' && (
                                 <div className="flex shrink-0 items-center gap-1.5">
                                     <Link
                                         href={`/dashboard/routines/${routine.id}/assign-to-student`}
@@ -362,13 +364,6 @@ export default async function RoutineDetailPage(props: PageProps) {
                                         deleteAction={deleteTemplate}
                                     />
                                 </div>
-                            ) : (
-                                <Link
-                                    href={`/dashboard/students/${routine.student_id}/train?from=routine${selectedMonth?.id ? `&month=${selectedMonth.id}` : ''}${selectedWeek?.id ? `&week=${selectedWeek.id}` : ''}${selectedDay?.id ? `&day=${selectedDay.id}` : ''}`}
-                                    className="shrink-0 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-sm transition hover:bg-emerald-500 active:scale-[0.97]"
-                                >
-                                    Entrenar
-                                </Link>
                             )}
                         </div>
                     </div>

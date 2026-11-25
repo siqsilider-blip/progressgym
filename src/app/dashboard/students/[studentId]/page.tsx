@@ -148,8 +148,6 @@ export default async function StudentProfilePage(props: PageProps) {
         totalProgramWeeks = schedule.totalProgramWeeks || 1
     }
 
-    const trainHref = `/dashboard/students/${params.studentId}/train`
-
     const fullName =
         `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim() || 'Alumno'
 
@@ -161,7 +159,7 @@ export default async function StudentProfilePage(props: PageProps) {
                 backHref="/dashboard/students"
             />
 
-            <nav className="hidden grid-cols-5 gap-2 rounded-2xl border border-border bg-background/90 p-2 shadow-lg shadow-black/10 backdrop-blur lg:sticky lg:top-0 lg:z-20 lg:grid" aria-label="Acciones del alumno">
+            <nav className="hidden grid-cols-4 gap-2 rounded-2xl border border-border bg-background/90 p-2 shadow-lg shadow-black/10 backdrop-blur lg:sticky lg:top-0 lg:z-20 lg:grid" aria-label="Acciones del alumno">
                 <Link
                     href={`/dashboard/messages?student=${studentId}`}
                     className="rounded-xl border border-primary/30 bg-primary/10 px-3 py-2.5 text-center text-xs font-semibold text-primary transition hover:bg-primary/20"
@@ -188,12 +186,6 @@ export default async function StudentProfilePage(props: PageProps) {
                     className="rounded-xl border border-border bg-secondary px-3 py-2.5 text-center text-xs font-semibold text-secondary-foreground transition hover:bg-muted"
                 >
                     Progreso
-                </Link>
-                <Link
-                    href={trainHref}
-                    className="rounded-xl bg-primary px-3 py-2.5 text-center text-xs font-semibold text-primary-foreground transition hover:brightness-110"
-                >
-                    Entrenar
                 </Link>
                 <Link
                     href={`/dashboard/students/${params.studentId}/history`}
@@ -435,12 +427,6 @@ export default async function StudentProfilePage(props: PageProps) {
                         className="rounded-xl border border-primary/40 bg-primary/10 px-3 py-2.5 text-center text-xs font-semibold text-primary transition hover:bg-primary/20"
                     >
                         📊 Progreso
-                    </Link>
-                    <Link
-                        href={trainHref}
-                        className="rounded-xl bg-primary px-3 py-2.5 text-center text-xs font-semibold text-primary-foreground transition hover:bg-primary"
-                    >
-                        Entrenar
                     </Link>
                     <Link
                         href={`/dashboard/students/${params.studentId}/history`}

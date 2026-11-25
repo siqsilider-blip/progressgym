@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ClipboardList, MessageSquare, Users, Video, Zap } from 'lucide-react'
+import { ClipboardList, MessageSquare, Users, Video } from 'lucide-react'
 import TrainerDashboardCards from './TrainerDashboardCards'
 import AtRiskStudentsCard from './AtRiskStudentsCard'
 import { getTrainerDashboardStats } from './getTrainerDashboardStats'
@@ -47,9 +47,8 @@ export default async function DashboardPage() {
                 </Link>
             </section>
 
-            <nav className="grid grid-cols-5 gap-2" aria-label="Accesos rápidos">
+            <nav className="grid grid-cols-4 gap-2" aria-label="Accesos rápidos">
                 {[
-                    { href: '/dashboard/train', icon: Zap, label: 'Entrenar', color: 'text-emerald-400' },
                     { href: '/dashboard/students', icon: Users, label: 'Alumnos', color: 'text-primary' },
                     { href: '/dashboard/routines', icon: ClipboardList, label: 'Rutinas', color: 'text-primary' },
                     { href: '/dashboard/messages', icon: MessageSquare, label: 'Mensajes', color: 'text-amber-400' },

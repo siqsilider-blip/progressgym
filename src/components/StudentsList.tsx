@@ -187,7 +187,7 @@ export default function StudentsList({ students, operationsByStudentId }: Props)
                                         cls: 'border-white/10 bg-white/[0.04] text-white/55',
                                     }
                         const primaryHref = hasProgram
-                            ? `/dashboard/students/${student.id}/train`
+                            ? `/dashboard/routines/${operation?.routineId}`
                             : `/dashboard/students/${student.id}/assign-routine`
 
                         return (
@@ -229,7 +229,7 @@ export default function StudentsList({ students, operationsByStudentId }: Props)
                                             href={primaryHref}
                                             className="rounded-lg bg-primary px-3 py-1.5 text-center text-[11px] font-semibold text-primary-foreground transition hover:bg-primary"
                                         >
-                                            {operation?.hasActiveSession ? 'Continuar' : hasProgram ? 'Entrenar' : 'Asignar'}
+                                            {hasProgram ? 'Editar rutina' : 'Asignar'}
                                         </Link>
                                     </div>
                                 </div>
@@ -308,14 +308,6 @@ export default function StudentsList({ students, operationsByStudentId }: Props)
                                         >
                                             Perfil
                                         </Link>
-                                        {hasProgram && (
-                                            <Link
-                                                href={`/dashboard/students/${student.id}/train`}
-                                                className="flex h-9 items-center rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-3 text-[11px] font-semibold text-emerald-300 transition hover:bg-emerald-500/15"
-                                            >
-                                                {operation?.hasActiveSession ? 'Continuar' : 'Entrenar'}
-                                            </Link>
-                                        )}
                                         <Link
                                             href={hasProgram
                                                 ? `/dashboard/routines/${operation.routineId}`
