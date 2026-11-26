@@ -124,7 +124,7 @@ export default function ExerciseProgressCard({ exercise, weightUnit, rank = -1, 
     if (studentDisclosure) {
         const { open, onToggle } = studentDisclosure
         return (
-            <div className="overflow-hidden rounded-xl border border-border bg-card">
+            <div className="border-t border-border">
                 <h3>
                     <button
                         type="button"
@@ -133,7 +133,7 @@ export default function ExerciseProgressCard({ exercise, weightUnit, rank = -1, 
                         aria-labelledby={`${detailId}-title`}
                         aria-describedby={`${detailId}-summary`}
                         onClick={onToggle}
-                        className="flex min-h-14 w-full items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-left focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary"
+                        className="flex min-h-14 w-full items-center justify-between gap-2 py-2.5 text-left focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary"
                     >
                         <span className="min-w-0">
                             <span id={`${detailId}-title`} className="block break-words text-sm font-bold leading-5 text-foreground">{exercise.exerciseName}</span>

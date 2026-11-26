@@ -2,12 +2,14 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { logout } from '@/app/auth/actions'
 import Link from 'next/link'
-import StudentPageHeader from '@/components/student/StudentPageHeader'
-import AppearanceSelector from '@/components/appearance/AppearanceSelector'
+import { NotebookLinkRow, NotebookRowText, StudentNotebookHeader, notebookGroup, notebookPage, notebookSectionTitle, notebookSummary } from '@/components/student/StudentNotebook'
+import AppearanceOptions from '@/components/appearance/AppearanceOptions'
 import { getStudentAppContext } from '@/lib/auth/student'
 import AccountDeletionCard from '@/components/account/AccountDeletionCard'
 import { getActiveStudentRoutine } from '@/lib/getActiveStudentRoutine'
-import { Bell, CalendarDays, ChevronRight, MessageCircle, Target, Trophy } from 'lucide-react'
+import { APPEARANCES } from '@/lib/appearance'
+import { getAppearance } from '@/lib/serverAppearance'
+import { Bell, BookOpen, ChevronDown, LockKeyhole, LogOut, MessageCircle, Palette, Target, Trophy } from 'lucide-react'
 
 export default async function AppProfilePage() {
     const supabase = await createClient()
@@ -42,98 +44,62 @@ export default async function AppProfilePage() {
         ? `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim()
         : profile?.name ?? 'Alumno'
 
+    const appearance = await getAppearance()
     const memberSince = profile?.created_at
         ? new Date(profile.created_at).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })
         : null
 
-    const initials = fullName
-        .split(' ')
-        .map((n: string) => n.charAt(0))
-        .join('')
-        .toUpperCase()
-        .slice(0, 2)
-
     return (
-        <div className="p-4 pb-24 md:p-6">
-            <div className="mx-auto max-w-lg space-y-4">
+        <main className={notebookPage}>
+            <StudentNotebookHeader title={fullName || 'Perfil'} section="Mi perfil" subtitle={profile?.email ?? user.email} />
 
-                <StudentPageHeader title="Perfil" subtitle="Cuenta y programa" />
-
-                {/* ── Card principal ── */}
-                <div className="rounded-xl border border-border bg-card p-3.5">
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/15 text-sm font-black text-primary">
-                            {initials}
-                        </div>
-                        <div className="min-w-0">
-                            <p className="text-sm font-bold text-foreground">{fullName}</p>
-                            <p className="truncate text-xs text-muted-foreground">{profile?.email ?? user.email}</p>
-                            {memberSince && (
-                                <p className="mt-0.5 text-[11px] text-muted-foreground">
-                                    Miembro desde {memberSince}
-                                </p>
-                            )}
-                        </div>
-                    </div>
+            <section className={notebookGroup} aria-labelledby="profile-training">
+                <h2 id="profile-training" className={notebookSectionTitle}>Mi entrenamiento</h2>
+                <div>
+                    <NotebookLinkRow href="/app/rutina" icon={BookOpen} title="Mi programa" subtitle={routine?.name ?? undefined} />
+                    <NotebookLinkRow href="/app/messages" prefetch={false} icon={MessageCircle} title="Escribir a mi entrenador" subtitle={trainer?.name ?? undefined} />
+                    <NotebookLinkRow href="/app/onboarding" icon={Target} title="Objetivos y disponibilidad" subtitle="Ficha inicial" />
+                    <NotebookLinkRow href="/app/logros" icon={Trophy} title="Mis logros" />
                 </div>
+            </section>
 
-                <AppearanceSelector />
-
-                <section className="overflow-hidden rounded-2xl border border-border bg-card">
-                    <div className="border-b border-border px-4 py-3">
-                        <p className="text-xs font-black uppercase tracking-wider text-brand-soft">Mi plan</p>
-                        {routine?.name && <p className="mt-1 text-base font-black text-foreground">{routine.name}</p>}
-                        {trainer?.name && <p className="mt-1 text-sm text-muted-foreground">Con {trainer.name}</p>}
-                    </div>
-                    <Link href="/app/rutina" prefetch className="flex min-h-14 items-center gap-3 border-b border-border px-4 text-sm font-bold text-foreground">
-                        <CalendarDays className="h-5 w-5 text-primary" />
-                        <span className="flex-1">Ver mi rutina</span>
-                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                    </Link>
-                    <Link href="/app/messages" prefetch className="flex min-h-14 items-center gap-3 px-4 text-sm font-bold text-foreground">
-                        <MessageCircle className="h-5 w-5 text-primary" />
-                        <span className="flex-1">Escribir a mi entrenador</span>
-                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                    </Link>
-                </section>
-
-                <section className="overflow-hidden rounded-2xl border border-border bg-card">
-                    <p className="border-b border-border px-4 py-3 text-xs font-black uppercase tracking-wider text-brand-soft">Mi cuenta</p>
-                    <Link href="/app/logros" prefetch className="flex min-h-14 items-center gap-3 border-b border-border px-4 text-sm font-semibold text-foreground">
-                        <Trophy className="h-5 w-5 text-primary" />
-                        <span className="flex-1">Mis logros</span>
-                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                    </Link>
-                    <Link href="/app/notifications" prefetch className="flex min-h-14 items-center gap-3 border-b border-border px-4 text-sm font-semibold text-foreground">
-                        <Bell className="h-5 w-5 text-primary" />
-                        <span className="flex-1">Avisos</span>
-                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                    </Link>
-                    <Link href="/app/onboarding" prefetch className="flex min-h-14 items-center gap-3 px-4 text-sm font-semibold text-foreground">
-                        <Target className="h-5 w-5 text-primary" />
-                        <span className="flex-1">Objetivos y disponibilidad</span>
-                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                    </Link>
-                </section>
-
-                <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 py-1 text-[11px] text-muted-foreground">
-                    <Link href="/privacy">Privacidad</Link>
-                    <Link href="/terms">Términos</Link>
-                    <Link href="/support">Soporte</Link>
+            <section className={notebookGroup} aria-labelledby="profile-preferences">
+                <h2 id="profile-preferences" className={notebookSectionTitle}>Preferencias</h2>
+                <div>
+                    <details className="group">
+                        <summary className={notebookSummary}>
+                            <Palette className="size-4 shrink-0 text-brand-soft" aria-hidden="true" />
+                            <NotebookRowText title="Apariencia" subtitle={APPEARANCES[appearance].label} />
+                            <ChevronDown className="size-4 shrink-0 text-muted-foreground group-open:rotate-180" aria-hidden="true" />
+                        </summary>
+                        <AppearanceOptions appearance={appearance} notebook />
+                    </details>
+                    <NotebookLinkRow href="/app/notifications" icon={Bell} title="Avisos" />
                 </div>
+            </section>
 
-                <AccountDeletionCard compact />
-
-                {/* ── Logout ── */}
-                <form action={logout}>
-                    <button
-                        type="submit"
-                        className="w-full rounded-2xl border border-red-500/20 bg-red-500/[0.04] px-4 py-3.5 text-sm font-medium text-red-500 transition hover:bg-red-500/10"
-                    >
-                        Cerrar sesión
+            <section className={notebookGroup} aria-labelledby="profile-account">
+                <h2 id="profile-account" className={notebookSectionTitle}>Cuenta</h2>
+                <details className="group">
+                    <summary className={notebookSummary}>
+                        <LockKeyhole className="size-4 shrink-0 text-brand-soft" aria-hidden="true" />
+                        <NotebookRowText title="Privacidad y cuenta" subtitle="Soporte y opciones de cuenta" />
+                        <ChevronDown className="size-4 shrink-0 text-muted-foreground group-open:rotate-180" aria-hidden="true" />
+                    </summary>
+                    {memberSince && <p className="mt-1 text-xs text-muted-foreground">Miembro desde {memberSince}</p>}
+                    <div className="flex flex-wrap gap-x-4 text-xs text-muted-foreground">
+                        <Link className="inline-flex min-h-11 items-center underline-offset-4 hover:underline" href="/privacy">Privacidad</Link>
+                        <Link className="inline-flex min-h-11 items-center underline-offset-4 hover:underline" href="/terms">Términos</Link>
+                        <Link className="inline-flex min-h-11 items-center underline-offset-4 hover:underline" href="/support">Soporte</Link>
+                    </div>
+                    <AccountDeletionCard compact />
+                </details>
+                <form action={logout} className="border-t border-border">
+                    <button type="submit" className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground">
+                        <LogOut className="size-4" aria-hidden="true" />Cerrar sesión
                     </button>
                 </form>
-            </div>
-        </div>
+            </section>
+        </main>
     )
 }

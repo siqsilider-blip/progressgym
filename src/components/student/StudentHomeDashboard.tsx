@@ -34,6 +34,8 @@ type Props = {
     totalProgramWeeks: number
     programDateRange: string | null
     nextSuggestion: { dateLabel: string; workoutName: string | null } | null
+    restDay: boolean
+    upcomingStart: string | null
     currentSession: {
         savedSets: number
         totalSets: number
@@ -53,7 +55,7 @@ function primaryCopy(day: StudentHomeTrainingDay) {
     if (day.status === 'completed') return { label: 'Entrenamiento de hoy completado', action: 'Revisar entrenamiento' }
     if (day.status === 'in_progress') return { label: 'Sesión en curso', action: 'Continuar entrenamiento' }
     if (day.status === 'partial') return { label: 'Sesión parcial', action: 'Completar pendientes' }
-    return { label: 'Tu entrenamiento', action: 'Empezar entrenamiento' }
+    return { label: 'Tu entrenamiento de hoy', action: 'Empezar entrenamiento' }
 }
 
 const displayType = 'font-[family-name:Georgia,"Times_New_Roman",serif] font-normal tracking-[-0.045em] [overflow-wrap:anywhere]'
@@ -61,8 +63,8 @@ const primaryLink = 'mt-4 flex min-h-12 items-center justify-center gap-2.5 roun
 const rowLink = 'flex min-h-12 min-w-0 items-center gap-3 rounded-md py-2.5 text-sm transition hover:text-brand-soft active:opacity-80'
 
 function TrainingHero({
-    routineHref, hasTraining, weekCompleted, totalTrainingDays, selectedDay, onboardingCompleted, currentSession,
-}: Pick<Props, 'routineHref' | 'weekCompleted' | 'totalTrainingDays' | 'selectedDay' | 'onboardingCompleted' | 'currentSession'> & { hasTraining: boolean }) {
+    routineHref, hasTraining, weekCompleted, totalTrainingDays, selectedDay, onboardingCompleted, currentSession, restDay, upcomingStart,
+}: Pick<Props, 'routineHref' | 'weekCompleted' | 'totalTrainingDays' | 'selectedDay' | 'onboardingCompleted' | 'currentSession' | 'restDay' | 'upcomingStart'> & { hasTraining: boolean }) {
     let title: string
     let label: string | null = null
     let description: string | null = null
@@ -86,10 +88,15 @@ function TrainingHero({
         } else {
             description = `${selectedDay.exerciseCount} ${selectedDay.exerciseCount === 1 ? 'ejercicio' : 'ejercicios'}`
         }
+    } else if (hasTraining && upcomingStart) {
+        title = 'Tu programa está listo'
+        description = `Empezás el ${upcomingStart.toLocaleLowerCase('es-AR')}.`
+    } else if (hasTraining && restDay) {
+        title = 'Hoy toca descansar'
     } else if (hasTraining) {
-        title = 'Elegí tu entrenamiento de hoy'
-        description = 'Podés elegir entre los entrenamientos que te quedan esta semana.'
-        action = { href: routineHref, label: 'Ver entrenamientos disponibles' }
+        title = 'Por hoy estás al día'
+        description = 'Podés revisar las sesiones de esta semana en tu programa.'
+        action = { href: routineHref, label: 'Ver mi programa' }
     } else if (onboardingCompleted) {
         title = 'Tu entrenador está preparando tu programa'
         description = 'Cuando esté listo, vas a encontrar acá tu próximo entrenamiento.'
@@ -157,6 +164,8 @@ export default function StudentHomeDashboard({
     totalProgramWeeks,
     programDateRange,
     nextSuggestion,
+    restDay,
+    upcomingStart,
     currentSession,
 }: Props) {
     const dateLabel = formatSpanishLongDateLabel(today)
@@ -203,6 +212,8 @@ export default function StudentHomeDashboard({
                     selectedDay={selectedDay}
                     onboardingCompleted={onboardingCompleted}
                     currentSession={currentSession}
+                    restDay={restDay}
+                    upcomingStart={upcomingStart}
                 />
 
                 {hasTraining && (

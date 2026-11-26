@@ -6,7 +6,8 @@ import { getStudentRoutineWeekProgress } from '@/lib/studentRoutineWeekProgress'
 import { getBuenosAiresDateString, getCurrentBuenosAiresWeek, getElapsedProgramWeekIndex, getProgramWeekDateRange } from '@/lib/buenosAiresDate'
 import { getActiveStudentRoutine } from '@/lib/getActiveStudentRoutine'
 import { getStudentAppContext } from '@/lib/auth/student'
-import { areValidUniqueIsoWeekdays, formatSpanishDayLabel, formatSpanishWeekRange, resolveWeekdayDateInProgramWeek } from '@/lib/routineCalendar'
+import { formatSpanishDayLabel, formatSpanishWeekRange } from '@/lib/routineCalendar'
+import { getStudentTrainingDates, getStudentTrainingRecommendation } from '@/lib/studentTrainingRecommendation'
 import { compareRoutineExerciseOrder, getRoutineExerciseSetCount } from '@/lib/routineExerciseOrder'
 
 const WEEKDAY_SHORT: Record<number, string> = {
@@ -108,6 +109,8 @@ export default async function AppHomePage() {
     let totalProgramWeeks = 0
     let programDateRange: string | null = null
     let nextSuggestion: NextSuggestion | null = null
+    let upcomingStart: string | null = null
+    let restDay = false
     let currentSession: HomeSession | null = null
     let homeTrainingDays: StudentHomeTrainingDay[] = []
     let selectedHomeDay: StudentHomeTrainingDay | null = null
@@ -152,7 +155,8 @@ export default async function AppHomePage() {
                     .from('routine_days')
                     .select('id, name, title, day_index')
                     .eq('routine_week_id', selectedWeekId)
-                    .order('day_index', { ascending: true })
+                    .order('day_index', { ascending: true, nullsFirst: false })
+                    .order('id', { ascending: true })
                 if (daysError) throw daysError
 
                 if (days && days.length > 0) {
@@ -218,16 +222,18 @@ export default async function AppHomePage() {
                     completedDays = homeTrainingDays.filter((day) => day.status === 'completed').length
                     weekCompleted = totalTrainingDays > 0 && completedDays === totalTrainingDays
 
-                    const todayActivityDay = progress?.todayActivityDayId
-                        ? homeTrainingDays.find((day) => day.id === progress.todayActivityDayId) ?? null
-                        : null
-                    const actionableDays = homeTrainingDays.filter((day) => (
-                        day.availability === 'available' || day.availability === 'continue'
-                    ))
-
-                    selectedHomeDay = homeTrainingDays.find((day) => day.availability === 'continue')
-                        ?? todayActivityDay
-                        ?? (actionableDays.length === 1 ? actionableDays[0] : null)
+                    const recommendation = getStudentTrainingRecommendation({
+                        days: homeTrainingDays,
+                        today,
+                        todayActivityId: progress?.todayActivityDayId ?? null,
+                        plannedDates: getStudentTrainingDates(schedule.selectedWeekStart, assignment.trainingWeekdays, homeTrainingDays.length),
+                        programStartedOn: assignment.programStartedOn,
+                    })
+                    selectedHomeDay = recommendation.todayDay
+                    restDay = recommendation.restDay
+                    if (recommendation.programStartsLater && assignment.programStartedOn) {
+                        upcomingStart = formatSpanishDayLabel(assignment.programStartedOn)
+                    }
 
                     if (selectedHomeDay?.availability === 'continue' && progress) {
                         const activeDayId = selectedHomeDay.id
@@ -241,13 +247,12 @@ export default async function AppHomePage() {
                         }
                     }
 
-                    nextSuggestion = getNextSuggestion(
-                        homeTrainingDays,
-                        selectedHomeDay?.id ?? null,
-                        assignment.trainingWeekdays,
-                        schedule.selectedWeekStart,
-                        today
-                    )
+                    if (recommendation.next) {
+                        nextSuggestion = {
+                            dateLabel: formatSpanishDayLabel(recommendation.next.date),
+                            workoutName: recommendation.next.day.name,
+                        }
+                    }
                 }
             }
         }
@@ -277,6 +282,8 @@ export default async function AppHomePage() {
             totalProgramWeeks={totalProgramWeeks}
             programDateRange={programDateRange}
             nextSuggestion={nextSuggestion}
+            restDay={restDay}
+            upcomingStart={upcomingStart}
             currentSession={currentSession}
         />
     )
@@ -320,30 +327,6 @@ async function getHomeSession(
             setNumber: setIndex + 1,
             exerciseSets: next.exerciseSets,
         },
-    }
-}
-
-function getNextSuggestion(
-    days: StudentHomeTrainingDay[],
-    selectedId: string | null,
-    weekdays: readonly number[] | null,
-    weekStart: string | null,
-    today: string
-): NextSuggestion | null {
-    if (!weekStart || !weekdays || weekdays.length < days.length || !areValidUniqueIsoWeekdays(weekdays)) return null
-
-    const remaining = days.filter((day) => day.id !== selectedId && (day.status === 'pending' || day.status === 'partial'))
-    if (remaining.length === 0) return null
-
-    const nextDate = weekdays.slice(0, days.length)
-        .map((weekday) => resolveWeekdayDateInProgramWeek(weekStart, weekday))
-        .sort()
-        .find((date) => date > today)
-    if (!nextDate) return null
-
-    return {
-        dateLabel: formatSpanishDayLabel(nextDate),
-        workoutName: remaining.length === 1 ? remaining[0].name : null,
     }
 }
 

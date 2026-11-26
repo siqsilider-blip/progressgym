@@ -7,6 +7,7 @@ import {
     AlertTriangle,
     CalendarDays,
     Check,
+    ChevronDown,
     ChevronLeft,
     ChevronRight,
     Circle,
@@ -17,19 +18,19 @@ import {
 import { saveActiveTrainingWeekdays } from '@/app/app/rutina/actions'
 import {
     buildMondayFirstMonthGrid,
-    formatSpanishDayLabel,
     formatSpanishLongDateLabel,
     formatSpanishMonthLabel,
     formatSpanishWeekRange,
     type IsoWeekday,
 } from '@/lib/routineCalendar'
+import { NotebookRowText, StudentNotebookHeader, notebookRow, notebookSectionTitle } from './StudentNotebook'
 
 export type RoutinePlannerStatus = 'pending' | 'in_progress' | 'partial' | 'completed'
 
 export type RoutinePlannerExercise = {
     name: string
     sets: number
-    reps: string | null
+    target: string | null
 }
 
 export type RoutinePlannerDay = {
@@ -39,6 +40,7 @@ export type RoutinePlannerDay = {
     status: RoutinePlannerStatus
     sessionId: string | null
     canStart: boolean
+    isToday: boolean
     blockedReason: string | null
     exercises: RoutinePlannerExercise[]
 }
@@ -92,11 +94,7 @@ function chooseInitialDay(week: RoutinePlannerWeek | undefined, requestedDayId: 
     const requested = week.days.find((day) => day.id === requestedDayId)
     if (requested) return requested.id
 
-    return week.days.find((day) => day.status === 'in_progress' && day.canStart)?.id
-        ?? week.days.find((day) => day.canStart && day.status !== 'completed')?.id
-        ?? week.days.find((day) => day.status === 'completed')?.id
-        ?? week.days[0]?.id
-        ?? null
+    return week.days.find((day) => day.isToday)?.id ?? null
 }
 
 function monthKey(date: string | null | undefined) {
@@ -210,7 +208,7 @@ function TrainingWeekdayEditor({
     }
 
     return (
-        <section className="rounded-2xl border border-primary/25 bg-card p-4 shadow-sm">
+        <section className="border-y border-border py-4">
             <div className="flex items-start gap-3">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                     <CalendarDays className="h-5 w-5" aria-hidden="true" />
@@ -267,39 +265,44 @@ function TrainingWeekdayEditor({
 }
 
 function WeekDayListItem({
-    day,
-    week,
-    selected,
+    day, week, view, open, onToggle,
 }: {
     day: RoutinePlannerDay
     week: RoutinePlannerWeek
-    selected: boolean
+    view: PlannerView
+    open: boolean
+    onToggle: () => void
 }) {
-    const totalSets = day.exercises.reduce((sum, exercise) => sum + exercise.sets, 0)
-    return (
-        <article className={`rounded-2xl border bg-card p-4 shadow-sm ${selected ? 'border-primary/50 ring-1 ring-primary/15' : day.status === 'completed' ? 'border-emerald-500/25' : day.status === 'partial' ? 'border-amber-500/30' : 'border-border'}`}>
-            <div className="flex items-start gap-3">
-                <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-sm font-black ${day.status === 'completed' ? 'bg-emerald-500/15 text-emerald-400' : day.status === 'partial' ? 'bg-amber-500/15 text-amber-400' : 'bg-primary/10 text-primary'}`}>
-                    {day.status === 'completed' ? <Check className="h-5 w-5" aria-hidden="true" /> : day.dayIndex}
-                </span>
-                <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Entrenamiento {day.dayIndex}</p>
-                        <span className={`rounded-full px-2.5 py-1 text-xs font-black ${day.status === 'completed' ? 'bg-emerald-500/10 text-emerald-400' : day.status === 'partial' ? 'bg-amber-500/10 text-amber-400' : day.status === 'in_progress' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
-                            {statusLabel(day.status)}
-                        </span>
-                    </div>
-                    <h2 className="mt-1 text-base font-black leading-5 text-foreground">{day.name || `Día ${day.dayIndex}`}</h2>
-                    <p className="mt-1 text-sm text-muted-foreground">{day.exercises.length} ejercicios · {totalSets} series</p>
-                </div>
-            </div>
+    const title = day.name.replace(/\s*\|\s*/g, ' · ')
+    const status = day.isToday && day.status === 'pending' ? 'Te toca hoy' : statusLabel(day.status)
+    const detailId = `planner-day-${day.id}`
 
-            <TrainingAction
-                day={day}
-                week={week}
-                view="week"
-                className="mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-4 text-sm font-black transition active:scale-[0.99]"
-            />
+    return (
+        <article>
+            <button type="button" className={notebookRow} aria-expanded={open} aria-controls={detailId} onClick={onToggle}>
+                {day.status === 'completed'
+                    ? <Check className="size-4 shrink-0 text-brand-soft" aria-hidden="true" />
+                    : <Dumbbell className="size-4 shrink-0 text-brand-soft" aria-hidden="true" />}
+                <NotebookRowText title={title} subtitle={`${status} · ${day.exercises.length} ${day.exercises.length === 1 ? 'ejercicio' : 'ejercicios'}`} />
+                <ChevronDown className={`size-4 shrink-0 text-muted-foreground ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
+            </button>
+            <div id={detailId} hidden={!open} className="space-y-3 pb-3 pl-7">
+                {open && (
+                    <>
+                        <ul className="divide-y divide-border border-y border-border">
+                            {day.exercises.map((exercise, index) => (
+                                <li key={index} className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 py-2 text-sm">
+                                    <span className="min-w-0 [overflow-wrap:anywhere]">{exercise.name}</span>
+                                    <span className="text-xs text-muted-foreground">
+                                        {exercise.target ? `${exercise.sets} × ${exercise.target}` : `${exercise.sets} ${exercise.sets === 1 ? 'serie' : 'series'}`}
+                                    </span>
+                                </li>
+                            ))}
+                        </ul>
+                        <TrainingAction day={day} week={week} view={view} className="flex min-h-11 w-fit max-w-full flex-wrap items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring" />
+                    </>
+                )}
+            </div>
         </article>
     )
 }
@@ -317,33 +320,29 @@ export default function StudentRoutinePlanner({
     requiredTrainingDays,
 }: Props) {
     const configured = Boolean(trainingWeekdays && trainingWeekdays.length >= requiredTrainingDays && requiredTrainingDays > 0)
-    const firstWeekId = weeks.find((week) => week.id === initialWeekId)?.id
-        ?? weeks.find((week) => week.isCurrent)?.id
-        ?? weeks[0]?.id
-        ?? ''
+    const firstWeek = weeks.find((week) => week.id === initialWeekId)
+        ?? weeks.find((week) => week.isCurrent)
+        ?? weeks[0]
     const [view, setView] = useState<PlannerView>(initialView)
-    const [selectedWeekId, setSelectedWeekId] = useState(firstWeekId)
-    const initialWeek = weeks.find((week) => week.id === firstWeekId)
-    const [selectedDayId, setSelectedDayId] = useState<string | null>(() => chooseInitialDay(initialWeek, initialDayId))
-    const [visibleMonth, setVisibleMonth] = useState(monthKey(initialWeek?.weekStart) || monthKey(today))
-    const [selectedScheduleDate, setSelectedScheduleDate] = useState(today)
+    const [selectedWeekId, setSelectedWeekId] = useState(firstWeek?.id ?? '')
+    const [weekOpen, setWeekOpen] = useState(true)
+    const [selectedDayId, setSelectedDayId] = useState(() => chooseInitialDay(firstWeek, initialDayId))
+    const [selectedScheduleDate, setSelectedScheduleDate] = useState(() => (
+        firstWeek?.scheduledDates.find((slot) => initialDayId && slot.dayId === initialDayId)?.date
+        ?? (firstWeek?.isCurrent ? today : firstWeek?.scheduledDates[0]?.date ?? firstWeek?.weekStart ?? today)
+    ))
+    const [visibleMonth, setVisibleMonth] = useState(() => monthKey(selectedScheduleDate))
     const [editingSchedule, setEditingSchedule] = useState(false)
 
-    const selectedWeekIndex = Math.max(0, weeks.findIndex((week) => week.id === selectedWeekId))
-    const selectedWeek = weeks[selectedWeekIndex]
-    const completedCount = selectedWeek?.days.filter((day) => day.status === 'completed').length ?? 0
-    const weekTotal = selectedWeek?.days.length ?? 0
-    const progressPercent = weekTotal > 0 ? Math.round((completedCount / weekTotal) * 100) : 0
-
-    const allScheduledDates = useMemo(() => weeks.flatMap((week) => week.scheduledDates
-        .map((slot) => ({ slot, week }))), [weeks])
-    const scheduledByDate = useMemo(() => new Map(
-        allScheduledDates.map((entry) => [entry.slot.date, entry])
-    ), [allScheduledDates])
+    const selectedWeek = weeks.find((week) => week.id === selectedWeekId)
+    const allScheduledDates = useMemo(() => weeks.flatMap((week) => week.scheduledDates.map((slot) => ({ slot, week }))), [weeks])
+    const scheduledByDate = useMemo(() => new Map(allScheduledDates.map((entry) => [entry.slot.date, entry])), [allScheduledDates])
     const monthCells = useMemo(() => buildMondayFirstMonthGrid(`${visibleMonth}-01`).weeks.flat(), [visibleMonth])
     const programMonthKeys = useMemo(() => Array.from(new Set(
         weeks.flatMap((week) => [monthKey(week.weekStart), monthKey(week.weekEnd)]).filter(Boolean)
     )).sort(), [weeks])
+    const calendarEntry = scheduledByDate.get(selectedScheduleDate)
+    const calendarDay = calendarEntry?.week.days.find((day) => day.id === calendarEntry.slot.dayId)
 
     useEffect(() => {
         if (!selectedWeek) return
@@ -357,21 +356,26 @@ export default function StudentRoutinePlanner({
         window.history.replaceState(window.history.state, '', `${window.location.pathname}?${params.toString()}`)
     }, [selectedDayId, selectedWeek, view])
 
-    function selectWeek(index: number) {
-        const next = weeks[index]
-        if (!next) return
-        setSelectedWeekId(next.id)
-        setSelectedDayId(chooseInitialDay(next, null))
-        setSelectedScheduleDate(next.scheduledDates.find((slot) => slot.date >= today)?.date ?? next.scheduledDates[0]?.date ?? today)
-        if (next.weekStart) setVisibleMonth(monthKey(next.weekStart))
+    function selectWeek(week: RoutinePlannerWeek) {
+        if (week.id === selectedWeekId) {
+            setWeekOpen((open) => !open)
+            return
+        }
+        setSelectedWeekId(week.id)
+        setWeekOpen(true)
+        setSelectedDayId(chooseInitialDay(week, null))
+        const date = week.isCurrent ? today : week.scheduledDates[0]?.date ?? week.weekStart ?? today
+        setSelectedScheduleDate(date)
+        setVisibleMonth(monthKey(date))
     }
 
     function selectScheduledDate(date: string) {
+        setSelectedScheduleDate(date)
         const entry = scheduledByDate.get(date)
         if (!entry) return
         setSelectedWeekId(entry.week.id)
-        setSelectedDayId(entry.slot.dayId ?? chooseInitialDay(entry.week, null))
-        setSelectedScheduleDate(date)
+        setSelectedDayId(entry.slot.dayId)
+        setWeekOpen(true)
     }
 
     function moveMonth(delta: number) {
@@ -379,197 +383,132 @@ export default function StudentRoutinePlanner({
         const next = new Date(Date.UTC(year, month - 1 + delta, 1)).toISOString().slice(0, 7)
         if (programMonthKeys.length > 0 && (next < programMonthKeys[0] || next > programMonthKeys[programMonthKeys.length - 1])) return
         setVisibleMonth(next)
+        const upcoming = allScheduledDates.find(({ slot }) => monthKey(slot.date) === next)
+        selectScheduledDate(upcoming?.slot.date ?? `${next}-01`)
     }
 
-    const nextTraining = allScheduledDates
-        .filter((entry) => entry.slot.date >= today && entry.slot.status === 'pending')
-        .sort((a, b) => a.slot.date.localeCompare(b.slot.date))[0]
-
     return (
-        <div className="space-y-4">
-            <div>
-                <h1 className="text-2xl font-black tracking-tight text-foreground">Rutina</h1>
-                <p className="mt-1 text-sm text-muted-foreground">
-                    {routineName}{selectedWeek ? ` · Semana ${selectedWeek.programWeekNumber} de ${totalProgramWeeks}` : ''}
-                </p>
+        <div className="space-y-5">
+            <StudentNotebookHeader title="Mi programa" section="Rutina" subtitle={`${routineName} · ${totalProgramWeeks} ${totalProgramWeeks === 1 ? 'semana' : 'semanas'}`} />
+
+            <div className="flex flex-wrap items-center gap-x-5 border-b border-border">
+                <button
+                    type="button" onClick={() => setView('week')} aria-pressed={view === 'week'}
+                    className={`min-h-11 border-b-2 text-sm font-semibold ${view === 'week' ? 'border-primary text-brand-soft' : 'border-transparent text-muted-foreground'}`}
+                >
+                    Semanas
+                </button>
+                <button
+                    type="button" onClick={() => setView('month')} aria-pressed={view === 'month'}
+                    aria-label="Ver calendario mensual"
+                    className={`inline-flex min-h-11 items-center gap-2 border-b-2 text-sm font-semibold ${view === 'month' ? 'border-primary text-brand-soft' : 'border-transparent text-muted-foreground'}`}
+                >
+                    <CalendarDays className="size-4" aria-hidden="true" /> Calendario
+                </button>
             </div>
 
-            {!configured ? (
-                <>
-                    <TrainingWeekdayEditor requiredTrainingDays={requiredTrainingDays} initialWeekdays={(preferredWeekdays ?? []).slice(0, requiredTrainingDays)} />
-                    {selectedWeek && selectedWeek.days.length > 0 && (
-                        <section className="rounded-2xl border border-border bg-card p-4">
-                            <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">Tu plan</p>
-                            <div className="mt-3 space-y-2">
-                                {selectedWeek.days.map((day) => (
-                                    <div key={day.id} className="flex items-center gap-3 rounded-xl bg-muted/40 px-3 py-3">
-                                        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-sm font-black text-primary">{day.dayIndex}</span>
-                                        <div className="min-w-0">
-                                            <p className="truncate text-sm font-bold text-foreground">{day.name || `Entrenamiento ${day.dayIndex}`}</p>
-                                            <p className="mt-0.5 text-xs text-muted-foreground">{day.exercises.length} ejercicios</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </section>
-                    )}
-                </>
-            ) : editingSchedule ? (
-                <TrainingWeekdayEditor requiredTrainingDays={requiredTrainingDays} initialWeekdays={trainingWeekdays ?? []} onCancel={() => setEditingSchedule(false)} />
+            {view === 'week' ? (
+                <ol className="relative before:absolute before:bottom-5 before:left-3.5 before:top-5 before:w-px before:bg-border">
+                    {weeks.map((week) => {
+                        const open = week.id === selectedWeekId && weekOpen
+                        const completed = week.days.filter((day) => day.status === 'completed').length
+                        const complete = week.days.length > 0 && completed === week.days.length
+                        const dates = week.weekStart && week.weekEnd ? formatSpanishWeekRange(week.weekStart, week.weekEnd) : null
+                        const label = [dates, week.isCurrent ? 'Semana actual' : null].filter(Boolean).join(' · ')
+                        return (
+                            <li key={week.id} className="relative">
+                                <h2>
+                                    <button type="button" onClick={() => selectWeek(week)} aria-expanded={open} aria-controls={`planner-week-${week.id}`}
+                                        className={`flex min-h-14 w-full min-w-0 items-center gap-3 rounded-lg text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${open ? 'text-brand-soft' : 'text-foreground'}`}>
+                                        <span className={`flex size-7 shrink-0 items-center justify-center rounded-full border text-xs font-semibold ${week.isCurrent ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-background text-muted-foreground'}`} aria-hidden="true">
+                                            {complete ? <Check className="size-3.5" /> : week.programWeekNumber}
+                                        </span>
+                                        <NotebookRowText title={week.name} subtitle={label || undefined} />
+                                        <ChevronDown className={`size-4 shrink-0 text-muted-foreground ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
+                                    </button>
+                                </h2>
+                                <div id={`planner-week-${week.id}`} hidden={!open} className="pb-3 pl-10">
+                                    {open && (
+                                        <>
+                                            <div className="border-t border-border py-2 text-xs text-muted-foreground">
+                                                {complete && <p className="font-semibold text-brand-soft">Semana completada ✓</p>}
+                                                <p>{completed} de {week.days.length} entrenamientos</p>
+                                            </div>
+                                            {week.days.length ? week.days.map((day) => (
+                                                <WeekDayListItem key={day.id} day={day} week={week} view={view}
+                                                    open={day.id === selectedDayId} onToggle={() => setSelectedDayId((current) => current === day.id ? null : day.id)} />
+                                            )) : <p className="py-2 text-sm text-muted-foreground">Todavía no hay entrenamientos en esta semana.</p>}
+                                        </>
+                                    )}
+                                </div>
+                            </li>
+                        )
+                    })}
+                </ol>
             ) : (
-                <>
-                    <div className="flex justify-end">
-                        <button
-                            type="button"
-                            onClick={() => setView(view === 'week' ? 'month' : 'week')}
-                            className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-card px-4 text-sm font-bold text-foreground"
-                        >
-                            <CalendarDays className="h-4 w-4 text-primary" aria-hidden="true" />
-                            {view === 'week' ? 'Ver calendario mensual' : 'Volver al plan semanal'}
+                <section className="space-y-4" aria-labelledby="planner-calendar-title">
+                    <div className="flex items-center justify-between gap-2">
+                        <button type="button" aria-label="Mes anterior" onClick={() => moveMonth(-1)} disabled={programMonthKeys.length > 0 && visibleMonth <= programMonthKeys[0]}
+                            className="grid size-11 place-items-center rounded-full border border-border disabled:opacity-35">
+                            <ChevronLeft className="size-5" aria-hidden="true" />
+                        </button>
+                        <h2 id="planner-calendar-title" className={notebookSectionTitle}>{formatSpanishMonthLabel(`${visibleMonth}-01`)}</h2>
+                        <button type="button" aria-label="Mes siguiente" onClick={() => moveMonth(1)} disabled={programMonthKeys.length > 0 && visibleMonth >= programMonthKeys[programMonthKeys.length - 1]}
+                            className="grid size-11 place-items-center rounded-full border border-border disabled:opacity-35">
+                            <ChevronRight className="size-5" aria-hidden="true" />
                         </button>
                     </div>
-
-                    {view === 'week' && selectedWeek ? (
-                        <>
-                            <section className="rounded-2xl border border-border bg-card p-4">
-                                <div className="flex items-center justify-between gap-3">
-                                    <div>
-                                        <p className="text-base font-black text-foreground">{completedCount === weekTotal && weekTotal > 0 ? 'Semana completada ✓' : 'Esta semana'}</p>
-                                        <p className="mt-0.5 text-sm text-muted-foreground">{completedCount} de {weekTotal} entrenamientos</p>
-                                    </div>
-                                    <span className={`text-lg font-black ${progressPercent === 100 ? 'text-emerald-400' : 'text-primary'}`}>{progressPercent}%</span>
-                                </div>
-                                <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
-                                    <div className={`h-full rounded-full ${progressPercent === 100 ? 'bg-emerald-500' : 'bg-primary'}`} style={{ width: `${progressPercent}%` }} />
-                                </div>
-                                {selectedWeek.scheduledDates.some((slot) => slot.suggested) && (
-                                    <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3">
-                                        <span className="text-xs font-bold text-muted-foreground">Días sugeridos:</span>
-                                        {selectedWeek.scheduledDates.filter((slot) => slot.suggested).map((slot) => (
-                                            <span key={slot.date} className="rounded-full bg-muted px-2.5 py-1 text-xs font-black capitalize text-foreground">
-                                                {formatSpanishDayLabel(slot.date)}
-                                            </span>
-                                        ))}
-                                    </div>
-                                )}
-                            </section>
-
-                            <section className="rounded-2xl border border-border bg-card p-3">
-                                <div className="flex items-center justify-between gap-2 px-1">
-                                    <button type="button" aria-label="Semana anterior" disabled={selectedWeekIndex === 0} onClick={() => selectWeek(selectedWeekIndex - 1)} className="flex h-11 w-11 items-center justify-center rounded-xl border border-border bg-background text-foreground disabled:opacity-30"><ChevronLeft className="h-5 w-5" /></button>
-                                    <div className="text-center">
-                                        <p className="text-sm font-black text-foreground">{selectedWeek.weekStart && selectedWeek.weekEnd ? formatSpanishWeekRange(selectedWeek.weekStart, selectedWeek.weekEnd) : selectedWeek.name}</p>
-                                        <p className="mt-0.5 text-xs text-muted-foreground">Semana {selectedWeek.programWeekNumber} de {totalProgramWeeks}</p>
-                                    </div>
-                                    <button type="button" aria-label="Semana siguiente" disabled={selectedWeekIndex >= weeks.length - 1} onClick={() => selectWeek(selectedWeekIndex + 1)} className="flex h-11 w-11 items-center justify-center rounded-xl border border-border bg-background text-foreground disabled:opacity-30"><ChevronRight className="h-5 w-5" /></button>
-                                </div>
-
-                                {!selectedWeek.isCurrent && weeks.some((week) => week.isCurrent) && (
-                                    <button type="button" onClick={() => selectWeek(weeks.findIndex((week) => week.isCurrent))} className="mt-3 w-full text-center text-xs font-bold text-primary">Volver a la semana actual</button>
-                                )}
-                            </section>
-
-                            <section aria-labelledby="weekly-training-title">
-                                <div className="mb-2 px-1">
-                                    <h2 id="weekly-training-title" className="text-base font-black text-foreground">Tus entrenamientos</h2>
-                                    <p className="mt-0.5 text-sm leading-5 text-muted-foreground">
-                                        Elegí con cuál querés entrenar hoy. Cuando guardes tu primera serie, los demás se habilitan mañana.
-                                    </p>
-                                </div>
-                                <div className="space-y-3">
-                                    {selectedWeek.days.map((day) => (
-                                        <WeekDayListItem
-                                            key={day.id}
-                                            day={day}
-                                            week={selectedWeek}
-                                            selected={day.id === selectedDayId}
-                                        />
-                                    ))}
-                                </div>
-                            </section>
-                        </>
-                    ) : view === 'month' ? (
-                        <>
-                            <section className="rounded-2xl border border-border bg-card p-3.5">
-                                <div className="flex items-center justify-between gap-2">
-                                    <button type="button" aria-label="Mes anterior" onClick={() => moveMonth(-1)} className="flex h-11 w-11 items-center justify-center rounded-xl border border-border bg-background"><ChevronLeft className="h-5 w-5" /></button>
-                                    <p className="text-base font-black text-foreground">{formatSpanishMonthLabel(`${visibleMonth}-01`)}</p>
-                                    <button type="button" aria-label="Mes siguiente" onClick={() => moveMonth(1)} className="flex h-11 w-11 items-center justify-center rounded-xl border border-border bg-background"><ChevronRight className="h-5 w-5" /></button>
-                                </div>
-                                <div className="mt-4 grid grid-cols-7 gap-1 text-center">
-                                    {WEEKDAYS.map((option) => <span key={option.value} className="py-1 text-xs font-black uppercase text-muted-foreground">{option.short}</span>)}
-                                    {monthCells.map((cell) => {
-                                        const entry = scheduledByDate.get(cell.date)
-                                        const active = Boolean(entry && entry.week.id === selectedWeekId && entry.slot.date === selectedScheduleDate)
-                                        const isToday = cell.date === today
-                                        return (
-                                            <button
-                                                key={cell.date}
-                                                type="button"
-                                                disabled={!entry}
-                                                onClick={() => entry && selectScheduledDate(cell.date)}
-                                                aria-label={entry ? `${formatSpanishLongDateLabel(cell.date)}, ${statusLabel(entry.slot.status)}` : formatSpanishLongDateLabel(cell.date)}
-                                                className={`relative flex min-h-11 items-center justify-center rounded-xl border text-sm font-bold ${!cell.isCurrentMonth
-                                                    ? 'border-transparent text-muted-foreground/25'
-                                                    : active
-                                                        ? 'border-primary bg-primary text-primary-foreground'
-                                                        : entry?.slot.status === 'completed'
-                                                            ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-400'
-                                                            : entry?.slot.status === 'partial'
-                                                                ? 'border-amber-500/25 bg-amber-500/10 text-amber-400'
-                                                                : entry
-                                                                    ? 'border-primary/20 bg-primary/[0.06] text-foreground'
-                                                                    : isToday
-                                                                        ? 'border-primary/40 bg-muted/50 text-foreground'
-                                                                        : 'border-transparent text-muted-foreground'
-                                                    }`}
-                                            >
-                                                {cell.dayNumber}
-                                                {entry && <span className={`absolute bottom-1 h-1.5 w-1.5 rounded-full ${active ? 'bg-primary-foreground' : entry.slot.status === 'completed' ? 'bg-emerald-400' : entry.slot.status === 'partial' ? 'bg-amber-400' : 'bg-primary'}`} />}
-                                            </button>
-                                        )
-                                    })}
-                                </div>
-                                <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t border-border pt-3 text-xs font-bold text-muted-foreground">
-                                    <span className="inline-flex items-center gap-1"><Check className="h-3 w-3 text-emerald-400" /> Completado</span>
-                                    <span className="inline-flex items-center gap-1"><Circle className="h-2 w-2 fill-primary text-primary" /> Programado</span>
-                                    <span className="inline-flex items-center gap-1"><AlertTriangle className="h-3 w-3 text-amber-400" /> Pendiente</span>
-                                </div>
-                            </section>
-
-                            {selectedWeek && (
-                                <section aria-labelledby="monthly-training-options-title">
-                                    <div className="mb-2 px-1">
-                                        <h2 id="monthly-training-options-title" className="text-base font-black text-foreground">Elegí tu entrenamiento</h2>
-                                        <p className="mt-0.5 text-sm leading-5 text-muted-foreground">Las fechas del calendario son sugeridas; el contenido lo elegís vos entre lo que falta esta semana.</p>
-                                    </div>
-                                    <div className="space-y-3">
-                                        {selectedWeek.days.map((day) => (
-                                            <WeekDayListItem
-                                                key={day.id}
-                                                day={day}
-                                                week={selectedWeek}
-                                                selected={day.id === selectedDayId}
-                                            />
-                                        ))}
-                                    </div>
-                                </section>
-                            )}
-                        </>
-                    ) : null}
-
-                    {nextTraining?.slot.date && (
-                        <p className="rounded-xl border border-border bg-card/60 px-3 py-2.5 text-sm text-muted-foreground">
-                            <span className="font-bold text-foreground">Próximo día sugerido:</span> {formatSpanishLongDateLabel(nextTraining.slot.date)}
-                        </p>
-                    )}
-
-                    <button type="button" onClick={() => setEditingSchedule(true)} className="mx-auto flex min-h-11 items-center gap-2 px-3 text-sm font-bold text-muted-foreground">
-                        <Settings2 className="h-4 w-4" aria-hidden="true" />
-                        Cambiar días de entrenamiento
-                    </button>
-                </>
+                    <div className="grid grid-cols-7 text-center">
+                        {WEEKDAYS.map((option) => <span key={option.value} className="pb-2 text-xs text-muted-foreground">{option.short}</span>)}
+                        {monthCells.map((cell) => {
+                            const entry = scheduledByDate.get(cell.date)
+                            const active = selectedScheduleDate === cell.date
+                            return (
+                                <button
+                                    key={cell.date} type="button" onClick={() => selectScheduledDate(cell.date)}
+                                    aria-current={cell.date === today ? 'date' : undefined}
+                                    aria-pressed={active}
+                                    aria-label={`${formatSpanishLongDateLabel(cell.date)}${entry ? `, ${statusLabel(entry.slot.status)}` : ''}`}
+                                    className={`relative flex min-h-11 items-center justify-center rounded-lg text-sm font-semibold ${active
+                                        ? 'bg-primary text-primary-foreground'
+                                        : cell.date === today ? 'text-brand-soft' : cell.isCurrentMonth ? 'text-foreground' : 'text-muted-foreground/60'}`}
+                                >
+                                    {cell.dayNumber}
+                                    {entry && (
+                                        <span aria-hidden="true" className={`absolute bottom-1 size-1.5 ${entry.slot.status === 'completed' ? 'rotate-45' : 'rounded-full'} ${active ? 'bg-primary-foreground' : 'bg-primary'}`} />
+                                    )}
+                                </button>
+                            )
+                        })}
+                    </div>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                        <span className="inline-flex items-center gap-2"><span className="size-1.5 rotate-45 bg-primary" aria-hidden="true" />Completado</span>
+                        <span className="inline-flex items-center gap-2"><Circle className="size-1.5 fill-primary text-primary" aria-hidden="true" />Programado o en curso</span>
+                    </div>
+                    <div className="space-y-2 border-t border-border pt-3">
+                        <h3 className="text-sm font-semibold capitalize">{formatSpanishLongDateLabel(selectedScheduleDate)}</h3>
+                        {calendarEntry && calendarDay ? (
+                            <WeekDayListItem day={calendarDay} week={calendarEntry.week} view={view} open={selectedDayId === calendarDay.id}
+                                onToggle={() => setSelectedDayId((current) => current === calendarDay.id ? null : calendarDay.id)} />
+                        ) : <p className="text-sm text-muted-foreground">No hay un entrenamiento asignado a esta fecha.</p>}
+                    </div>
+                </section>
             )}
+
+            <div className="border-t border-border">
+                {editingSchedule ? (
+                    <TrainingWeekdayEditor
+                        key={`${configured}-${(trainingWeekdays ?? []).join('-')}`}
+                        requiredTrainingDays={requiredTrainingDays}
+                        initialWeekdays={configured ? trainingWeekdays ?? [] : (preferredWeekdays ?? trainingWeekdays ?? []).slice(0, requiredTrainingDays)}
+                        onCancel={() => setEditingSchedule(false)}
+                    />
+                ) : (
+                    <button type="button" onClick={() => setEditingSchedule(true)} className="inline-flex min-h-12 items-center gap-2 text-sm font-semibold text-brand-soft">
+                        <Settings2 className="size-4" aria-hidden="true" />{configured ? 'Cambiar días de entrenamiento' : 'Configurar mis días de entrenamiento'}
+                    </button>
+                )}
+            </div>
         </div>
     )
 }

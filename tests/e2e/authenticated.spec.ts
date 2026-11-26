@@ -96,6 +96,7 @@ test('el alumno entra a su portal y no al panel del entrenador', async ({ page }
     await expect(page.getByRole('heading', { name: /^Hola, / })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Esta semana' })).toBeVisible()
     await expect(page.getByRole('region', { name: 'Programa' }).getByRole('link', { name: routineName })).toBeVisible()
+    await expect(page.getByText('Tu entrenamiento de hoy', { exact: true })).toBeVisible()
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBeTruthy()
 
     await page.goto('/dashboard')
@@ -373,7 +374,7 @@ test('el alumno entra a su portal y no al panel del entrenador', async ({ page }
     await expect(page.getByRole('heading', { name: 'Progreso', exact: true })).toBeVisible()
 
     await page.goto('/app/profile')
-    await expect(page.getByRole('heading', { name: 'Perfil' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Preferencias' })).toBeVisible()
 
     await page.context().clearCookies()
     await logIn(page, 'trainer', trainerEmail)
@@ -647,8 +648,9 @@ test('asignar un template crea un programa completo que el alumno puede abrir', 
     await logIn(page, 'student', inviteStudentEmail)
     await page.goto('/app/rutina')
 
-    await expect(page.getByText(new RegExp(`^${templateName} · Semana 1 de 1$`))).toBeVisible()
-    await expect(page.getByRole('link', { name: /Entrenar/ })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Mi programa' })).toBeVisible()
+    await expect(page.getByText(`${templateName} · 1 semana`, { exact: true })).toBeVisible()
+    await expect(page.getByRole('button', { name: /ejercicios?/ }).first()).toBeVisible()
 })
 
 test('el planificador del entrenador es claro, responsive y conserva la navegación', async ({ page }, testInfo) => {

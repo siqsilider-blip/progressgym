@@ -159,7 +159,7 @@ export default function StudentAppShell({
                                         </span>
                                     )}
                                 </span>
-                                <span className={`max-w-full truncate text-xs ${isActive || hasUnread ? 'font-bold' : 'font-medium'}`}>
+                                <span className={`max-w-full truncate text-[11px] sm:text-xs ${isActive || hasUnread ? 'font-bold' : 'font-medium'}`}>
                                     {label}
                                 </span>
                             </Link>

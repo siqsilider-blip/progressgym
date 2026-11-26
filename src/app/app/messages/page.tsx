@@ -6,6 +6,7 @@ import MessageComposer from '@/components/coaching/MessageComposer'
 import ReadMarker from '@/components/coaching/ReadMarker'
 import { getRoutineExerciseNameMap } from '@/lib/coaching/getRoutineExerciseNames'
 import StudentMessageThread from '@/components/student/StudentMessageThread'
+import { StudentNotebookHeader } from '@/components/student/StudentNotebook'
 
 type MessageRow = {
     id: string
@@ -24,6 +25,13 @@ const TOPIC_LABELS: Record<string, string> = {
     technique: 'Técnica',
     alternative: 'Alternativa',
 }
+
+const messageDay = new Intl.DateTimeFormat('es-AR', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Argentina/Buenos_Aires',
+})
+const messageTime = new Intl.DateTimeFormat('es-AR', {
+    hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires',
+})
 
 export default async function StudentMessagesPage() {
     const context = await getStudentAppContext()
@@ -72,16 +80,14 @@ export default async function StudentMessagesPage() {
 
     return (
         <main
-            className="mx-auto flex max-w-lg flex-col overflow-hidden px-4 pb-3 pt-5"
+            className="mx-auto flex max-w-lg flex-col overflow-hidden px-5 pb-3 pt-[max(1.25rem,env(safe-area-inset-top))] sm:px-6"
             style={{ height: 'calc(100dvh - 4.75rem - env(safe-area-inset-bottom, 0px))' }}
         >
             {conversationId && <ReadMarker conversationId={conversationId} latestMessageId={latestMessageId} />}
 
-            <header className="shrink-0">
-                <p className="text-sm font-bold text-brand-soft">Tu entrenador</p>
-                <h1 className="mt-1 text-2xl font-black text-foreground">{trainerName}</h1>
-                <p className="mt-1 text-sm text-muted-foreground">Preguntá, contá una molestia o pedí una alternativa.</p>
-            </header>
+            <div className="shrink-0">
+                <StudentNotebookHeader section="Mensajes" title="Tu entrenador" subtitle={trainerName === 'Tu entrenador' ? 'Conversación privada' : `${trainerName} · Conversación privada`} />
+            </div>
 
             {conversationResult.error && (
                 <div className="mt-4 shrink-0 rounded-2xl border border-amber-500/25 bg-amber-500/10 p-4 text-xs leading-5 text-amber-500">
@@ -89,29 +95,34 @@ export default async function StudentMessagesPage() {
                 </div>
             )}
 
-            <section className="mt-4 min-h-0 flex-1 overflow-hidden rounded-2xl border border-border bg-card">
+            <section className="mt-3 min-h-0 flex-1 overflow-hidden">
                 <StudentMessageThread scrollKey={latestMessageId ?? 'empty'}>
                 {typedMessages.length ? (
-                    typedMessages.map((message) => {
+                    typedMessages.map((message, index) => {
                         const own = message.sender_role === 'student'
+                        const dayLabel = messageDay.format(new Date(message.created_at))
+                        const previous = typedMessages[index - 1]
+                        const startsDay = !previous || messageDay.format(new Date(previous.created_at)) !== dayLabel
                         const exerciseName = message.routine_day_exercise_id
                             ? exerciseNameByRoutineExercise.get(message.routine_day_exercise_id)
                             : null
                         return (
-                            <article key={message.id} className={`flex ${own ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`max-w-[86%] rounded-2xl px-3.5 py-2.5 ${own ? 'rounded-br-md bg-primary text-primary-foreground' : 'rounded-bl-md border border-border bg-background text-foreground'}`}>
-                                    <div className="mb-1 flex items-center gap-2 text-[11px] font-bold uppercase tracking-wide opacity-70">
-                                        <span>{own ? 'Vos' : trainerName}</span>
-                                        <span>·</span>
-                                        <span>{TOPIC_LABELS[message.topic] ?? 'Mensaje'}</span>
+                            <article key={message.id}>
+                                {startsDay && <p className="mb-3 border-t border-border pt-2 text-xs text-muted-foreground">{dayLabel.charAt(0).toLocaleUpperCase('es-AR') + dayLabel.slice(1)}</p>}
+                                <div className="flex items-start gap-2.5">
+                                    <span aria-hidden="true" className={`flex size-7 shrink-0 items-center justify-center rounded-full border border-border text-xs font-semibold ${own ? 'bg-accent text-brand-soft' : 'bg-card text-muted-foreground'}`}>
+                                        {own ? 'V' : trainerName.charAt(0).toLocaleUpperCase('es-AR')}
+                                    </span>
+                                    <div className="min-w-0 flex-1 [overflow-wrap:anywhere]">
+                                        <div className="flex flex-wrap justify-between gap-x-3 text-xs">
+                                            <span className="font-semibold">{own ? 'Vos' : trainerName} · {TOPIC_LABELS[message.topic] ?? 'Mensaje'}</span>
+                                            <time dateTime={message.created_at} className="text-muted-foreground">{messageTime.format(new Date(message.created_at))}</time>
+                                        </div>
+                                        {message.routine_day_exercise_id && (
+                                            <p className="mt-0.5 text-xs font-semibold text-brand-soft">Ejercicio · {exerciseName ?? 'Ejercicio de la rutina'}</p>
+                                        )}
+                                        <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed">{message.body}</p>
                                     </div>
-                                    {message.routine_day_exercise_id && (
-                                        <p className="mb-1.5 inline-flex max-w-full rounded-md border border-current/15 bg-black/10 px-2 py-1 text-xs font-bold leading-4 opacity-80">
-                                            Ejercicio · {exerciseName ?? 'Ejercicio de la rutina'}
-                                        </p>
-                                    )}
-                                    <p className="whitespace-pre-wrap text-sm leading-5">{message.body}</p>
-                                    <p className="mt-1 text-right text-[11px] opacity-60">{formatMessageDate(message.created_at)}</p>
                                 </div>
                             </article>
                         )
@@ -126,19 +137,9 @@ export default async function StudentMessagesPage() {
                 </StudentMessageThread>
             </section>
 
-            <section className="z-20 mt-3 shrink-0 rounded-2xl border border-border bg-card p-3 shadow-[0_-8px_30px_-18px_rgba(0,0,0,0.8)]">
-                <MessageComposer placeholder="Escribile a tu entrenador…" />
+            <section className="mt-2 shrink-0 border-t border-border pt-2">
+                <MessageComposer compact placeholder="Escribile a tu entrenador…" />
             </section>
         </main>
     )
-}
-
-function formatMessageDate(value: string) {
-    return new Intl.DateTimeFormat('es-AR', {
-        day: '2-digit',
-        month: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        timeZone: 'America/Argentina/Buenos_Aires',
-    }).format(new Date(value))
 }

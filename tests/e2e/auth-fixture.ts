@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto'
 import { loadEnvConfig } from '@next/env'
 import { createClient } from '@supabase/supabase-js'
 import { removeAuthFixtureData } from './auth-fixture-cleanup'
+import { getIsoWeekday } from '../../src/lib/routineCalendar'
 
 type CreatedFixture = {
     trainerUserId?: string
@@ -365,7 +366,7 @@ export default async function createAuthFixture() {
             routine_id: routine.id,
             status: 'active',
             program_started_on: buenosAiresDateDaysAgo(56),
-            training_weekdays: [1],
+            training_weekdays: [getIsoWeekday(buenosAiresDateDaysAgo(0))],
         })
         if (assignmentError) throw assignmentError
 

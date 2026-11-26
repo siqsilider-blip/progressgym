@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import StudentPageHeader from '@/components/student/StudentPageHeader'
+import { StudentNotebookHeader, notebookPage } from '@/components/student/StudentNotebook'
 import StudentRoutinePlanner, {
     type RoutinePlannerExercise,
     type RoutinePlannerStatus,
@@ -10,7 +10,10 @@ import { getStudentAppContext } from '@/lib/auth/student'
 import { getBuenosAiresDateString, getProgramWeekDateRange } from '@/lib/buenosAiresDate'
 import { getActiveStudentRoutine } from '@/lib/getActiveStudentRoutine'
 import { getRoutineSchedule } from '@/lib/getRoutineSchedule'
-import { resolveWeekdayDateInProgramWeek, type IsoWeekday } from '@/lib/routineCalendar'
+import { formatSpanishDayLabel } from '@/lib/routineCalendar'
+import { getStudentTrainingDates, getStudentTrainingRecommendation } from '@/lib/studentTrainingRecommendation'
+import { compareRoutineExerciseOrder, getRoutineExerciseSetCount } from '@/lib/routineExerciseOrder'
+import { EXERCISE_METRIC_SUFFIXES, getExerciseMetric, type ExerciseMetricFields } from '@/lib/exerciseMetric'
 import { createClient } from '@/lib/supabase/server'
 import { getStudentRoutineWeekProgress } from '@/lib/studentRoutineWeekProgress'
 import { getRoutineDayProgress, getWorkoutCompletionKind, type WorkoutSessionProgressRow } from '@/lib/trainingDomain'
@@ -36,6 +39,8 @@ type RoutineDayExerciseRow = {
     sets: number | null
     reps: string | number | null
     exercise_id: string | null
+    block: string | null
+    position: number | null
 }
 
 export default async function AppRoutinePage(props: PageProps) {
@@ -56,12 +61,10 @@ export default async function AppRoutinePage(props: PageProps) {
             .maybeSingle()
 
         return (
-            <div className="p-4 pb-24">
-                <div className="mx-auto max-w-lg">
-                    <div className="mb-4"><StudentPageHeader title="Rutina" subtitle="Tu programa actual" /></div>
-                    <div className="rounded-2xl border border-dashed border-border bg-card p-8 text-center">
-                        <p className="text-3xl">📋</p>
-                        <p className="mt-3 text-sm font-semibold text-card-foreground">
+            <main className={notebookPage}>
+                <StudentNotebookHeader title="Mi programa" section="Rutina" />
+                    <section className="border-t border-border pt-4">
+                        <p className="text-sm font-semibold text-foreground">
                             {onboarding?.completed_at ? 'Tu entrenador está preparando tu programa' : 'Completá primero tu ficha inicial'}
                         </p>
                         <p className="mt-1 text-xs leading-5 text-muted-foreground">
@@ -74,9 +77,8 @@ export default async function AppRoutinePage(props: PageProps) {
                                 Completar ficha
                             </Link>
                         )}
-                    </div>
-                </div>
-            </div>
+                    </section>
+            </main>
         )
     }
 
@@ -112,7 +114,7 @@ export default async function AppRoutinePage(props: PageProps) {
     if (allDayIds.length > 0) {
         const { data, error } = await supabase
             .from('routine_day_exercises')
-            .select('routine_day_id, sets, reps, exercise_id')
+            .select('routine_day_id, sets, reps, exercise_id, block, position')
             .in('routine_day_id', allDayIds)
             .order('position', { ascending: true, nullsFirst: false })
         if (error) throw error
@@ -120,21 +122,22 @@ export default async function AppRoutinePage(props: PageProps) {
     }
 
     const exerciseIds = Array.from(new Set(exerciseRows.map((row) => row.exercise_id).filter((id): id is string => Boolean(id))))
-    const exerciseNameById = new Map<string, string>()
+    const exerciseById = new Map<string, { name: string | null } & ExerciseMetricFields>()
     if (exerciseIds.length > 0) {
-        const { data, error } = await supabase.from('exercises').select('id, name').in('id', exerciseIds)
+        const { data, error } = await supabase.from('exercises').select('id, name, metric_type, duration_unit').in('id', exerciseIds)
         if (error) throw error
-        for (const exercise of data ?? []) exerciseNameById.set(exercise.id, exercise.name ?? 'Ejercicio')
+        for (const exercise of data ?? []) exerciseById.set(exercise.id, exercise)
     }
 
     const exercisesByDay = new Map<string, RoutinePlannerExercise[]>()
-    for (const row of exerciseRows) {
+    for (const row of exerciseRows.sort(compareRoutineExerciseOrder)) {
         if (!row.routine_day_id) continue
         const exercises = exercisesByDay.get(row.routine_day_id) ?? []
+        const exercise = row.exercise_id ? exerciseById.get(row.exercise_id) : undefined
         exercises.push({
-            name: row.exercise_id ? exerciseNameById.get(row.exercise_id) ?? 'Ejercicio' : 'Ejercicio',
-            sets: row.sets ?? 3,
-            reps: row.reps == null ? null : String(row.reps),
+            name: exercise?.name ?? 'Ejercicio',
+            sets: getRoutineExerciseSetCount(row.sets),
+            target: row.reps == null ? null : `${row.reps} ${EXERCISE_METRIC_SUFFIXES[getExerciseMetric(exercise)]}`,
         })
         exercisesByDay.set(row.routine_day_id, exercises)
     }
@@ -143,7 +146,7 @@ export default async function AppRoutinePage(props: PageProps) {
     for (const week of schedule.orderedWeeks) {
         trainingDaysByWeek.set(week.id, allDays
             .filter((day) => day.routine_week_id === week.id && (exercisesByDay.get(day.id)?.length ?? 0) > 0)
-            .sort((left, right) => (left.day_index ?? 0) - (right.day_index ?? 0)))
+            .sort((left, right) => ((left.day_index ?? Number.MAX_SAFE_INTEGER) - (right.day_index ?? Number.MAX_SAFE_INTEGER)) || left.id.localeCompare(right.id)))
     }
 
     const requiredTrainingDays = Math.max(0, ...Array.from(trainingDaysByWeek.values()).map((days) => days.length))
@@ -185,12 +188,6 @@ export default async function AppRoutinePage(props: PageProps) {
 
     const today = getBuenosAiresDateString()
     const trainingWeekdays = assignment.trainingWeekdays
-    const hasRealSchedule = Boolean(
-        assignment.programStartedOn
-        && trainingWeekdays
-        && trainingWeekdays.length >= requiredTrainingDays
-        && requiredTrainingDays > 0
-    )
 
     const currentWeekIndex = schedule.orderedWeeks.findIndex((week) => week.id === schedule.currentWeek?.id)
     const currentWeekRange = assignment.programStartedOn && currentWeekIndex >= 0
@@ -221,9 +218,28 @@ export default async function AppRoutinePage(props: PageProps) {
             : null
         const weekDays = trainingDaysByWeek.get(week.id) ?? []
         const weekDayIds = new Set(weekDays.map((day) => day.id))
-        const plannedDates = range && hasRealSchedule
-            ? (trainingWeekdays ?? []).slice(0, weekDays.length).map((weekday) => resolveWeekdayDateInProgramWeek(range.weekStart, weekday as IsoWeekday))
-            : []
+        const plannedDates = getStudentTrainingDates(range?.weekStart ?? null, trainingWeekdays, weekDays.length)
+        const isCurrent = week.id === schedule.currentWeek?.id
+        const daysWithProgress = weekDays.map((day, index) => {
+            const progress = range
+                ? getRoutineDayProgress({ dayId: day.id, sessions, today, weekStart: range.weekStart, weekEnd: range.weekEnd })
+                : {
+                    status: (isCurrent ? currentWeekProgress?.statusByDayId.get(day.id) : null) ?? 'pending' as const,
+                    sessionId: (isCurrent ? currentWeekProgress?.sessionIdByDayId.get(day.id) : null) ?? null,
+                }
+            return {
+                id: day.id, name: day.name?.trim() || `Entrenamiento ${index + 1}`, dayIndex: index + 1,
+                status: progress.status, sessionId: progress.sessionId,
+                exercises: exercisesByDay.get(day.id) ?? [],
+            }
+        })
+        const recommendation = isCurrent ? getStudentTrainingRecommendation({
+            days: daysWithProgress,
+            today,
+            todayActivityId: todayActivityDayId,
+            plannedDates,
+            programStartedOn: assignment.programStartedOn,
+        }) : null
         const sessionsForWeek = range
             ? sessions.filter((session) => (
                 Boolean(session.routine_day_id && weekDayIds.has(session.routine_day_id))
@@ -239,7 +255,23 @@ export default async function AppRoutinePage(props: PageProps) {
             ))
             .map((session) => session.performed_date)
             .filter((date): date is string => Boolean(date))
-        const scheduledDates: RoutinePlannerWeek['scheduledDates'] = Array.from(new Set([...plannedDates, ...actualDates]))
+        const plannedWorkoutByDate = new Map<string, string>()
+        if (isCurrent) {
+            const recommended = recommendation?.todayDay
+            if (recommended?.status === 'pending') plannedWorkoutByDate.set(today, recommended.id)
+            const futureDates = plannedDates.filter((date) => date > today)
+            daysWithProgress.filter((day) => day.status === 'pending' && day.id !== recommended?.id)
+                .forEach((day, index) => {
+                    const date = futureDates[index]
+                    if (date) plannedWorkoutByDate.set(date, day.id)
+                })
+        } else {
+            plannedDates.forEach((date, index) => {
+                const day = daysWithProgress[index]
+                if (day) plannedWorkoutByDate.set(date, day.id)
+            })
+        }
+        const scheduledDates: RoutinePlannerWeek['scheduledDates'] = Array.from(new Set([...plannedDates, ...actualDates, ...plannedWorkoutByDate.keys()]))
             .sort()
             .map((date) => {
                 const datedSessions = sessionsForWeek
@@ -260,11 +292,10 @@ export default async function AppRoutinePage(props: PageProps) {
                 return {
                     date,
                     status,
-                    dayId: explainingSession?.routine_day_id ?? null,
+                    dayId: explainingSession?.routine_day_id ?? plannedWorkoutByDate.get(date) ?? null,
                     suggested: plannedDates.includes(date),
                 }
             })
-        const isCurrent = week.id === schedule.currentWeek?.id
         return {
             id: week.id,
             monthId: week.routine_month_id,
@@ -274,31 +305,16 @@ export default async function AppRoutinePage(props: PageProps) {
             weekEnd: range?.weekEnd ?? null,
             isCurrent,
             scheduledDates,
-            days: weekDays.map((day, dayPosition) => {
-                const progress = range
-                    ? getRoutineDayProgress({
-                        dayId: day.id,
-                        sessions,
-                        today,
-                        weekStart: range.weekStart,
-                        weekEnd: range.weekEnd,
-                    })
-                    : { status: 'pending' as const, sessionId: null }
+            days: daysWithProgress.map((day) => {
+                const isToday = day.id === recommendation?.todayDay?.id
+                const date = scheduledDates.find((slot) => slot.date >= today && slot.dayId === day.id)?.date
                 return {
-                    id: day.id,
-                    name: day.name?.trim() || `Entrenamiento ${dayPosition + 1}`,
-                    dayIndex: dayPosition + 1,
-                    status: progress.status satisfies RoutinePlannerStatus,
-                    sessionId: progress.sessionId,
-                    canStart: isCurrent
-                        && progress.status !== 'completed'
-                        && (!todayActivityDayId || todayActivityDayId === day.id),
-                    blockedReason: !isCurrent
-                        ? 'Disponible en su semana'
-                        : todayActivityDayId && todayActivityDayId !== day.id
-                            ? 'Disponible mañana'
-                            : null,
-                    exercises: exercisesByDay.get(day.id) ?? [],
+                    ...day,
+                    isToday,
+                    canStart: isToday && day.status !== 'completed',
+                    blockedReason: !isCurrent ? 'Disponible en su semana'
+                        : date ? `Programado para ${formatSpanishDayLabel(date).toLocaleLowerCase('es-AR')}`
+                            : 'Consultá Inicio para ver tu próximo entrenamiento',
                 }
             }),
         }
@@ -310,9 +326,9 @@ export default async function AppRoutinePage(props: PageProps) {
 
     if (plannerWeeks.length === 0 || requiredTrainingDays === 0) {
         return (
-            <main className="mx-auto max-w-lg px-4 pb-28 pt-5">
-                <StudentPageHeader title="Rutina" subtitle={routine?.name ?? 'Programa actual'} />
-                <div className="mt-4 rounded-2xl border border-dashed border-border bg-card p-7 text-center">
+            <main className={notebookPage}>
+                <StudentNotebookHeader title="Mi programa" section="Rutina" subtitle={routine?.name ?? 'Programa actual'} />
+                <div className="border-t border-border pt-4">
                     <p className="text-sm font-bold text-foreground">El programa todavía no tiene entrenamientos</p>
                     <p className="mt-1 text-xs leading-5 text-muted-foreground">Tu entrenador está terminando de prepararlo.</p>
                 </div>
@@ -321,7 +337,7 @@ export default async function AppRoutinePage(props: PageProps) {
     }
 
     return (
-        <main className="mx-auto max-w-lg px-4 pb-28 pt-5">
+        <main className={notebookPage}>
             <StudentRoutinePlanner
                 routineName={routine?.name ?? 'Programa actual'}
                 weeks={plannerWeeks}
