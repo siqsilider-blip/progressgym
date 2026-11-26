@@ -7,6 +7,7 @@ import { LocalNotifications } from '@capacitor/local-notifications'
 import { SplashScreen } from '@capacitor/splash-screen'
 import { StatusBar, Style } from '@capacitor/status-bar'
 import { usePathname, useRouter } from 'next/navigation'
+import { APPEARANCES, type Appearance } from '@/lib/appearance'
 
 const DEFAULT_WEB_HOST = 'progressgym-sigma.vercel.app'
 const RESUME_REFRESH_AFTER_MS = 30_000
@@ -51,7 +52,7 @@ function roleRoot(pathname: string) {
   return '/login'
 }
 
-export default function NativeAppBridge() {
+export default function NativeAppBridge({ appearance }: { appearance: Appearance }) {
   const router = useRouter()
   const pathname = usePathname()
   const pathnameRef = React.useRef(pathname)
@@ -60,6 +61,21 @@ export default function NativeAppBridge() {
   React.useEffect(() => {
     pathnameRef.current = pathname
   }, [pathname])
+
+  React.useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return
+
+    const updateStatusBar = () => {
+      void Promise.allSettled([
+        StatusBar.setStyle({ style: appearance === 'light' ? Style.Light : Style.Dark }),
+        StatusBar.setBackgroundColor({ color: APPEARANCES[appearance].background }),
+      ])
+    }
+
+    updateStatusBar()
+    window.addEventListener('progrezzia:native-resume', updateStatusBar)
+    return () => window.removeEventListener('progrezzia:native-resume', updateStatusBar)
+  }, [appearance])
 
   React.useEffect(() => {
     if (!Capacitor.isNativePlatform()) return
@@ -75,10 +91,6 @@ export default function NativeAppBridge() {
 
     const setup = async () => {
       await Promise.allSettled([
-        // Capacitor llama `Dark` al estilo pensado para fondos oscuros:
-        // muestra texto e iconos claros en la barra de estado.
-        StatusBar.setStyle({ style: Style.Dark }),
-        StatusBar.setBackgroundColor({ color: '#111111' }),
         SplashScreen.hide(),
         ...(Capacitor.getPlatform() === 'android'
           ? [App.toggleBackButtonHandler({ enabled: true })]

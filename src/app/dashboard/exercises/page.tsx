@@ -262,16 +262,16 @@ export default function ExercisesPage() {
                     {filtered.map((x) => {
                         const initials = x.name.slice(0, 2).toUpperCase()
                         return (
-                            <div key={x.id} className="flex min-h-20 items-center justify-between gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.025] px-4 py-3 transition hover:border-primary/20 hover:bg-white/[0.04]">
+                            <div key={x.id} className="flex min-h-20 items-center justify-between gap-3 rounded-2xl border border-border bg-card px-4 py-3 transition hover:border-primary/20 hover:bg-accent/70">
                                 <div className="flex min-w-0 items-center gap-3">
                                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-xs font-bold text-primary">
                                         {initials}
                                     </div>
                                     <div className="min-w-0">
-                                        <p className="truncate text-sm font-semibold text-zinc-100">{x.name}</p>
+                                        <p className="truncate text-sm font-semibold text-card-foreground">{x.name}</p>
                                         <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
                                             <p className="text-xs text-muted-foreground">{x.trainer_id === null ? 'Compartido' : 'Propio'} · {exerciseMetricLabel(x)}</p>
-                                            <span className={`inline-flex items-center gap-1 text-[11px] font-medium ${x.video_url ? 'text-emerald-400' : 'text-amber-400'}`}>
+                                            <span className={`inline-flex items-center gap-1 text-[11px] font-medium ${x.video_url ? 'text-emerald-800 dark:text-emerald-400' : 'text-amber-800 dark:text-amber-400'}`}>
                                                 <CirclePlay className="h-3 w-3" aria-hidden="true" />
                                                 {x.video_url ? 'Video listo' : 'Sin video'}
                                             </span>
@@ -286,7 +286,7 @@ export default function ExercisesPage() {
                                         onClick={() => openEdit(x)}
                                         aria-label={`${x.trainer_id === null ? 'Personalizar' : 'Editar'} ${x.name}`}
                                         title={x.trainer_id === null ? 'Personalizar ejercicio' : 'Editar ejercicio'}
-                                        className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-primary/10 hover:text-primary"
+                                        className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-primary/10 hover:text-primary"
                                     >
                                         <Pencil className="h-4 w-4" aria-hidden="true" />
                                     </button>
@@ -295,7 +295,7 @@ export default function ExercisesPage() {
                                             type="button"
                                             onClick={() => handleDelete(x.id)}
                                             aria-label={`Eliminar ${x.name}`}
-                                            className="rounded-lg p-1.5 text-zinc-400 transition hover:bg-red-500/10 hover:text-red-400"
+                                            className="rounded-lg p-1.5 text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive"
                                         >
                                             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

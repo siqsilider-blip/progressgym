@@ -188,14 +188,13 @@ export default async function StudentsPage() {
             />
 
             {studentsWithRisk.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-white/10 p-10 text-center">
+                <div className="rounded-2xl border border-dashed border-border p-10 text-center">
                     <p className="text-3xl mb-3">👥</p>
-                    <p className="text-sm font-semibold text-white/60">Todavía no tenés alumnos</p>
-                    <p className="mt-1 text-xs text-white/30">Agregá tu primer alumno para empezar</p>
+                    <p className="text-sm font-semibold text-foreground">Todavía no tenés alumnos</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Agregá tu primer alumno para empezar</p>
                     <Link
                         href="/dashboard/students/new"
-                        className="mt-4 inline-block rounded-xl px-5 py-2.5 text-sm font-bold text-[#111111]"
-                        style={{ background: 'linear-gradient(135deg, #c98796, #e9a0ad)' }}
+                        className="mt-4 inline-block rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground"
                     >
                         + Agregar alumno
                     </Link>

@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
-import { User, Mail, Shield, Moon, Scale, Dumbbell, BarChart2, Building2, LogOut, Lock } from 'lucide-react'
+import { User, Mail, Shield, Scale, Dumbbell, BarChart2, Building2, LogOut, Lock } from 'lucide-react'
 import { saveSettings, signOutAction } from './actions'
 import { type SettingsData } from './types'
 import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
@@ -10,11 +10,19 @@ import AccountDeletionCard from '@/components/account/AccountDeletionCard'
 
 type Props = {
     email: string
-    theme: 'dark' | 'light'
+    appearance: React.ReactNode
     initialSettings: SettingsData
 }
 
-export default function SettingsClient({ email, theme, initialSettings }: Props) {
+const card = 'rounded-xl border border-border bg-card p-4'
+const labelCls = 'mb-1.5 block text-sm font-medium text-foreground'
+const inputCls = 'h-11 w-full rounded-xl border border-border bg-background px-4 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-ring'
+const iconBox = 'flex h-9 w-9 items-center justify-center rounded-lg bg-secondary text-muted-foreground'
+const sectionTitle = 'text-sm font-semibold text-foreground'
+const sectionDesc = 'mt-0.5 text-xs text-muted-foreground'
+const accountControl = 'flex w-full items-center gap-3 rounded-xl border border-border bg-muted/40 px-4 py-3 text-left text-sm text-foreground transition hover:bg-muted'
+
+export default function SettingsClient({ email, appearance, initialSettings }: Props) {
     const [settings, setSettings] = useState<SettingsData>(initialSettings)
     const [saving, setSaving] = useState(false)
     const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle')
@@ -42,22 +50,8 @@ export default function SettingsClient({ email, theme, initialSettings }: Props)
         }
     }
 
-    const isLight = theme === 'light'
-
-    const card = isLight ? 'border-zinc-200 bg-white' : 'border-zinc-800 bg-zinc-900/60'
-    const labelCls = `mb-1.5 block text-sm font-medium ${isLight ? 'text-zinc-700' : 'text-zinc-200'}`
-    const inputCls = `h-11 w-full rounded-xl border px-4 text-sm outline-none transition ${isLight
-        ? 'border-zinc-200 bg-white text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400'
-        : 'border-zinc-800 bg-zinc-950 text-white placeholder:text-zinc-500 focus:border-zinc-600'}`
-    const selectCls = `h-11 w-full rounded-xl border px-4 text-sm outline-none transition ${isLight
-        ? 'border-zinc-200 bg-white text-zinc-900 focus:border-zinc-400'
-        : 'border-zinc-800 bg-zinc-950 text-white focus:border-zinc-600'}`
-    const iconBox = `flex h-9 w-9 items-center justify-center rounded-lg ${isLight ? 'bg-zinc-100 text-zinc-600' : 'bg-zinc-800 text-zinc-300'}`
-    const sectionTitle = `text-sm font-semibold ${isLight ? 'text-zinc-900' : 'text-white'}`
-    const sectionDesc = `mt-0.5 text-xs ${isLight ? 'text-zinc-500' : 'text-zinc-400'}`
-
     return (
-        <div className={`min-h-screen ${isLight ? 'bg-zinc-100' : 'bg-zinc-950'}`} style={{ paddingBottom: 'calc(72px + 4rem + env(safe-area-inset-bottom, 0px))' }}>
+        <div className="min-h-screen bg-background" style={{ paddingBottom: 'calc(72px + 4rem + env(safe-area-inset-bottom, 0px))' }}>
             <div className="mx-auto w-full max-w-6xl space-y-4 px-4 py-4 md:px-6 md:py-6 xl:px-8">
                 <DashboardPageHeader
                     title="Configuración"
@@ -65,29 +59,29 @@ export default function SettingsClient({ email, theme, initialSettings }: Props)
                     backHref="/dashboard"
                 />
 
+                {appearance}
+
                 <div className="grid gap-4 xl:grid-cols-2 xl:items-start">
 
                     {/* ── Perfil ── */}
-                    <Section title="Perfil" desc="Datos de tu cuenta." icon={<User className="h-5 w-5" />} iconBox={iconBox} card={card} sectionTitle={sectionTitle} sectionDesc={sectionDesc}>
+                    <Section title="Perfil" desc="Datos de tu cuenta." icon={<User className="h-5 w-5" />}>
                         <div className="mt-5 space-y-4">
                             <div>
                                 <label className={`${labelCls} flex items-center gap-2`}>
-                                    <Mail className="h-4 w-4 text-zinc-400" /> Email
+                                    <Mail className="h-4 w-4 text-muted-foreground" /> Email
                                 </label>
                                 <input
                                     type="email"
                                     value={email}
                                     disabled
-                                    className={`h-11 w-full rounded-xl border px-4 text-sm outline-none ${isLight
-                                        ? 'border-zinc-200 bg-zinc-100 text-zinc-500'
-                                        : 'border-zinc-800 bg-zinc-800/70 text-zinc-400'}`}
+                                    className="h-11 w-full rounded-xl border border-border bg-muted px-4 text-sm text-muted-foreground outline-none"
                                 />
-                                <p className="mt-1 text-xs text-zinc-500">No editable desde acá.</p>
+                                <p className="mt-1 text-xs text-muted-foreground">No editable desde acá.</p>
                             </div>
 
                             <div>
                                 <label className={`${labelCls} flex items-center gap-2`}>
-                                    <User className="h-4 w-4 text-zinc-400" /> Nombre
+                                    <User className="h-4 w-4 text-muted-foreground" /> Nombre
                                 </label>
                                 <input
                                     type="text"
@@ -98,32 +92,20 @@ export default function SettingsClient({ email, theme, initialSettings }: Props)
                                 />
                             </div>
 
-                            <div className="grid gap-4 md:grid-cols-2">
-                                <div>
-                                    <label className={`${labelCls} flex items-center gap-2`}>
-                                        <Scale className="h-4 w-4 text-zinc-400" /> Unidad de peso
-                                    </label>
-                                    <select value={settings.weight_unit} onChange={(e) => set('weight_unit', e.target.value as 'kg' | 'lb')} className={selectCls}>
-                                        <option value="kg">Kilogramos (kg)</option>
-                                        <option value="lb">Libras (lb)</option>
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label className={`${labelCls} flex items-center gap-2`}>
-                                        <Moon className="h-4 w-4 text-zinc-400" /> Apariencia
-                                    </label>
-                                    <select value={settings.theme} onChange={(e) => set('theme', e.target.value as SettingsData['theme'])} className={selectCls}>
-                                        <option value="dark">Oscuro</option>
-                                        <option value="light">Claro</option>
-                                    </select>
-                                </div>
+                            <div>
+                                <label htmlFor="settings-weight-unit" className={`${labelCls} flex items-center gap-2`}>
+                                    <Scale className="h-4 w-4 text-muted-foreground" /> Unidad de peso
+                                </label>
+                                <select id="settings-weight-unit" value={settings.weight_unit} onChange={(e) => set('weight_unit', e.target.value as 'kg' | 'lb')} className={inputCls}>
+                                    <option value="kg">Kilogramos (kg)</option>
+                                    <option value="lb">Libras (lb)</option>
+                                </select>
                             </div>
                         </div>
                     </Section>
 
                     {/* ── Profesional ── */}
-                    <Section title="Profesional" desc="Info de tu estudio o servicio." icon={<Building2 className="h-5 w-5" />} iconBox={iconBox} card={card} sectionTitle={sectionTitle} sectionDesc={sectionDesc}>
+                    <Section title="Profesional" desc="Info de tu estudio o servicio." icon={<Building2 className="h-5 w-5" />}>
                         <div className="mt-5 space-y-4">
                             <div className="grid gap-4 md:grid-cols-2">
                                 <div>
@@ -143,7 +125,7 @@ export default function SettingsClient({ email, theme, initialSettings }: Props)
                     </Section>
 
                     {/* ── Entrenamiento ── */}
-                    <Section title="Entrenamiento" desc="Valores por defecto al crear ejercicios." icon={<Dumbbell className="h-5 w-5" />} iconBox={iconBox} card={card} sectionTitle={sectionTitle} sectionDesc={sectionDesc}>
+                    <Section title="Entrenamiento" desc="Valores por defecto al crear ejercicios." icon={<Dumbbell className="h-5 w-5" />}>
                         <div className="mt-5 grid gap-4 md:grid-cols-3">
                             <div>
                                 <label className={labelCls}>Series por defecto</label>
@@ -161,14 +143,14 @@ export default function SettingsClient({ email, theme, initialSettings }: Props)
                     </Section>
 
                     {/* ── Tracking ── */}
-                    <Section title="Tracking" desc="Qué mostrar durante el entrenamiento." icon={<BarChart2 className="h-5 w-5" />} iconBox={iconBox} card={card} sectionTitle={sectionTitle} sectionDesc={sectionDesc}>
+                    <Section title="Tracking" desc="Qué mostrar durante el entrenamiento." icon={<BarChart2 className="h-5 w-5" />}>
                         <div className="mt-5 space-y-1">
-                            <ToggleRow label="Mostrar PRs" description="Avisa cuando registrás un nuevo récord desde el modo entrenador" checked={settings.show_prs} onChange={(v) => set('show_prs', v)} isLight={isLight} />
+                            <ToggleRow label="Mostrar PRs" description="Avisa cuando registrás un nuevo récord desde el modo entrenador" checked={settings.show_prs} onChange={(v) => set('show_prs', v)} />
                         </div>
                     </Section>
 
                     {/* ── Cuenta ── */}
-                    <div className={`rounded-xl border p-4 ${isLight ? 'border-zinc-200 bg-white' : 'border-zinc-800 bg-zinc-900/40'}`}>
+                    <div className={card}>
                         <div className="flex items-start justify-between gap-4">
                             <div>
                                 <h2 className={sectionTitle}>Cuenta</h2>
@@ -180,19 +162,19 @@ export default function SettingsClient({ email, theme, initialSettings }: Props)
                         <div className="mt-5 space-y-2">
                             <Link
                                 href={`/forgot-password?email=${encodeURIComponent(email)}`}
-                                className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm transition ${isLight ? 'border border-zinc-200 bg-zinc-50 text-zinc-700 hover:bg-zinc-100' : 'border border-zinc-800 bg-zinc-800/40 text-zinc-300 hover:bg-zinc-800'}`}
+                                className={accountControl}
                             >
-                                <Lock className="h-4 w-4 shrink-0 text-zinc-400" />
+                                <Lock className="h-4 w-4 shrink-0 text-muted-foreground" />
                                 <span className="flex-1 font-medium">Cambiar contraseña</span>
-                                <span className={`text-xs ${isLight ? 'text-zinc-400' : 'text-zinc-500'}`}>Enviar enlace</span>
+                                <span className="text-xs text-muted-foreground">Enviar enlace</span>
                             </Link>
 
                             <form action={signOutAction}>
                                 <button
                                     type="submit"
-                                    className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm transition ${isLight ? 'border border-zinc-200 bg-zinc-50 text-zinc-700 hover:bg-zinc-100' : 'border border-zinc-800 bg-zinc-800/40 text-zinc-300 hover:bg-zinc-800'}`}
+                                    className={accountControl}
                                 >
-                                    <LogOut className="h-4 w-4 shrink-0 text-zinc-400" />
+                                    <LogOut className="h-4 w-4 shrink-0 text-muted-foreground" />
                                     <span className="font-medium">Cerrar sesión</span>
                                 </button>
                             </form>
@@ -206,9 +188,7 @@ export default function SettingsClient({ email, theme, initialSettings }: Props)
 
             {/* ── Sticky save bar ── */}
             <div
-                className={`fixed bottom-[calc(72px+env(safe-area-inset-bottom,0px))] left-0 right-0 z-40 border-t px-4 py-3 backdrop-blur-sm lg:bottom-0 lg:left-64 ${isLight
-                    ? 'border-zinc-200 bg-white/90'
-                    : 'border-zinc-800 bg-zinc-950/90'}`}
+                className="fixed bottom-[calc(72px+env(safe-area-inset-bottom,0px))] left-0 right-0 z-40 border-t border-border bg-background/90 px-4 py-3 backdrop-blur-sm lg:bottom-0 lg:left-64"
             >
                 <div className="mx-auto flex max-w-6xl items-center gap-3">
                     {status === 'success' && (
@@ -223,7 +203,7 @@ export default function SettingsClient({ email, theme, initialSettings }: Props)
                     )}
                     <div className="flex-1" />
                     {isDirty && status !== 'success' && (
-                        <p className={`text-xs ${isLight ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                        <p className="text-xs text-muted-foreground">
                             Cambios sin guardar
                         </p>
                     )}
@@ -231,9 +211,7 @@ export default function SettingsClient({ email, theme, initialSettings }: Props)
                         type="button"
                         onClick={handleSave}
                         disabled={!isDirty || saving}
-                        className={`h-10 rounded-xl px-6 text-sm font-semibold transition disabled:opacity-40 ${isLight
-                            ? 'bg-zinc-900 text-white hover:bg-zinc-800'
-                            : 'bg-white text-black hover:bg-zinc-200'}`}
+                        className="h-10 rounded-xl bg-primary px-6 text-sm font-semibold text-primary-foreground transition hover:brightness-95 disabled:opacity-40"
                     >
                         {saving ? 'Guardando...' : 'Guardar cambios'}
                     </button>
@@ -244,19 +222,15 @@ export default function SettingsClient({ email, theme, initialSettings }: Props)
 }
 
 function Section({
-    title, desc, icon, iconBox, card, sectionTitle, sectionDesc, children,
+    title, desc, icon, children,
 }: {
     title: string
     desc: string
     icon: React.ReactNode
-    iconBox: string
-    card: string
-    sectionTitle: string
-    sectionDesc: string
     children: React.ReactNode
 }) {
     return (
-        <div className={`rounded-xl border p-4 ${card}`}>
+        <div className={card}>
             <div className="flex items-start justify-between gap-4">
                 <div>
                     <h2 className={sectionTitle}>{title}</h2>
@@ -270,26 +244,25 @@ function Section({
 }
 
 function ToggleRow({
-    label, description, checked, onChange, isLight,
+    label, description, checked, onChange,
 }: {
     label: string
     description: string
     checked: boolean
     onChange: (v: boolean) => void
-    isLight: boolean
 }) {
     return (
         <button
             type="button"
             onClick={() => onChange(!checked)}
-            className={`flex w-full items-center justify-between gap-4 rounded-xl px-3 py-2.5 text-left transition ${isLight ? 'hover:bg-zinc-50' : 'hover:bg-zinc-800/50'}`}
+            className="flex w-full items-center justify-between gap-4 rounded-xl px-3 py-2.5 text-left transition hover:bg-muted/50"
         >
             <div className="min-w-0">
-                <p className={`text-sm font-medium ${isLight ? 'text-zinc-800' : 'text-zinc-200'}`}>{label}</p>
-                <p className={`text-xs ${isLight ? 'text-zinc-500' : 'text-zinc-500'}`}>{description}</p>
+                <p className="text-sm font-medium text-foreground">{label}</p>
+                <p className="text-xs text-muted-foreground">{description}</p>
             </div>
             <div className="relative shrink-0">
-                <div className={`h-6 w-11 rounded-full transition-colors ${checked ? 'bg-primary' : isLight ? 'bg-zinc-200' : 'bg-zinc-700'}`} />
+                <div className={`h-6 w-11 rounded-full transition-colors ${checked ? 'bg-primary' : 'bg-muted-foreground/45'}`} />
                 <div className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${checked ? 'left-[22px]' : 'left-0.5'}`} />
             </div>
         </button>

@@ -1,4 +1,4 @@
-import { cookies } from 'next/headers'
+import { getAppearance } from '@/lib/serverAppearance'
 import Link from 'next/link'
 import { AlertTriangle, ArrowRight, UserPlus, UserX } from 'lucide-react'
 import AppBadge from '@/components/ui/app-badge'
@@ -82,9 +82,7 @@ export default async function TrainerAlertsCard({
 }: {
     alerts: TrainerAlert[]
 }) {
-    const cookieStore = await cookies()
-    const theme = cookieStore.get('theme')?.value === 'light' ? 'light' : 'dark'
-    const isLight = theme === 'light'
+    const isLight = await getAppearance() === 'light'
 
     return (
         <div className="rounded-2xl border p-6" style={{borderColor: 'rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)'}}>

@@ -116,8 +116,8 @@ export default function SidebarClient({
     return (
         <>
             {/* ── Sidebar desktop ── */}
-            <aside className="hidden border-white/[0.06] bg-[#111111] text-white lg:sticky lg:top-0 lg:flex lg:h-dvh lg:w-64 lg:shrink-0 lg:flex-col lg:overflow-y-auto lg:border-r">
-                <div className="border-b border-white/[0.06] px-6 py-6">
+            <aside className="hidden border-sidebar-border bg-sidebar text-sidebar-foreground lg:sticky lg:top-0 lg:flex lg:h-dvh lg:w-64 lg:shrink-0 lg:flex-col lg:overflow-y-auto lg:border-r">
+                <div className="border-b border-sidebar-border px-6 py-6">
                     <Link href="/dashboard" prefetch className="block">
                         <div className="flex items-center gap-2.5">
                             <div
@@ -129,14 +129,14 @@ export default function SidebarClient({
                                 </svg>
                             </div>
                             <div>
-                                <h1 className="text-sm font-black tracking-tight text-white">Progrezzia</h1>
-                                <p className="text-[10px] text-white/30">Panel del entrenador</p>
+                                <h1 className="text-sm font-black tracking-tight text-sidebar-foreground">Progrezzia</h1>
+                                <p className="text-[10px] text-muted-foreground">Panel del entrenador</p>
                             </div>
                         </div>
                     </Link>
                 </div>
 
-                <div className="border-b border-white/[0.06] px-3 py-3">
+                <div className="border-b border-sidebar-border px-3 py-3">
                     <Link
                         href="/dashboard/new"
                         prefetch
@@ -162,11 +162,11 @@ export default function SidebarClient({
                                     onClick={() => setPendingHref(item.href)}
                                     aria-busy={isPending}
                                     className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${isActive || isPending
-                                            ? 'bg-brand/15 text-brand border border-brand/20'
-                                            : 'text-white/40 hover:bg-white/[0.04] hover:text-white/80 border border-transparent'
+                                            ? 'border border-sidebar-primary/20 bg-sidebar-accent text-sidebar-primary'
+                                            : 'border border-transparent text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground'
                                         }`}
                                 >
-                                    <Icon className={`h-4 w-4 ${isActive ? 'text-brand' : ''}`} />
+                                    <Icon className={`h-4 w-4 ${isActive ? 'text-sidebar-primary' : ''}`} />
                                     {item.label}
                                     {item.label === 'Mensajes' && unreadMessages > 0 && (
                                         <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-black text-white">{Math.min(unreadMessages, 99)}</span>
@@ -180,13 +180,13 @@ export default function SidebarClient({
                     </div>
                 </nav>
 
-                <div className="border-t border-white/[0.06] p-3">
+                <div className="border-t border-sidebar-border p-3">
                     <Link
                         href="/dashboard/settings"
                         prefetch
                         className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all mb-1 ${pathname === '/dashboard/settings'
-                                ? 'bg-brand/15 text-brand border border-brand/20'
-                                : 'text-white/40 hover:bg-white/[0.04] hover:text-white/80 border border-transparent'
+                                ? 'border border-sidebar-primary/20 bg-sidebar-accent text-sidebar-primary'
+                                : 'border border-transparent text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground'
                             }`}
                     >
                         <Settings className="h-4 w-4" />
@@ -195,7 +195,7 @@ export default function SidebarClient({
                     <form action={signOutAction}>
                         <button
                             type="submit"
-                            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/40 transition-all hover:bg-white/[0.04] hover:text-white/80 border border-transparent"
+                            className="flex w-full items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-sm font-medium text-muted-foreground transition-all hover:bg-sidebar-accent hover:text-sidebar-foreground"
                         >
                             <LogOut className="h-4 w-4" />
                             Cerrar sesión
@@ -205,7 +205,7 @@ export default function SidebarClient({
             </aside>
 
             {/* ── Header mobile ── */}
-            <div className="fixed inset-x-0 top-0 z-40 flex h-14 items-center justify-between border-b border-white/[0.06] px-4 lg:hidden bg-[#111111]/95 backdrop-blur">
+            <div className="fixed inset-x-0 top-0 z-40 flex h-14 items-center justify-between border-b border-sidebar-border bg-sidebar/95 px-4 backdrop-blur lg:hidden">
                 <Link href="/dashboard" prefetch className="flex items-center gap-2">
                     <div
                         className="flex h-6 w-6 items-center justify-center rounded-lg"
@@ -215,7 +215,7 @@ export default function SidebarClient({
                             <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                         </svg>
                     </div>
-                    <span className="text-sm font-black text-white">Progrezzia</span>
+                    <span className="text-sm font-black text-sidebar-foreground">Progrezzia</span>
                 </Link>
 
                 <div className="flex items-center gap-1">
@@ -223,7 +223,7 @@ export default function SidebarClient({
                         href="/dashboard/notifications"
                         prefetch
                         aria-label="Avisos"
-                        className="relative flex h-8 w-8 items-center justify-center rounded-lg text-white/40 transition-colors hover:bg-white/[0.06] hover:text-white"
+                        className="relative flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
                     >
                         <Bell className="h-4 w-4" />
                         {unreadNotifications > 0 && (
@@ -236,7 +236,7 @@ export default function SidebarClient({
                         href="/dashboard/settings"
                         prefetch
                         aria-label="Configuración"
-                        className="flex h-8 w-8 items-center justify-center rounded-lg text-white/40 hover:bg-white/[0.06] hover:text-white transition-colors"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
                     >
                         <Settings className="h-4 w-4" />
                     </Link>
@@ -244,7 +244,7 @@ export default function SidebarClient({
             </div>
 
             {/* ── Nav mobile bottom ── */}
-            <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-white/[0.06] lg:hidden bg-[#111111]/95 backdrop-blur">
+            <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-sidebar-border bg-sidebar/95 backdrop-blur lg:hidden">
                 <div className="grid grid-cols-5">
                     {navItems.filter((item) => item.mobile !== false).map((item) => {
                         const Icon = item.icon
@@ -259,8 +259,8 @@ export default function SidebarClient({
                                 onClick={() => setPendingHref(item.href)}
                                 aria-busy={isPending}
                                 className={`flex flex-col items-center justify-center gap-1 py-2.5 text-[10px] font-medium transition-colors ${isActive || isPending
-                                        ? 'text-brand'
-                                        : 'text-white/30 hover:text-white/60'
+                                        ? 'text-sidebar-primary'
+                                        : 'text-muted-foreground hover:text-sidebar-foreground'
                                     }`}
                             >
                                 <span className="relative">

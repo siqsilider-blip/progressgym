@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
 
 export async function POST(req: Request) {
     const supabase = await createClient()
@@ -8,7 +7,6 @@ export async function POST(req: Request) {
 
     const name = (formData.get('name') as string) ?? ''
     const weight_unit = (formData.get('weight_unit') as string) ?? 'kg'
-    const theme = (formData.get('theme') as string) ?? 'dark'
 
     const {
         data: { user },
@@ -25,7 +23,6 @@ export async function POST(req: Request) {
             name,
             email: user.email ?? '',
             weight_unit,
-            theme,
         })
 
     if (error) {
@@ -34,13 +31,6 @@ export async function POST(req: Request) {
             new URL('/dashboard/settings?message=error', req.url)
         )
     }
-
-    const cookieStore = await cookies()
-    cookieStore.set('theme', theme, {
-        path: '/',
-        httpOnly: false,
-        sameSite: 'lax',
-    })
 
     return NextResponse.redirect(
         new URL('/dashboard/settings?message=success', req.url)

@@ -29,10 +29,10 @@ export default async function DashboardPage() {
         <TrainerPageShell className="space-y-3 md:space-y-4">
             <section className="flex items-center justify-between gap-3">
                 <div>
-                    <h1 className="text-xl font-black tracking-tight text-white md:text-2xl">
+                    <h1 className="text-xl font-black tracking-tight text-foreground md:text-2xl">
                         Inicio
                     </h1>
-                    <p className="mt-0.5 text-xs text-white/35">
+                    <p className="mt-0.5 text-xs text-muted-foreground">
                         {alerts.length > 0
                             ? `${alerts.length} ${alerts.length === 1 ? 'prioridad pendiente' : 'prioridades pendientes'}`
                             : 'Todo al día'}
@@ -51,7 +51,7 @@ export default async function DashboardPage() {
                 {[
                     { href: '/dashboard/students', icon: Users, label: 'Alumnos', color: 'text-primary' },
                     { href: '/dashboard/routines', icon: ClipboardList, label: 'Rutinas', color: 'text-primary' },
-                    { href: '/dashboard/messages', icon: MessageSquare, label: 'Mensajes', color: 'text-amber-400' },
+                    { href: '/dashboard/messages', icon: MessageSquare, label: 'Mensajes', color: 'text-amber-700 dark:text-amber-400' },
                     { href: '/dashboard/technique-videos', icon: Video, label: 'Videos', color: 'text-primary' },
                 ].map((item) => {
                     const Icon = item.icon
@@ -59,7 +59,7 @@ export default async function DashboardPage() {
                         <Link
                             key={item.href}
                             href={item.href}
-                            className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl border border-white/[0.07] bg-white/[0.03] px-1 py-2.5 text-[10px] font-semibold text-white/65 transition hover:border-white/15 hover:bg-white/[0.06] hover:text-white sm:flex-row sm:gap-1.5 sm:px-2 sm:text-xs"
+                            className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl border border-border bg-card px-1 py-2.5 text-[10px] font-semibold text-muted-foreground transition hover:border-primary/25 hover:bg-accent hover:text-foreground sm:flex-row sm:gap-1.5 sm:px-2 sm:text-xs"
                         >
                             <Icon className={`h-3.5 w-3.5 shrink-0 ${item.color}`} />
                             {item.label}

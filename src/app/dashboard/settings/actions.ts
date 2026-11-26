@@ -1,7 +1,6 @@
 'use server'
 
 import { redirect } from 'next/navigation'
-import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { type SettingsData } from './types'
 
@@ -19,7 +18,6 @@ export async function saveSettings(data: SettingsData): Promise<{ ok: true } | {
             name: data.name,
             email: user.email ?? '',
             weight_unit: data.weight_unit,
-            theme: data.theme === 'system' ? 'dark' : data.theme,
         })
 
     if (profileError) return { ok: false, error: profileError.message }
@@ -50,13 +48,6 @@ export async function saveSettings(data: SettingsData): Promise<{ ok: true } | {
         console.error('[saveSettings] trainerError:', JSON.stringify(trainerError))
         return { ok: false, error: `${trainerError.code}: ${trainerError.message} — ${trainerError.details ?? ''}` }
     }
-
-    const cookieStore = await cookies()
-    cookieStore.set('theme', data.theme === 'system' ? 'dark' : data.theme, {
-        path: '/',
-        httpOnly: false,
-        sameSite: 'lax',
-    })
 
     return { ok: true }
 }

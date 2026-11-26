@@ -1,7 +1,6 @@
 export type SettingsData = {
     name: string
     weight_unit: 'kg' | 'lb'
-    theme: 'system' | 'dark' | 'light'
     display_name: string
     gym_name: string
     whatsapp: string

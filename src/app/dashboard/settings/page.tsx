@@ -1,13 +1,10 @@
-import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import SettingsClient from './SettingsClient'
 import { getServerUser } from '@/lib/auth/server'
+import AppearanceSelector from '@/components/appearance/AppearanceSelector'
 
 export default async function SettingsPage() {
-    const cookieStore = await cookies()
-    const theme = cookieStore.get('theme')?.value === 'light' ? 'light' : 'dark'
-
     const supabase = await createClient()
     const user = await getServerUser()
     if (!user) redirect('/login')
@@ -27,11 +24,10 @@ export default async function SettingsPage() {
     return (
         <SettingsClient
             email={user.email ?? ''}
-            theme={theme as 'dark' | 'light'}
+            appearance={<AppearanceSelector />}
             initialSettings={{
                 name: profile?.name ?? '',
                 weight_unit: (profile?.weight_unit ?? 'kg') as 'kg' | 'lb',
-                theme: profile?.theme === 'light' ? 'light' : 'dark',
                 display_name: trainerProfile?.display_name ?? '',
                 gym_name: trainerProfile?.gym_name ?? '',
                 whatsapp: trainerProfile?.whatsapp ?? '',

@@ -72,9 +72,9 @@ export default function ExerciseProgressChart({ logs }: Props) {
     const lastIndex = data.length - 1
 
     return (
-        <div className="mt-4 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950/60 p-3">
+        <div className="mt-4 overflow-hidden rounded-xl border border-border bg-background p-3">
             <div className="mb-3">
-                <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Progreso de carga
                 </p>
             </div>
@@ -88,20 +88,19 @@ export default function ExerciseProgressChart({ logs }: Props) {
                         margin={{ top: 8, right: 8, left: -24, bottom: 4 }}
                     >
                         <CartesianGrid
-                            stroke="#27272a"
-                            strokeOpacity={0.35}
+                            stroke="var(--border)"
                             vertical={false}
                         />
                         <XAxis
                             dataKey="date"
                             tickFormatter={formatDateLabel}
-                            tick={{ fill: '#a1a1aa', fontSize: 11 }}
+                            tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
                             axisLine={false}
                             tickLine={false}
                             tickMargin={8}
                         />
                         <YAxis
-                            tick={{ fill: '#a1a1aa', fontSize: 11 }}
+                            tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
                             axisLine={false}
                             tickLine={false}
                             tickMargin={4}
@@ -110,22 +109,23 @@ export default function ExerciseProgressChart({ logs }: Props) {
                         />
                         <Tooltip
                             contentStyle={{
-                                backgroundColor: '#111111',
-                                border: '1px solid #27272a',
+                                backgroundColor: 'var(--popover)',
+                                border: '1px solid var(--border)',
                                 borderRadius: 10,
-                                color: '#fafafa',
+                                color: 'var(--popover-foreground)',
                                 fontSize: 12,
                                 padding: '6px 10px',
                             }}
                             labelFormatter={(label) => typeof label === 'string' ? formatDateLabel(label) : label}
-                            labelStyle={{ color: '#a1a1aa', marginBottom: 2 }}
+                            labelStyle={{ color: 'var(--muted-foreground)', marginBottom: 2 }}
+                            itemStyle={{ color: 'var(--popover-foreground)' }}
                             formatter={(value) => [`${value} kg`, '']}
-                            cursor={{ stroke: '#3f3f46', strokeWidth: 1 }}
+                            cursor={{ stroke: 'var(--muted-foreground)', strokeWidth: 1, strokeOpacity: 0.5 }}
                         />
                         <Line
                             type="monotone"
                             dataKey="weight"
-                            stroke="#c98796"
+                            stroke="var(--chart-1)"
                             strokeWidth={2.5}
                             dot={(props) => {
                                 const { cx, cy, index } = props
@@ -136,17 +136,17 @@ export default function ExerciseProgressChart({ logs }: Props) {
                                         cx={cx}
                                         cy={cy}
                                         r={isLast ? 5 : 3}
-                                        fill={isLast ? '#10b981' : '#c98796'}
-                                        stroke={isLast ? '#ffffff' : '#c98796'}
+                                        fill={isLast ? '#059669' : 'var(--chart-1)'}
+                                        stroke={isLast ? 'var(--background)' : 'var(--chart-1)'}
                                         strokeWidth={isLast ? 2 : 1}
                                     />
                                 )
                             }}
-                            activeDot={{ r: 6, fill: '#e9a0ad', stroke: '#c98796', strokeWidth: 2 }}
+                            activeDot={{ r: 6, fill: 'var(--chart-1)', stroke: 'var(--background)', strokeWidth: 2 }}
                         />
                     </LineChart>
                 ) : (
-                    <div className="h-40 w-full animate-pulse rounded-lg bg-zinc-900" />
+                    <div className="h-40 w-full animate-pulse rounded-lg bg-muted" />
                 )}
             </div>
         </div>

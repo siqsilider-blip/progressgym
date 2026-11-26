@@ -51,10 +51,10 @@ export default function ExerciseProgressCard({ exercise, weightUnit, rank = -1, 
             </div>
             <div className="flex shrink-0 items-center gap-2">
                 <div className="text-right">
-                    <p className={`text-xl font-black ${hasImprovement ? 'text-emerald-500' : 'text-muted-foreground'}`}>
+                    <p className={`text-xl font-black ${hasImprovement ? 'text-emerald-700 dark:text-emerald-400' : 'text-muted-foreground'}`}>
                         {hasImprovement ? `+${exercise.progressKg}${weightUnit}` : 'Sin mejora'}
                     </p>
-                    <p className={`text-[11px] font-semibold ${hasImprovement && trendUp ? 'text-emerald-500' : 'text-zinc-400'}`}>
+                    <p className={`text-[11px] font-semibold ${hasImprovement && trendUp ? 'text-emerald-700 dark:text-emerald-400' : 'text-muted-foreground'}`}>
                         {hasImprovement ? `${trendUp ? '↑' : '→'} +${exercise.progressPercent}%` : 'Sin nueva marca'}
                     </p>
                 </div>
@@ -66,18 +66,18 @@ export default function ExerciseProgressCard({ exercise, weightUnit, rank = -1, 
         <div className="px-2 pb-3">
             <ResponsiveContainer width="100%" height={100}>
                 <LineChart data={exercise.logs} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
-                    <CartesianGrid stroke="#27272a" strokeOpacity={0.3} vertical={false} />
+                    <CartesianGrid stroke="var(--border)" vertical={false} />
                     <XAxis
                         dataKey="date"
                         tickFormatter={formatDate}
-                        tick={{ fill: '#71717a', fontSize: 9 }}
+                        tick={{ fill: 'var(--muted-foreground)', fontSize: 9 }}
                         axisLine={false}
                         tickLine={false}
                         interval="preserveStartEnd"
                     />
                     <YAxis
                         tickFormatter={studentDisclosure ? (weight) => String(convertWeightFromKgForInput(weight, weightUnit)) : undefined}
-                        tick={{ fill: '#71717a', fontSize: 9 }}
+                        tick={{ fill: 'var(--muted-foreground)', fontSize: 9 }}
                         axisLine={false}
                         tickLine={false}
                         tickCount={3}
@@ -85,18 +85,21 @@ export default function ExerciseProgressCard({ exercise, weightUnit, rank = -1, 
                     />
                     <Tooltip
                         contentStyle={{
-                            backgroundColor: '#111111',
-                            border: '1px solid #27272a',
+                            backgroundColor: 'var(--popover)',
+                            border: '1px solid var(--border)',
                             borderRadius: 8,
+                            color: 'var(--popover-foreground)',
                             fontSize: 11,
                             padding: '4px 8px',
                         }}
+                        itemStyle={{ color: 'var(--popover-foreground)' }}
+                        cursor={{ stroke: 'var(--muted-foreground)', strokeOpacity: 0.5 }}
                         formatter={(v) => [studentDisclosure ? formatPreciseWeight(Number(v), weightUnit) : `${v}${weightUnit}`, '']}
                     />
                     <Line
                         type="monotone"
                         dataKey="weight"
-                        stroke="#c98796"
+                        stroke="var(--chart-1)"
                         strokeWidth={exercise.logs.length > 1 ? 2 : 0}
                         dot={(props) => {
                             const { cx, cy, index } = props
@@ -106,8 +109,8 @@ export default function ExerciseProgressCard({ exercise, weightUnit, rank = -1, 
                                     key={index}
                                     cx={cx} cy={cy}
                                     r={isLast ? 6 : 3}
-                                    fill={isLast ? '#10b981' : '#c98796'}
-                                    stroke="#fff"
+                                    fill={isLast ? '#059669' : 'var(--chart-1)'}
+                                    stroke="var(--card)"
                                     strokeWidth={2}
                                 />
                             )
@@ -164,7 +167,7 @@ export default function ExerciseProgressCard({ exercise, weightUnit, rank = -1, 
     }
 
     return (
-        <div className={`overflow-hidden rounded-xl border ${style.border} bg-white/[0.025] ${style.glow}`}>
+        <div className={`overflow-hidden rounded-xl border ${style.border} bg-card ${style.glow}`}>
             {header}
             {chart}
         </div>

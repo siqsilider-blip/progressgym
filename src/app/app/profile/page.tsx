@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { logout } from '@/app/auth/actions'
 import Link from 'next/link'
 import StudentPageHeader from '@/components/student/StudentPageHeader'
+import AppearanceSelector from '@/components/appearance/AppearanceSelector'
 import { getStudentAppContext } from '@/lib/auth/student'
 import AccountDeletionCard from '@/components/account/AccountDeletionCard'
 import { getActiveStudentRoutine } from '@/lib/getActiveStudentRoutine'
@@ -75,6 +76,8 @@ export default async function AppProfilePage() {
                         </div>
                     </div>
                 </div>
+
+                <AppearanceSelector />
 
                 <section className="overflow-hidden rounded-2xl border border-border bg-card">
                     <div className="border-b border-border px-4 py-3">

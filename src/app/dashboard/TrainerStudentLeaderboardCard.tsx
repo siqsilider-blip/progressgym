@@ -1,4 +1,4 @@
-import { cookies } from 'next/headers'
+import { getAppearance } from '@/lib/serverAppearance'
 import Link from 'next/link'
 import { formatWeight, type WeightUnit } from '@/lib/weight'
 import { ArrowRight, Trophy } from 'lucide-react'
@@ -17,9 +17,7 @@ export default async function TrainerStudentLeaderboardCard({
     ranking: LeaderboardItem[]
     weightUnit: WeightUnit
 }) {
-    const cookieStore = await cookies()
-    const theme = cookieStore.get('theme')?.value === 'light' ? 'light' : 'dark'
-    const isLight = theme === 'light'
+    const isLight = await getAppearance() === 'light'
 
     return (
         <div className="rounded-2xl border p-6" style={{borderColor: 'rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)'}}>

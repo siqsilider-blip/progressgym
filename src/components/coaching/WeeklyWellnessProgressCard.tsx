@@ -63,7 +63,7 @@ export default function WeeklyWellnessProgressCard({ data }: { data: WeeklyWelln
                     <div className="text-right">
                         <p className="text-sm font-black text-foreground">{selectedValue != null ? `${formatNumber(selectedValue)} ${measure === 'body_weight' ? 'kg' : 'cm'}` : 'Sin datos'}</p>
                         {delta != null && measureData.length > 1 && (
-                            <p className={`text-[10px] font-semibold ${delta <= 0 ? 'text-emerald-500' : 'text-muted-foreground'}`}>{delta > 0 ? '+' : ''}{formatNumber(delta)} desde el primer registro</p>
+                            <p className={`text-[10px] font-semibold ${delta <= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-muted-foreground'}`}>{delta > 0 ? '+' : ''}{formatNumber(delta)} desde el primer registro</p>
                         )}
                     </div>
                 </div>
@@ -72,11 +72,17 @@ export default function WeeklyWellnessProgressCard({ data }: { data: WeeklyWelln
                     <div className="mt-3 h-32 w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={measureData} margin={{ top: 5, right: 6, left: -26, bottom: 0 }}>
-                                <CartesianGrid stroke="currentColor" strokeOpacity={0.08} vertical={false} />
-                                <XAxis dataKey="week_start" tickFormatter={formatShortDate} tick={{ fill: '#71717a', fontSize: 9 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-                                <YAxis domain={['auto', 'auto']} tick={{ fill: '#71717a', fontSize: 9 }} axisLine={false} tickLine={false} tickCount={3} />
-                                <Tooltip contentStyle={{ backgroundColor: '#111111', border: '1px solid #27272a', borderRadius: 10, fontSize: 11 }} labelFormatter={(label) => formatWeek(String(label))} formatter={(value) => [`${formatNumber(Number(value))} ${measure === 'body_weight' ? 'kg' : 'cm'}`, measure === 'body_weight' ? 'Peso' : 'Cintura']} />
-                                <Line type="monotone" dataKey={measure} stroke="#c98796" strokeWidth={2.5} dot={{ r: 3, fill: '#c98796', strokeWidth: 0 }} activeDot={{ r: 5 }} connectNulls />
+                                <CartesianGrid stroke="var(--border)" vertical={false} />
+                                <XAxis dataKey="week_start" tickFormatter={formatShortDate} tick={{ fill: 'var(--muted-foreground)', fontSize: 9 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+                                <YAxis domain={['auto', 'auto']} tick={{ fill: 'var(--muted-foreground)', fontSize: 9 }} axisLine={false} tickLine={false} tickCount={3} />
+                                <Tooltip
+                                    contentStyle={{ backgroundColor: 'var(--popover)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 11, color: 'var(--popover-foreground)' }}
+                                    itemStyle={{ color: 'var(--popover-foreground)' }}
+                                    cursor={{ stroke: 'var(--muted-foreground)', strokeOpacity: 0.5 }}
+                                    labelFormatter={(label) => formatWeek(String(label))}
+                                    formatter={(value) => [`${formatNumber(Number(value))} ${measure === 'body_weight' ? 'kg' : 'cm'}`, measure === 'body_weight' ? 'Peso' : 'Cintura']}
+                                />
+                                <Line type="monotone" dataKey={measure} stroke="var(--chart-1)" strokeWidth={2.5} dot={{ r: 3, fill: 'var(--chart-1)', strokeWidth: 0 }} activeDot={{ r: 5, stroke: 'var(--card)' }} connectNulls />
                             </LineChart>
                         </ResponsiveContainer>
                     </div>
@@ -98,9 +104,9 @@ function WellnessScore({ label, value, previous, inverse = false }: { label: str
 
     return (
         <div className="bg-card px-1.5 py-3 text-center">
-            <p className={`text-base font-black ${isWarning ? 'text-amber-500' : isGood ? 'text-emerald-500' : 'text-foreground'}`}>{value}/5</p>
+            <p className={`text-base font-black ${isWarning ? 'text-amber-700 dark:text-amber-400' : isGood ? 'text-emerald-700 dark:text-emerald-400' : 'text-foreground'}`}>{value}/5</p>
             <p className="mt-0.5 truncate text-[9px] text-muted-foreground">{label}</p>
-            {change !== 0 && <p className={`mt-0.5 text-[8px] font-bold ${helpfulChange ? 'text-emerald-500' : 'text-amber-500'}`}>{change > 0 ? '↑' : '↓'} vs. anterior</p>}
+            {change !== 0 && <p className={`mt-0.5 text-[8px] font-bold ${helpfulChange ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400'}`}>{change > 0 ? '↑' : '↓'} vs. anterior</p>}
         </div>
     )
 }

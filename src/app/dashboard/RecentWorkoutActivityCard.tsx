@@ -31,7 +31,7 @@ export default function RecentWorkoutActivityCard({
     const visibleActivity = activity.slice(0, 4)
 
     return (
-        <section className="rounded-2xl border p-4" style={{ borderColor: 'rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)' }}>
+        <section className="rounded-2xl border border-border bg-card p-4">
             <div className="mb-3 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5">
                     <div className="rounded-xl bg-primary/10 p-2 text-primary">
@@ -86,7 +86,7 @@ export default function RecentWorkoutActivityCard({
                                         {item.reps ?? 0} reps
                                     </p>
                                 </div>
-                                <ArrowRight className="h-3.5 w-3.5 text-white/20" />
+                                <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
                             </div>
                         </Link>
                     ))}

@@ -26,7 +26,7 @@ export default async function DashboardLayout({
     if (profile?.role !== 'trainer') redirect('/login')
 
     return (
-        <div className="trainer-shell min-h-screen bg-[#111111] lg:flex lg:h-dvh lg:overflow-hidden">
+        <div className="trainer-shell min-h-screen bg-background lg:flex lg:h-dvh lg:overflow-hidden">
             <Suspense fallback={null}>
                 <DashboardNavigationTracker />
             </Suspense>

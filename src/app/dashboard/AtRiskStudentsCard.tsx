@@ -1,4 +1,4 @@
-import { cookies } from 'next/headers'
+import { getAppearance } from '@/lib/serverAppearance'
 import { AlertTriangle, Camera, CircleStop, ClipboardX, Flag, HeartPulse, ListChecks, UserMinus, UserX } from 'lucide-react'
 import AppBadge from '@/components/ui/app-badge'
 import type { TrainerAlert } from './getTrainerAlerts'
@@ -173,9 +173,7 @@ export default async function AtRiskStudentsCard({
 }: {
     alerts: TrainerAlert[]
 }) {
-    const cookieStore = await cookies()
-    const theme = cookieStore.get('theme')?.value === 'light' ? 'light' : 'dark'
-    const isLight = theme === 'light'
+    const isLight = await getAppearance() === 'light'
 
     const atRiskAlerts = alerts.slice(0, 3)
     const remainingAlerts = alerts.slice(3)

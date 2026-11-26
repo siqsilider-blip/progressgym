@@ -43,8 +43,8 @@ export default function StudentTopProgressCharts({
     }
 
     return (
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-6">
-            <h2 className="mb-4 text-lg font-semibold">Progreso de ejercicios</h2>
+        <div className="rounded-2xl border border-border bg-card p-6">
+            <h2 className="mb-4 text-lg font-semibold text-card-foreground">Progreso de ejercicios</h2>
 
             <div className="grid gap-4 lg:grid-cols-3">
                 {charts.map((chart) => {
@@ -58,16 +58,16 @@ export default function StudentTopProgressCharts({
                     return (
                         <div
                             key={chart.exerciseName}
-                            className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-4"
+                            className="rounded-xl border border-border bg-background p-4"
                         >
-                            <p className="font-medium">{chart.exerciseName}</p>
+                            <p className="font-medium text-foreground">{chart.exerciseName}</p>
 
-                            <p className="text-sm text-zinc-400">
+                            <p className="text-sm text-muted-foreground">
                                 {formatWeight(chart.firstWeight, weightUnit)} →{' '}
                                 {formatWeight(chart.bestWeight, weightUnit)}
                             </p>
 
-                            <p className="font-semibold text-green-400">
+                            <p className="font-semibold text-emerald-700 dark:text-emerald-400">
                                 +{formatWeight(chart.progressKg, weightUnit)}
                             </p>
 
@@ -75,7 +75,7 @@ export default function StudentTopProgressCharts({
                                 <path
                                     d={path}
                                     fill="none"
-                                    stroke="rgb(99 102 241)"
+                                    stroke="var(--chart-1)"
                                     strokeWidth="3"
                                 />
                             </svg>
