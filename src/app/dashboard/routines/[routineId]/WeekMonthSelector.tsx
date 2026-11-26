@@ -117,10 +117,10 @@ export default function WeekMonthSelector({
         <section
             aria-label="Planificación de la rutina"
             data-testid="planner-navigation"
-            className="rounded-xl border border-border bg-card p-3 shadow-sm"
+            className="min-w-0 rounded-xl border border-border bg-card p-3 shadow-sm lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none"
         >
             <div className="flex items-start justify-between gap-3">
-                <div className="flex min-w-0 items-center gap-2.5">
+                <div className="flex min-w-0 items-center gap-2.5 lg:hidden">
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                         <CalendarRange className="h-4 w-4" />
                     </span>
@@ -132,11 +132,17 @@ export default function WeekMonthSelector({
                 {isPending && <Loader2 className="mt-1 h-4 w-4 animate-spin text-primary" aria-label="Guardando" />}
             </div>
 
-            <div className="mt-3 border-t border-border pt-3">
+            <div className="mt-3 border-t border-border pt-3 lg:mt-0 lg:border-0 lg:pt-0">
                 <div className="mb-1.5 flex items-center justify-between gap-2">
-                    <label htmlFor="routine-month" className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
-                        Mesociclo
-                    </label>
+                    {months.length ? (
+                        <label htmlFor="routine-month" className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground lg:text-xs lg:normal-case lg:tracking-normal lg:text-foreground">
+                            Mesociclo
+                        </label>
+                    ) : (
+                        <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground lg:text-xs lg:normal-case lg:tracking-normal lg:text-foreground">
+                            Mesociclo
+                        </span>
+                    )}
                     <div className="flex items-center gap-1">
                         {selectedMonth && (
                             <button
@@ -185,6 +191,7 @@ export default function WeekMonthSelector({
                         {dayId && <input type="hidden" name="dayId" value={dayId} />}
                         <input
                             autoFocus
+                            id="routine-month"
                             name="name"
                             value={monthName}
                             onChange={(event) => setMonthName(event.target.value)}
@@ -215,7 +222,7 @@ export default function WeekMonthSelector({
                         ))}
                     </select>
                 ) : (
-                    <p className="rounded-lg border border-dashed border-border px-3 py-2 text-xs text-muted-foreground">
+                    <p className="rounded-lg border border-dashed border-border px-3 py-2 text-xs text-muted-foreground lg:rounded-none lg:border-0 lg:p-0 lg:text-[11px]">
                         Plan base sin mesociclos.
                     </p>
                 )}
@@ -237,11 +244,11 @@ export default function WeekMonthSelector({
 
             <div className="mt-3 border-t border-border pt-3">
                 <div className="mb-2 flex items-center justify-between gap-2">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Semanas</p>
-                    <span className="text-[10px] text-muted-foreground">{weeks.length} en total</span>
+                    <h2 className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground lg:text-xs lg:normal-case lg:tracking-normal lg:text-foreground">Semanas</h2>
+                    <span className="text-[10px] text-muted-foreground lg:hidden">{weeks.length} en total</span>
                 </div>
 
-                <nav aria-label="Semanas del mesociclo" className="flex snap-x gap-2 overflow-x-auto pb-1 xl:grid xl:max-h-[19rem] xl:grid-cols-1 xl:overflow-y-auto xl:pr-1">
+                <nav aria-label="Semanas del mesociclo" className="flex snap-x gap-2 overflow-x-auto pb-1 lg:gap-1 xl:grid xl:grid-cols-1 xl:overflow-visible">
                     {weeks.map((week) => {
                         const active = week.id === selectedWeek?.id
                         return (
@@ -250,13 +257,13 @@ export default function WeekMonthSelector({
                                 href={plannerUrl(routineId, { month: selectedMonth?.id, week: week.id })}
                                 aria-current={active ? 'page' : undefined}
                                 data-testid={`routine-week-${week.id}`}
-                                className={`min-w-[9.5rem] snap-start rounded-lg border px-3 py-2.5 text-left transition xl:min-w-0 ${active
-                                    ? 'border-primary bg-primary/10 text-foreground ring-1 ring-primary/20'
-                                    : 'border-border bg-background text-foreground hover:border-primary/40 hover:bg-muted/30'
+                                className={`min-w-[9.5rem] snap-start rounded-lg border px-3 py-2.5 text-left transition lg:min-w-24 lg:rounded-l-none lg:rounded-r-md lg:border-y-0 lg:border-r-0 lg:border-l-2 lg:px-2.5 lg:py-1.5 xl:min-w-0 ${active
+                                    ? 'border-primary bg-primary/10 text-foreground ring-1 ring-primary/20 lg:bg-accent lg:text-brand-soft lg:ring-0'
+                                    : 'border-border bg-background text-foreground hover:border-primary/40 hover:bg-muted/30 lg:bg-transparent'
                                     }`}
                             >
-                                <span className="block text-xs font-bold">Semana {week.position}</span>
-                                <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
+                                <span className="block text-xs font-bold lg:font-semibold">Semana {week.position}</span>
+                                <span className={`mt-0.5 block truncate text-[11px] text-muted-foreground xl:whitespace-normal xl:[overflow-wrap:anywhere] ${week.name?.trim() ? '' : 'lg:hidden'}`}>
                                     {week.name?.trim() || (active ? 'Semana seleccionada' : 'Abrir planificación')}
                                 </span>
                             </Link>
@@ -306,25 +313,25 @@ export default function WeekMonthSelector({
                                 setWeekName(selectedWeek.name ?? '')
                                 setEditingWeek(true)
                             }}
-                            className="flex h-9 items-center justify-center gap-1 rounded-lg border border-border text-[11px] font-medium text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+                            className="flex h-9 items-center justify-center gap-1 rounded-lg border border-border text-[11px] font-medium text-muted-foreground transition hover:bg-secondary hover:text-foreground xl:h-8 xl:rounded-md xl:border-transparent"
                         >
-                            <Pencil className="h-3.5 w-3.5" /> Renombrar
+                            <Pencil aria-hidden="true" className="size-3.5 xl:hidden" /> Renombrar
                         </button>
                         <form action={duplicateWeek}>
                             <input type="hidden" name="routineId" value={routineId} />
                             <input type="hidden" name="sourceWeekId" value={selectedWeek.id} />
                             {selectedMonth?.id && <input type="hidden" name="monthId" value={selectedMonth.id} />}
-                            <button type="submit" disabled={isPending} className="flex h-9 w-full items-center justify-center gap-1 rounded-lg border border-border text-[11px] font-medium text-muted-foreground transition hover:bg-secondary hover:text-foreground disabled:opacity-50">
-                                <Copy className="h-3.5 w-3.5" /> Duplicar
+                            <button type="submit" disabled={isPending} className="flex h-9 w-full items-center justify-center gap-1 rounded-lg border border-border text-[11px] font-medium text-muted-foreground transition hover:bg-secondary hover:text-foreground disabled:opacity-50 xl:h-8 xl:rounded-md xl:border-transparent">
+                                <Copy aria-hidden="true" className="size-3.5 xl:hidden" /> Duplicar
                             </button>
                         </form>
                         <button
                             type="button"
                             disabled={weeks.length <= 1}
                             onClick={() => setConfirmDeleteWeek(true)}
-                            className="flex h-9 items-center justify-center gap-1 rounded-lg border border-red-500/20 text-[11px] font-medium text-red-500 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-30"
+                            className="flex h-9 items-center justify-center gap-1 rounded-lg border border-red-500/20 text-[11px] font-medium text-destructive transition hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-30 xl:h-8 xl:rounded-md xl:border-transparent"
                         >
-                            <Trash2 className="h-3.5 w-3.5" /> Eliminar
+                            <Trash2 aria-hidden="true" className="size-3.5 xl:hidden" /> Eliminar
                         </button>
                         </div>
                     </>
@@ -352,7 +359,7 @@ export default function WeekMonthSelector({
                     <button
                         type="submit"
                         disabled={isPending}
-                        className="flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-dashed border-primary/40 bg-primary/[0.04] text-xs font-semibold text-primary transition hover:bg-primary/10 disabled:opacity-50"
+                        className="flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-dashed border-primary/40 bg-primary/[0.04] text-xs font-semibold text-primary transition hover:bg-primary/10 disabled:opacity-50 lg:h-8 lg:w-auto lg:justify-start lg:gap-1.5 lg:rounded-md lg:border-0 lg:bg-transparent lg:px-2 lg:text-brand-soft"
                     >
                         {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                         Nueva semana

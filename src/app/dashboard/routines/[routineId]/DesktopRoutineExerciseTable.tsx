@@ -9,7 +9,6 @@ import {
     History,
     Loader2,
     Plus,
-    Save,
     Trash2,
     X,
 } from 'lucide-react'
@@ -64,9 +63,9 @@ const BLOCK_META: Array<{ id: Block; label: string }> = [
 ]
 
 const ROW_GRID_WITH_HISTORY =
-    'grid-cols-[2rem_minmax(13rem,1.7fr)_minmax(8.5rem,0.75fr)_4.5rem_4.5rem_5.25rem_5.25rem_minmax(8rem,0.7fr)_9rem]'
+    'grid-cols-[minmax(7.75rem,1.55fr)_minmax(7.65rem,0.8fr)_2.625rem_3.75rem_4rem_3.375rem_minmax(5.25rem,0.65fr)_7.75rem]'
 const ROW_GRID_WITHOUT_HISTORY =
-    'grid-cols-[2rem_minmax(15rem,2fr)_minmax(8.5rem,0.8fr)_4.5rem_4.5rem_5.25rem_5.25rem_9rem]'
+    'grid-cols-[minmax(8rem,1.65fr)_minmax(7.65rem,0.9fr)_3rem_4rem_4.125rem_3.75rem_7.75rem]'
 
 export default function DesktopRoutineExerciseTable({
     routineId,
@@ -89,13 +88,12 @@ export default function DesktopRoutineExerciseTable({
     const rowGrid = showHistory ? ROW_GRID_WITH_HISTORY : ROW_GRID_WITHOUT_HISTORY
 
     return (
-        <div className="flex max-h-[calc(100dvh-14rem)] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-            <div className="min-h-0 flex-1 overflow-auto">
-                <div className={showHistory ? 'min-w-[1060px]' : 'min-w-[930px]'}>
+        <div className="min-w-0">
+            <div className="overflow-x-auto">
+                <div className={showHistory ? 'min-w-[46rem]' : 'min-w-[40rem]'}>
                     <div
-                        className={`sticky top-0 z-20 grid ${rowGrid} items-center gap-2 border-b border-border bg-card px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground shadow-sm`}
+                        className={`grid ${rowGrid} items-center gap-1.5 border-y border-border px-2 py-2 text-[11px] font-semibold leading-tight text-muted-foreground`}
                     >
-                        <span>#</span>
                         <span>Ejercicio</span>
                         <span>Sección</span>
                         <span>Series</span>
@@ -106,48 +104,41 @@ export default function DesktopRoutineExerciseTable({
                         <span className="text-right">Acciones</span>
                     </div>
 
+                    {!exercises.length && <p className="border-b border-border px-2 py-5 text-sm text-muted-foreground">Este día todavía no tiene ejercicios.</p>}
+
                     {BLOCK_META.map((block) => {
                         const blockExercises = exercises.filter(
                             (exercise) => exercise.block === block.id
                         )
 
+                        if (!blockExercises.length) return null
+
                         return (
                             <section key={block.id} aria-label={block.label}>
-                                <div className="flex items-center gap-2 border-b border-border bg-primary/[0.055] px-3 py-2">
-                                    <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-primary">
-                                        {block.label}
-                                    </span>
-                                    <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-secondary-foreground">
-                                        {blockExercises.length}
-                                    </span>
-                                </div>
+                                <h3 className="border-b border-border bg-muted/50 px-2 py-1.5 text-xs font-semibold text-brand-soft">
+                                    {block.label}
+                                </h3>
 
-                                {blockExercises.length === 0 ? (
-                                    <div className="border-b border-border px-4 py-3 text-xs text-muted-foreground">
-                                        Sin ejercicios en este bloque.
-                                    </div>
-                                ) : (
-                                    blockExercises.map((exercise, index) => (
-                                        <DesktopExerciseRow
-                                            key={exercise.id}
-                                            exercise={exercise}
-                                            index={exercises.findIndex((item) => item.id === exercise.id)}
-                                            exerciseOptions={exerciseOptions}
-                                            routineId={routineId}
-                                            dayId={routineDayId}
-                                            weekId={weekId}
-                                            updateAction={updateAction}
-                                            moveAction={moveAction}
-                                            deleteAction={deleteAction}
-                                            canMoveUp={index > 0}
-                                            canMoveDown={index < blockExercises.length - 1}
-                                            logs={logsByExercise[exercise.id] ?? []}
-                                            weightUnit={weightUnit}
-                                            historyEnabled={showHistory}
-                                            rowGrid={rowGrid}
-                                        />
-                                    ))
-                                )}
+                                {blockExercises.map((exercise, index) => (
+                                    <DesktopExerciseRow
+                                        key={exercise.id}
+                                        exercise={exercise}
+                                        index={exercises.findIndex((item) => item.id === exercise.id)}
+                                        exerciseOptions={exerciseOptions}
+                                        routineId={routineId}
+                                        dayId={routineDayId}
+                                        weekId={weekId}
+                                        updateAction={updateAction}
+                                        moveAction={moveAction}
+                                        deleteAction={deleteAction}
+                                        canMoveUp={index > 0}
+                                        canMoveDown={index < blockExercises.length - 1}
+                                        logs={logsByExercise[exercise.id] ?? []}
+                                        weightUnit={weightUnit}
+                                        historyEnabled={showHistory}
+                                        rowGrid={rowGrid}
+                                    />
+                                ))}
                             </section>
                         )
                     })}
@@ -248,6 +239,7 @@ function DesktopExerciseRow({
         targetWeight !== (exercise.target_weight_kg == null ? '' : String(convertWeightFromKgForInput(exercise.target_weight_kg, weightUnit))) ||
         rest !== String(exercise.rest_seconds ?? '')
     const latestLog = logs[0]
+    const saved = message === 'Guardado' && !isDirty
 
     function move(direction: 'up' | 'down') {
         const formData = new FormData()
@@ -268,9 +260,14 @@ function DesktopExerciseRow({
     return (
         <div
             data-testid={`exercise-row-${exercise.id}`}
-            className="border-b border-border last:border-b-0"
+            className="border-b border-border"
         >
             <form
+                onKeyDown={(event) => {
+                    if (confirmDelete && event.key === 'Enter' && event.target instanceof HTMLInputElement) {
+                        event.preventDefault()
+                    }
+                }}
                 action={(formData) => {
                     setMessage(null)
                     startTransition(async () => {
@@ -283,7 +280,7 @@ function DesktopExerciseRow({
                         router.refresh()
                     })
                 }}
-                className={`grid ${rowGrid} items-center gap-2 px-3 py-2.5 transition ${isDirty ? 'bg-primary/[0.035]' : 'hover:bg-muted/20'}`}
+                className={`grid ${rowGrid} items-center gap-1.5 px-2 py-1.5 transition ${isDirty ? 'bg-primary/[0.06]' : 'hover:bg-muted/20'}`}
             >
                 <input type="hidden" name="routineId" value={routineId} />
                 <input type="hidden" name="dayId" value={dayId} />
@@ -300,17 +297,14 @@ function DesktopExerciseRow({
                     <input type="hidden" name="monthId" value={searchParams.get('month') ?? ''} />
                 )}
 
-                <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 text-[10px] font-bold text-primary">
-                    {index + 1}
-                </span>
-
-                <div>
+                <div className="min-w-0">
                     <input
                         aria-label={`Ejercicio ${index + 1}`}
                         list={`desktop-exercise-options-${exercise.id}`}
                         value={name}
                         onChange={(event) => setName(event.target.value)}
-                        className="h-9 w-full rounded-md border border-transparent bg-transparent px-2 text-sm font-semibold text-foreground outline-none transition hover:border-border hover:bg-background focus:border-primary focus:bg-background"
+                        title={name}
+                        className="h-8 w-full min-w-0 rounded-md border border-transparent bg-transparent px-1 text-sm font-semibold text-foreground outline-none transition hover:border-border hover:bg-background focus:border-primary focus:bg-background"
                     />
                     <datalist id={`desktop-exercise-options-${exercise.id}`}>
                         {exerciseOptions.map((option) => (
@@ -331,7 +325,7 @@ function DesktopExerciseRow({
                     name="block"
                     value={block}
                     onChange={(event) => setBlock(event.target.value as Block)}
-                    className="h-9 rounded-md border border-border bg-background px-2 text-xs text-foreground outline-none focus:border-primary"
+                    className="h-8 min-w-0 rounded-md border border-border bg-background px-1 text-xs text-foreground outline-none focus:border-primary"
                 >
                     {BLOCK_META.map((option) => (
                         <option key={option.id} value={option.id}>
@@ -350,18 +344,18 @@ function DesktopExerciseRow({
                         type="button"
                         onClick={() => setShowHistory((current) => !current)}
                         disabled={logs.length === 0}
-                        className="min-w-0 rounded-md px-2 py-1.5 text-left text-[11px] text-muted-foreground transition hover:bg-secondary hover:text-foreground disabled:cursor-default"
+                        className="min-w-0 rounded-md px-1 py-1 text-left text-[11px] text-muted-foreground transition enabled:hover:bg-muted enabled:hover:text-foreground disabled:cursor-default"
                         aria-expanded={showHistory}
                     >
                         {latestLog ? (
                             <>
-                                <span className="block truncate font-medium text-foreground">
+                                <span className="block font-medium leading-tight text-foreground">
                                     {originalMetric !== 'reps'
                                         ? `${latestLog.reps ?? '-'} ${EXERCISE_METRIC_SUFFIXES[originalMetric]}`
                                         : `${latestLog.weight != null ? formatWeight(latestLog.weight, weightUnit) : '-'} · ${latestLog.reps ?? '-'} reps`}
                                 </span>
-                                <span className="flex items-center gap-1">
-                                    <History className="h-3 w-3" /> Ver historial
+                                <span className="mt-0.5 flex items-center gap-1 text-brand-soft">
+                                    <History aria-hidden="true" className="h-3 w-3 shrink-0" /> Historial
                                 </span>
                             </>
                         ) : (
@@ -370,13 +364,13 @@ function DesktopExerciseRow({
                     </button>
                 )}
 
-                <div className="flex items-center justify-end gap-1">
+                <div className="flex items-center justify-end gap-0.5">
                     <button
                         type="button"
                         onClick={() => move('up')}
                         disabled={isPending || !canMoveUp}
                         aria-label={`Mover ${initialName} arriba`}
-                        className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-25"
+                        className="flex h-7 w-5 shrink-0 items-center justify-center rounded-md text-muted-foreground enabled:hover:bg-secondary enabled:hover:text-foreground disabled:opacity-25"
                     >
                         <ChevronUp className="h-4 w-4" />
                     </button>
@@ -385,7 +379,7 @@ function DesktopExerciseRow({
                         onClick={() => move('down')}
                         disabled={isPending || !canMoveDown}
                         aria-label={`Mover ${initialName} abajo`}
-                        className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-25"
+                        className="flex h-7 w-5 shrink-0 items-center justify-center rounded-md text-muted-foreground enabled:hover:bg-secondary enabled:hover:text-foreground disabled:opacity-25"
                     >
                         <ChevronDown className="h-4 w-4" />
                     </button>
@@ -396,14 +390,14 @@ function DesktopExerciseRow({
                                 type="submit"
                                 formAction={deleteAction}
                                 disabled={isPending}
-                                className="h-8 rounded-md bg-red-600 px-2 text-[10px] font-semibold text-white"
+                                className="h-7 rounded-md bg-red-600 px-1.5 text-[11px] font-semibold text-white"
                             >
                                 Eliminar
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setConfirmDelete(false)}
-                                className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-secondary"
+                                className="flex h-7 w-5 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-secondary"
                                 aria-label="Cancelar eliminación"
                             >
                                 <X className="h-4 w-4" />
@@ -414,26 +408,22 @@ function DesktopExerciseRow({
                             type="button"
                             onClick={() => setConfirmDelete(true)}
                             aria-label={`Eliminar ${initialName}`}
-                            className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-red-500/10 hover:text-red-500"
+                            className="flex h-7 w-5 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-red-500/10 hover:text-red-500"
                         >
                             <Trash2 className="h-4 w-4" />
                         </button>
                     )}
 
-                    <button
-                        type="submit"
-                        disabled={isPending || !isDirty || !replacementExerciseId}
-                        className="flex h-8 items-center gap-1 rounded-md bg-primary px-2.5 text-[11px] font-semibold text-primary-foreground transition disabled:bg-secondary disabled:text-muted-foreground"
-                    >
-                        {isPending ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : message === 'Guardado' ? (
-                            <Check className="h-3.5 w-3.5" />
-                        ) : (
-                            <Save className="h-3.5 w-3.5" />
-                        )}
-                        {message === 'Guardado' ? 'Listo' : 'Guardar'}
-                    </button>
+                    {!confirmDelete && (
+                        <button
+                            type="submit"
+                            disabled={isPending || !isDirty || !replacementExerciseId}
+                            className="flex h-7 min-w-14 shrink-0 items-center justify-center gap-0.5 rounded-md bg-primary px-1.5 text-[11px] font-semibold text-primary-foreground transition disabled:bg-transparent disabled:text-muted-foreground"
+                        >
+                            {isPending ? <Loader2 aria-hidden="true" className="h-3 w-3 animate-spin" /> : saved && <Check aria-hidden="true" className="h-3 w-3" />}
+                            {saved ? 'Listo' : 'Guardar'}
+                        </button>
+                    )}
                 </div>
             </form>
 
@@ -486,10 +476,10 @@ function CompactNumberInput({
                 placeholder={placeholder}
                 value={value}
                 onChange={(event) => onChange(event.target.value)}
-                className="h-9 w-full rounded-md border border-border bg-background px-2 text-center text-xs font-semibold text-foreground outline-none focus:border-primary disabled:bg-muted/40 disabled:text-muted-foreground"
+                className={`h-8 w-full min-w-0 appearance-none rounded-md border border-border bg-background pl-1.5 text-xs font-medium text-foreground outline-none tabular-nums focus:border-primary disabled:bg-muted/40 disabled:text-muted-foreground [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none ${suffix ? 'pr-5' : 'pr-1.5'}`}
             />
             {suffix && value && (
-                <span className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-[9px] text-muted-foreground">
+                <span aria-hidden="true" className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">
                     {suffix}
                 </span>
             )}
@@ -559,7 +549,7 @@ function DesktopAddExerciseRow({
             <button
                 type="button"
                 onClick={() => setExpanded(true)}
-                className="flex w-full items-center justify-center gap-2 border-t border-border bg-primary/[0.045] px-4 py-3 text-sm font-semibold text-primary transition hover:bg-primary/10"
+                className="mt-2 flex min-h-9 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-semibold text-brand-soft transition hover:bg-accent"
             >
                 <Plus className="h-4 w-4" />
                 Agregar ejercicio al día
@@ -568,7 +558,7 @@ function DesktopAddExerciseRow({
     }
 
     return (
-        <div className="overflow-x-auto border-t border-border bg-muted/15 p-3">
+        <div className="mt-2 rounded-r-md border-l-2 border-primary bg-muted/50 px-3 py-2.5">
             <form
                 action={(formData) => {
                     setError(null)
@@ -582,7 +572,7 @@ function DesktopAddExerciseRow({
                         router.refresh()
                     })
                 }}
-                className="grid min-w-[900px] grid-cols-[minmax(14rem,1.7fr)_minmax(8.5rem,0.75fr)_4.5rem_4.5rem_5.25rem_5.25rem_7rem_auto] items-end gap-2"
+                className="grid min-w-0 grid-cols-[minmax(0,1.6fr)_minmax(6.8rem,0.8fr)_3rem_3.75rem_4.25rem_4rem_5.25rem_auto] items-end gap-2"
             >
                 <input type="hidden" name="routineId" value={routineId} />
                 <input type="hidden" name="routineDayId" value={routineDayId} />
@@ -748,7 +738,7 @@ function DesktopExerciseHistory({
     const recentLogs = logs.slice(0, 6)
 
     return (
-        <div className="grid grid-cols-[minmax(0,1fr)_18rem] gap-4 border-t border-border bg-muted/15 px-12 py-3">
+        <div className="grid grid-cols-[minmax(0,1fr)_minmax(14rem,1fr)] gap-4 border-t border-border bg-muted/50 px-3 py-3">
             <div>
                 <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                     Registros recientes

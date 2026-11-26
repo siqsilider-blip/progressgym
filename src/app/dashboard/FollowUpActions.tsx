@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useId, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowRight, Clock3, MessageCircle } from 'lucide-react'
+import { ChevronRight, Clock3, Ellipsis, MessageCircle } from 'lucide-react'
 import { buildWhatsAppUrl } from '@/lib/whatsapp'
 import type { TrainerAlert } from './getTrainerAlerts'
 import { recordStudentFollowUp } from './followUpServerActions'
@@ -43,6 +43,8 @@ export default function FollowUpActions({ alert }: { alert: TrainerAlert }) {
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
     const [error, setError] = useState('')
+    const [showMore, setShowMore] = useState(false)
+    const moreActionsId = useId()
     const whatsappUrl = alert.studentPhone
         ? buildWhatsAppUrl(alert.studentPhone, getFollowUpMessage(alert))
         : null
@@ -65,46 +67,58 @@ export default function FollowUpActions({ alert }: { alert: TrainerAlert }) {
     }
 
     return (
-        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+        <div className="mt-2 flex flex-wrap items-center gap-1.5 lg:mt-0 lg:grid lg:grid-cols-[auto_auto] lg:justify-items-end lg:gap-1">
             <Link
                 href={alert.actionHref}
-                className="inline-flex items-center gap-1 rounded-lg border border-primary/20 bg-primary/10 px-2 py-1 text-[10px] font-semibold text-primary transition hover:bg-primary/15"
+                className="inline-flex min-w-0 items-center justify-center gap-1 rounded-lg border border-primary/20 bg-primary/10 px-2 py-1 text-[10px] font-semibold text-primary transition hover:bg-primary/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring lg:min-h-8 lg:border-transparent lg:bg-transparent lg:text-xs lg:text-brand-soft lg:hover:bg-accent"
             >
                 {alert.actionLabel ?? 'Resolver'}
-                <ArrowRight className="h-3 w-3" />
+                <ChevronRight className="size-3 shrink-0" aria-hidden="true" />
             </Link>
-
-            {whatsappUrl ? (
-                <a
-                    href={whatsappUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => recordAction('whatsapp_opened')}
-                    className="inline-flex items-center gap-1 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-2 py-1 text-[10px] font-semibold text-emerald-400 transition hover:bg-emerald-500/15"
-                >
-                    <MessageCircle className="h-3 w-3" />
-                    WhatsApp
-                </a>
-            ) : (
-                <Link
-                    href={`/dashboard/students/${alert.studentId}`}
-                    className="rounded-lg border border-border bg-secondary px-2 py-1 text-[10px] font-medium text-muted-foreground transition hover:text-foreground"
-                >
-                    Agregar teléfono
-                </Link>
-            )}
-
             <button
                 type="button"
-                disabled={isPending}
-                onClick={() => recordAction('snoozed')}
-                className="inline-flex items-center gap-1 rounded-lg border border-border bg-secondary px-2 py-1 text-[10px] font-medium text-muted-foreground transition hover:text-foreground disabled:opacity-50"
+                aria-label={`Más acciones para ${alert.studentName}`}
+                aria-expanded={showMore}
+                aria-controls={moreActionsId}
+                onClick={() => setShowMore((open) => !open)}
+                className="hidden size-8 items-center justify-center rounded-md text-muted-foreground transition hover:bg-accent hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring lg:inline-flex"
             >
-                <Clock3 className="h-3 w-3" />
-                {isPending ? 'Guardando...' : 'Después (3d)'}
+                <Ellipsis className="size-4" aria-hidden="true" />
             </button>
 
-            {error && <span className="w-full text-[10px] text-red-400">{error}</span>}
+            <div id={moreActionsId} className={`flex flex-wrap items-center gap-1.5 lg:col-span-2 lg:justify-end ${showMore ? '' : 'lg:hidden'}`}>
+                {whatsappUrl ? (
+                    <a
+                        href={whatsappUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => recordAction('whatsapp_opened')}
+                        className="inline-flex items-center gap-1 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-2 py-1 text-[10px] font-semibold text-emerald-800 transition hover:bg-emerald-500/15 lg:min-h-7 lg:text-xs dark:text-emerald-400"
+                    >
+                        <MessageCircle className="size-3" aria-hidden="true" />
+                        WhatsApp
+                    </a>
+                ) : (
+                    <Link
+                        href={`/dashboard/students/${alert.studentId}`}
+                        className="inline-flex items-center rounded-lg border border-border bg-secondary px-2 py-1 text-[10px] font-medium text-muted-foreground transition hover:text-foreground lg:min-h-7 lg:text-xs"
+                    >
+                        Agregar teléfono
+                    </Link>
+                )}
+
+                <button
+                    type="button"
+                    disabled={isPending}
+                    onClick={() => recordAction('snoozed')}
+                    className="inline-flex items-center gap-1 rounded-lg border border-border bg-secondary px-2 py-1 text-[10px] font-medium text-muted-foreground transition hover:text-foreground disabled:opacity-50 lg:min-h-7 lg:text-xs"
+                >
+                    <Clock3 className="size-3" aria-hidden="true" />
+                    {isPending ? 'Guardando...' : 'Después (3d)'}
+                </button>
+            </div>
+
+            {error && <span role="alert" className="w-full text-[10px] text-destructive lg:col-span-2 lg:text-xs">{error}</span>}
         </div>
     )
 }

@@ -325,31 +325,37 @@ export default async function RoutineDetailPage(props: PageProps) {
         : null
 
     return (
-        <div className="px-3 pb-24 pt-2 text-foreground sm:px-4 sm:pt-3 md:p-6">
-            <div className="mx-auto max-w-[1600px] space-y-3.5">
+        <div className="px-3 pb-24 pt-2 text-foreground sm:px-4 sm:pt-3 md:p-6 lg:px-7 lg:py-7">
+            <div className="mx-auto max-w-[1600px] space-y-3.5 lg:space-y-5">
 
                 {/* ── Header ── */}
-                <div className="grid grid-cols-[2rem_minmax(0,1fr)] items-start gap-2.5">
+                <header className="grid grid-cols-[2rem_minmax(0,1fr)] items-start gap-2.5 lg:grid-cols-1 lg:gap-2 lg:border-b lg:border-border lg:pb-5">
                     <BackButton />
 
                     <div className="min-w-0 flex-1">
+                        <p className="mb-1 hidden text-xs font-semibold text-brand-soft lg:block">
+                            {routine.routine_kind === 'template' ? 'Plantilla de entrenamiento' : 'Plan de entrenamiento'}
+                        </p>
                         <RoutineNameEditor
                             routineId={routine.id}
                             initialName={routine.name ?? ''}
                             updateAction={updateRoutineName}
                         />
-                        <div className="mt-1 flex min-w-0 items-center gap-2">
-                            <p className="min-w-0 flex-1 truncate whitespace-nowrap text-xs text-muted-foreground">
+                        <div className="mt-1 flex min-w-0 items-center gap-2 lg:flex-wrap lg:gap-3">
+                            <p className="min-w-0 flex-1 truncate whitespace-nowrap text-xs text-muted-foreground lg:whitespace-normal lg:text-sm">
                                 {routine.routine_kind === 'template' ? (
-                                    <span className="rounded-full border border-primary bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary dark:border-primary/20 dark:bg-primary/10 dark:text-brand-soft">
+                                    <span className="rounded-full border border-primary bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary dark:border-primary/20 dark:bg-primary/10 dark:text-brand-soft lg:hidden">
                                         Template
                                     </span>
                                 ) : (
                                     studentName
                                 )}
-                                <span className="mx-1.5 text-border">·</span>
-                                {months.length} {months.length === 1 ? 'mesociclo' : 'mesociclos'}
-                                <span className="mx-1.5 text-border">·</span>
+                                {routine.routine_kind !== 'template' && <span aria-hidden="true" className="mx-1.5">·</span>}
+                                {routine.routine_kind === 'template' && <span aria-hidden="true" className="mx-1.5 text-border lg:hidden">·</span>}
+                                <span className={months.length ? undefined : 'lg:hidden'}>
+                                    {months.length} {months.length === 1 ? 'mesociclo' : 'mesociclos'}
+                                    <span aria-hidden="true" className="mx-1.5">·</span>
+                                </span>
                                 {weeksForMonth.length} {weeksForMonth.length === 1 ? 'semana' : 'semanas'}
                             </p>
 
@@ -369,10 +375,10 @@ export default async function RoutineDetailPage(props: PageProps) {
                             )}
                         </div>
                     </div>
-                </div>
+                </header>
 
                 {routine.routine_kind === 'template' && (
-                    <details className="rounded-xl border border-primary/20 bg-primary/[0.045] px-3.5 py-3">
+                    <details className="rounded-xl border border-primary/20 bg-primary/[0.045] px-3.5 py-3 lg:rounded-none lg:border-x-0 lg:border-t-0 lg:border-border lg:bg-transparent lg:px-0 lg:pt-0">
                         <summary className="cursor-pointer list-none">
                             <div className="flex items-center justify-between gap-3">
                                 <div>
@@ -406,9 +412,9 @@ export default async function RoutineDetailPage(props: PageProps) {
                 ) : (
                     <div
                         data-testid="routine-planner-workspace"
-                        className="grid min-w-0 gap-4 xl:grid-cols-[16rem_minmax(0,1fr)] xl:items-start"
+                        className="grid min-w-0 gap-4 xl:grid-cols-[12rem_minmax(0,1fr)] xl:items-start xl:gap-5 2xl:grid-cols-[13rem_minmax(0,1fr)] 2xl:gap-6"
                     >
-                        <aside className="min-w-0 space-y-3 xl:sticky xl:top-4 xl:max-h-[calc(100dvh-2rem)] xl:overflow-y-auto xl:pr-1">
+                        <aside className="min-w-0 space-y-3 lg:max-xl:grid lg:max-xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:max-xl:items-start lg:max-xl:gap-5 lg:max-xl:space-y-0 lg:max-xl:border-b lg:max-xl:border-border lg:max-xl:pb-4 xl:sticky xl:top-4 xl:max-h-[calc(100dvh-2rem)] xl:space-y-5 xl:overflow-y-auto xl:border-r xl:border-border xl:pr-4">
                             <WeekMonthSelector
                                 routineId={routine.id}
                                 months={months}
@@ -424,7 +430,7 @@ export default async function RoutineDetailPage(props: PageProps) {
                                 renameRoutineWeek={renameRoutineWeek}
                             />
 
-                            <section className="rounded-xl border border-border bg-card p-3 shadow-sm" data-testid="planner-days">
+                            <section className="min-w-0 rounded-xl border border-border bg-card p-3 shadow-sm lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none xl:border-t xl:border-border xl:pt-4" data-testid="planner-days">
                                 <div className="mb-2 flex items-center justify-between">
                                     <div>
                                         <h2 className="text-sm font-bold text-foreground">Días de entrenamiento</h2>
@@ -432,14 +438,14 @@ export default async function RoutineDetailPage(props: PageProps) {
                                             {selectedWeek ? `Semana ${selectedWeek.position}` : 'Sin semana seleccionada'}
                                         </p>
                                     </div>
-                                    <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-secondary-foreground">
+                                    <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-secondary-foreground lg:hidden">
                                         {typedDays.length}
                                     </span>
                                 </div>
 
                                 <nav
                                     aria-label="Días de la semana"
-                                    className="flex snap-x gap-2 overflow-x-auto pb-1 xl:grid xl:max-h-[24rem] xl:grid-cols-1 xl:overflow-y-auto xl:pr-1"
+                                    className="flex snap-x gap-2 overflow-x-auto pb-1 lg:gap-1 xl:grid xl:grid-cols-1 xl:overflow-visible"
                                 >
                                     {typedDays.map((day) => {
                                         const isActive = day.id === selectedDay?.id
@@ -456,17 +462,17 @@ export default async function RoutineDetailPage(props: PageProps) {
                                                 href={`/dashboard/routines/${routine.id}?week=${selectedWeek!.id}&day=${day.id}${selectedMonth?.id ? `&month=${selectedMonth.id}` : ''}`}
                                                 aria-current={isActive ? 'page' : undefined}
                                                 data-testid={`routine-day-${day.id}`}
-                                                className={`min-w-[10.5rem] snap-start rounded-lg border px-3 py-2.5 text-left transition xl:min-w-0 ${isActive
-                                                    ? 'border-primary bg-primary/10 ring-1 ring-primary/20'
-                                                    : 'border-border bg-background hover:border-primary/40 hover:bg-muted/30'
+                                                className={`min-w-[10.5rem] snap-start rounded-lg border px-3 py-2.5 text-left transition lg:min-w-32 lg:rounded-l-none lg:rounded-r-md lg:border-y-0 lg:border-r-0 lg:border-l-2 lg:px-2.5 lg:py-1.5 xl:min-w-0 ${isActive
+                                                    ? 'border-primary bg-primary/10 ring-1 ring-primary/20 lg:bg-accent lg:ring-0'
+                                                    : 'border-border bg-background hover:border-primary/40 hover:bg-muted/30 lg:bg-transparent'
                                                     }`}
                                             >
-                                                <span className="block text-sm font-bold text-foreground">{defaultTitle}</span>
-                                                <span className="mt-0.5 block truncate text-[11px] text-muted-foreground" title={customTitle ?? undefined}>
+                                                <span className={`block text-sm font-bold lg:text-xs lg:font-semibold ${isActive ? 'text-foreground lg:text-brand-soft' : 'text-foreground'}`}>{defaultTitle}</span>
+                                                <span className="mt-0.5 block truncate text-[11px] text-muted-foreground xl:whitespace-normal xl:[overflow-wrap:anywhere]" title={customTitle ?? undefined}>
                                                     {customTitle || `${dayExercises.length} ejercicios · ${daySets} series`}
                                                 </span>
                                                 {customTitle && (
-                                                    <span className="mt-1 block text-[10px] text-muted-foreground">
+                                                    <span className="mt-1 block text-[10px] text-muted-foreground lg:hidden">
                                                         {dayExercises.length} ejercicios · {daySets} series
                                                     </span>
                                                 )}
@@ -477,7 +483,7 @@ export default async function RoutineDetailPage(props: PageProps) {
                             </section>
                         </aside>
 
-                        <main className="min-w-0 space-y-3">
+                        <div className="min-w-0 space-y-3 lg:space-y-2">
                             {!selectedDay ? (
                                 <div className="rounded-xl border border-dashed border-border bg-card/60 p-8 text-center">
                                     <p className="text-sm font-medium text-card-foreground">Esta semana no tiene días</p>
@@ -487,20 +493,22 @@ export default async function RoutineDetailPage(props: PageProps) {
                                 </div>
                             ) : (
                                 <>
-                                    <section className="rounded-xl border border-border bg-card p-3 shadow-sm sm:p-4">
-                                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                    <section className="rounded-xl border border-border bg-card p-3 shadow-sm sm:p-4 lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0 lg:pb-2 lg:shadow-none">
+                                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between lg:flex-wrap lg:items-end">
                                             <div className="min-w-0">
-                                                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-primary">
-                                                    Semana {selectedWeek!.position} · Plan de entrenamiento
+                                                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-primary lg:text-xs lg:normal-case lg:tracking-normal lg:text-brand-soft">
+                                                    Semana {selectedWeek!.position} <span aria-hidden="true">·</span>{' '}
+                                                    <span className="lg:hidden">Plan de entrenamiento</span>
+                                                    <span className="hidden lg:inline">{selectedDayDefaultTitle}</span>
                                                 </p>
-                                                <h2 className="mt-1 text-lg font-bold text-foreground">
-                                                    {selectedDayDefaultTitle}
+                                                <h2 className="mt-1 text-lg font-bold text-foreground lg:font-[family-name:Georgia,'Times_New_Roman',serif] lg:text-3xl lg:font-normal lg:leading-tight lg:tracking-[-0.025em]">
+                                                    <span className={selectedDayFocus ? 'lg:hidden' : undefined}>{selectedDayDefaultTitle}</span>
+                                                    {selectedDayFocus && (
+                                                        <span className="mt-0.5 block truncate text-sm font-normal text-muted-foreground lg:mt-0 lg:whitespace-normal lg:text-3xl lg:leading-tight lg:text-foreground lg:[overflow-wrap:anywhere]" title={selectedDayFocus}>
+                                                            {selectedDayFocus}
+                                                        </span>
+                                                    )}
                                                 </h2>
-                                                {selectedDayFocus && (
-                                                    <p className="mt-0.5 truncate text-sm text-muted-foreground" title={selectedDayFocus}>
-                                                        {selectedDayFocus}
-                                                    </p>
-                                                )}
                                                 <p className="mt-1 text-xs text-muted-foreground">
                                                     {currentDayExercises.length} {currentDayExercises.length === 1 ? 'ejercicio' : 'ejercicios'}
                                                     <span className="mx-1.5 text-border">·</span>
@@ -525,7 +533,7 @@ export default async function RoutineDetailPage(props: PageProps) {
                                         </div>
                                     </section>
 
-                                    <div className="hidden xl:block" data-testid="desktop-routine-editor">
+                                    <div className="hidden lg:block" data-testid="desktop-routine-editor">
                                         <DesktopRoutineExerciseTable
                                             routineId={routine.id}
                                             routineDayId={selectedDay.id}
@@ -546,7 +554,7 @@ export default async function RoutineDetailPage(props: PageProps) {
                                         />
                                     </div>
 
-                                    <div className="xl:hidden" data-testid="mobile-routine-editor">
+                                    <div className="lg:hidden" data-testid="mobile-routine-editor">
                                         <DayBlockEditor
                                             routineId={routine.id}
                                             routineDayId={selectedDay.id}
@@ -567,7 +575,7 @@ export default async function RoutineDetailPage(props: PageProps) {
                                     </div>
                                 </>
                             )}
-                        </main>
+                        </div>
                     </div>
                 )}
             </div>

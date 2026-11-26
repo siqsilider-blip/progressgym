@@ -1,5 +1,5 @@
 import { getAppearance } from '@/lib/serverAppearance'
-import { AlertTriangle, Camera, CircleStop, ClipboardX, Flag, HeartPulse, ListChecks, UserMinus, UserX } from 'lucide-react'
+import { AlertTriangle, Camera, ChevronDown, CircleStop, ClipboardX, Flag, HeartPulse, ListChecks, UserMinus, UserX } from 'lucide-react'
 import AppBadge from '@/components/ui/app-badge'
 import type { TrainerAlert } from './getTrainerAlerts'
 import FollowUpActions from './FollowUpActions'
@@ -181,46 +181,60 @@ export default async function AtRiskStudentsCard({
     function renderAlert(alert: TrainerAlert) {
         const meta = getRiskMeta(alert, isLight)
         const Icon = meta.icon
+        const prefix = `${alert.studentName} `
+        const hasNamePrefix = alert.message.startsWith(prefix)
 
         return (
-            <div
+            <li
                 key={`${alert.type}-${alert.studentId}`}
-                className={`rounded-xl border p-3 transition ${meta.cardClassName}`}
+                className={`rounded-xl border p-3 ${meta.cardClassName} lg:rounded-none lg:border-0 lg:border-b lg:border-border lg:bg-transparent lg:px-0 lg:py-3.5`}
             >
-                <div className="flex min-w-0 items-start gap-2.5">
-                    <div className={`mt-0.5 rounded-lg p-1.5 ${meta.iconBgClassName}`}>
-                        <Icon className={`h-3.5 w-3.5 ${meta.iconClassName}`} />
+                <div className="flex min-w-0 items-start gap-2.5 lg:grid lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:items-center lg:gap-3">
+                    <div className={`mt-0.5 shrink-0 rounded-lg p-1.5 ${meta.iconBgClassName} lg:mt-0 lg:rounded-full lg:p-2 ${alert.type === 'workout_pain' ? '' : 'lg:bg-primary/10'}`}>
+                        <Icon
+                            className={`size-3.5 ${meta.iconClassName} ${alert.type === 'workout_pain' ? '' : 'lg:text-brand-soft'}`}
+                            aria-hidden="true"
+                        />
                     </div>
 
-                    <div className="min-w-0">
-                        <AppBadge className={meta.badgeClassName}>
-                            {meta.label}
-                        </AppBadge>
+                    <div className="min-w-0 lg:contents">
+                        <div className="min-w-0">
+                            <div className="lg:hidden">
+                                <AppBadge className={meta.badgeClassName}>
+                                    {meta.label}
+                                </AppBadge>
+                            </div>
 
-                        <p className="mt-1.5 text-xs leading-5 text-card-foreground">
-                            {alert.message}
-                        </p>
+                            <p className="hidden text-sm font-semibold text-foreground [overflow-wrap:anywhere] lg:block">
+                                {alert.studentName}
+                            </p>
+
+                            <p className="mt-1.5 text-xs leading-5 text-card-foreground [overflow-wrap:anywhere] lg:mt-0.5 lg:text-muted-foreground lg:first-letter:uppercase">
+                                {hasNamePrefix && <span className="lg:hidden">{prefix}</span>}
+                                {hasNamePrefix ? alert.message.slice(prefix.length) : alert.message}
+                            </p>
+                        </div>
 
                         <FollowUpActions alert={alert} />
                     </div>
                 </div>
-            </div>
+            </li>
         )
     }
 
     return (
-        <section className="rounded-2xl border p-4" style={{ borderColor: 'rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)' }}>
-            <div className="mb-3 flex items-center gap-2.5">
-                <div className="rounded-xl bg-amber-500/10 p-2 text-amber-500">
-                    <ListChecks className="h-4 w-4" />
+        <section aria-labelledby="trainer-priorities-heading" className="min-w-0 rounded-2xl border border-border bg-card p-4 lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0">
+            <div className="mb-3 flex min-h-11 items-center gap-2.5 lg:mb-0 lg:border-b lg:border-border lg:pb-2">
+                <div className="rounded-xl bg-amber-500/10 p-2 text-amber-500 lg:hidden">
+                    <ListChecks className="size-4" aria-hidden="true" />
                 </div>
 
                 <div>
-                    <h2 className="text-sm font-semibold text-card-foreground">
+                    <h2 id="trainer-priorities-heading" className="text-sm font-semibold text-foreground lg:font-[family-name:Georgia,'Times_New_Roman',serif] lg:text-[1.75rem] lg:leading-tight lg:font-normal lg:tracking-tight">
                         Prioridades de hoy
                     </h2>
 
-                    <p className="text-[11px] text-muted-foreground">
+                    <p className="text-[11px] text-muted-foreground lg:hidden">
                         Solo lo que requiere atención
                     </p>
                 </div>
@@ -228,31 +242,29 @@ export default async function AtRiskStudentsCard({
 
             {atRiskAlerts.length === 0 ? (
                 <div
-                    className={`rounded-xl border border-dashed p-4 text-xs ${isLight
-                            ? 'border-border bg-muted/50 text-muted-foreground'
-                            : 'border-border bg-muted/30 text-muted-foreground'
-                        }`}
+                    className="rounded-xl border border-dashed border-border bg-muted/30 p-4 text-xs text-muted-foreground lg:rounded-none lg:border-0 lg:border-b lg:border-solid lg:bg-transparent lg:px-0 lg:text-sm"
                 >
                     No hay acciones pendientes por ahora.
                 </div>
             ) : (
-                <div className="space-y-2">
+                <ul className="space-y-2 lg:space-y-0">
                     {atRiskAlerts.map(renderAlert)}
-                </div>
+                </ul>
             )}
 
             {remainingAlerts.length > 0 && (
                 <details className="group mt-2">
-                    <summary className="cursor-pointer list-none rounded-lg py-2 text-center text-[11px] font-medium text-white/40 transition hover:bg-white/[0.03] hover:text-white/70 [&::-webkit-details-marker]:hidden">
+                    <summary className="flex min-h-9 cursor-pointer list-none items-center justify-center gap-1.5 rounded-lg px-1 py-2 text-center text-[11px] font-medium text-muted-foreground transition hover:bg-accent hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring lg:justify-start lg:text-xs [&::-webkit-details-marker]:hidden">
                         <span className="group-open:hidden">
                             Ver las {alerts.length} prioridades
                         </span>
                         <span className="hidden group-open:inline">Ver menos</span>
+                        <ChevronDown className="size-3 shrink-0 group-open:rotate-180" aria-hidden="true" />
                     </summary>
 
-                    <div className="mt-2 space-y-2">
+                    <ul className="mt-2 space-y-2 lg:mt-0 lg:space-y-0">
                         {remainingAlerts.map(renderAlert)}
-                    </div>
+                    </ul>
                 </details>
             )}
         </section>

@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ClipboardList, MessageSquare, Users, Video } from 'lucide-react'
+import { ArrowUpRight, ClipboardList, MessageSquare, Users, Video } from 'lucide-react'
 import TrainerDashboardCards from './TrainerDashboardCards'
 import AtRiskStudentsCard from './AtRiskStudentsCard'
 import { getTrainerDashboardStats } from './getTrainerDashboardStats'
@@ -9,6 +9,8 @@ import RecentWorkoutActivityCard from './RecentWorkoutActivityCard'
 import { getTrainerProfile } from '@/lib/getTrainerProfile'
 import type { WeightUnit } from '@/lib/weight'
 import TrainerPageShell from '@/components/dashboard/TrainerPageShell'
+import { getBuenosAiresDateString } from '@/lib/buenosAiresDate'
+import { formatSpanishLongDateLabel } from '@/lib/routineCalendar'
 
 export default async function DashboardPage() {
     const [
@@ -24,30 +26,42 @@ export default async function DashboardPage() {
     ])
 
     const weightUnit = (trainerProfile?.weight_unit ?? 'kg') as WeightUnit
+    const today = getBuenosAiresDateString()
 
     return (
-        <TrainerPageShell className="space-y-3 md:space-y-4">
-            <section className="flex items-center justify-between gap-3">
-                <div>
-                    <h1 className="text-xl font-black tracking-tight text-foreground md:text-2xl">
+        <TrainerPageShell className="space-y-3 md:space-y-4 lg:space-y-8 lg:pt-9">
+            <header className="flex items-center justify-between gap-3 lg:items-end">
+                <div className="min-w-0">
+                    <time dateTime={today} className="hidden text-sm font-semibold text-brand-soft first-letter:uppercase lg:block">
+                        {formatSpanishLongDateLabel(today)}
+                    </time>
+                    <h1 className="text-xl font-black tracking-tight text-foreground md:text-2xl lg:mt-1.5 lg:font-[family-name:Georgia,'Times_New_Roman',serif] lg:text-5xl lg:leading-none lg:font-normal lg:tracking-[-0.045em] xl:text-[3.5rem]">
                         Inicio
                     </h1>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
+                    <p className="mt-0.5 text-xs text-muted-foreground lg:hidden">
                         {alerts.length > 0
                             ? `${alerts.length} ${alerts.length === 1 ? 'prioridad pendiente' : 'prioridades pendientes'}`
                             : 'Todo al día'}
                     </p>
+                    <p className="mt-2 hidden text-sm text-muted-foreground lg:block">Seguimiento de tus alumnos</p>
                 </div>
 
                 <Link
                     href="/dashboard/new"
-                    className="shrink-0 rounded-xl bg-primary px-3.5 py-2 text-xs font-bold text-primary-foreground transition hover:bg-primary"
+                    className="shrink-0 rounded-xl bg-primary px-3.5 py-2 text-xs font-bold text-primary-foreground transition hover:bg-primary lg:hidden"
                 >
                     + Nuevo
                 </Link>
-            </section>
+                <Link
+                    href="/dashboard/routines"
+                    className="hidden min-h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-3.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring lg:inline-flex"
+                >
+                    Abrir planificador
+                    <ArrowUpRight className="size-4" aria-hidden="true" />
+                </Link>
+            </header>
 
-            <nav className="grid grid-cols-4 gap-2" aria-label="Accesos rápidos">
+            <nav className="grid grid-cols-4 gap-2 lg:hidden" aria-label="Accesos rápidos">
                 {[
                     { href: '/dashboard/students', icon: Users, label: 'Alumnos', color: 'text-primary' },
                     { href: '/dashboard/routines', icon: ClipboardList, label: 'Rutinas', color: 'text-primary' },
@@ -70,7 +84,7 @@ export default async function DashboardPage() {
 
             <TrainerDashboardCards stats={stats} riskCount={alerts.length} />
 
-            <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(22rem,0.85fr)] xl:items-start">
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:items-start lg:gap-7 xl:gap-10">
                 <AtRiskStudentsCard alerts={alerts} />
                 <RecentWorkoutActivityCard
                     activity={recentActivity ?? []}
