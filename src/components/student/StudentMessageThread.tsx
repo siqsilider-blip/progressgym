@@ -25,7 +25,7 @@ export default function StudentMessageThread({
     return (
         <div
             ref={containerRef}
-            className="h-full min-h-0 space-y-4 overflow-y-auto overscroll-contain py-2 pr-1"
+            className="h-full min-h-0 overflow-y-auto overscroll-contain py-2 pr-1"
             role="log"
             aria-label="Conversación con tu entrenador"
             aria-live="polite"

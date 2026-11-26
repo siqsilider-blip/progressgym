@@ -7,6 +7,7 @@ import ReadMarker from '@/components/coaching/ReadMarker'
 import { getRoutineExerciseNameMap } from '@/lib/coaching/getRoutineExerciseNames'
 import StudentMessageThread from '@/components/student/StudentMessageThread'
 import { StudentNotebookHeader } from '@/components/student/StudentNotebook'
+import { addDateOnlyDays } from '@/lib/routineCalendar'
 
 type MessageRow = {
     id: string
@@ -26,11 +27,11 @@ const TOPIC_LABELS: Record<string, string> = {
     alternative: 'Alternativa',
 }
 
-const messageDay = new Intl.DateTimeFormat('es-AR', {
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Argentina/Buenos_Aires',
-})
+const timeZone = 'America/Argentina/Buenos_Aires'
+const dateKey = new Intl.DateTimeFormat('en-CA', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone })
+const shortDate = new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short', timeZone })
 const messageTime = new Intl.DateTimeFormat('es-AR', {
-    hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires',
+    hour: '2-digit', minute: '2-digit', timeZone,
 })
 
 export default async function StudentMessagesPage() {
@@ -72,7 +73,12 @@ export default async function StudentMessagesPage() {
 
     const typedMessages = (messages as MessageRow[] | null) ?? []
     const latestMessageId = typedMessages[0]?.id ?? null
-    typedMessages.reverse()
+    const chronologicalMessages = [...typedMessages].reverse().map((message) => {
+        const sentAt = new Date(message.created_at)
+        return { ...message, sentAt, day: dateKey.format(sentAt) }
+    })
+    const today = dateKey.format(new Date())
+    const yesterday = addDateOnlyDays(today, -1)
     const exerciseNameByRoutineExercise = await getRoutineExerciseNameMap(
         supabase,
         typedMessages.map((message) => message.routine_day_exercise_id)
@@ -86,7 +92,7 @@ export default async function StudentMessagesPage() {
             {conversationId && <ReadMarker conversationId={conversationId} latestMessageId={latestMessageId} />}
 
             <div className="shrink-0">
-                <StudentNotebookHeader section="Mensajes" title="Tu entrenador" subtitle={trainerName === 'Tu entrenador' ? 'Conversación privada' : `${trainerName} · Conversación privada`} />
+                <StudentNotebookHeader section="Mensajes" title={trainerName} />
             </div>
 
             {conversationResult.error && (
@@ -97,31 +103,38 @@ export default async function StudentMessagesPage() {
 
             <section className="mt-3 min-h-0 flex-1 overflow-hidden">
                 <StudentMessageThread scrollKey={latestMessageId ?? 'empty'}>
-                {typedMessages.length ? (
-                    typedMessages.map((message, index) => {
+                {chronologicalMessages.length ? (
+                    chronologicalMessages.map((message, index) => {
                         const own = message.sender_role === 'student'
-                        const dayLabel = messageDay.format(new Date(message.created_at))
-                        const previous = typedMessages[index - 1]
-                        const startsDay = !previous || messageDay.format(new Date(previous.created_at)) !== dayLabel
+                        const previous = chronologicalMessages[index - 1]
+                        const startsDay = previous?.day !== message.day
+                        const startsGroup = startsDay || previous?.sender_role !== message.sender_role
+                        const dayLabel = message.day === today ? 'Hoy'
+                            : message.day === yesterday ? 'Ayer'
+                                : `${shortDate.format(message.sentAt)}${message.day.slice(0, 4) === today.slice(0, 4) ? '' : ` ${message.day.slice(0, 4)}`}`
                         const exerciseName = message.routine_day_exercise_id
-                            ? exerciseNameByRoutineExercise.get(message.routine_day_exercise_id)
+                            ? exerciseNameByRoutineExercise.get(message.routine_day_exercise_id) ?? 'Ejercicio de la rutina'
                             : null
+                        const hasExerciseLabel = exerciseName && (startsGroup || previous?.routine_day_exercise_id !== message.routine_day_exercise_id)
                         return (
                             <article key={message.id}>
-                                {startsDay && <p className="mb-3 border-t border-border pt-2 text-xs text-muted-foreground">{dayLabel.charAt(0).toLocaleUpperCase('es-AR') + dayLabel.slice(1)}</p>}
-                                <div className="flex items-start gap-2.5">
-                                    <span aria-hidden="true" className={`flex size-7 shrink-0 items-center justify-center rounded-full border border-border text-xs font-semibold ${own ? 'bg-accent text-brand-soft' : 'bg-card text-muted-foreground'}`}>
-                                        {own ? 'V' : trainerName.charAt(0).toLocaleUpperCase('es-AR')}
-                                    </span>
-                                    <div className="min-w-0 flex-1 [overflow-wrap:anywhere]">
-                                        <div className="flex flex-wrap justify-between gap-x-3 text-xs">
-                                            <span className="font-semibold">{own ? 'Vos' : trainerName} · {TOPIC_LABELS[message.topic] ?? 'Mensaje'}</span>
-                                            <time dateTime={message.created_at} className="text-muted-foreground">{messageTime.format(new Date(message.created_at))}</time>
-                                        </div>
-                                        {message.routine_day_exercise_id && (
-                                            <p className="mt-0.5 text-xs font-semibold text-brand-soft">Ejercicio · {exerciseName ?? 'Ejercicio de la rutina'}</p>
-                                        )}
-                                        <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed">{message.body}</p>
+                                {startsDay && (
+                                    <p className="mt-5 mb-3 flex items-center gap-2.5 text-xs text-muted-foreground before:h-px before:flex-1 before:bg-border after:h-px after:flex-1 after:bg-border">
+                                        <time dateTime={message.day}>{dayLabel}</time>
+                                    </p>
+                                )}
+                                <div className={`flex ${own ? 'justify-end' : 'justify-start'} ${startsDay ? '' : startsGroup ? 'mt-3' : 'mt-1'}`}>
+                                    <div
+                                        className={`max-w-[89%] min-w-0 rounded-2xl px-3.5 py-2.5 [overflow-wrap:anywhere] ${own ? 'rounded-br-md bg-accent text-accent-foreground' : 'rounded-bl-md bg-card text-card-foreground'}`}
+                                        title={messageTime.format(message.sentAt)}
+                                    >
+                                        <p className="sr-only">
+                                            {own ? 'Vos' : trainerName} · {TOPIC_LABELS[message.topic] ?? 'Mensaje'}
+                                            {exerciseName && !hasExerciseLabel ? ` · ${exerciseName}` : ''}
+                                            {' · '}<time dateTime={message.created_at}>{messageTime.format(message.sentAt)}</time>
+                                        </p>
+                                        {hasExerciseLabel && <p className="mb-0.5 text-xs font-medium text-brand-soft">{exerciseName}</p>}
+                                        <p className="whitespace-pre-wrap text-[0.9375rem] leading-relaxed sm:text-base">{message.body}</p>
                                     </div>
                                 </div>
                             </article>
@@ -138,7 +151,7 @@ export default async function StudentMessagesPage() {
             </section>
 
             <section className="mt-2 shrink-0 border-t border-border pt-2">
-                <MessageComposer compact placeholder="Escribile a tu entrenador…" />
+                <MessageComposer thread placeholder="Escribile a tu entrenador…" />
             </section>
         </main>
     )

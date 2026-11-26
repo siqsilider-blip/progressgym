@@ -21,6 +21,7 @@ export default function MessageComposer({
     defaultTopic = 'general',
     placeholder = 'Escribí tu mensaje…',
     compact = false,
+    thread = false,
     showTopic = true,
     successMessage = 'Mensaje enviado ✓',
     successHref,
@@ -32,6 +33,7 @@ export default function MessageComposer({
     defaultTopic?: CoachingTopic
     placeholder?: string
     compact?: boolean
+    thread?: boolean
     showTopic?: boolean
     successMessage?: string
     successHref?: string
@@ -64,51 +66,72 @@ export default function MessageComposer({
         })
     }
 
+    const messageInput = (
+        <textarea
+            value={body}
+            onChange={(event) => { setBody(event.target.value); setError(null); setSent(false) }}
+            placeholder={placeholder}
+            aria-label={placeholder}
+            maxLength={4000}
+            rows={compact || thread ? 2 : 3}
+            className={`w-full min-w-0 resize-none rounded-xl border border-border bg-background px-3 py-2.5 text-foreground outline-none placeholder:text-muted-foreground focus:border-primary ${thread ? 'text-base leading-5' : 'text-sm'}`}
+        />
+    )
+    const sendButton = (
+        <button
+            type="button"
+            onClick={submit}
+            disabled={pending || !body.trim()}
+            className={`inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-xs font-bold text-primary-foreground disabled:opacity-45 ${thread ? 'self-end' : 'w-full sm:w-auto'}`}
+        >
+            <Send className="size-3.5" aria-hidden="true" />
+            {pending ? 'Enviando…' : 'Enviar'}
+        </button>
+    )
+    const response = <>
+        {error && <p role="alert" className="text-destructive">{error}</p>}
+        {sent && (
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-emerald-600 dark:text-emerald-400" role="status">
+                <p className="font-semibold">{successMessage}</p>
+                {successHref && (
+                    <Link href={successHref} className="font-bold underline underline-offset-2">
+                        {successLinkLabel} →
+                    </Link>
+                )}
+            </div>
+        )}
+    </>
+
     return (
-        <div className={compact ? 'space-y-2' : 'space-y-3'}>
+        <div className={compact || thread ? 'space-y-2' : 'space-y-3'}>
             {showTopic && (
                 <select
+                    aria-label="Tipo de mensaje"
                     value={topic}
                     onChange={(event) => setTopic(event.target.value as CoachingTopic)}
-                    className="h-10 w-full rounded-xl border border-border bg-background px-3 text-xs font-semibold text-foreground outline-none focus:border-primary"
+                    className={thread
+                        ? 'min-h-11 max-w-full rounded-lg bg-background px-2.5 text-base font-medium text-muted-foreground outline-none focus-visible:outline-2 focus-visible:outline-ring sm:text-sm'
+                        : 'h-10 w-full rounded-xl border border-border bg-background px-3 text-xs font-semibold text-foreground outline-none focus:border-primary'}
                 >
                     {TOPICS.map((item) => (
                         <option key={item.value} value={item.value}>{item.label}</option>
                     ))}
                 </select>
             )}
-            <textarea
-                value={body}
-                onChange={(event) => { setBody(event.target.value); setError(null); setSent(false) }}
-                placeholder={placeholder}
-                maxLength={4000}
-                rows={compact ? 2 : 3}
-                className="w-full resize-none rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary"
-            />
-            <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div className="min-w-0 text-[11px]">
-                    {error && <p className="text-red-500">{error}</p>}
-                    {sent && (
-                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-emerald-500">
-                            <p className="font-semibold">{successMessage}</p>
-                            {successHref && (
-                                <Link href={successHref} className="font-bold underline underline-offset-2">
-                                    {successLinkLabel} →
-                                </Link>
-                            )}
-                        </div>
-                    )}
-                </div>
-                <button
-                    type="button"
-                    onClick={submit}
-                    disabled={pending || !body.trim()}
-                    className="inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-xs font-bold text-primary-foreground disabled:opacity-45 sm:w-auto"
-                >
-                    <Send className="h-3.5 w-3.5" />
-                    {pending ? 'Enviando…' : 'Enviar'}
-                </button>
-            </div>
+            {thread ? (
+                <>
+                    <div className="flex items-end gap-2">{messageInput}{sendButton}</div>
+                    {(sent || error) && <div className="text-xs">{response}</div>}
+                </>
+            ) : (
+                <>
+                    {messageInput}
+                    <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="min-w-0 text-[11px]">{response}</div>
+                        {sendButton}
+                    </div>
+                </>
+            )}
         </div>
     )
 }
