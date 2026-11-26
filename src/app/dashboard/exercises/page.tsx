@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { CirclePlay, Pencil } from 'lucide-react'
-import { createExercise, listExercises, deleteExercise, updateExercise } from './actions'
+import { createExercise, createExerciseVariant, listExercises, deleteExercise, updateExercise } from './actions'
 import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
 import TrainerPageShell from '@/components/dashboard/TrainerPageShell'
+import { EXERCISE_METRIC_OPTIONS, getExerciseMetric, type ExerciseMetric, type ExerciseMetricFields } from '@/lib/exerciseMetric'
 
 type Exercise = {
     id: string
@@ -14,7 +15,7 @@ type Exercise = {
     video_url: string | null
     trainer_id: string | null
     is_personalized?: boolean
-}
+} & ExerciseMetricFields
 
 type VideoFilter = 'all' | 'missing' | 'ready'
 
@@ -25,17 +26,16 @@ const CATEGORIES = [
 
 const LEVELS = ['Principiante', 'Intermedio', 'Avanzado']
 
-const METRIC_TYPES = [
-    { value: 'reps', label: 'Fuerza (reps + peso)' },
-    { value: 'time', label: 'Cardio (tiempo)' },
-] as const
+function exerciseMetricLabel(exercise: Exercise) {
+    return EXERCISE_METRIC_OPTIONS.find((option) => option.value === getExerciseMetric(exercise))?.label
+}
 
 export default function ExercisesPage() {
     const [name, setName] = useState('')
     const [description, setDescription] = useState('')
     const [category, setCategory] = useState('')
     const [level, setLevel] = useState('')
-    const [metricType, setMetricType] = useState<'reps' | 'time'>('reps')
+    const [metric, setMetric] = useState<ExerciseMetric>('reps')
     const [videoUrl, setVideoUrl] = useState('')
 
     const [error, setError] = useState<string | null>(null)
@@ -53,6 +53,10 @@ export default function ExercisesPage() {
     const [editVideoUrl, setEditVideoUrl] = useState('')
     const [editSaving, setEditSaving] = useState(false)
     const [editError, setEditError] = useState<string | null>(null)
+    const [variantMetric, setVariantMetric] = useState<ExerciseMetric | ''>('')
+    const [variantSaving, setVariantSaving] = useState(false)
+    const [variantError, setVariantError] = useState<string | null>(null)
+    const [createdVariant, setCreatedVariant] = useState<string | null>(null)
 
     async function load() {
         setLoading(true)
@@ -70,7 +74,7 @@ export default function ExercisesPage() {
     useEffect(() => { void load() }, [])
 
     useEffect(() => {
-        if (category === 'Cardio') setMetricType('time')
+        if (category === 'Cardio') setMetric('minutes')
     }, [category])
 
     async function onSubmit(e: React.FormEvent) {
@@ -84,7 +88,7 @@ export default function ExercisesPage() {
 
         setSaving(true)
         try {
-            const res = await createExercise({ name, description, category, level, metric_type: metricType, video_url: videoUrl })
+            const res = await createExercise({ name, description, category, level, metric, video_url: videoUrl })
             if (!res.ok) {
                 setError(res.message)
                 return
@@ -93,7 +97,7 @@ export default function ExercisesPage() {
             setDescription('')
             setCategory('')
             setLevel('')
-            setMetricType('reps')
+            setMetric('reps')
             setVideoUrl('')
             setShowForm(false)
             await load()
@@ -103,17 +107,20 @@ export default function ExercisesPage() {
     }
 
     function openEdit(x: Exercise) {
+        setCreatedVariant(null)
         setEditingExercise(x)
         setEditName(x.name)
         setEditDescription(x.description ?? '')
         setEditMuscleGroup(x.muscle_group ?? '')
         setEditVideoUrl(x.video_url ?? '')
         setEditError(null)
+        setVariantMetric('')
+        setVariantError(null)
     }
 
     async function handleEditSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault()
-        if (!editingExercise) return
+        if (!editingExercise || variantSaving) return
         if (editingExercise.trainer_id !== null && !editName.trim()) {
             setEditError('El nombre no puede estar vacío.')
             return
@@ -134,6 +141,28 @@ export default function ExercisesPage() {
             await load()
         } finally {
             setEditSaving(false)
+        }
+    }
+
+    async function handleCreateVariant() {
+        if (!editingExercise || !variantMetric || variantSaving || editSaving) return
+        setVariantError(null)
+        setVariantSaving(true)
+        try {
+            const result = await createExerciseVariant(editingExercise.id, variantMetric)
+            if (!result.ok) {
+                setVariantError(result.message)
+                return
+            }
+            setEditingExercise(null)
+            setSearch(result.name)
+            setVideoFilter('all')
+            setCreatedVariant(result.name)
+            await load()
+        } catch {
+            setVariantError('No pudimos crear la versión. Volvé a intentar.')
+        } finally {
+            setVariantSaving(false)
         }
     }
 
@@ -215,6 +244,12 @@ export default function ExercisesPage() {
                 </div>
             </div>
 
+            {createdVariant && (
+                <p role="status" className="rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground">
+                    Se creó «{createdVariant}». Ya podés elegirla al armar una rutina.
+                </p>
+            )}
+
             {/* List */}
             {loading ? (
                 <p className="text-sm text-muted-foreground">Cargando...</p>
@@ -234,13 +269,14 @@ export default function ExercisesPage() {
                                     </div>
                                     <div className="min-w-0">
                                         <p className="truncate text-sm font-semibold text-zinc-100">{x.name}</p>
-                                        <div className="mt-0.5 flex items-center gap-2">
-                                            <p className="truncate text-xs text-zinc-500">{x.muscle_group ?? 'Sin categoría'}</p>
+                                        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                                            <p className="text-xs text-muted-foreground">{x.trainer_id === null ? 'Compartido' : 'Propio'} · {exerciseMetricLabel(x)}</p>
                                             <span className={`inline-flex items-center gap-1 text-[11px] font-medium ${x.video_url ? 'text-emerald-400' : 'text-amber-400'}`}>
                                                 <CirclePlay className="h-3 w-3" aria-hidden="true" />
                                                 {x.video_url ? 'Video listo' : 'Sin video'}
                                             </span>
                                         </div>
+                                        {x.muscle_group && <p className="mt-0.5 truncate text-xs text-muted-foreground">{x.muscle_group}</p>}
                                     </div>
                                 </div>
 
@@ -248,12 +284,11 @@ export default function ExercisesPage() {
                                     <button
                                         type="button"
                                         onClick={() => openEdit(x)}
-                                        aria-label={`${x.trainer_id === null ? 'Agregar demostración a' : 'Editar'} ${x.name}`}
+                                        aria-label={`${x.trainer_id === null ? 'Personalizar' : 'Editar'} ${x.name}`}
+                                        title={x.trainer_id === null ? 'Personalizar ejercicio' : 'Editar ejercicio'}
                                         className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-primary/10 hover:text-primary"
                                     >
-                                        {x.trainer_id === null
-                                            ? <CirclePlay className="h-5 w-5" aria-hidden="true" />
-                                            : <Pencil className="h-4 w-4" aria-hidden="true" />}
+                                        <Pencil className="h-4 w-4" aria-hidden="true" />
                                     </button>
                                     {x.trainer_id !== null && (
                                         <button
@@ -278,10 +313,13 @@ export default function ExercisesPage() {
             {editingExercise && (
                 <div
                     className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm md:items-center"
-                    onClick={() => setEditingExercise(null)}
+                    onClick={() => { if (!variantSaving && !editSaving) setEditingExercise(null) }}
                 >
                     <div
-                        className="w-full max-w-lg rounded-t-3xl border-t border-border bg-background p-5 shadow-2xl md:max-w-2xl md:rounded-2xl md:border md:p-6"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="edit-exercise-title"
+                        className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-t-3xl border-t border-border bg-background p-5 shadow-2xl md:max-w-2xl md:rounded-2xl md:border md:p-6"
                         style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 20px)' }}
                         onClick={(e) => e.stopPropagation()}
                     >
@@ -290,13 +328,15 @@ export default function ExercisesPage() {
                                 <p className="text-xs font-medium text-primary">
                                     {editingExercise.trainer_id === null ? 'Ejercicio del catálogo' : 'Ejercicio propio'}
                                 </p>
-                                <h2 className="text-base font-bold text-card-foreground">
-                                    {editingExercise.trainer_id === null ? editingExercise.name : 'Editar ejercicio'}
+                                <h2 id="edit-exercise-title" className="text-base font-bold text-card-foreground">
+                                    {editingExercise.name}
                                 </h2>
                             </div>
                             <button
                                 type="button"
                                 onClick={() => setEditingExercise(null)}
+                                aria-label="Cerrar ficha del ejercicio"
+                                disabled={variantSaving || editSaving}
                                 className="flex h-8 w-8 items-center justify-center rounded-xl text-muted-foreground transition hover:bg-muted"
                             >
                                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -304,6 +344,39 @@ export default function ExercisesPage() {
                                 </svg>
                             </button>
                         </div>
+
+                        <details className="mb-4 rounded-xl border border-border bg-card px-3 py-2.5">
+                            <summary className="cursor-pointer text-sm font-semibold text-foreground">Crear versión con otra medida</summary>
+                            <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                                Medida actual: {exerciseMetricLabel(editingExercise)}. La versión usa el video y las indicaciones guardados.
+                            </p>
+                            <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-end">
+                                <div className="min-w-0 flex-1 space-y-1">
+                                    <label htmlFor="variant-metric" className="text-xs font-medium text-muted-foreground">Nueva medida</label>
+                                    <select
+                                        id="variant-metric"
+                                        className={selectCls}
+                                        value={variantMetric}
+                                        disabled={variantSaving || editSaving}
+                                        onChange={(event) => { setVariantMetric(event.target.value as ExerciseMetric | ''); setVariantError(null) }}
+                                    >
+                                        <option value="">Elegí una medida</option>
+                                        {EXERCISE_METRIC_OPTIONS.filter((option) => option.value !== getExerciseMetric(editingExercise)).map((option) => (
+                                            <option key={option.value} value={option.value}>{option.label}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={handleCreateVariant}
+                                    disabled={!variantMetric || variantSaving || editSaving}
+                                    className="h-10 shrink-0 rounded-xl bg-primary px-3 text-xs font-semibold text-primary-foreground transition disabled:opacity-50"
+                                >
+                                    {variantSaving ? 'Creando…' : 'Crear versión propia'}
+                                </button>
+                            </div>
+                            {variantError && <p role="alert" className="mt-2 text-xs text-red-500">{variantError}</p>}
+                        </details>
 
                         <form onSubmit={handleEditSubmit} className="space-y-3">
                             {editingExercise.trainer_id !== null && (
@@ -364,7 +437,7 @@ export default function ExercisesPage() {
 
                             <button
                                 type="submit"
-                                disabled={editSaving}
+                                disabled={editSaving || variantSaving}
                                 className="h-11 w-full rounded-xl bg-primary text-sm font-semibold text-primary-foreground transition hover:bg-primary disabled:opacity-50"
                             >
                                 {editSaving
@@ -429,9 +502,12 @@ export default function ExercisesPage() {
                                 </select>
                             </div>
 
-                            <select className={selectCls} value={metricType} onChange={(e) => setMetricType(e.target.value as 'reps' | 'time')}>
-                                {METRIC_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-                            </select>
+                            <div className="space-y-1">
+                                <label htmlFor="new-exercise-metric" className="text-xs font-medium text-muted-foreground">Cómo se registra</label>
+                                <select id="new-exercise-metric" className={selectCls} value={metric} onChange={(e) => setMetric(e.target.value as ExerciseMetric)}>
+                                    {EXERCISE_METRIC_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                                </select>
+                            </div>
 
                             <div className="space-y-1">
                                 <label className="text-xs font-medium text-muted-foreground">

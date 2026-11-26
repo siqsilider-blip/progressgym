@@ -14,6 +14,7 @@ import DesktopRoutineExerciseTable from './DesktopRoutineExerciseTable'
 import TemplateCriteriaFields from '@/components/TemplateCriteriaFields'
 import { normalizeStringArray, type TemplateMatchingProfile } from '@/lib/templateMatching'
 import { getServerUser } from '@/lib/auth/server'
+import type { ExerciseMetricFields } from '@/lib/exerciseMetric'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -48,18 +49,16 @@ type RoutineDay = {
     title: string | null
 }
 
-type ExerciseOption = {
+type ExerciseOption = ExerciseMetricFields & {
     id: string
     name: string
     muscle_group: string | null
     category: string | null
-    metric_type: 'reps' | 'time' | null
 }
 
-type ExerciseRelation = {
+type ExerciseRelation = ExerciseMetricFields & {
     name: string
     muscle_group: string | null
-    metric_type: 'reps' | 'time' | null
 }
 
 type RoutineDayExercise = {
@@ -223,7 +222,8 @@ export default async function RoutineDetailPage(props: PageProps) {
 
     const { data: exerciseOptions } = await supabase
         .from('exercises')
-        .select('id, name, muscle_group, category, metric_type')
+        .select('id, name, muscle_group, category, metric_type, duration_unit')
+        .or(`trainer_id.eq.${user.id},trainer_id.is.null`)
         .order('name', { ascending: true })
 
     const typedDays: RoutineDay[] = (days as RoutineDay[] | null) ?? []
@@ -252,7 +252,8 @@ export default async function RoutineDetailPage(props: PageProps) {
                 exercise:exercises!routine_day_exercises_exercise_id_fkey (
                     name,
                     muscle_group,
-                    metric_type
+                    metric_type,
+                    duration_unit
                 )
             `)
             .in('routine_day_id', dayIds)

@@ -3,22 +3,21 @@
 import { useState, useMemo, useRef, useEffect, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { convertWeightFromKgForInput, formatPreciseWeight, formatWeight, type WeightUnit } from '@/lib/weight'
+import { EXERCISE_METRIC_LABELS, EXERCISE_METRIC_OPTIONS, EXERCISE_METRIC_SUFFIXES, getExerciseMetric, type ExerciseMetric, type ExerciseMetricFields } from '@/lib/exerciseMetric'
 import ExerciseProgressChart from '../../../../components/ExerciseProgressChart'
 
 export type Block = 'activation' | 'main' | 'closing'
 
-export type ExerciseOption = {
+export type ExerciseOption = ExerciseMetricFields & {
     id: string
     name: string
     muscle_group: string | null
     category: string | null
-    metric_type: 'reps' | 'time' | null
 }
 
-type ExerciseRelation = {
+type ExerciseRelation = ExerciseMetricFields & {
     name: string
     muscle_group: string | null
-    metric_type: 'reps' | 'time' | null
 }
 
 type RoutineActionResult = {
@@ -57,7 +56,7 @@ type Props = {
     defaultReps: number
     defaultRest: number
     addAction: (fd: FormData) => Promise<RoutineActionResult>
-    createExerciseAction: (input: { routineId: string; name: string; category?: string; metricType?: 'reps' | 'time' }) => Promise<{ ok: boolean; exercise?: ExerciseOption; error?: string }>
+    createExerciseAction: (input: { routineId: string; name: string; category?: string; metricType?: ExerciseMetric }) => Promise<{ ok: boolean; exercise?: ExerciseOption; error?: string }>
     updateAction: (fd: FormData) => Promise<RoutineActionResult>
     moveAction: (fd: FormData) => Promise<{ ok: boolean; error?: string }>
     deleteAction: (fd: FormData) => Promise<void>
@@ -246,10 +245,10 @@ function ExerciseRow({
     )
     const keepsCurrentExercise =
         replacementName.trim().toLocaleLowerCase() === (relation?.name ?? '').trim().toLocaleLowerCase()
-    const replacementExerciseId = replacementExercise?.id ?? (
-        keepsCurrentExercise ? exercise.exercise_id : ''
-    )
-    const isTime = (replacementExercise?.metric_type ?? relation?.metric_type) === 'time'
+    const replacementExerciseId = keepsCurrentExercise ? exercise.exercise_id : (replacementExercise?.id ?? '')
+    const originalMetric = getExerciseMetric(relation)
+    const metric = keepsCurrentExercise || !replacementExercise ? originalMetric : getExerciseMetric(replacementExercise)
+    const isTime = metric !== 'reps'
 
     if (isEditing) {
         return (
@@ -296,7 +295,7 @@ function ExerciseRow({
                         />
                         <datalist id={`exercise-options-${exercise.id}`}>
                             {exerciseOptions.map((option) => (
-                                <option key={option.id} value={option.name}>{option.muscle_group || option.category || ''}</option>
+                                <option key={option.id} value={option.name}>{EXERCISE_METRIC_LABELS[getExerciseMetric(option)]}</option>
                             ))}
                         </datalist>
                         {replacementName.trim() && !replacementExerciseId && (
@@ -318,8 +317,8 @@ function ExerciseRow({
                             <input name="sets" type="number" min="1" step="1" defaultValue={exercise.sets ?? ''} required className="h-9 w-full rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary" />
                         </div>
                         <div>
-                            <label className="mb-1 block text-[10px] font-medium text-muted-foreground">{isTime ? 'Min' : 'Reps'}</label>
-                            <input name="reps" type="number" min="1" step="1" defaultValue={exercise.reps ?? ''} required className="h-9 w-full rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary" />
+                            <label htmlFor={`amount-${exercise.id}`} className="mb-1 block text-[10px] font-medium text-muted-foreground">{EXERCISE_METRIC_LABELS[metric]}</label>
+                            <input key={metric} id={`amount-${exercise.id}`} name="reps" type="number" min="1" step="1" defaultValue={metric === originalMetric ? (exercise.reps ?? '') : ''} required className="h-9 w-full rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary" />
                         </div>
                         {!isTime && (
                             <div>
@@ -397,8 +396,8 @@ function ExerciseRow({
                     {relation?.name ?? 'Ejercicio'}
                 </h3>
                 <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
-                    {exercise.sets ?? '-'} × {isTime ? exercise.reps != null ? `${exercise.reps} min` : '-' : `${exercise.reps ?? '-'} reps`}
-                    {!isTime && exercise.target_weight_kg != null ? ` · ${formatPreciseWeight(exercise.target_weight_kg, weightUnit)}` : ''}
+                    {exercise.sets ?? '-'} × {exercise.reps != null ? `${exercise.reps} ${EXERCISE_METRIC_SUFFIXES[originalMetric]}` : '–'}
+                    {originalMetric === 'reps' && exercise.target_weight_kg != null ? ` · ${formatPreciseWeight(exercise.target_weight_kg, weightUnit)}` : ''}
                     {exercise.rest_seconds ? ` · ${exercise.rest_seconds}s descanso` : ''}
                 </p>
             </div>
@@ -468,17 +467,17 @@ function AddExerciseForm({
     weightUnit: WeightUnit
     onCancel: () => void
     addAction: (fd: FormData) => Promise<RoutineActionResult>
-    createExerciseAction: (input: { routineId: string; name: string; category?: string; metricType?: 'reps' | 'time' }) => Promise<{ ok: boolean; exercise?: ExerciseOption; error?: string }>
+    createExerciseAction: Props['createExerciseAction']
     isPending: boolean
     startTransition: (cb: () => void) => void
 }) {
-    const [selectedExerciseName, setSelectedExerciseName] = useState('')
+    const [selectedExerciseId, setSelectedExerciseId] = useState('')
     const [open, setOpen] = useState(false)
     const [search, setSearch] = useState('')
     const [categoryFilter, setCategoryFilter] = useState('all')
     const [availableExercises, setAvailableExercises] = useState(exerciseOptions)
     const [showQuickCreate, setShowQuickCreate] = useState(false)
-    const [newMetricType, setNewMetricType] = useState<'reps' | 'time'>('reps')
+    const [newMetricType, setNewMetricType] = useState<ExerciseMetric>('reps')
     const [createError, setCreateError] = useState<string | null>(null)
     const [sets, setSets] = useState(String(defaultSets))
     const [reps, setReps] = useState(String(defaultReps))
@@ -529,16 +528,24 @@ function AddExerciseForm({
     }, [availableExercises, search, categoryFilter])
 
     const selectedExercise = useMemo(
-        () => availableExercises.find((ex) => ex.name === selectedExerciseName) ?? null,
-        [availableExercises, selectedExerciseName]
+        () => availableExercises.find((ex) => ex.id === selectedExerciseId) ?? null,
+        [availableExercises, selectedExerciseId]
     )
 
     const exactSearchMatch = availableExercises.some(
         (exercise) => exercise.name.toLocaleLowerCase() === search.trim().toLocaleLowerCase()
     )
 
-    const isTimeExercise = selectedExercise?.metric_type === 'time'
+    const metric = getExerciseMetric(selectedExercise)
+    const isTimeExercise = metric !== 'reps'
     const router = useRouter()
+
+    function selectExercise(exercise: ExerciseOption) {
+        const selectedMetric = getExerciseMetric(exercise)
+        if (selectedMetric !== metric) setReps(selectedMetric === 'reps' ? String(defaultReps) : '')
+        setSelectedExerciseId(exercise.id)
+        setOpen(false)
+    }
 
     return (
         <form action={(fd) => {
@@ -559,7 +566,7 @@ function AddExerciseForm({
         }} className="space-y-3">
             <input type="hidden" name="routineId" value={routineId} />
             <input type="hidden" name="routineDayId" value={routineDayId} />
-            <input type="hidden" name="exercise_name" value={selectedExerciseName} />
+            <input type="hidden" name="exercise_id" value={selectedExerciseId} />
             <input type="hidden" name="block" value={block} />
             <input type="hidden" name="weight_unit" value={weightUnit} />
 
@@ -588,7 +595,7 @@ function AddExerciseForm({
                         onClick={() => setOpen(true)}
                         className="w-full rounded-lg border border-border bg-background px-3 py-2 text-left text-xs font-medium text-foreground outline-none transition hover:border-primary focus:border-primary focus:ring-1 focus:ring-primary"
                     >
-                        {selectedExerciseName || <span className="text-muted-foreground">Seleccionar ejercicio</span>}
+                        {selectedExercise?.name || <span className="text-muted-foreground">Seleccionar ejercicio</span>}
                     </button>
                 )}
 
@@ -611,16 +618,14 @@ function AddExerciseForm({
                         <div className={showQuickCreate ? 'p-1' : 'max-h-40 overflow-y-auto p-1'}>
                             {filteredExercises.length > 0 ? (
                                 filteredExercises.map((ex) => {
-                                    const isSelected = ex.name === selectedExerciseName
-                                    const tag = ex.category ?? ex.muscle_group ?? null
+                                    const isSelected = ex.id === selectedExerciseId
+                                    const optionMetric = getExerciseMetric(ex)
+                                    const tag = optionMetric === 'reps' ? (ex.category ?? ex.muscle_group) : EXERCISE_METRIC_LABELS[optionMetric]
                                     return (
                                         <button
                                             key={ex.id}
                                             type="button"
-                                            onClick={() => {
-                                                setSelectedExerciseName(ex.name)
-                                                setOpen(false)
-                                            }}
+                                            onClick={() => selectExercise(ex)}
                                             className={`flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-xs transition ${
                                                 isSelected ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-muted'
                                             }`}
@@ -660,11 +665,10 @@ function AddExerciseForm({
                                         </select>
                                         <select
                                             value={newMetricType}
-                                            onChange={(event) => setNewMetricType(event.target.value as 'reps' | 'time')}
+                                            onChange={(event) => setNewMetricType(event.target.value as ExerciseMetric)}
                                             className="h-8 rounded-md border border-border bg-background px-2 text-[11px] text-foreground"
                                         >
-                                            <option value="reps">Repeticiones</option>
-                                            <option value="time">Tiempo</option>
+                                            {EXERCISE_METRIC_OPTIONS.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}
                                         </select>
                                     </div>
                                     {createError && <p className="text-[10px] font-medium text-red-500">{createError}</p>}
@@ -689,9 +693,8 @@ function AddExerciseForm({
                                                     setAvailableExercises((current) => current.some((item) => item.id === result.exercise!.id)
                                                         ? current
                                                         : [...current, result.exercise!].sort((a, b) => a.name.localeCompare(b.name, 'es')))
-                                                    setSelectedExerciseName(result.exercise.name)
+                                                    selectExercise(result.exercise)
                                                     setShowQuickCreate(false)
-                                                    setOpen(false)
                                                 })
                                             }}
                                             className="h-8 flex-1 rounded-md bg-primary text-[11px] font-semibold text-primary-foreground disabled:opacity-50"
@@ -713,8 +716,8 @@ function AddExerciseForm({
                     <input name="sets" type="number" min="1" step="1" required value={sets} onChange={(e) => setSets(e.target.value)} className="h-9 w-full rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary" />
                 </div>
                 <div>
-                    <label className="mb-1 block text-[10px] font-medium text-muted-foreground">{isTimeExercise ? 'Min' : 'Reps'}</label>
-                    <input name="reps" type="number" min="1" step="1" required value={reps} onChange={(e) => setReps(e.target.value)} className="h-9 w-full rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary" />
+                    <label htmlFor={`new-amount-${routineDayId}-${block}`} className="mb-1 block text-[10px] font-medium text-muted-foreground">{EXERCISE_METRIC_LABELS[metric]}</label>
+                    <input id={`new-amount-${routineDayId}-${block}`} name="reps" type="number" min="1" step="1" required value={reps} onChange={(e) => setReps(e.target.value)} className="h-9 w-full rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary" />
                 </div>
                 {!isTimeExercise && (
                     <div>
@@ -732,7 +735,7 @@ function AddExerciseForm({
                 <p className="text-xs font-medium text-red-500">{errorMsg}</p>
             )}
 
-            <button type="submit" disabled={isPending || !selectedExerciseName} className="h-9 w-full rounded-lg bg-primary text-xs font-semibold text-primary-foreground transition hover:bg-primary disabled:opacity-50">
+            <button type="submit" disabled={isPending || !selectedExerciseId} className="h-9 w-full rounded-lg bg-primary text-xs font-semibold text-primary-foreground transition hover:bg-primary disabled:opacity-50">
                 Agregar al bloque
             </button>
         </form>
@@ -743,7 +746,9 @@ function ExerciseLogs({ logs, weightUnit, relation }: { logs: ExerciseLog[], wei
     if (!logs || logs.length === 0) return null
 
     const latestLog = logs[0]
-    const isTime = relation?.metric_type === 'time'
+    const metric = getExerciseMetric(relation)
+    const isTime = metric !== 'reps'
+    const suffix = EXERCISE_METRIC_SUFFIXES[metric]
     const bestWeight = Math.max(...logs.map((log) => log.weight || 0), 0)
     const isPR = !isTime && latestLog?.weight !== null && latestLog?.weight === bestWeight && logs.length > 1
 
@@ -767,7 +772,7 @@ function ExerciseLogs({ logs, weightUnit, relation }: { logs: ExerciseLog[], wei
                 <span className="text-[10px] text-muted-foreground">Última vez:</span>
                 <span className="text-[11px] font-medium text-foreground">
                     {isTime
-                        ? latestLog.reps != null ? `${latestLog.reps} min` : '-'
+                        ? latestLog.reps != null ? `${latestLog.reps} ${suffix}` : '-'
                         : `${latestLog.weight != null ? formatWeight(latestLog.weight, weightUnit) : '-'} · ${latestLog.reps ?? '-'} reps`}
                 </span>
                 <span className="text-[10px] text-muted-foreground">· {latestLog.performed_at ?? '-'}</span>
@@ -785,7 +790,7 @@ function ExerciseLogs({ logs, weightUnit, relation }: { logs: ExerciseLog[], wei
                                 <div key={log.id} className="flex items-center justify-between rounded px-2 py-1 text-[11px]">
                                     <span className="text-muted-foreground">{(log.performed_at ?? '-').split('T')[0]}</span>
                                     <span className="font-medium text-foreground">
-                                        {isTime ? log.reps != null ? `${log.reps} min` : '-' : `${log.weight != null ? formatWeight(log.weight, weightUnit) : '-'} · ${log.reps ?? '-'} reps`}
+                                        {isTime ? log.reps != null ? `${log.reps} ${suffix}` : '-' : `${log.weight != null ? formatWeight(log.weight, weightUnit) : '-'} · ${log.reps ?? '-'} reps`}
                                     </span>
                                 </div>
                             ))}

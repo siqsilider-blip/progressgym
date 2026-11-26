@@ -26,7 +26,7 @@ export async function saveSet(payload: {
         }
 
         if (payload.reps === null || !Number.isInteger(payload.reps) || payload.reps <= 0) {
-            return { ok: false, error: 'Ingresá las repeticiones o minutos realizados.', action: null }
+            return { ok: false, error: 'Ingresá las repeticiones o el tiempo realizado.', action: null }
         }
         if (payload.weight !== null && (!Number.isFinite(payload.weight) || payload.weight < 0)) {
             return { ok: false, error: 'El peso no puede ser negativo.', action: null }

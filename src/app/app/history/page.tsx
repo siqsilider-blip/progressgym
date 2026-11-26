@@ -2,7 +2,8 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronDown } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import { getStudentSessionHistory } from '@/app/dashboard/students/getStudentSessionHistory'
+import { getStudentSessionHistory, type SessionExerciseSummary } from '@/app/dashboard/students/getStudentSessionHistory'
+import { EXERCISE_METRIC_SUFFIXES } from '@/lib/exerciseMetric'
 import { formatWeight, type WeightUnit } from '@/lib/weight'
 import StudentPageHeader from '@/components/student/StudentPageHeader'
 import { getStudentAppContext } from '@/lib/auth/student'
@@ -18,6 +19,14 @@ function formatDuration(seconds: number) {
     if (mins === 0) return `${secs}s`
     if (secs === 0) return `${mins}m`
     return `${mins}m ${secs}s`
+}
+
+function formatBestExerciseResult(exercise: SessionExerciseSummary, weightUnit: WeightUnit) {
+    if (exercise.metric === 'reps') {
+        return exercise.bestWeight === null ? null : formatWeight(exercise.bestWeight, weightUnit)
+    }
+
+    return exercise.bestReps === null ? null : `Mejor ${exercise.bestReps} ${EXERCISE_METRIC_SUFFIXES[exercise.metric]}`
 }
 
 function groupByMonth(sessions: Awaited<ReturnType<typeof getStudentSessionHistory>>) {
@@ -137,26 +146,29 @@ export default async function AppHistoryPage() {
                                             <div className="border-t border-border px-3.5 pb-3.5 pt-3">
                                                 {session.exercises.length > 0 && (
                                                     <div className="space-y-1.5">
-                                                        {session.exercises.map((ex) => (
-                                                            <div key={ex.routineDayExerciseId} className="flex items-center justify-between gap-3 rounded-xl bg-muted/40 px-3 py-2.5">
-                                                                <div className="min-w-0">
-                                                                    <p className="truncate text-xs font-medium text-card-foreground">
-                                                                        {ex.exerciseName}
-                                                                        {ex.avgRpe !== null && (
-                                                                            <span className="ml-1 rounded-md bg-zinc-100 px-1 py-0.5 text-[10px] font-medium text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
-                                                                                RPE {ex.avgRpe}
-                                                                            </span>
-                                                                        )}
-                                                                    </p>
-                                                                    <p className="text-[11px] text-muted-foreground">{ex.sets} series</p>
+                                                        {session.exercises.map((ex) => {
+                                                            const bestResult = formatBestExerciseResult(ex, weightUnit)
+                                                            return (
+                                                                <div key={ex.routineDayExerciseId} className="flex items-center justify-between gap-3 rounded-xl bg-muted/40 px-3 py-2.5">
+                                                                    <div className="min-w-0">
+                                                                        <p className="truncate text-xs font-medium text-card-foreground">
+                                                                            {ex.exerciseName}
+                                                                            {ex.avgRpe !== null && (
+                                                                                <span className="ml-1 rounded-md bg-zinc-100 px-1 py-0.5 text-[10px] font-medium text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
+                                                                                    RPE {ex.avgRpe}
+                                                                                </span>
+                                                                            )}
+                                                                        </p>
+                                                                        <p className="text-[11px] text-muted-foreground">{ex.sets} series</p>
+                                                                    </div>
+                                                                    {bestResult && (
+                                                                        <p className="shrink-0 text-xs font-bold text-emerald-500">
+                                                                            {bestResult}
+                                                                        </p>
+                                                                    )}
                                                                 </div>
-                                                                {!ex.isCardio && ex.bestWeight !== null && (
-                                                                    <p className="shrink-0 text-xs font-bold text-emerald-500">
-                                                                        {formatWeight(ex.bestWeight, weightUnit)}
-                                                                    </p>
-                                                                )}
-                                                            </div>
-                                                        ))}
+                                                            )
+                                                        })}
                                                     </div>
                                                 )}
                                                 {session.note && (

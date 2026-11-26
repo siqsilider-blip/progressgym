@@ -10,6 +10,7 @@ import {
     TEMPLATE_LOCATIONS,
 } from '@/lib/templateMatching'
 import { convertWeightToKg, type WeightUnit } from '@/lib/weight'
+import { exerciseMetricFields, getExerciseMetric, isExerciseMetric, type ExerciseMetric, type ExerciseMetricFields } from '@/lib/exerciseMetric'
 
 function parseTargetWeightKg(formData: FormData): { value: number | null; error?: string } {
     const rawValue = String(formData.get('target_weight') ?? '').trim().replace(',', '.')
@@ -37,6 +38,7 @@ export async function addExerciseToRoutineDay(formData: FormData) {
     const routineDayId = formData.get('routineDayId') as string
     const dayId = (formData.get('dayId') as string) || routineDayId
 
+    const exerciseId = (formData.get('exercise_id') as string)?.trim()
     const exerciseName = (formData.get('exercise_name') as string)?.trim()
     const sets = formData.get('sets') as string
     const reps = formData.get('reps') as string
@@ -55,19 +57,25 @@ export async function addExerciseToRoutineDay(formData: FormData) {
         return { ok: false, error: 'No autenticado' }
     }
 
-    if (!routineId || !routineDayId || !exerciseName) {
+    if (!routineId || !routineDayId || (!exerciseId && !exerciseName)) {
         return { ok: false, error: 'Faltan datos para agregar el ejercicio' }
     }
 
-    const { data: exercise, error: exerciseError } = await supabase
+    const exerciseQuery = supabase
         .from('exercises')
-        .select('id')
-        .eq('name', exerciseName)
-        .single()
+        .select('id, metric_type, duration_unit')
+        .or(`trainer_id.eq.${user.id},trainer_id.is.null`)
+    const [{ data: exercise, error: exerciseError }, { data: routineDay }, { data: routine }] = await Promise.all([
+        (exerciseId ? exerciseQuery.eq('id', exerciseId) : exerciseQuery.eq('name', exerciseName)).single(),
+        supabase.from('routine_days').select('id').eq('id', routineDayId).eq('routine_id', routineId).maybeSingle(),
+        supabase.from('routines').select('id').eq('id', routineId).eq('trainer_id', user.id).maybeSingle(),
+    ])
 
     if (exerciseError || !exercise) {
         return { ok: false, error: 'No se encontró el ejercicio seleccionado' }
     }
+    if (!routine || !routineDay) return { ok: false, error: 'No se encontró el día en esta rutina.' }
+    const metric = getExerciseMetric(exercise)
 
     const { data: existingExercises, error: existingError } = await supabase
         .from('routine_day_exercises')
@@ -86,14 +94,16 @@ export async function addExerciseToRoutineDay(formData: FormData) {
             : 1
 
     const setsNum = sets ? parseInt(sets, 10) : null
-    const repsNum = reps ? parseInt(reps, 10) : null
+    const repsNum = reps ? Number(reps) : null
     const restSecondsNum = restSecondsRaw ? parseInt(restSecondsRaw, 10) : null
 
-    if ((setsNum !== null && isNaN(setsNum)) || (repsNum !== null && isNaN(repsNum))) {
-        return { ok: false, error: 'Sets y reps inválidos' }
+    if (setsNum !== null && isNaN(setsNum)) {
+        return { ok: false, error: 'Ingresá una cantidad válida de series.' }
     }
-
-    if (targetWeight.error) return { ok: false, error: targetWeight.error }
+    if ((metric !== 'reps' && repsNum === null) || (repsNum !== null && (!Number.isSafeInteger(repsNum) || repsNum <= 0))) {
+        return { ok: false, error: metric === 'reps' ? 'Ingresá repeticiones enteras.' : 'Ingresá una duración entera.' }
+    }
+    if (metric === 'reps' && targetWeight.error) return { ok: false, error: targetWeight.error }
 
     const { error: insertError } = await supabase
         .from('routine_day_exercises')
@@ -102,7 +112,7 @@ export async function addExerciseToRoutineDay(formData: FormData) {
             exercise_id: exercise.id,
             sets: setsNum,
             reps: repsNum,
-            target_weight_kg: targetWeight.value,
+            target_weight_kg: metric === 'reps' ? targetWeight.value : null,
             rest_seconds: restSecondsNum,
             position: nextPosition,
             block,
@@ -168,6 +178,7 @@ export async function updateExerciseInRoutineDay(formData: FormData) {
 
     const exerciseRowId = formData.get('exerciseRowId') as string
     const routineId = formData.get('routineId') as string
+    const routineDayId = formData.get('dayId') as string
 
     const sets = formData.get('sets') as string
     const reps = formData.get('reps') as string
@@ -186,7 +197,7 @@ export async function updateExerciseInRoutineDay(formData: FormData) {
         return { ok: false, error: 'No autenticado' }
     }
 
-    if (!routineId || !exerciseRowId) {
+    if (!routineId || !routineDayId || !exerciseRowId) {
         return { ok: false, error: 'Faltan campos obligatorios' }
     }
 
@@ -194,36 +205,72 @@ export async function updateExerciseInRoutineDay(formData: FormData) {
         return { ok: false, error: 'Seleccioná un ejercicio válido de la lista' }
     }
 
-    const { data: replacementExercise } = await supabase
-        .from('exercises')
-        .select('id')
-        .eq('id', replacementExerciseId)
-        .single()
+    const [{ data: routine }, { data: routineDay }, { data: currentExercise, error: currentError }, { data: replacementExercise }] = await Promise.all([
+        supabase.from('routines').select('id').eq('id', routineId).eq('trainer_id', user.id).maybeSingle(),
+        supabase.from('routine_days').select('id').eq('id', routineDayId).eq('routine_id', routineId).maybeSingle(),
+        supabase.from('routine_day_exercises')
+            .select('id, exercise_id, exercise:exercises!routine_day_exercises_exercise_id_fkey(metric_type, duration_unit)')
+            .eq('id', exerciseRowId)
+            .eq('routine_day_id', routineDayId)
+            .maybeSingle(),
+        supabase.from('exercises').select('id, metric_type, duration_unit').eq('id', replacementExerciseId)
+            .or(`trainer_id.eq.${user.id},trainer_id.is.null`).maybeSingle(),
+    ])
+
+    if (!routine || !routineDay || currentError || !currentExercise) {
+        return { ok: false, error: 'No se encontró el ejercicio en esta rutina.' }
+    }
 
     if (!replacementExercise) {
         return { ok: false, error: 'El ejercicio seleccionado no está disponible' }
     }
 
+    const metric = getExerciseMetric(replacementExercise)
+    const currentMetadata = (Array.isArray(currentExercise.exercise) ? currentExercise.exercise[0] : currentExercise.exercise) as ExerciseMetricFields | null
+    if (currentExercise.exercise_id !== replacementExercise.id && (!currentMetadata || metric !== getExerciseMetric(currentMetadata))) {
+        const [logs, openSessions] = await Promise.all([
+            supabase.from('exercise_logs').select('id').eq('routine_day_exercise_id', exerciseRowId).limit(1),
+            supabase.from('workout_sessions').select('id').eq('routine_day_id', routineDayId)
+                .eq('status', 'in_progress').limit(1),
+        ])
+        if (logs.error || openSessions.error) {
+            return { ok: false, error: 'No se pudo comprobar el historial de este ejercicio.' }
+        }
+        if (logs.data?.length) {
+            return { ok: false, error: 'Este ejercicio ya tiene registros. Usá la variante en un día nuevo para conservar el historial.' }
+        }
+        if (openSessions.data?.length) {
+            return { ok: false, error: 'El día tiene un entrenamiento en curso. Podés cambiar la medida cuando termine la sesión.' }
+        }
+    }
+
     const setsNum = sets ? parseInt(sets, 10) : null
-    const repsNum = reps ? parseInt(reps, 10) : null
+    const repsNum = reps ? Number(reps) : null
     const restSecondsNum = restSecondsRaw ? parseInt(restSecondsRaw, 10) : null
 
-    if (targetWeight.error) return { ok: false, error: targetWeight.error }
+    if ((metric !== 'reps' && repsNum === null) || (repsNum !== null && (!Number.isSafeInteger(repsNum) || repsNum <= 0))) {
+        return { ok: false, error: metric === 'reps' ? 'Ingresá repeticiones enteras.' : 'Ingresá una duración entera.' }
+    }
+    if (metric === 'reps' && targetWeight.error) return { ok: false, error: targetWeight.error }
 
-    const { error: updateError } = await supabase
+    const updateQuery = supabase
         .from('routine_day_exercises')
         .update({
             exercise_id: replacementExercise.id,
             sets: setsNum,
             reps: repsNum,
-            target_weight_kg: targetWeight.value,
+            target_weight_kg: metric === 'reps' ? targetWeight.value : null,
             rest_seconds: restSecondsNum,
             block,
         })
         .eq('id', exerciseRowId)
+        .eq('routine_day_id', routineDayId)
+    const { data: updated, error: updateError } = await (currentExercise.exercise_id
+        ? updateQuery.eq('exercise_id', currentExercise.exercise_id)
+        : updateQuery.is('exercise_id', null)).select('id').maybeSingle()
 
-    if (updateError) {
-        console.error('[updateExerciseInRoutineDay] error:', updateError.message)
+    if (updateError || !updated) {
+        if (updateError) console.error('[updateExerciseInRoutineDay] error:', updateError.message)
         return { ok: false, error: 'No se pudo actualizar el ejercicio' }
     }
 
@@ -237,15 +284,14 @@ export async function createExerciseFromRoutine(input: {
     routineId: string
     name: string
     category?: string
-    metricType?: 'reps' | 'time'
+    metricType?: ExerciseMetric
 }): Promise<{
     ok: boolean
-    exercise?: {
+    exercise?: ExerciseMetricFields & {
         id: string
         name: string
         muscle_group: string | null
         category: string | null
-        metric_type: 'reps' | 'time' | null
     }
     error?: string
 }> {
@@ -267,18 +313,23 @@ export async function createExerciseFromRoutine(input: {
 
     if (!routine) return { ok: false, error: 'Rutina no encontrada.' }
 
-    const { data: existing } = await supabase
-        .from('exercises')
-        .select('id, name, muscle_group, category, metric_type')
-        .ilike('name', name)
-        .limit(1)
-        .maybeSingle()
+    const metric = input.metricType ?? 'reps'
+    if (!isExerciseMetric(metric)) return { ok: false, error: 'Elegí una medida válida.' }
 
-    if (existing) {
-        return { ok: true, exercise: existing as NonNullable<Awaited<ReturnType<typeof createExerciseFromRoutine>>['exercise']> }
+    const { data: existing, error: existingError } = await supabase
+        .from('exercises')
+        .select('id, name, muscle_group, category, metric_type, duration_unit')
+        .or(`trainer_id.eq.${user.id},trainer_id.is.null`)
+        .ilike('name', name.replace(/[\\%_]/g, '\\$&'))
+
+    if (existingError) return { ok: false, error: 'No se pudo comprobar el nombre del ejercicio.' }
+    const matches = (existing ?? []).filter((exercise) => exercise.name.toLocaleLowerCase() === name.toLocaleLowerCase())
+    const sameMetric = matches.find((exercise) => getExerciseMetric(exercise) === metric)
+    if (sameMetric) return { ok: true, exercise: sameMetric }
+    if (matches.length) {
+        return { ok: false, error: 'Ese ejercicio ya existe con otra medida. Usá un nombre distinto para la variante.' }
     }
 
-    const metricType = input.metricType === 'time' ? 'time' : 'reps'
     const category = input.category?.trim() || null
 
     const { data: created, error } = await supabase
@@ -288,9 +339,9 @@ export async function createExerciseFromRoutine(input: {
             name,
             category,
             muscle_group: category,
-            metric_type: metricType,
+            ...exerciseMetricFields(metric),
         })
-        .select('id, name, muscle_group, category, metric_type')
+        .select('id, name, muscle_group, category, metric_type, duration_unit')
         .single()
 
     if (error || !created) {

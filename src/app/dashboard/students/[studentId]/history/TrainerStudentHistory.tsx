@@ -12,6 +12,7 @@ import {
     TriangleAlert,
 } from 'lucide-react'
 import type { SessionHistoryItem } from '@/app/dashboard/students/getStudentSessionHistory'
+import { EXERCISE_METRIC_SUFFIXES } from '@/lib/exerciseMetric'
 import { formatWeight, type WeightUnit } from '@/lib/weight'
 
 type StatusFilter = 'all' | 'complete' | 'incomplete'
@@ -106,8 +107,8 @@ function getBestResult(
     exercise: SessionHistoryItem['exercises'][number],
     weightUnit: WeightUnit
 ) {
-    if (exercise.isCardio) {
-        return exercise.bestReps !== null ? `${exercise.bestReps} min` : '—'
+    if (exercise.metric !== 'reps') {
+        return exercise.bestReps !== null ? `Máx. ${exercise.bestReps} ${EXERCISE_METRIC_SUFFIXES[exercise.metric]}` : '—'
     }
 
     const values: string[] = []

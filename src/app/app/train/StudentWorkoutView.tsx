@@ -13,6 +13,7 @@ import {
     scheduleNativeRestNotice,
     signalRestFinished,
 } from '@/lib/native/workout-rest'
+import { EXERCISE_METRIC_LABELS, EXERCISE_METRIC_SUFFIXES, type ExerciseMetric } from '@/lib/exerciseMetric'
 import { formatPreciseWeight, type WeightUnit } from '@/lib/weight'
 
 type RoutineBlock = 'activation' | 'main' | 'closing'
@@ -21,7 +22,7 @@ type ExerciseData = {
     id: string
     exerciseId: string | null
     exerciseName: string
-    isCardio: boolean
+    metric: ExerciseMetric
     setsCount: number
     targetReps: string | null
     targetWeightKg: number | null
@@ -98,11 +99,16 @@ const BLOCKS: { id: RoutineBlock; label: string; emoji: string }[] = [
 
 const APP_BOTTOM_NAV_HEIGHT_PX = 72
 const WORKOUT_DRAFT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000
+const EXERCISE_VALUE_ERRORS: Record<ExerciseMetric, string> = {
+    reps: 'Ingresá las repeticiones realizadas.',
+    minutes: 'Ingresá los minutos realizados.',
+    seconds: 'Ingresá los segundos realizados.',
+}
 
 function createInitialSets(exercises: ExerciseData[]): SetState[][] {
     return exercises.map((exercise) =>
         Array.from({ length: exercise.setsCount }, (_, index) => {
-            const weight = exercise.currentWeights[index]
+            const weight = exercise.metric === 'reps' ? exercise.currentWeights[index] : null
             const reps = exercise.currentReps[index]
             const rpe = exercise.currentRpes[index]
             const saved = weight != null || reps != null
@@ -139,16 +145,14 @@ function formatRestTime(seconds: number) {
 
 function validateSet(exercise: ExerciseData, set: SetState) {
     const repsText = set.reps.trim()
-    const weightText = set.weight.trim()
+    const weightText = exercise.metric === 'reps' ? set.weight.trim() : ''
     const rpeText = set.rpe.trim()
     const reps = repsText === '' ? null : Number(repsText)
     const weight = weightText === '' ? null : Number(weightText)
     const rpe = rpeText === '' ? null : Number(rpeText)
 
     if (reps === null || !Number.isInteger(reps) || reps <= 0) {
-        return exercise.isCardio
-            ? 'Ingresá los minutos realizados.'
-            : 'Ingresá las repeticiones realizadas.'
+        return EXERCISE_VALUE_ERRORS[exercise.metric]
     }
     if (weight !== null && (!Number.isFinite(weight) || weight < 0)) {
         return 'El peso no puede ser negativo.'
@@ -363,12 +367,13 @@ export default function StudentWorkoutView({
             updateSets((previous) => previous.map((exerciseSets, exerciseIndex) =>
                 exerciseSets.map((set, setIndex) => {
                     const exercise = exercises[exerciseIndex]
-                    const entry = exercise ? entryMap.get(`${exercise.id}:${setIndex}`) : null
+                    if (!exercise) return set
+                    const entry = entryMap.get(`${exercise.id}:${setIndex}`)
                     if (!entry) return set
 
                     return {
                         ...set,
-                        weight: entry.weight,
+                        weight: exercise.metric === 'reps' ? entry.weight : '',
                         reps: entry.reps,
                         rpe: entry.rpe,
                         confirmed: false,
@@ -546,7 +551,7 @@ export default function StudentWorkoutView({
             return false
         }
 
-        const weight = set.weight.trim() === '' ? null : Number(set.weight)
+        const weight = exercise.metric === 'reps' && set.weight.trim() !== '' ? Number(set.weight) : null
         const reps = set.reps.trim() === '' ? null : Number(set.reps)
         const rpe = set.rpe.trim() === '' ? null : Number(set.rpe)
 
@@ -949,7 +954,7 @@ export default function StudentWorkoutView({
 
             {completedSession && (
                 <p className="mt-3 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.05] px-3 py-2 text-xs leading-5 text-emerald-500">
-                    Esta sesión ya terminó. Podés corregir cualquier peso o repetición y guardar la serie nuevamente; la duración original no cambia.
+                    Esta sesión ya terminó. Podés corregir los valores de una serie y volver a guardarla. Se conserva la duración original de la sesión.
                 </p>
             )}
 
@@ -988,6 +993,10 @@ export default function StudentWorkoutView({
                                     const exerciseSets = sets[exerciseIndex] ?? []
                                     const completed = exerciseSets.filter((set) => set.saved).length
                                     const isOpen = openExerciseId === exercise.id
+                                    const isTimed = exercise.metric !== 'reps'
+                                    const metricLabel = EXERCISE_METRIC_LABELS[exercise.metric]
+                                    const metricSuffix = EXERCISE_METRIC_SUFFIXES[exercise.metric]
+                                    const setGrid = isTimed ? 'grid-cols-[2rem_minmax(0,1fr)_4.75rem]' : 'grid-cols-[2rem_minmax(0,1fr)_minmax(0,1fr)_4.75rem]'
 
                                     return (
                                         <article id={`exercise-${exercise.id}`} key={exercise.id} className={`scroll-mt-24 overflow-hidden rounded-2xl border bg-card ${isOpen ? 'border-primary/40 shadow-sm' : 'border-border'}`}>
@@ -1003,7 +1012,7 @@ export default function StudentWorkoutView({
                                                     <span className="min-w-0 flex-1">
                                                     <span className="block truncate text-sm font-bold text-foreground">{exercise.exerciseName}</span>
                                                     <span className="mt-0.5 block text-xs text-muted-foreground">
-                                                            {exercise.setsCount}{exercise.targetReps ? ` × ${exercise.targetReps}${exercise.isCardio ? ' min' : ' reps'}` : ' series'} · {completed}/{exercise.setsCount} listas
+                                                            {exercise.setsCount}{exercise.targetReps ? ` × ${exercise.targetReps} ${metricSuffix}` : ' series'} · {completed}/{exercise.setsCount} listas
                                                     </span>
                                                 </span>
                                                 {isOpen ? <ChevronUp className="h-5 w-5 text-muted-foreground" /> : <ChevronDown className="h-5 w-5 text-muted-foreground" />}
@@ -1028,7 +1037,7 @@ export default function StudentWorkoutView({
                                                         />
                                                     </div>
 
-                                                    {showPlanReference && !exercise.isCardio && exercise.targetWeightKg != null && (
+                                                    {showPlanReference && !isTimed && exercise.targetWeightKg != null && (
                                                         <p className="mt-3 rounded-xl border border-primary/25 bg-primary/[0.06] px-3 py-2 text-sm text-foreground">
                                                             <span className="font-semibold text-primary">Referencia de tu entrenador:</span>{' '}
                                                             {formatPreciseWeight(exercise.targetWeightKg, weightUnit)}
@@ -1037,10 +1046,10 @@ export default function StudentWorkoutView({
                                                     )}
 
                                                     <div className="mt-3">
-                                                        <div className={`mb-1.5 grid items-end gap-2 px-2 ${exercise.isCardio ? 'grid-cols-[2rem_minmax(0,1fr)_4.75rem]' : 'grid-cols-[2rem_minmax(0,1fr)_minmax(0,1fr)_4.75rem]'}`}>
+                                                        <div className={`mb-1.5 grid items-end gap-2 px-2 ${setGrid}`}>
                                                             <span className="text-center text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Serie</span>
-                                                            {!exercise.isCardio && <span className="text-center text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Peso</span>}
-                                                            <span className="text-center text-[11px] font-bold uppercase tracking-wide text-muted-foreground">{exercise.isCardio ? 'Minutos' : 'Reps'}</span>
+                                                            {!isTimed && <span className="text-center text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Peso</span>}
+                                                            <span className="text-center text-[11px] font-bold uppercase tracking-wide text-muted-foreground">{isTimed ? metricLabel : 'Reps'}</span>
                                                             <span className="text-center text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Estado</span>
                                                         </div>
 
@@ -1049,12 +1058,12 @@ export default function StudentWorkoutView({
                                                             const key = `${exerciseIndex}-${setIndex}`
                                                             return (
                                                                 <div key={setIndex} className={`rounded-xl border px-2 py-2 ${set.dirty ? 'border-amber-500/35 bg-amber-500/[0.04]' : set.saved ? 'border-emerald-500/20 bg-emerald-500/[0.03]' : 'border-border bg-background/50'}`}>
-                                                                    <div className={`grid items-center gap-2 ${exercise.isCardio ? 'grid-cols-[2rem_minmax(0,1fr)_4.75rem]' : 'grid-cols-[2rem_minmax(0,1fr)_minmax(0,1fr)_4.75rem]'}`}>
+                                                                    <div className={`grid items-center gap-2 ${setGrid}`}>
                                                                         <span className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-black ${set.saved && !set.dirty ? 'bg-emerald-500/15 text-emerald-500' : 'bg-primary/10 text-primary'}`}>
                                                                             {setIndex + 1}
                                                                         </span>
 
-                                                                        {!exercise.isCardio && (
+                                                                        {!isTimed && (
                                                                             <input
                                                                                 aria-label={`Peso serie ${setIndex + 1}`}
                                                                                 type="number"
@@ -1069,7 +1078,7 @@ export default function StudentWorkoutView({
                                                                         )}
 
                                                                         <input
-                                                                            aria-label={`${exercise.isCardio ? 'Minutos' : 'Repeticiones'} serie ${setIndex + 1}`}
+                                                                            aria-label={`${metricLabel} serie ${setIndex + 1}`}
                                                                             type="number"
                                                                             inputMode="numeric"
                                                                             placeholder="—"
@@ -1096,16 +1105,16 @@ export default function StudentWorkoutView({
                                                                         </button>
                                                                     </div>
 
-                                                                    <div className={`mt-1 grid gap-2 pl-10 pr-[5.25rem] ${exercise.isCardio ? 'grid-cols-1' : 'grid-cols-2'}`}>
-                                                                        {!exercise.isCardio && (
+                                                                    <div className={`mt-1 grid gap-2 pl-10 pr-[5.25rem] ${isTimed ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                                                                        {!isTimed && (
                                                                             <span className="truncate text-center text-xs text-muted-foreground">
                                                                                 {exercise.previousWeights[setIndex] != null ? `Anterior ${exercise.previousWeights[setIndex]} ${weightUnit}` : 'Sin peso anterior'}
                                                                             </span>
                                                                         )}
                                                                         <span className="truncate text-center text-xs text-muted-foreground">
                                                                             {exercise.previousReps[setIndex] != null
-                                                                                ? `Anterior ${exercise.previousReps[setIndex]} ${exercise.isCardio ? 'min' : 'reps'}`
-                                                                                : exercise.targetReps ? `Objetivo ${exercise.targetReps}` : 'Sin registro anterior'}
+                                                                                ? `Anterior ${exercise.previousReps[setIndex]} ${metricSuffix}`
+                                                                                : exercise.targetReps ? `Objetivo ${exercise.targetReps} ${metricSuffix}` : 'Sin registro anterior'}
                                                                         </span>
                                                                     </div>
 

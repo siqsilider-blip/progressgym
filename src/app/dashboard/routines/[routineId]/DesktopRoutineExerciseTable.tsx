@@ -14,6 +14,7 @@ import {
     X,
 } from 'lucide-react'
 import ExerciseProgressChart from '@/components/ExerciseProgressChart'
+import { EXERCISE_METRIC_LABELS, EXERCISE_METRIC_OPTIONS, EXERCISE_METRIC_SUFFIXES, getExerciseMetric, type ExerciseMetric, type ExerciseMetricFields } from '@/lib/exerciseMetric'
 import { convertWeightFromKgForInput, formatWeight, type WeightUnit } from '@/lib/weight'
 import type {
     Block,
@@ -27,10 +28,9 @@ type RoutineActionResult = {
     error?: string
 }
 
-type ExerciseRelation = {
+type ExerciseRelation = ExerciseMetricFields & {
     name: string
     muscle_group: string | null
-    metric_type: 'reps' | 'time' | null
 }
 
 type Props = {
@@ -46,7 +46,7 @@ type Props = {
         routineId: string
         name: string
         category?: string
-        metricType?: 'reps' | 'time'
+        metricType?: ExerciseMetric
     }) => Promise<{ ok: boolean; exercise?: ExerciseOption; error?: string }>
     updateAction: (fd: FormData) => Promise<RoutineActionResult>
     moveAction: (fd: FormData) => Promise<{ ok: boolean; error?: string }>
@@ -99,7 +99,7 @@ export default function DesktopRoutineExerciseTable({
                         <span>Ejercicio</span>
                         <span>Sección</span>
                         <span>Series</span>
-                        <span>Reps</span>
+                        <span>Reps / tiempo</span>
                         <span>Peso sug. ({weightUnit})</span>
                         <span>Descanso</span>
                         {showHistory && <span>Último registro</span>}
@@ -206,10 +206,11 @@ function DesktopExerciseRow({
         ? exercise.exercise[0]
         : exercise.exercise
     const initialName = relation?.name ?? ''
+    const originalMetric = getExerciseMetric(relation)
     const [name, setName] = useState(initialName)
     const [block, setBlock] = useState<Block>(exercise.block)
     const [sets, setSets] = useState(String(exercise.sets ?? ''))
-    const [reps, setReps] = useState(String(exercise.reps ?? ''))
+    const [amount, setAmount] = useState({ metric: originalMetric, value: String(exercise.reps ?? '') })
     const [targetWeight, setTargetWeight] = useState(
         exercise.target_weight_kg == null ? '' : String(convertWeightFromKgForInput(exercise.target_weight_kg, weightUnit))
     )
@@ -225,19 +226,20 @@ function DesktopExerciseRow({
         setName(initialName)
         setBlock(exercise.block)
         setSets(String(exercise.sets ?? ''))
-        setReps(String(exercise.reps ?? ''))
+        setAmount({ metric: originalMetric, value: String(exercise.reps ?? '') })
         setTargetWeight(exercise.target_weight_kg == null ? '' : String(convertWeightFromKgForInput(exercise.target_weight_kg, weightUnit)))
         setRest(String(exercise.rest_seconds ?? ''))
-    }, [exercise.block, exercise.reps, exercise.rest_seconds, exercise.sets, exercise.target_weight_kg, initialName, weightUnit])
+    }, [exercise.block, exercise.reps, exercise.rest_seconds, exercise.sets, exercise.target_weight_kg, initialName, originalMetric, weightUnit])
 
     const replacementExercise = exerciseOptions.find(
         (option) => option.name.toLocaleLowerCase() === name.trim().toLocaleLowerCase()
     )
     const keepsCurrentExercise =
         name.trim().toLocaleLowerCase() === initialName.trim().toLocaleLowerCase()
-    const replacementExerciseId = replacementExercise?.id ?? (
-        keepsCurrentExercise ? exercise.exercise_id : ''
-    )
+    const replacementExerciseId = keepsCurrentExercise ? exercise.exercise_id : (replacementExercise?.id ?? '')
+    const metric = keepsCurrentExercise || !replacementExercise ? originalMetric : getExerciseMetric(replacementExercise)
+    const isTime = metric !== 'reps'
+    const reps = amount.metric === metric ? amount.value : ''
     const isDirty =
         name !== initialName ||
         block !== exercise.block ||
@@ -246,8 +248,6 @@ function DesktopExerciseRow({
         targetWeight !== (exercise.target_weight_kg == null ? '' : String(convertWeightFromKgForInput(exercise.target_weight_kg, weightUnit))) ||
         rest !== String(exercise.rest_seconds ?? '')
     const latestLog = logs[0]
-    const metricType = replacementExercise?.metric_type ?? relation?.metric_type
-    const isTime = metricType === 'time'
 
     function move(direction: 'up' | 'down') {
         const formData = new FormData()
@@ -315,7 +315,7 @@ function DesktopExerciseRow({
                     <datalist id={`desktop-exercise-options-${exercise.id}`}>
                         {exerciseOptions.map((option) => (
                             <option key={option.id} value={option.name}>
-                                {option.muscle_group ?? option.category ?? ''}
+                                {EXERCISE_METRIC_LABELS[getExerciseMetric(option)]}
                             </option>
                         ))}
                     </datalist>
@@ -341,7 +341,7 @@ function DesktopExerciseRow({
                 </select>
 
                 <CompactNumberInput label={`Series de ${initialName}`} name="sets" value={sets} onChange={setSets} min={1} />
-                <CompactNumberInput label={`${isTime ? 'Minutos' : 'Repeticiones'} de ${initialName}`} name="reps" value={reps} onChange={setReps} min={1} />
+                <CompactNumberInput label={`${EXERCISE_METRIC_LABELS[metric]} de ${initialName}`} name="reps" value={reps} onChange={(value) => setAmount({ metric, value })} min={1} suffix={isTime ? EXERCISE_METRIC_SUFFIXES[metric] : undefined} />
                 <CompactNumberInput label={`Peso sugerido de ${initialName}`} name="target_weight" value={isTime ? '' : targetWeight} onChange={setTargetWeight} min={0.5} step={weightUnit === 'lb' ? 0.01 : 0.5} suffix={weightUnit} required={false} disabled={isTime} placeholder={isTime ? '—' : 'Opc.'} />
                 <CompactNumberInput label={`Descanso de ${initialName}`} name="rest_seconds" value={rest} onChange={setRest} min={0} step={15} suffix="s" required={false} />
 
@@ -356,8 +356,8 @@ function DesktopExerciseRow({
                         {latestLog ? (
                             <>
                                 <span className="block truncate font-medium text-foreground">
-                                    {isTime
-                                        ? `${latestLog.reps ?? '-'} min`
+                                    {originalMetric !== 'reps'
+                                        ? `${latestLog.reps ?? '-'} ${EXERCISE_METRIC_SUFFIXES[originalMetric]}`
                                         : `${latestLog.weight != null ? formatWeight(latestLog.weight, weightUnit) : '-'} · ${latestLog.reps ?? '-'} reps`}
                                 </span>
                                 <span className="flex items-center gap-1">
@@ -523,10 +523,10 @@ function DesktopAddExerciseRow({
     const [name, setName] = useState('')
     const [block, setBlock] = useState<Block>('main')
     const [sets, setSets] = useState(String(defaultSets))
-    const [reps, setReps] = useState(String(defaultReps))
+    const [amount, setAmount] = useState<{ metric: ExerciseMetric; value: string }>({ metric: 'reps', value: String(defaultReps) })
     const [targetWeight, setTargetWeight] = useState('')
     const [rest, setRest] = useState(String(defaultRest))
-    const [metricType, setMetricType] = useState<'reps' | 'time'>('reps')
+    const [metricType, setMetricType] = useState<ExerciseMetric>('reps')
     const [error, setError] = useState<string | null>(null)
     const [isPending, startTransition] = useTransition()
     const router = useRouter()
@@ -539,13 +539,15 @@ function DesktopAddExerciseRow({
         ) ?? null,
         [availableExercises, name]
     )
-    const isTime = selectedExercise?.metric_type === 'time'
+    const metric = getExerciseMetric(selectedExercise)
+    const isTime = metric !== 'reps'
+    const reps = amount.metric === metric ? amount.value : metric === 'reps' ? String(defaultReps) : ''
 
     function reset() {
         setName('')
         setBlock('main')
         setSets(String(defaultSets))
-        setReps(String(defaultReps))
+        setAmount({ metric: 'reps', value: String(defaultReps) })
         setTargetWeight('')
         setRest(String(defaultRest))
         setMetricType('reps')
@@ -584,7 +586,7 @@ function DesktopAddExerciseRow({
             >
                 <input type="hidden" name="routineId" value={routineId} />
                 <input type="hidden" name="routineDayId" value={routineDayId} />
-                <input type="hidden" name="exercise_name" value={name} />
+                <input type="hidden" name="exercise_id" value={selectedExercise?.id ?? ''} />
                 <input type="hidden" name="weight_unit" value={weightUnit} />
 
                 <label className="space-y-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -600,7 +602,7 @@ function DesktopAddExerciseRow({
                     <datalist id="desktop-new-exercise-options">
                         {availableExercises.map((exercise) => (
                             <option key={exercise.id} value={exercise.name}>
-                                {exercise.muscle_group ?? exercise.category ?? ''}
+                                {EXERCISE_METRIC_LABELS[getExerciseMetric(exercise)]}
                             </option>
                         ))}
                     </datalist>
@@ -621,7 +623,7 @@ function DesktopAddExerciseRow({
                 </label>
 
                 <LabeledNumber name="sets" label="Series" value={sets} onChange={setSets} min={1} />
-                <LabeledNumber name="reps" label={isTime ? 'Min' : 'Reps'} value={reps} onChange={setReps} min={1} />
+                <LabeledNumber name="reps" label={isTime ? EXERCISE_METRIC_LABELS[metric] : 'Reps'} value={reps} onChange={(value) => setAmount({ metric, value })} min={1} />
                 <LabeledNumber name="target_weight" label={`Peso sug. (${weightUnit})`} value={isTime ? '' : targetWeight} onChange={setTargetWeight} min={0.5} step={weightUnit === 'lb' ? 0.01 : 0.5} required={false} disabled={isTime} placeholder={isTime ? '—' : 'Opc.'} />
                 <LabeledNumber name="rest_seconds" label="Desc. (s)" value={rest} onChange={setRest} min={0} step={15} required={false} />
 
@@ -655,11 +657,10 @@ function DesktopAddExerciseRow({
                     <div className="flex items-center gap-2">
                         <select
                             value={metricType}
-                            onChange={(event) => setMetricType(event.target.value as 'reps' | 'time')}
+                            onChange={(event) => setMetricType(event.target.value as ExerciseMetric)}
                             className="h-8 rounded-md border border-border bg-background px-2 text-xs text-foreground"
                         >
-                            <option value="reps">Repeticiones</option>
-                            <option value="time">Tiempo</option>
+                            {EXERCISE_METRIC_OPTIONS.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}
                         </select>
                         <button
                             type="button"
@@ -742,7 +743,8 @@ function DesktopExerciseHistory({
     relation: ExerciseRelation | null
     weightUnit: WeightUnit
 }) {
-    const isTime = relation?.metric_type === 'time'
+    const metric = getExerciseMetric(relation)
+    const isTime = metric !== 'reps'
     const recentLogs = logs.slice(0, 6)
 
     return (
@@ -759,7 +761,7 @@ function DesktopExerciseHistory({
                             </span>
                             <span className="font-semibold text-foreground">
                                 {isTime
-                                    ? `${log.reps ?? '-'} min`
+                                    ? `${log.reps ?? '-'} ${EXERCISE_METRIC_SUFFIXES[metric]}`
                                     : `${log.weight != null ? formatWeight(log.weight, weightUnit) : '-'} · ${log.reps ?? '-'} reps`}
                             </span>
                         </div>

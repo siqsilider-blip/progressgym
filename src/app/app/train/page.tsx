@@ -13,6 +13,7 @@ import { getStudentRoutineWeekProgress } from '@/lib/studentRoutineWeekProgress'
 import { getBuenosAiresDateString } from '@/lib/buenosAiresDate'
 import { getActiveStudentRoutine } from '@/lib/getActiveStudentRoutine'
 import { getStudentAppContext } from '@/lib/auth/student'
+import { getExerciseMetric, type ExerciseMetricFields } from '@/lib/exerciseMetric'
 
 type PageProps = {
     searchParams?: Promise<{
@@ -25,10 +26,9 @@ type PageProps = {
     }>
 }
 
-type ExerciseMeta = {
+type ExerciseMeta = ExerciseMetricFields & {
     id: string
     name: string | null
-    metric_type: 'reps' | 'time' | null
     video_url: string | null
     description: string | null
     muscle_group: string | null
@@ -387,7 +387,7 @@ export default async function AppTrainPage(props: PageProps) {
     if (exerciseIds.length > 0) {
         const { data, error } = await supabase
             .from('exercises')
-            .select('id, name, metric_type, video_url, description, muscle_group, category')
+            .select('id, name, metric_type, duration_unit, video_url, description, muscle_group, category')
             .in('id', exerciseIds)
 
         if (error) throwWorkoutLoadError('exercise metadata', error)
@@ -571,7 +571,7 @@ export default async function AppTrainPage(props: PageProps) {
             id: exercise.id,
             exerciseId: exercise.exercise_id ?? null,
             exerciseName: meta?.name ?? 'Ejercicio',
-            isCardio: meta?.metric_type === 'time',
+            metric: getExerciseMetric(meta),
             setsCount,
             targetReps: exercise.reps != null ? String(exercise.reps) : null,
             targetWeightKg: exercise.target_weight_kg,
@@ -594,10 +594,12 @@ export default async function AppTrainPage(props: PageProps) {
         return <HistoricalSessionUnavailable />
     }
 
-    const visibleRoutineDayExerciseIds = focusedExercises.map((exercise) => exercise.id)
+    const weightedRoutineDayExerciseIds = focusedExercises
+        .filter((exercise) => exercise.metric === 'reps')
+        .map((exercise) => exercise.id)
     const maxWeights = await getExerciseMaxWeights({
         studentId,
-        routineDayExerciseIds: visibleRoutineDayExerciseIds,
+        routineDayExerciseIds: weightedRoutineDayExerciseIds,
     })
 
     const selectedDayLabel = selectedDay?.name?.trim()

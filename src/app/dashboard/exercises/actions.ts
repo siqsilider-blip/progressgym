@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
+import { exerciseMetricFields, getExerciseMetric, isExerciseMetric, type ExerciseMetric } from '@/lib/exerciseMetric'
 
 async function supabaseServer() {
     const cookieStore = await cookies()
@@ -30,7 +31,7 @@ export async function createExercise(payload: {
     description?: string
     category?: string
     level?: string
-    metric_type?: 'reps' | 'time'
+    metric?: ExerciseMetric
     video_url?: string
 }) {
     const supabase = await supabaseServer()
@@ -44,9 +45,15 @@ export async function createExercise(payload: {
         return { ok: false, message: 'No estás logueado.' }
     }
 
-    await supabase.from('trainers').upsert({ id: user.id }, { onConflict: 'id' })
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle()
+    if (profile?.role !== 'trainer') {
+        return { ok: false, message: 'Solo los entrenadores pueden crear ejercicios.' }
+    }
 
-    const metricType = payload.metric_type === 'time' ? 'time' : 'reps'
+    const metric = payload.metric ?? 'reps'
+    if (!isExerciseMetric(metric)) {
+        return { ok: false, message: 'Elegí una medida válida.' }
+    }
 
     const { error } = await supabase.from('exercises').insert({
         trainer_id: user.id,
@@ -54,7 +61,7 @@ export async function createExercise(payload: {
         description: payload.description?.trim() || null,
         category: payload.category || null,
         level: payload.level || null,
-        metric_type: metricType,
+        ...exerciseMetricFields(metric),
         video_url: payload.video_url?.trim() || null,
     })
 
@@ -82,7 +89,7 @@ export async function listExercises() {
 
     const { data, error } = await supabase
         .from('exercises')
-        .select('id, name, description, muscle_group, video_url, trainer_id')
+        .select('id, name, description, muscle_group, video_url, trainer_id, metric_type, duration_unit')
         .or(`trainer_id.eq.${user.id},trainer_id.is.null`)
         .order('name', { ascending: true })
 
@@ -113,6 +120,80 @@ export async function listExercises() {
     })
 
     return { ok: true as const, items }
+}
+
+export async function createExerciseVariant(sourceId: string, metric: ExerciseMetric) {
+    if (!sourceId || !isExerciseMetric(metric)) {
+        return { ok: false as const, message: 'Elegí una medida válida.' }
+    }
+
+    const supabase = await supabaseServer()
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    if (userError || !user) {
+        return { ok: false as const, message: 'No estás logueado.' }
+    }
+
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle()
+    if (profile?.role !== 'trainer') {
+        return { ok: false as const, message: 'Solo los entrenadores pueden crear versiones de ejercicios.' }
+    }
+
+    const visibleOwners = `trainer_id.eq.${user.id},trainer_id.is.null`
+    const { data: source, error: sourceError } = await supabase
+        .from('exercises')
+        .select('name, description, category, muscle_group, level, video_url, trainer_id, metric_type, duration_unit')
+        .eq('id', sourceId)
+        .or(visibleOwners)
+        .maybeSingle()
+
+    if (sourceError || !source) {
+        return { ok: false as const, message: 'El ejercicio no está disponible en tu biblioteca.' }
+    }
+    if (getExerciseMetric(source) === metric) {
+        return { ok: false as const, message: 'Elegí una medida distinta de la actual.' }
+    }
+
+    const suffix = { reps: 'repeticiones', seconds: 'segundos', minutes: 'minutos' }[metric]
+    const baseName = source.name.trim().replace(/\s+\((?:repeticiones|segundos|minutos)\)$/i, '')
+    const name = `${baseName} (${suffix})`
+    const [existing, personal] = await Promise.all([
+        supabase.from('exercises').select('id').or(visibleOwners).eq('name', name).limit(1).maybeSingle(),
+        source.trainer_id === null
+            ? supabase.from('trainer_exercise_overrides')
+                .select('video_url, instructions').eq('trainer_id', user.id).eq('exercise_id', sourceId).maybeSingle()
+            : Promise.resolve({ data: null, error: null }),
+    ])
+
+    if (existing.error || personal.error) {
+        return { ok: false as const, message: 'No pudimos consultar la biblioteca. Volvé a intentar.' }
+    }
+    if (existing.data) {
+        return { ok: false as const, message: `Ya existe «${name}» en tu biblioteca.` }
+    }
+
+    const { error } = await supabase.from('exercises').insert({
+        trainer_id: user.id,
+        name,
+        category: source.category,
+        muscle_group: source.muscle_group,
+        level: source.level,
+        description: personal.data?.instructions ?? source.description,
+        video_url: personal.data?.video_url ?? source.video_url,
+        ...exerciseMetricFields(metric),
+    })
+
+    if (error) {
+        return {
+            ok: false as const,
+            message: error.code === '23505'
+                ? `Ya existe «${name}» en tu biblioteca.`
+                : 'No pudimos crear la versión. Volvé a intentar.',
+        }
+    }
+
+    revalidatePath('/dashboard/exercises')
+    revalidatePath('/dashboard/routines/[routineId]', 'page')
+    return { ok: true as const, name }
 }
 
 export async function updateExercise(id: string, payload: {

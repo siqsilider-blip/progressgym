@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getExerciseMetric, type ExerciseMetric } from '@/lib/exerciseMetric'
 
 export type SessionExerciseSummary = {
     routineDayExerciseId: string
@@ -8,7 +9,7 @@ export type SessionExerciseSummary = {
     bestWeight: number | null
     bestReps: number | null
     avgRpe: number | null
-    isCardio: boolean
+    metric: ExerciseMetric
 }
 
 export type SessionHistoryItem = {
@@ -102,7 +103,7 @@ export async function getStudentSessionHistoryResult(
 
     // Traer routine_day_exercises + exercises para nombres.
     const rdeIds = [...new Set(logs.map((l) => l.routine_day_exercise_id).filter(Boolean))]
-    const exerciseNameMap = new Map<string, { name: string; isCardio: boolean; position: number }>()
+    const exerciseNameMap = new Map<string, { name: string; metric: ExerciseMetric; position: number }>()
 
     if (rdeIds.length > 0) {
         const { data: rdes, error: rdesError } = await supabase
@@ -120,7 +121,7 @@ export async function getStudentSessionHistoryResult(
         if (exerciseIds.length > 0) {
             const { data: exercises, error: exercisesError } = await supabase
                 .from('exercises')
-                .select('id, name, metric_type')
+                .select('id, name, metric_type, duration_unit')
                 .in('id', exerciseIds)
 
             if (exercisesError) {
@@ -136,7 +137,7 @@ export async function getStudentSessionHistoryResult(
                 if (ex) {
                     exerciseNameMap.set(rde.id, {
                         name: ex.name ?? 'Ejercicio',
-                        isCardio: ex.metric_type === 'time',
+                        metric: getExerciseMetric(ex),
                         position: rde.position ?? Number.MAX_SAFE_INTEGER,
                     })
                 }
@@ -165,7 +166,7 @@ export async function getStudentSessionHistoryResult(
         const exerciseGroups = new Map<string, {
             id: string
             name: string
-            isCardio: boolean
+            metric: ExerciseMetric
             position: number
             weights: (number | null)[]
             reps: (number | null)[]
@@ -181,7 +182,7 @@ export async function getStudentSessionHistoryResult(
                 exerciseGroups.set(log.routine_day_exercise_id, {
                     id: log.routine_day_exercise_id,
                     name: meta.name,
-                    isCardio: meta.isCardio,
+                    metric: meta.metric,
                     position: meta.position,
                     weights: [],
                     reps: [],
@@ -206,12 +207,12 @@ export async function getStudentSessionHistoryResult(
                 position: group.position,
                 exerciseName: group.name,
                 sets: group.weights.length,
-                bestWeight: validWeights.length > 0 ? Math.max(...validWeights) : null,
+                bestWeight: group.metric === 'reps' && validWeights.length > 0 ? Math.max(...validWeights) : null,
                 bestReps: validReps.length > 0 ? Math.max(...validReps) : null,
                 avgRpe: validRpes.length > 0
                     ? Math.round((validRpes.reduce((a, b) => a + b, 0) / validRpes.length) * 10) / 10
                     : null,
-                isCardio: group.isCardio,
+                metric: group.metric,
             })
         }
 
