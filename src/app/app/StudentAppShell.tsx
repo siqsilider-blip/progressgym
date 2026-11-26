@@ -1,9 +1,10 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { BarChart2, CalendarDays, Home, MessageCircle, User } from 'lucide-react'
+import { StudentUnreadMessagesContext } from '@/components/student/StudentHomeUnreadMessages'
 import { COACHING_MESSAGES_READ_EVENT, unreadTrainerMessagesQuery } from '@/lib/coaching/unreadTrainerMessages'
 import { supabase } from '@/lib/supabase/client'
 
@@ -42,8 +43,19 @@ export default function StudentAppShell({
     const currentSection = activeSection(pathname)
     const inChat = currentSection === MESSAGES_HREF
     const [liveUnreadMessages, setLiveUnreadMessages] = useState<number | null>(null)
+    const refreshHomeAfterTraining = useRef(false)
     const unreadMessages = liveUnreadMessages ?? initialUnreadMessages
     const unreadDescription = unreadMessages === 1 ? '1 mensaje sin leer' : `${unreadMessages} mensajes sin leer`
+
+    useEffect(() => {
+        if (pathname === '/app/train') {
+            refreshHomeAfterTraining.current = true
+        } else if (pathname === '/app' && refreshHomeAfterTraining.current) {
+            // Inicio can be cached by the router while sets are being saved.
+            refreshHomeAfterTraining.current = false
+            router.refresh()
+        }
+    }, [pathname, router])
 
     useEffect(() => {
         if (!studentId || !trainerId) return
@@ -115,7 +127,9 @@ export default function StudentAppShell({
 
     return (
         <div className="min-h-screen bg-background">
-            {children}
+            <StudentUnreadMessagesContext.Provider value={unreadMessages}>
+                {children}
+            </StudentUnreadMessagesContext.Provider>
 
             <nav aria-label="Navegación del alumno" className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/95 backdrop-blur">
                 <span role="status" className="sr-only">

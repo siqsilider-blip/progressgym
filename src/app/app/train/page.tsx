@@ -14,6 +14,7 @@ import { getBuenosAiresDateString } from '@/lib/buenosAiresDate'
 import { getActiveStudentRoutine } from '@/lib/getActiveStudentRoutine'
 import { getStudentAppContext } from '@/lib/auth/student'
 import { getExerciseMetric, type ExerciseMetricFields } from '@/lib/exerciseMetric'
+import { compareRoutineExerciseOrder, getRoutineExerciseSetCount, normalizeRoutineBlock } from '@/lib/routineExerciseOrder'
 
 type PageProps = {
     searchParams?: Promise<{
@@ -62,8 +63,6 @@ type ExerciseLog = {
     }[] | null
 }
 
-type RoutineBlock = 'activation' | 'main' | 'closing'
-
 type TrainingDay = { id: string; name: string | null; day_index: number | null }
 
 type HistoricalSessionSelection = {
@@ -73,17 +72,7 @@ type HistoricalSessionSelection = {
     completionStatus: 'complete' | 'incomplete'
 }
 
-const BLOCK_ORDER: Record<RoutineBlock, number> = {
-    activation: 0,
-    main: 1,
-    closing: 2,
-}
-
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-
-function normalizeBlock(block: string | null): RoutineBlock {
-    return block === 'activation' || block === 'closing' ? block : 'main'
-}
 
 function getWorkoutSessionMeta(log: ExerciseLog) {
     return Array.isArray(log.workout_sessions)
@@ -364,11 +353,7 @@ export default async function AppTrainPage(props: PageProps) {
 
         if (routineExercisesError) throwWorkoutLoadError('routine day exercises', routineExercisesError)
 
-        exercisesForDay = (rde ?? []).sort((a, b) => {
-            const blockDifference = BLOCK_ORDER[normalizeBlock(a.block)] - BLOCK_ORDER[normalizeBlock(b.block)]
-            if (blockDifference !== 0) return blockDifference
-            return (a.position ?? Number.MAX_SAFE_INTEGER) - (b.position ?? Number.MAX_SAFE_INTEGER)
-        })
+        exercisesForDay = (rde ?? []).sort(compareRoutineExerciseOrder)
     }
 
     const exercisesWithoutMetadataReference = exercisesForDay
@@ -479,10 +464,9 @@ export default async function AppTrainPage(props: PageProps) {
             const currentLogs = workoutSessionId
                 ? logsForExercise.filter(l => l.workout_session_id === workoutSessionId)
                 : []
-            const configuredSetsCount = Math.max(1, Number(exerciseRow.sets ?? 1))
-            const loggedSetsCount = currentLogs.reduce((maximum, log, fallbackIndex) =>
-                Math.max(maximum, (log.set_index ?? fallbackIndex) + 1), 0)
-            const setsCount = Math.max(configuredSetsCount, loggedSetsCount)
+            const highestRecordedSetIndex = currentLogs.reduce((maximum, log, fallbackIndex) =>
+                Math.max(maximum, log.set_index ?? fallbackIndex), -1)
+            const setsCount = getRoutineExerciseSetCount(exerciseRow.sets, highestRecordedSetIndex)
             const historicLogs = workoutSessionId
                 ? logsForExercise.filter(l =>
                     l.workout_session_id !== workoutSessionId
@@ -559,7 +543,7 @@ export default async function AppTrainPage(props: PageProps) {
         const meta = exercise.exercise_id ? exerciseMap.get(exercise.exercise_id) ?? null : null
         const override = exercise.exercise_id ? exerciseOverrideMap.get(exercise.exercise_id) ?? null : null
         const previousSession = logsByExerciseId.get(exercise.id)
-        const setsCount = previousSession?.setsCount ?? Math.max(1, Number(exercise.sets ?? 1))
+        const setsCount = previousSession?.setsCount ?? getRoutineExerciseSetCount(exercise.sets)
 
         const previousWeights: (number | null)[] = Array.from({ length: setsCount }, (_, i) => previousSession?.weights[i] ?? null)
         const previousReps: (number | null)[] = Array.from({ length: setsCount }, (_, i) => previousSession?.reps[i] ?? null)
@@ -586,7 +570,7 @@ export default async function AppTrainPage(props: PageProps) {
             instructions: override?.instructions ?? meta?.description ?? null,
             muscleGroup: meta?.muscle_group ?? null,
             category: meta?.category ?? null,
-            block: normalizeBlock(exercise.block),
+            block: normalizeRoutineBlock(exercise.block),
         }
     })
 

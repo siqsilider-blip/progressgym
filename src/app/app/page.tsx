@@ -3,9 +3,11 @@ import StudentHomeDashboard, { type StudentHomeTrainingDay } from '@/components/
 import { createClient } from '@/lib/supabase/server'
 import { getRoutineSchedule } from '@/lib/getRoutineSchedule'
 import { getStudentRoutineWeekProgress } from '@/lib/studentRoutineWeekProgress'
-import { getBuenosAiresDateString, getBuenosAiresHour, getCurrentBuenosAiresWeek, getElapsedProgramWeekIndex } from '@/lib/buenosAiresDate'
+import { getBuenosAiresDateString, getCurrentBuenosAiresWeek, getElapsedProgramWeekIndex, getProgramWeekDateRange } from '@/lib/buenosAiresDate'
 import { getActiveStudentRoutine } from '@/lib/getActiveStudentRoutine'
 import { getStudentAppContext } from '@/lib/auth/student'
+import { areValidUniqueIsoWeekdays, formatSpanishDayLabel, formatSpanishWeekRange, resolveWeekdayDateInProgramWeek } from '@/lib/routineCalendar'
+import { compareRoutineExerciseOrder, getRoutineExerciseSetCount } from '@/lib/routineExerciseOrder'
 
 const WEEKDAY_SHORT: Record<number, string> = {
     1: 'Lun',
@@ -15,6 +17,25 @@ const WEEKDAY_SHORT: Record<number, string> = {
     5: 'Vie',
     6: 'Sáb',
     7: 'Dom',
+}
+
+type NextSuggestion = { dateLabel: string; workoutName: string | null }
+type HomeSession = {
+    savedSets: number
+    totalSets: number
+    nextExercise: {
+        name: string | null
+        exerciseNumber: number
+        setNumber: number
+        exerciseSets: number
+    } | null
+}
+type PlannedExercise = {
+    id: string
+    exercise_id: string | null
+    sets: number | null
+    position: number | null
+    block: string | null
 }
 
 export default async function AppHomePage() {
@@ -85,6 +106,9 @@ export default async function AppHomePage() {
     let weekCompleted = false
     let programWeekNumber = 0
     let totalProgramWeeks = 0
+    let programDateRange: string | null = null
+    let nextSuggestion: NextSuggestion | null = null
+    let currentSession: HomeSession | null = null
     let homeTrainingDays: StudentHomeTrainingDay[] = []
     let selectedHomeDay: StudentHomeTrainingDay | null = null
     const suggestedTrainingDays = Array.from(new Set(assignment?.trainingWeekdays ?? []))
@@ -112,9 +136,18 @@ export default async function AppHomePage() {
             selectedWeekId = schedule.selectedWeek?.id ?? null
             programWeekNumber = schedule.programWeekNumber
             totalProgramWeeks = schedule.totalProgramWeeks
+            if (assignment.programStartedOn && totalProgramWeeks > 0) {
+                const firstWeek = getProgramWeekDateRange(assignment.programStartedOn, schedule.currentCycleStartWeekIndex)
+                const lastWeek = getProgramWeekDateRange(
+                    assignment.programStartedOn,
+                    schedule.currentCycleStartWeekIndex + totalProgramWeeks - 1
+                )
+                if (firstWeek && lastWeek) {
+                    programDateRange = formatSpanishWeekRange(firstWeek.weekStart, lastWeek.weekEnd)
+                }
+            }
 
             if (selectedWeekId) {
-
                 const { data: days, error: daysError } = await supabase
                     .from('routine_days')
                     .select('id, name, title, day_index')
@@ -126,9 +159,9 @@ export default async function AppHomePage() {
                     const dayIds = days.map((day) => day.id)
                     const { data: weekExercises, error: weekExercisesError } = await supabase
                         .from('routine_day_exercises')
-                        .select('routine_day_id, sets, reps')
+                        .select('id, routine_day_id, exercise_id, sets, position, block')
                         .in('routine_day_id', dayIds)
-                        .order('position', { ascending: true })
+                        .order('position', { ascending: true, nullsFirst: false })
                     if (weekExercisesError) throw weekExercisesError
 
                     const daysWithExercises = new Set(
@@ -178,7 +211,6 @@ export default async function AppHomePage() {
                             status,
                             availability,
                             exerciseCount: dayExercises.length,
-                            totalSets: dayExercises.reduce((sum, exercise) => sum + (exercise.sets ?? 3), 0),
                             href,
                         }
                     })
@@ -197,6 +229,25 @@ export default async function AppHomePage() {
                         ?? todayActivityDay
                         ?? (actionableDays.length === 1 ? actionableDays[0] : null)
 
+                    if (selectedHomeDay?.availability === 'continue' && progress) {
+                        const activeDayId = selectedHomeDay.id
+                        const sessionId = progress.sessionIdByDayId.get(activeDayId)
+                        if (sessionId) {
+                            currentSession = await getHomeSession(
+                                supabase,
+                                (weekExercises ?? []).filter((exercise) => exercise.routine_day_id === activeDayId),
+                                progress.recordedSetIndexesBySession.get(sessionId)
+                            )
+                        }
+                    }
+
+                    nextSuggestion = getNextSuggestion(
+                        homeTrainingDays,
+                        selectedHomeDay?.id ?? null,
+                        assignment.trainingWeekdays,
+                        schedule.selectedWeekStart,
+                        today
+                    )
                 }
             }
         }
@@ -206,12 +257,8 @@ export default async function AppHomePage() {
     const routineHref = selectedWeekId
         ? `/app/rutina?${selectedMonthId ? `month=${selectedMonthId}&` : ''}week=${selectedWeekId}`
         : '/app/rutina'
-    const hour = getBuenosAiresHour()
-    const greeting = hour < 12 ? 'Buenos días' : hour < 18 ? 'Buenas tardes' : 'Buenas noches'
-
     return (
         <StudentHomeDashboard
-            greeting={greeting}
             firstName={firstName}
             today={today}
             routineName={routineName}
@@ -228,8 +275,76 @@ export default async function AppHomePage() {
             weekCompleted={weekCompleted}
             programWeekNumber={programWeekNumber}
             totalProgramWeeks={totalProgramWeeks}
+            programDateRange={programDateRange}
+            nextSuggestion={nextSuggestion}
+            currentSession={currentSession}
         />
     )
+}
+
+async function getHomeSession(
+    supabase: Awaited<ReturnType<typeof createClient>>,
+    exercises: PlannedExercise[],
+    recordedByExercise: Map<string, Set<number>> | undefined
+): Promise<HomeSession> {
+    const ordered = exercises.sort(compareRoutineExerciseOrder).map((exercise, index) => {
+        const saved = recordedByExercise?.get(exercise.id)
+        let highestSetIndex = -1
+        for (const setIndex of saved ?? []) highestSetIndex = Math.max(highestSetIndex, setIndex)
+
+        return {
+            exerciseId: exercise.exercise_id,
+            exerciseNumber: index + 1,
+            exerciseSets: getRoutineExerciseSetCount(exercise.sets, highestSetIndex),
+            saved,
+        }
+    })
+    const savedSets = ordered.reduce((total, exercise) => total + (exercise.saved?.size ?? 0), 0)
+    const totalSets = ordered.reduce((total, exercise) => total + exercise.exerciseSets, 0)
+    const next = ordered.find((exercise) => (exercise.saved?.size ?? 0) < exercise.exerciseSets)
+    if (!next) return { savedSets, totalSets, nextExercise: null }
+
+    let setIndex = 0
+    while (next.saved?.has(setIndex)) setIndex += 1
+
+    const exerciseResult = next.exerciseId
+        ? await supabase.from('exercises').select('name').eq('id', next.exerciseId).maybeSingle()
+        : null
+
+    return {
+        savedSets,
+        totalSets,
+        nextExercise: {
+            name: exerciseResult?.data?.name?.trim() || null,
+            exerciseNumber: next.exerciseNumber,
+            setNumber: setIndex + 1,
+            exerciseSets: next.exerciseSets,
+        },
+    }
+}
+
+function getNextSuggestion(
+    days: StudentHomeTrainingDay[],
+    selectedId: string | null,
+    weekdays: readonly number[] | null,
+    weekStart: string | null,
+    today: string
+): NextSuggestion | null {
+    if (!weekStart || !weekdays || weekdays.length < days.length || !areValidUniqueIsoWeekdays(weekdays)) return null
+
+    const remaining = days.filter((day) => day.id !== selectedId && (day.status === 'pending' || day.status === 'partial'))
+    if (remaining.length === 0) return null
+
+    const nextDate = weekdays.slice(0, days.length)
+        .map((weekday) => resolveWeekdayDateInProgramWeek(weekStart, weekday))
+        .sort()
+        .find((date) => date > today)
+    if (!nextDate) return null
+
+    return {
+        dateLabel: formatSpanishDayLabel(nextDate),
+        workoutName: remaining.length === 1 ? remaining[0].name : null,
+    }
 }
 
 function daysBetween(from: string, to: string) {

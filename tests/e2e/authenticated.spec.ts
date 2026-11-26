@@ -93,9 +93,9 @@ test('el alumno entra a su portal y no al panel del entrenador', async ({ page }
     await expect(page).toHaveURL(/\/app(?:\?|$)/)
     await expect(page.getByRole('link', { name: 'Rutina', exact: true })).toBeVisible()
     await expect(page.getByRole('link', { name: 'Progreso', exact: true })).toBeVisible()
-    await expect(page.getByRole('heading', { name: /Buenos días|Buenas tardes|Buenas noches/ })).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Tus entrenamientos' })).toBeVisible()
-    await expect(page.getByRole('link', { name: /Ver calendario/ })).toBeVisible()
+    await expect(page.getByRole('heading', { name: /^Hola, / })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Esta semana' })).toBeVisible()
+    await expect(page.getByRole('region', { name: 'Programa' }).getByRole('link', { name: routineName })).toBeVisible()
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBeTruthy()
 
     await page.goto('/dashboard')
@@ -231,7 +231,7 @@ test('el alumno entra a su portal y no al panel del entrenador', async ({ page }
     const completedHomeLabel = page.getByText('Semana completada', { exact: true })
     await recoverStudentPage(page, completedHomeLabel)
     await expect(completedHomeLabel).toBeVisible({ timeout: 15_000 })
-    await expect(page.getByText('¡Excelente trabajo!')).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Revisar mi semana' })).toBeVisible()
 
     const { data: currentSession, error: currentSessionError } = await admin
         .from('workout_sessions')

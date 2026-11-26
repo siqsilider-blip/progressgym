@@ -1,18 +1,7 @@
 import Link from 'next/link'
-import {
-    BarChart3,
-    Bell,
-    Camera,
-    Check,
-    CheckCircle2,
-    ChevronRight,
-    ClipboardCheck,
-    Dumbbell,
-    Sparkles,
-} from 'lucide-react'
-import {
-    formatSpanishLongDateLabel,
-} from '@/lib/routineCalendar'
+import { ArrowRight, Bell, CalendarDays, Camera, ChevronRight, ClipboardCheck } from 'lucide-react'
+import StudentHomeUnreadMessages from './StudentHomeUnreadMessages'
+import { formatSpanishLongDateLabel } from '@/lib/routineCalendar'
 import type { RoutineDayProgressStatus } from '@/lib/studentRoutineWeekProgress'
 
 export type StudentHomeDayAvailability = 'available' | 'continue' | 'review' | 'locked_today'
@@ -23,12 +12,10 @@ export type StudentHomeTrainingDay = {
     status: RoutineDayProgressStatus
     availability: StudentHomeDayAvailability
     exerciseCount: number
-    totalSets: number
     href: string
 }
 
 type Props = {
-    greeting: string
     firstName: string
     today: string
     routineName: string | null
@@ -45,32 +32,113 @@ type Props = {
     weekCompleted: boolean
     programWeekNumber: number
     totalProgramWeeks: number
+    programDateRange: string | null
+    nextSuggestion: { dateLabel: string; workoutName: string | null } | null
+    currentSession: {
+        savedSets: number
+        totalSets: number
+        nextExercise: { name: string | null; exerciseNumber: number; setNumber: number; exerciseSets: number } | null
+    } | null
 }
 
-function sentenceCase(value: string) {
-    return value ? value.charAt(0).toLocaleUpperCase('es-AR') + value.slice(1) : value
+const workoutNameList = new Intl.ListFormat('es-AR', { style: 'long', type: 'conjunction' })
+
+function cleanWorkoutName(name: string) {
+    if (!name.includes('|')) return name
+    const parts = name.split('|').map((part) => part.trim()).filter(Boolean)
+    return parts.length ? workoutNameList.format(parts) : name
 }
 
-function primaryCopy(day: StudentHomeTrainingDay | null) {
-    if (!day) return { eyebrow: 'Tu entrenamiento', action: 'Abrir rutina' }
-    if (day.status === 'completed') return { eyebrow: 'Entrenamiento de hoy completado', action: 'Revisar entrenamiento' }
-    if (day.status === 'in_progress') return { eyebrow: 'Sesión en curso', action: 'Continuar entrenamiento' }
-    if (day.status === 'partial') return { eyebrow: 'Sesión parcial', action: 'Completar pendientes' }
-    return { eyebrow: 'Tu entrenamiento', action: 'Empezar entrenamiento' }
+function primaryCopy(day: StudentHomeTrainingDay) {
+    if (day.status === 'completed') return { label: 'Entrenamiento de hoy completado', action: 'Revisar entrenamiento' }
+    if (day.status === 'in_progress') return { label: 'Sesión en curso', action: 'Continuar entrenamiento' }
+    if (day.status === 'partial') return { label: 'Sesión parcial', action: 'Completar pendientes' }
+    return { label: 'Tu entrenamiento', action: 'Empezar entrenamiento' }
 }
 
-function dayStatus(day: StudentHomeTrainingDay) {
-    if (day.availability === 'locked_today') return { label: 'Disponible mañana', tone: 'text-muted-foreground', dot: 'bg-muted-foreground' }
-    if (day.status === 'completed') return { label: 'Hecho', tone: 'text-emerald-400', dot: 'bg-emerald-400' }
-    if (day.status === 'in_progress') return { label: 'En curso', tone: 'text-primary', dot: 'bg-primary' }
-    if (day.status === 'partial') {
-        return { label: 'Parcial', tone: 'text-amber-400', dot: 'bg-amber-400' }
+const displayType = 'font-[family-name:Georgia,"Times_New_Roman",serif] font-normal tracking-[-0.045em] [overflow-wrap:anywhere]'
+const primaryLink = 'mt-4 flex min-h-12 items-center justify-center gap-2.5 rounded-full bg-primary px-4 py-2.5 text-center text-sm font-bold text-primary-foreground transition hover:opacity-90 active:opacity-80 sm:text-base'
+const rowLink = 'flex min-h-12 min-w-0 items-center gap-3 rounded-md py-2.5 text-sm transition hover:text-brand-soft active:opacity-80'
+
+function TrainingHero({
+    routineHref, hasTraining, weekCompleted, totalTrainingDays, selectedDay, onboardingCompleted, currentSession,
+}: Pick<Props, 'routineHref' | 'weekCompleted' | 'totalTrainingDays' | 'selectedDay' | 'onboardingCompleted' | 'currentSession'> & { hasTraining: boolean }) {
+    let title: string
+    let label: string | null = null
+    let description: string | null = null
+    let action: { href: string; label: string } | null = null
+
+    if (weekCompleted) {
+        title = 'Semana completada'
+        description = totalTrainingDays === 1 ? 'Completaste el entrenamiento de esta semana.' : `Completaste los ${totalTrainingDays} entrenamientos de esta semana.`
+        action = { href: routineHref, label: 'Revisar mi semana' }
+    } else if (hasTraining && selectedDay) {
+        title = cleanWorkoutName(selectedDay.name)
+        const copy = primaryCopy(selectedDay)
+        label = copy.label
+        action = { href: selectedDay.href, label: copy.action }
+
+        if (currentSession?.nextExercise) {
+            const { name, exerciseNumber, setNumber, exerciseSets } = currentSession.nextExercise
+            description = `${name ?? `Ejercicio ${exerciseNumber}`} · Serie ${setNumber} de ${exerciseSets}`
+        } else if (currentSession && currentSession.savedSets === currentSession.totalSets) {
+            description = 'Todas las series están guardadas.'
+        } else {
+            description = `${selectedDay.exerciseCount} ${selectedDay.exerciseCount === 1 ? 'ejercicio' : 'ejercicios'}`
+        }
+    } else if (hasTraining) {
+        title = 'Elegí tu entrenamiento de hoy'
+        description = 'Podés elegir entre los entrenamientos que te quedan esta semana.'
+        action = { href: routineHref, label: 'Ver entrenamientos disponibles' }
+    } else if (onboardingCompleted) {
+        title = 'Tu entrenador está preparando tu programa'
+        description = 'Cuando esté listo, vas a encontrar acá tu próximo entrenamiento.'
+    } else {
+        title = 'Empecemos por conocerte'
+        description = 'Contanos tus objetivos, disponibilidad y cuidados.'
+        action = { href: '/app/onboarding', label: 'Completar mi ficha' }
     }
-    return { label: 'Disponible', tone: 'text-primary', dot: 'bg-primary' }
+
+    return (
+        <section className="rounded-[1.5rem] bg-accent p-4 text-accent-foreground sm:p-6" aria-labelledby="student-today-heading">
+            {label && <p className="mb-2 text-sm font-semibold text-brand-soft">{label}</p>}
+            <h2 id="student-today-heading" className={`max-w-[22ch] text-[1.95rem] leading-[1.08] sm:text-[2.4rem] ${displayType}`}>
+                {title}
+            </h2>
+            {description && <p className="mt-2 text-sm leading-5 text-muted-foreground [overflow-wrap:anywhere]">{description}</p>}
+
+            {currentSession && selectedDay && !weekCompleted && currentSession.totalSets > 0 && (
+                <div className="mt-4 space-y-1.5">
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 text-xs text-muted-foreground sm:text-sm">
+                        {currentSession.nextExercise && (
+                            <span>Ejercicio {currentSession.nextExercise.exerciseNumber} de {selectedDay.exerciseCount}</span>
+                        )}
+                        <span className="ml-auto tabular-nums">{currentSession.savedSets} de {currentSession.totalSets} series</span>
+                    </div>
+                    <div
+                        role="progressbar"
+                        aria-label="Series guardadas"
+                        aria-valuemin={0}
+                        aria-valuemax={currentSession.totalSets}
+                        aria-valuenow={currentSession.savedSets}
+                        className="h-1 overflow-hidden rounded-full bg-primary/20"
+                    >
+                        <div className="h-full rounded-full bg-primary" style={{ width: `${100 * currentSession.savedSets / currentSession.totalSets}%` }} />
+                    </div>
+                </div>
+            )}
+
+            {action && (
+                <Link href={action.href} prefetch={false} className={primaryLink}>
+                    {action.label}
+                    <ArrowRight className="size-4 shrink-0" aria-hidden="true" />
+                </Link>
+            )}
+        </section>
+    )
 }
 
 export default function StudentHomeDashboard({
-    greeting,
     firstName,
     today,
     routineName,
@@ -87,276 +155,145 @@ export default function StudentHomeDashboard({
     weekCompleted,
     programWeekNumber,
     totalProgramWeeks,
+    programDateRange,
+    nextSuggestion,
+    currentSession,
 }: Props) {
-    const copy = primaryCopy(selectedDay)
-    const progress = totalTrainingDays > 0 ? Math.round((completedDays / totalTrainingDays) * 100) : 0
-    const needsCheckIn = !weeklyCheckinCompleted || progressPhotoDue
-    const hasVisibleRoutine = Boolean(routineName && (trainingDays.length > 0 || weekCompleted))
-    const showOnboardingTask = hasVisibleRoutine && !onboardingCompleted
-    const showCheckInTask = hasVisibleRoutine && onboardingCompleted && needsCheckIn
+    const dateLabel = formatSpanishLongDateLabel(today)
+    const hasTraining = Boolean(routineName && totalTrainingDays > 0)
+    const showOnboardingTask = hasTraining && !onboardingCompleted
+    const showCheckInTask = hasTraining && onboardingCompleted && (!weeklyCheckinCompleted || progressPhotoDue)
 
     return (
-        <main className="px-4 pb-28 pt-5 md:px-6">
-            <div className="mx-auto max-w-lg space-y-4">
-                <header className="flex items-start justify-between gap-4">
+        <main className="px-5 pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-[max(1.5rem,env(safe-area-inset-top))] sm:px-6">
+            <div className="mx-auto max-w-lg space-y-5">
+                <header className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                        <p className="text-sm font-bold text-brand-soft">
-                            {sentenceCase(formatSpanishLongDateLabel(today))}
+                        <p className="text-sm font-semibold text-brand-soft">
+                            {dateLabel.charAt(0).toLocaleUpperCase('es-AR') + dateLabel.slice(1)}
                         </p>
-                        <h1 className="mt-1 text-2xl font-black leading-tight tracking-tight text-foreground">
-                            {greeting}, {firstName}
+                        <h1 className={`mt-1.5 text-[2.5rem] leading-none text-foreground sm:text-5xl ${displayType}`}>
+                            Hola, {firstName}
                         </h1>
                     </div>
                     <Link
                         href="/app/notifications"
-                        prefetch
+                        prefetch={false}
                         aria-label={unreadNotifications > 0
                             ? `Ver ${unreadNotifications} ${unreadNotifications === 1 ? 'aviso nuevo' : 'avisos nuevos'}`
                             : 'Ver avisos'}
-                        className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-border bg-card text-muted-foreground shadow-sm transition active:scale-95"
+                        className="relative grid size-11 shrink-0 place-items-center rounded-full border border-border text-foreground transition hover:bg-accent active:bg-accent"
                     >
-                        <Bell className="h-5 w-5" aria-hidden="true" />
+                        <Bell className="size-5" aria-hidden="true" />
                         {unreadNotifications > 0 && (
-                            <span
-                                aria-hidden="true"
-                                className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-xs font-black text-primary-foreground"
-                            >
-                                {Math.min(unreadNotifications, 9)}
+                            <span aria-hidden="true" className="absolute -right-0.5 -top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[11px] font-bold text-primary-foreground">
+                                {unreadNotifications > 9 ? '9+' : unreadNotifications}
                             </span>
                         )}
                     </Link>
                 </header>
 
-                {routineName && weekCompleted ? (
-                    <section className="relative overflow-hidden rounded-[1.75rem] border border-emerald-500/25 bg-card p-5 shadow-sm">
-                        <div className="absolute -right-10 -top-12 h-32 w-32 rounded-full bg-emerald-500/10 blur-2xl" />
-                        <div className="relative">
-                            <span className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1.5 text-xs font-black text-emerald-400">
-                                <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
-                                Semana completada
-                            </span>
-                            <h2 className="mt-3 text-2xl font-black tracking-tight text-foreground">¡Excelente trabajo!</h2>
-                            <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                                Completaste los {totalTrainingDays} entrenamientos de esta semana.
-                            </p>
-                            <Link href={routineHref} className="mt-4 flex min-h-12 items-center justify-between rounded-2xl bg-emerald-500 px-4 text-sm font-black text-black transition active:scale-[0.98]">
-                                Revisar mi semana
-                                <ChevronRight className="h-5 w-5" aria-hidden="true" />
-                            </Link>
-                        </div>
-                    </section>
-                ) : routineName && selectedDay ? (
-                    <section className="relative overflow-hidden rounded-[1.75rem] border border-primary/30 bg-card shadow-[0_18px_50px_-30px_rgba(201,135,150,0.8)]">
-                        <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-primary/15 blur-3xl" />
-                        <div className="relative p-5">
-                            <div className="flex flex-wrap items-center gap-2">
-                                <span className="rounded-full bg-primary/12 px-3 py-1.5 text-xs font-black uppercase tracking-wide text-primary">
-                                    {copy.eyebrow}
-                                </span>
-                            </div>
+                <StudentHomeUnreadMessages />
 
-                            <h2 className="mt-4 text-[1.65rem] font-black leading-tight tracking-tight text-foreground">
-                                {selectedDay.name}
-                            </h2>
-                            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
-                                <span className="inline-flex items-center gap-1.5">
-                                    <Dumbbell className="h-4 w-4 text-primary" aria-hidden="true" />
-                                    {selectedDay.exerciseCount} ejercicios
-                                </span>
-                                {totalProgramWeeks > 1 && <span>Semana {programWeekNumber} de {totalProgramWeeks}</span>}
-                            </div>
+                <TrainingHero
+                    hasTraining={hasTraining}
+                    routineHref={routineHref}
+                    weekCompleted={weekCompleted}
+                    totalTrainingDays={totalTrainingDays}
+                    selectedDay={selectedDay}
+                    onboardingCompleted={onboardingCompleted}
+                    currentSession={currentSession}
+                />
 
-                            <Link href={selectedDay.href} className="mt-4 flex min-h-14 items-center justify-between rounded-2xl bg-primary px-5 text-base font-black text-primary-foreground shadow-lg shadow-primary/15 transition active:scale-[0.98]">
-                                {copy.action}
-                                <ChevronRight className="h-5 w-5" aria-hidden="true" />
-                            </Link>
+                {hasTraining && (
+                    <section className="space-y-2" aria-labelledby="student-week-heading">
+                        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                            <h2 id="student-week-heading" className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Esta semana</h2>
+                            <p className="text-sm font-semibold text-foreground tabular-nums">{completedDays} de {totalTrainingDays} completados</p>
                         </div>
-                    </section>
-                ) : routineName && trainingDays.length > 0 ? (
-                    <section className="relative overflow-hidden rounded-[1.75rem] border border-primary/30 bg-card p-5 shadow-[0_18px_50px_-30px_rgba(201,135,150,0.8)]">
-                        <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-primary/15 blur-3xl" />
-                        <div className="relative">
-                            <span className="inline-flex rounded-full bg-primary/12 px-3 py-1.5 text-xs font-black uppercase tracking-wide text-primary">
-                                Tu elección
-                            </span>
-                            <h2 className="mt-3 text-2xl font-black leading-tight tracking-tight text-foreground">
-                                Elegí tu entrenamiento de hoy
-                            </h2>
-                            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                                Podés comenzar por cualquiera de los que todavía están pendientes. Al guardar la primera serie, los demás se habilitan mañana.
-                            </p>
-                            {suggestedTrainingDays.length > 0 && (
-                                <p className="mt-3 text-xs font-bold text-muted-foreground">
-                                    Días sugeridos: <span className="text-foreground">{suggestedTrainingDays.join(' · ')}</span>
-                                </p>
-                            )}
-                            <Link href={routineHref} className="mt-4 flex min-h-14 items-center justify-between rounded-2xl bg-primary px-5 text-base font-black text-primary-foreground shadow-lg shadow-primary/15 transition active:scale-[0.98]">
-                                Ver entrenamientos disponibles
-                                <ChevronRight className="h-5 w-5" aria-hidden="true" />
-                            </Link>
+                        <div
+                            className="flex gap-1.5"
+                            role="progressbar"
+                            aria-label="Entrenamientos completados esta semana"
+                            aria-valuemin={0}
+                            aria-valuemax={totalTrainingDays}
+                            aria-valuenow={completedDays}
+                        >
+                            {trainingDays.map((day) => (
+                                <span
+                                    key={day.id}
+                                    aria-hidden="true"
+                                    className={`h-2 flex-1 rounded-full ${day.status === 'completed' ? 'bg-primary'
+                                        : day.status === 'in_progress' || day.status === 'partial' ? 'bg-primary/40' : 'bg-muted'}`}
+                                />
+                            ))}
                         </div>
-                    </section>
-                ) : (
-                    <section className="relative overflow-hidden rounded-[1.75rem] border border-primary/20 bg-card p-6 text-center shadow-sm">
-                        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                            {onboardingCompleted ? <Dumbbell className="h-7 w-7" /> : <ClipboardCheck className="h-7 w-7" />}
-                        </div>
-                        <h2 className="mt-4 text-xl font-black text-foreground">
-                            {onboardingCompleted ? 'Tu entrenador está preparando tu programa' : 'Empecemos por conocerte'}
-                        </h2>
-                        <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
-                            {onboardingCompleted
-                                ? 'Cuando la rutina esté lista, vas a encontrar acá tu próximo entrenamiento y el calendario completo.'
-                                : 'Completá tus objetivos, disponibilidad y cuidados para recibir una rutina adecuada para vos.'}
-                        </p>
-                        {!onboardingCompleted && (
-                            <Link href="/app/onboarding" className="mt-5 inline-flex min-h-12 items-center justify-center rounded-2xl bg-primary px-5 text-sm font-black text-primary-foreground">
-                                Completar mi ficha
-                            </Link>
+                        {suggestedTrainingDays.length > 0 && (
+                            <p className="text-xs text-muted-foreground sm:text-sm">Días sugeridos · {suggestedTrainingDays.join(' · ')}</p>
                         )}
                     </section>
                 )}
 
-                {trainingDays.length > 0 && (
-                    <section className="overflow-hidden rounded-2xl border border-border bg-card" aria-labelledby="student-week-heading">
-                        <div className="p-4 pb-3">
-                            <div className="flex items-start justify-between gap-3">
-                                <div>
-                                    <h2 id="student-week-heading" className="text-base font-black text-foreground">Tus entrenamientos</h2>
-                                    <p className="mt-0.5 text-sm text-muted-foreground">
-                                        {completedDays} de {totalTrainingDays} entrenamientos
-                                        {totalProgramWeeks > 1 ? ` · Semana ${programWeekNumber} de ${totalProgramWeeks}` : ''}
-                                    </p>
-                                    {suggestedTrainingDays.length > 0 && (
-                                        <p className="mt-1 text-xs font-semibold text-muted-foreground">
-                                            Días sugeridos: {suggestedTrainingDays.join(' · ')}
-                                        </p>
-                                    )}
-                                </div>
-                                <Link href={routineHref} className="inline-flex min-h-11 shrink-0 items-center gap-1 px-1 text-sm font-black text-primary">
-                                    Ver calendario
-                                    <ChevronRight className="h-4 w-4" aria-hidden="true" />
-                                </Link>
-                            </div>
-                            <div
-                                role="progressbar"
-                                aria-label="Progreso semanal"
-                                aria-valuemin={0}
-                                aria-valuemax={100}
-                                aria-valuenow={progress}
-                                aria-valuetext={`${completedDays} de ${totalTrainingDays} entrenamientos completados`}
-                                className="mt-3 h-2 overflow-hidden rounded-full bg-muted"
-                            >
-                                <div
-                                    className={`h-full rounded-full transition-all ${weekCompleted ? 'bg-emerald-500' : 'bg-primary'}`}
-                                    style={{ width: `${progress}%` }}
-                                />
-                            </div>
+                {routineName && totalProgramWeeks > 0 && (
+                    <section className="border-t border-border pt-2" aria-label="Programa">
+                        <Link href={routineHref} className="flex min-h-11 min-w-0 items-center gap-2.5 rounded-md py-1.5 transition hover:text-brand-soft active:opacity-80">
+                            <span className="flex min-w-0 flex-1 flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
+                                <span className="min-w-0 font-semibold [overflow-wrap:anywhere]">{routineName}</span>
+                                <span className="ml-auto shrink-0 text-xs text-muted-foreground sm:text-sm">Semana {programWeekNumber} de {totalProgramWeeks}</span>
+                            </span>
+                            <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                        </Link>
+                        <div
+                            role="progressbar"
+                            aria-label="Posición en el programa"
+                            aria-valuemin={0}
+                            aria-valuemax={totalProgramWeeks}
+                            aria-valuenow={programWeekNumber}
+                            aria-valuetext={`Semana ${programWeekNumber} de ${totalProgramWeeks}`}
+                            className="h-1 overflow-hidden rounded-full bg-muted"
+                        >
+                            <div className="h-full rounded-full bg-primary" style={{ width: `${100 * programWeekNumber / totalProgramWeeks}%` }} />
                         </div>
-                        <div className="divide-y divide-border border-t border-border">
-                            {trainingDays.map((day) => {
-                                const status = dayStatus(day)
-                                const active = selectedDay?.id === day.id && !weekCompleted
-                                const rowContent = (
-                                    <>
-                                        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${day.status === 'completed' ? 'bg-emerald-500/10' : active ? 'bg-primary/10' : 'bg-muted'}`}>
-                                            {day.status === 'completed'
-                                                ? <Check className="h-5 w-5 text-emerald-400" aria-hidden="true" />
-                                                : <span className={`h-2.5 w-2.5 rounded-full ${status.dot}`} />}
-                                        </span>
-                                        <span className="min-w-0 flex-1">
-                                            <span className="block text-xs font-bold text-muted-foreground">
-                                                {day.status === 'completed' ? 'Completado esta semana' : day.status === 'partial' ? 'Sesión parcial' : 'Entrenamiento pendiente'}
-                                            </span>
-                                            <span className="mt-0.5 block truncate text-sm font-black text-foreground">{day.name}</span>
-                                        </span>
-                                        <span className={`shrink-0 text-right text-xs font-bold ${status.tone}`}>{status.label}</span>
-                                    </>
-                                )
-
-                                if (day.availability === 'locked_today') {
-                                    return (
-                                        <div
-                                            key={day.id}
-                                            aria-label={`${day.name}, ${status.label}`}
-                                            aria-disabled="true"
-                                            className="flex min-h-14 items-center gap-3 px-4 py-2.5 opacity-70"
-                                        >
-                                            {rowContent}
-                                        </div>
-                                    )
-                                }
-
-                                return (
-                                    <Link
-                                        key={day.id}
-                                        href={day.href}
-                                        aria-label={`${day.name}, ${status.label}`}
-                                        className={`flex min-h-14 items-center gap-3 px-4 py-2.5 transition active:bg-muted/70 ${active ? 'bg-primary/[0.07]' : ''}`}
-                                    >
-                                        {rowContent}
-                                    </Link>
-                                )
-                            })}
-                        </div>
+                        {programDateRange && <p className="mt-1.5 text-xs text-muted-foreground">{programDateRange}</p>}
                     </section>
+                )}
+
+                {nextSuggestion && (
+                    <div className="border-t border-border">
+                        <Link href={routineHref} className={rowLink}>
+                            <CalendarDays className="size-4 shrink-0 text-brand-soft" aria-hidden="true" />
+                            <span className="min-w-0 flex-1">
+                                <span className="block font-semibold [overflow-wrap:anywhere]">
+                                    {nextSuggestion.workoutName ? cleanWorkoutName(nextSuggestion.workoutName) : 'Próximo día sugerido'}
+                                </span>
+                                <span className="block text-xs text-muted-foreground">
+                                    {nextSuggestion.workoutName ? 'Día sugerido · ' : ''}{nextSuggestion.dateLabel}
+                                </span>
+                            </span>
+                            <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                        </Link>
+                    </div>
                 )}
 
                 {(showOnboardingTask || showCheckInTask) && (
-                    <section className="rounded-2xl border border-border bg-card p-3" aria-labelledby="student-actions-heading">
-                        <Link
-                            href={showOnboardingTask ? '/app/onboarding' : '/app/check-in'}
-                            prefetch
-                            className="flex min-h-14 items-center gap-3 rounded-xl px-1.5 transition active:bg-muted/60"
-                        >
-                            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                                {showOnboardingTask
-                                    ? <ClipboardCheck className="h-5 w-5" aria-hidden="true" />
-                                    : progressPhotoDue
-                                        ? <Camera className="h-5 w-5" aria-hidden="true" />
-                                        : <Sparkles className="h-5 w-5" aria-hidden="true" />}
-                            </span>
+                    <div className="border-t border-border">
+                        <Link href={showOnboardingTask ? '/app/onboarding' : '/app/check-in'} className={rowLink}>
+                            {showOnboardingTask || !progressPhotoDue
+                                ? <ClipboardCheck className="size-4 shrink-0 text-brand-soft" aria-hidden="true" />
+                                : <Camera className="size-4 shrink-0 text-brand-soft" aria-hidden="true" />}
                             <span className="min-w-0 flex-1">
-                                <span id="student-actions-heading" className="block text-sm font-black text-foreground">
-                                    {showOnboardingTask
-                                        ? 'Completá tu ficha inicial'
-                                        : progressPhotoDue
-                                            ? 'Actualizá tu progreso'
-                                            : 'Control semanal · 1 minuto'}
+                                <span className="block font-semibold">
+                                    {showOnboardingTask ? 'Completá tu ficha inicial' : progressPhotoDue ? 'Actualizá tu progreso' : 'Control semanal'}
                                 </span>
-                                <span className="block text-xs leading-5 text-muted-foreground">
-                                    {showOnboardingTask
-                                        ? 'Objetivos, disponibilidad y cuidados.'
-                                        : progressPhotoDue
-                                            ? 'Control, medidas y fotos privadas.'
-                                            : 'Contanos cómo te sentiste esta semana.'}
+                                <span className="block text-xs text-muted-foreground">
+                                    {showOnboardingTask ? 'Objetivos, disponibilidad y cuidados.'
+                                        : progressPhotoDue ? 'Control, medidas y fotos privadas.' : 'Contale a tu entrenador cómo te sentiste.'}
                                 </span>
                             </span>
-                            <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden="true" />
-                        </Link>
-                    </section>
-                )}
-
-                <section className="overflow-hidden rounded-2xl border border-border bg-card" aria-label="Progreso e historial">
-                    <Link href="/app/progress" prefetch className="flex min-h-16 items-center gap-3 px-4 py-3 transition active:bg-muted/60">
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                            <BarChart3 className="h-5 w-5" aria-hidden="true" />
-                        </span>
-                        <span className="min-w-0 flex-1">
-                            <span className="block text-sm font-black text-foreground">Mi progreso</span>
-                            <span className="block text-xs leading-5 text-muted-foreground">Medidas, fotos y evolución.</span>
-                        </span>
-                        <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden="true" />
-                    </Link>
-                    <div className="grid grid-cols-2 border-t border-border">
-                        <Link href="/app/history" prefetch className="flex min-h-12 items-center justify-center border-r border-border px-3 text-sm font-bold text-foreground transition active:bg-muted/60">
-                            Historial
-                        </Link>
-                        <Link href="/app/logros" prefetch className="flex min-h-12 items-center justify-center px-3 text-sm font-bold text-foreground transition active:bg-muted/60">
-                            Logros
+                            <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
                         </Link>
                     </div>
-                </section>
+                )}
             </div>
         </main>
     )
