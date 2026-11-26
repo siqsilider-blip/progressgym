@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Activity, ClipboardList, History, MessageCircle, Plus } from 'lucide-react'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import StudentRiskCard from './StudentRiskCard'
@@ -10,6 +11,7 @@ import ProgramScheduleCard from './ProgramScheduleCard'
 import StudentContactCard from './StudentContactCard'
 import { getRoutineSchedule } from '@/lib/getRoutineSchedule'
 import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
+import TrainerPageShell from '@/components/dashboard/TrainerPageShell'
 import ProgressPhotoGallery, { type ProgressPhotoItem } from '@/components/coaching/ProgressPhotoGallery'
 import StudentMonthlySummaryCard from './StudentMonthlySummaryCard'
 import { getBuenosAiresDateString } from '@/lib/buenosAiresDate'
@@ -22,6 +24,7 @@ import {
 } from '@/lib/studentOnboarding'
 import { getServerUser } from '@/lib/auth/server'
 import { createProgressPhotoUrls, type ProgressPhotoRecord } from '@/lib/progressPhotoUrls'
+import { studentSection, studentSectionTitle } from './profileStyles'
 
 type PageProps = {
     params: Promise<{
@@ -31,6 +34,8 @@ type PageProps = {
         setup?: string
     }>
 }
+
+const studentAction = 'inline-flex min-h-10 items-center gap-2 rounded-md px-3 text-sm font-semibold transition hover:bg-accent hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring'
 
 export default async function StudentProfilePage(props: PageProps) {
     const params = await props.params;
@@ -54,7 +59,12 @@ export default async function StudentProfilePage(props: PageProps) {
         .single()
 
     if (!student) {
-        return <div className="p-6">No se encontró el alumno.</div>
+        return (
+            <TrainerPageShell notebook className="space-y-4">
+                <DashboardPageHeader notebook title="Alumno" backHref="/dashboard/students" />
+                <p className="border-y border-border py-4 text-sm text-muted-foreground">No se encontró el alumno.</p>
+            </TrainerPageShell>
+        )
     }
 
     const [risk, routineAssignment, linkedProfile, feedbackResult, weeklyCheckinsResult, progressPhotosResult, sessionsResult, onboardingResult] = await Promise.all([
@@ -151,51 +161,57 @@ export default async function StudentProfilePage(props: PageProps) {
         `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim() || 'Alumno'
 
     return (
-        <div className="mx-auto w-full max-w-[1500px] space-y-4 p-4 pb-44 md:p-6 lg:pb-8 xl:p-8">
+        <TrainerPageShell notebook className="space-y-4 pb-44 md:pb-44 lg:space-y-6 lg:pb-8">
             <DashboardPageHeader
+                notebook
                 title={fullName}
                 subtitle="Perfil del alumno"
                 backHref="/dashboard/students"
             />
 
-            <nav className="hidden grid-cols-4 gap-2 rounded-2xl border border-border bg-background/90 p-2 shadow-lg shadow-black/10 backdrop-blur lg:sticky lg:top-0 lg:z-20 lg:grid" aria-label="Acciones del alumno">
+            <nav className="hidden flex-wrap items-center gap-1 border-y border-border bg-background py-2 lg:sticky lg:top-0 lg:z-20 lg:flex" aria-label="Acciones del alumno">
                 <Link
                     href={`/dashboard/messages?student=${studentId}`}
-                    className="rounded-xl border border-primary/30 bg-primary/10 px-3 py-2.5 text-center text-xs font-semibold text-primary transition hover:bg-primary/20"
+                    className={`${studentAction} text-brand-soft`}
                 >
+                    <MessageCircle className="size-4" aria-hidden="true" />
                     Mensajes
                 </Link>
                 {assignedRoutineId ? (
                     <Link
                         href={`/dashboard/routines/${assignedRoutineId}`}
-                        className="rounded-xl border border-border bg-secondary px-3 py-2.5 text-center text-xs font-semibold text-secondary-foreground transition hover:bg-muted"
+                        className={`${studentAction} text-muted-foreground`}
                     >
+                        <ClipboardList className="size-4" aria-hidden="true" />
                         Editar rutina
                     </Link>
                 ) : (
                     <Link
                         href={`/dashboard/students/${params.studentId}/assign-routine`}
-                        className="rounded-xl border border-border bg-secondary px-3 py-2.5 text-center text-xs font-semibold text-secondary-foreground transition hover:bg-muted"
+                        className={`${studentAction} text-muted-foreground`}
                     >
+                        <Plus className="size-4" aria-hidden="true" />
                         Asignar rutina
                     </Link>
                 )}
                 <Link
                     href={`/dashboard/students/${params.studentId}/progress`}
-                    className="rounded-xl border border-border bg-secondary px-3 py-2.5 text-center text-xs font-semibold text-secondary-foreground transition hover:bg-muted"
+                    className={`${studentAction} text-muted-foreground`}
                 >
+                    <Activity className="size-4" aria-hidden="true" />
                     Progreso
                 </Link>
                 <Link
                     href={`/dashboard/students/${params.studentId}/history`}
-                    className="rounded-xl border border-border bg-secondary px-3 py-2.5 text-center text-xs font-semibold text-secondary-foreground transition hover:bg-muted"
+                    className={`${studentAction} text-muted-foreground`}
                 >
+                    <History className="size-4" aria-hidden="true" />
                     Historial
                 </Link>
             </nav>
 
-            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start xl:grid-cols-[minmax(0,1fr)_23rem]">
-                <main className="min-w-0 space-y-3">
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(17rem,0.62fr)] lg:items-start lg:gap-7 xl:gap-10">
+                <div className="min-w-0 space-y-3 lg:space-y-6">
                     <StudentRiskCard risk={risk} />
 
                     {assignedRoutineId && programStartedOn && activeRoutineName ? (
@@ -208,9 +224,9 @@ export default async function StudentProfilePage(props: PageProps) {
                             totalProgramWeeks={totalProgramWeeks}
                         />
                     ) : (
-                        <section className="rounded-2xl border border-dashed border-primary/30 bg-primary/[0.045] p-4">
+                        <section className={`rounded-2xl border border-dashed border-primary/30 bg-primary/[0.045] p-4 ${studentSection}`}>
                             <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Programa</p>
-                            <h2 className="mt-1 text-base font-black text-foreground">Sin programa asignado</h2>
+                            <h2 className={`mt-1 text-base font-black text-foreground ${studentSectionTitle}`}>Sin programa asignado</h2>
                             <p className="mt-1 max-w-2xl text-xs leading-5 text-muted-foreground">
                                 {onboardingCompleted
                                     ? 'La ficha inicial está lista. Elegí un template o creá un programa para empezar.'
@@ -253,11 +269,11 @@ export default async function StudentProfilePage(props: PageProps) {
                     />
 
                     {latestWeeklyCheckin && (
-                        <section className={`rounded-2xl border p-4 ${latestWeeklyCheckin.had_pain ? 'border-amber-500/30 bg-amber-500/[0.07]' : 'border-border bg-card'}`}>
+                        <section className={`rounded-2xl border p-4 ${latestWeeklyCheckin.had_pain ? 'border-amber-500/30 bg-amber-500/[0.07]' : 'border-border bg-card'} ${studentSection}`}>
                             <div className="flex items-start justify-between gap-3">
                                 <div>
                                     <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Check-in semanal</p>
-                                    <h2 className="mt-1 text-sm font-bold text-foreground">
+                                    <h2 className={`mt-1 text-sm font-bold text-foreground ${studentSectionTitle}`}>
                                         {latestWeeklyCheckin.had_pain ? '⚠️ Requiere atención' : 'Estado general del alumno'}
                                     </h2>
                                 </div>
@@ -287,11 +303,11 @@ export default async function StudentProfilePage(props: PageProps) {
                     )}
 
                     {feedbackResult.data && (
-                        <section className={`rounded-2xl border p-4 ${feedbackResult.data.had_pain ? 'border-amber-500/30 bg-amber-500/[0.07]' : 'border-border bg-card'}`}>
+                        <section className={`rounded-2xl border p-4 ${feedbackResult.data.had_pain ? 'border-amber-500/30 bg-amber-500/[0.07]' : 'border-border bg-card'} ${studentSection}`}>
                             <div className="flex items-start justify-between gap-3">
                                 <div>
                                     <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Último control</p>
-                                    <h2 className="mt-1 text-sm font-bold text-foreground">
+                                    <h2 className={`mt-1 text-sm font-bold text-foreground ${studentSectionTitle}`}>
                                         {feedbackResult.data.had_pain ? '⚠️ Informó una molestia' : 'Evaluación del entrenamiento'}
                                     </h2>
                                 </div>
@@ -300,8 +316,8 @@ export default async function StudentProfilePage(props: PageProps) {
                                 </span>
                             </div>
                             <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                                <div className="rounded-xl bg-background/60 px-3 py-2"><span className="text-muted-foreground">Energía</span><strong className="ml-2 text-foreground">{feedbackResult.data.energy ?? '—'}/5</strong></div>
-                                <div className="rounded-xl bg-background/60 px-3 py-2"><span className="text-muted-foreground">Dificultad</span><strong className="ml-2 text-foreground">{feedbackResult.data.difficulty ?? '—'}/5</strong></div>
+                                <div className="rounded-xl bg-background/60 px-3 py-2 lg:rounded-none lg:border-b lg:border-border lg:bg-transparent lg:px-0"><span className="text-muted-foreground">Energía</span><strong className="ml-2 text-foreground">{feedbackResult.data.energy ?? '—'}/5</strong></div>
+                                <div className="rounded-xl bg-background/60 px-3 py-2 lg:rounded-none lg:border-b lg:border-border lg:bg-transparent lg:px-0"><span className="text-muted-foreground">Dificultad</span><strong className="ml-2 text-foreground">{feedbackResult.data.difficulty ?? '—'}/5</strong></div>
                             </div>
                             {(feedbackResult.data.pain_details || feedbackResult.data.comment) && (
                                 <p className="mt-3 text-xs leading-5 text-muted-foreground">{feedbackResult.data.pain_details || feedbackResult.data.comment}</p>
@@ -310,17 +326,17 @@ export default async function StudentProfilePage(props: PageProps) {
                     )}
 
                     <ProgressPhotoGallery photos={progressPhotos} role="trainer" />
-                </main>
+                </div>
 
-                <aside className="min-w-0 space-y-3 lg:sticky lg:top-20 lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto lg:pr-1">
+                <aside className="min-w-0 space-y-3 lg:space-y-5 lg:border-l lg:border-border lg:pl-6">
                     {onboardingCompleted && onboarding ? (
-                        <section className="rounded-2xl border border-primary/25 bg-primary/[0.06] p-4">
+                        <section className={`rounded-2xl border border-primary/25 bg-primary/[0.06] p-4 ${studentSection}`}>
                             <div className="flex items-start justify-between gap-3">
                                 <div>
                                     <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Ficha inicial</p>
-                                    <h2 className="mt-1 text-sm font-black text-foreground">Objetivos y disponibilidad</h2>
+                                    <h2 className={`mt-1 text-sm font-black text-foreground ${studentSectionTitle}`}>Objetivos y disponibilidad</h2>
                                 </div>
-                                <span className="rounded-full bg-emerald-500/10 px-2 py-1 text-[9px] font-bold text-emerald-400">Completada</span>
+                                <span className="rounded-full bg-emerald-500/10 px-2 py-1 text-[9px] font-bold text-emerald-800 dark:text-emerald-400 lg:bg-transparent lg:px-0 lg:text-xs">Completada</span>
                             </div>
                             <div className="mt-3 flex flex-wrap gap-1.5">
                                 {onboarding.goals.map((goal) => (
@@ -352,8 +368,8 @@ export default async function StudentProfilePage(props: PageProps) {
                             )}
                         </section>
                     ) : linkedProfile ? (
-                        <section className="rounded-xl border border-amber-500/20 bg-amber-500/[0.05] px-3.5 py-3">
-                            <p className="text-xs font-bold text-amber-400">Ficha inicial pendiente</p>
+                        <section className={`rounded-xl border border-amber-500/20 bg-amber-500/[0.05] px-3.5 py-3 ${studentSection}`}>
+                            <p className="text-xs font-bold text-amber-800 dark:text-amber-400">Ficha inicial pendiente</p>
                             <p className="mt-0.5 text-[10px] leading-4 text-muted-foreground">El alumno todavía no completó sus objetivos y disponibilidad.</p>
                         </section>
                     ) : null}
@@ -370,7 +386,7 @@ export default async function StudentProfilePage(props: PageProps) {
                         highlight={searchParams?.setup === 'invite'}
                     />
 
-                    <details className="rounded-xl border border-border bg-card px-3.5 py-3 text-sm">
+                    <details className={`rounded-xl border border-border bg-card px-3.5 py-3 text-sm ${studentSection}`}>
                         <summary className="cursor-pointer font-semibold text-muted-foreground">Más opciones</summary>
                         <div className="mt-3 space-y-3 border-t border-border pt-3">
                             {!assignedRoutineId && !onboardingCompleted && (
@@ -435,7 +451,7 @@ export default async function StudentProfilePage(props: PageProps) {
                     </Link>
                 </div>
             </div>
-        </div>
+        </TrainerPageShell>
     )
 }
 
@@ -443,7 +459,7 @@ function CheckinMetric({ label, value, inverse = false }: { label: string; value
     const warning = inverse ? value >= 4 : value <= 2
     const positive = inverse ? value <= 2 : value >= 4
     return (
-        <div className="rounded-xl bg-background/60 px-1 py-2">
+        <div className="rounded-xl bg-background/60 px-1 py-2 lg:rounded-none lg:border-b lg:border-border lg:bg-transparent">
             <p className={`text-sm font-black ${warning ? 'text-amber-500' : positive ? 'text-emerald-500' : 'text-foreground'}`}>{value}/5</p>
             <p className="mt-0.5 truncate text-[9px] text-muted-foreground">{label}</p>
         </div>
@@ -452,7 +468,7 @@ function CheckinMetric({ label, value, inverse = false }: { label: string; value
 
 function OnboardingMetric({ label, value }: { label: string; value: string }) {
     return (
-        <div className="rounded-xl bg-background/60 px-3 py-2.5">
+        <div className="rounded-xl bg-background/60 px-3 py-2.5 lg:rounded-none lg:border-b lg:border-border lg:bg-transparent lg:px-0">
             <p className="text-[9px] font-bold uppercase tracking-wide text-muted-foreground">{label}</p>
             <p className="mt-1 font-bold leading-4 text-foreground">{value}</p>
         </div>

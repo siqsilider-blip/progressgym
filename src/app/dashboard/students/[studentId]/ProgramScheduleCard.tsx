@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { updateProgramStartDate } from './actions'
+import { studentSection, studentSectionTitle } from './profileStyles'
 
 type Props = {
     studentId: string
@@ -49,18 +50,18 @@ export default function ProgramScheduleCard({
     }
 
     return (
-        <section className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-3">
+        <section className={`rounded-xl border border-border bg-card p-3 ${studentSection}`}>
             <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                     <p className="text-[10px] font-bold uppercase tracking-widest text-brand-soft">
                         Programa activo
                     </p>
-                    <h2 className="mt-1 truncate text-base font-bold text-card-foreground">{routineName}</h2>
+                    <h2 className={`mt-1 break-words text-base font-bold text-foreground ${studentSectionTitle}`}>{routineName}</h2>
                     <p className="mt-1 text-xs text-muted-foreground">
                         {weekLabel}
                     </p>
                 </div>
-                <span className="shrink-0 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-bold text-emerald-500">
+                <span className="shrink-0 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-bold text-emerald-800 dark:text-emerald-400 lg:bg-transparent lg:px-0 lg:text-xs">
                     Automático
                 </span>
             </div>

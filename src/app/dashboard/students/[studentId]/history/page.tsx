@@ -5,8 +5,10 @@ import { getStudentSessionHistoryResult } from '@/app/dashboard/students/getStud
 import { getTrainerProfile } from '@/lib/getTrainerProfile'
 import type { WeightUnit } from '@/lib/weight'
 import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
+import TrainerPageShell from '@/components/dashboard/TrainerPageShell'
 import { getServerUser } from '@/lib/auth/server'
 import TrainerStudentHistory from './TrainerStudentHistory'
+import { studentMetric, studentMetricValue } from '../profileStyles'
 
 type PageProps = {
     params: Promise<{ studentId: string }>
@@ -57,49 +59,36 @@ export default async function StudentHistoryPage(props: PageProps) {
     const subtitle = sessions.length === 0
         ? fullName
         : `${fullName} · ${sessions.length} ${sessions.length === 1 ? 'sesión visible' : 'sesiones visibles'}`
+    const metrics = [
+        { label: 'Sesiones visibles', value: sessions.length, helper: sessions.length === HISTORY_LIMIT ? `Últimas ${HISTORY_LIMIT}` : 'Historial disponible', color: 'text-brand-soft' },
+        { label: 'Sesiones completas', value: completedSessions.length, helper: partialSessions > 0 ? `${partialSessions} parciales` : 'Sin parciales', color: 'text-foreground' },
+        { label: 'Series registradas', value: totalSets, helper: 'En las sesiones visibles', color: 'text-foreground' },
+        { label: 'Duración media', value: avgDuration !== null ? `${avgDuration} min` : '—', helper: 'Solo sesiones completas', color: 'text-foreground' },
+    ]
 
     return (
-        <div className="p-4 pb-24 md:p-6 xl:px-8 xl:pb-8">
-            <div className="mx-auto w-full max-w-[1500px] space-y-4">
+        <TrainerPageShell notebook className="space-y-4 lg:space-y-7">
                 <DashboardPageHeader
+                    notebook
                     title="Historial"
                     subtitle={subtitle}
                     backHref={`/dashboard/students/${params.studentId}`}
                 />
 
                 {sessions.length > 0 && (
-                    <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
-                        <div className="rounded-xl border border-border bg-card p-3">
-                            <p className="text-[11px] font-medium text-muted-foreground">Sesiones visibles</p>
-                            <p className="mt-1 text-2xl font-black text-primary">{sessions.length}</p>
-                            <p className="mt-0.5 text-[11px] text-muted-foreground">
-                                {sessions.length === HISTORY_LIMIT ? `Últimas ${HISTORY_LIMIT}` : 'Historial disponible'}
-                            </p>
-                        </div>
-                        <div className="rounded-xl border border-border bg-card p-3">
-                            <p className="text-[11px] font-medium text-muted-foreground">Estado</p>
-                            <p className="mt-1 text-2xl font-black text-emerald-500">{completedSessions.length}</p>
-                            <p className="mt-0.5 text-[11px] text-muted-foreground">
-                                Completas{partialSessions > 0 ? ` · ${partialSessions} parciales` : ''}
-                            </p>
-                        </div>
-                        <div className="rounded-xl border border-border bg-card p-3">
-                            <p className="text-[11px] font-medium text-muted-foreground">Series registradas</p>
-                            <p className="mt-1 text-2xl font-black text-card-foreground">{totalSets}</p>
-                            <p className="mt-0.5 text-[11px] text-muted-foreground">En las sesiones visibles</p>
-                        </div>
-                        <div className="rounded-xl border border-border bg-card p-3">
-                            <p className="text-[11px] font-medium text-muted-foreground">Duración media</p>
-                            <p className="mt-1 text-2xl font-black text-amber-500">
-                                {avgDuration !== null ? `${avgDuration}m` : '—'}
-                            </p>
-                            <p className="mt-0.5 text-[11px] text-muted-foreground">Solo sesiones completas</p>
-                        </div>
-                    </div>
+                    <dl className="grid grid-cols-2 gap-2 lg:grid-cols-4 lg:gap-0 lg:border-y lg:border-border">
+                        {metrics.map((metric) => (
+                            <div key={metric.label} className={studentMetric}>
+                                <dt className="text-xs font-medium text-muted-foreground lg:text-foreground">{metric.label}</dt>
+                                <dd className={`${studentMetricValue} ${metric.color}`}>{metric.value}</dd>
+                                <dd className="mt-0.5 text-xs text-muted-foreground">{metric.helper}</dd>
+                            </div>
+                        ))}
+                    </dl>
                 )}
 
                 {historyResult.error ? (
-                    <div className="rounded-2xl border border-red-500/20 bg-red-500/[0.06] p-8 text-center">
+                    <div className="rounded-2xl border border-destructive/30 bg-destructive/10 p-8 text-center lg:rounded-none lg:border-x-0 lg:bg-transparent lg:px-0 lg:text-left">
                         <p className="text-sm font-semibold text-card-foreground">
                             No pudimos cargar el historial
                         </p>
@@ -112,7 +101,7 @@ export default async function StudentHistoryPage(props: PageProps) {
                         </Link>
                     </div>
                 ) : sessions.length === 0 ? (
-                    <div className="rounded-2xl border border-dashed border-border bg-card p-8 text-center">
+                    <div className="rounded-2xl border border-dashed border-border bg-card p-8 text-center lg:rounded-none lg:border-x-0 lg:border-solid lg:bg-transparent lg:px-0 lg:text-left">
                         <p className="text-4xl">🏋️</p>
                         <p className="mt-3 text-sm font-semibold text-card-foreground">
                             Todavía no hay sesiones registradas
@@ -134,7 +123,6 @@ export default async function StudentHistoryPage(props: PageProps) {
                         visibleLimit={HISTORY_LIMIT}
                     />
                 )}
-            </div>
-        </div>
+        </TrainerPageShell>
     )
 }

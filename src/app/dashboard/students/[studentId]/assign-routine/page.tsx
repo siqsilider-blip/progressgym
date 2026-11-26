@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
+import TrainerPageShell from '@/components/dashboard/TrainerPageShell'
 import TemplatePicker from './TemplatePicker'
 import {
     ONBOARDING_EXPERIENCE,
@@ -11,6 +12,7 @@ import {
 } from '@/lib/studentOnboarding'
 import { normalizeStringArray } from '@/lib/templateMatching'
 import { getServerUser } from '@/lib/auth/server'
+import { studentSection } from '../profileStyles'
 
 type PageProps = {
     params: Promise<{
@@ -180,15 +182,16 @@ export default async function AssignRoutinePage(props: PageProps) {
     const studentName = `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim() || 'Alumno'
 
     return (
-        <div className="mx-auto max-w-2xl space-y-4 p-4 pb-24 text-white md:p-6">
+        <TrainerPageShell notebook width="form" className="max-w-3xl space-y-4 lg:space-y-7">
             <DashboardPageHeader
+                notebook
                 title="Asignar programa"
                 subtitle={studentName}
                 backHref={`/dashboard/students/${student.id}`}
             />
 
             {onboardingCompleted && onboarding ? (
-                <section className="rounded-2xl border border-primary/25 bg-primary/[0.06] p-4">
+                <section className={`rounded-2xl border border-primary/25 bg-primary/[0.06] p-4 ${studentSection}`}>
                     <p className="text-[10px] font-black uppercase tracking-widest text-primary">Información para elegir</p>
                     <div className="mt-2 flex flex-wrap gap-1.5">
                         {onboarding.goals.map((goal) => (
@@ -201,14 +204,14 @@ export default async function AssignRoutinePage(props: PageProps) {
                         {labelFor(ONBOARDING_EXPERIENCE, onboarding.experience_level)} · {onboarding.training_days_per_week} días por semana · {onboarding.session_minutes} min · {labelFor(ONBOARDING_LOCATIONS, onboarding.training_location)}
                     </p>
                     {onboarding.limitations && (
-                        <p className="mt-2 rounded-xl border border-amber-500/20 bg-amber-500/[0.07] px-3 py-2 text-xs leading-5 text-amber-300">
+                        <p className="mt-2 rounded-xl border border-amber-500/20 bg-amber-500/[0.07] px-3 py-2 text-xs leading-5 text-amber-800 dark:text-amber-300">
                             <strong>Cuidados:</strong> {onboarding.limitations}
                         </p>
                     )}
                 </section>
             ) : (
-                <section className="rounded-xl border border-amber-500/20 bg-amber-500/[0.06] p-3.5">
-                    <p className="text-xs font-bold text-amber-400">La ficha inicial todavía está pendiente</p>
+                <section className={`rounded-xl border border-amber-500/20 bg-amber-500/[0.06] p-3.5 ${studentSection}`}>
+                    <p className="text-xs font-bold text-amber-800 dark:text-amber-400">La ficha inicial todavía está pendiente</p>
                     <p className="mt-1 text-[11px] leading-4 text-muted-foreground">
                         Recomendamos esperar a conocer objetivos, disponibilidad y lesiones. Podés asignar igualmente si ya tenés esa información por otro medio.
                     </p>
@@ -249,7 +252,7 @@ export default async function AssignRoutinePage(props: PageProps) {
                 </div>
             )}
 
-            <details className="rounded-xl border border-border bg-card px-3.5 py-3 text-sm">
+            <details className={`rounded-xl border border-border bg-card px-3.5 py-3 text-sm ${studentSection}`}>
                 <summary className="cursor-pointer font-semibold text-muted-foreground">Otras opciones</summary>
                 <div className="mt-3 space-y-4 border-t border-border pt-3">
                     <div>
@@ -274,7 +277,7 @@ export default async function AssignRoutinePage(props: PageProps) {
                                 <div className="space-y-2">
                                     <label
                                         htmlFor="routineId"
-                                        className="text-sm font-medium text-zinc-300"
+                                        className="text-sm font-medium text-foreground"
                                     >
                                         Elegí una rutina
                                     </label>
@@ -283,7 +286,7 @@ export default async function AssignRoutinePage(props: PageProps) {
                                         id="routineId"
                                         name="routineId"
                                         required
-                                        className="h-11 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 text-sm text-zinc-100 outline-none"
+                                        className="h-11 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary"
                                     >
                                         <option value="">Seleccionar rutina</option>
                                         {routines.map((routine) => (
@@ -305,7 +308,7 @@ export default async function AssignRoutinePage(props: PageProps) {
                     )}
                 </div>
             </details>
-        </div>
+        </TrainerPageShell>
     )
 }
 

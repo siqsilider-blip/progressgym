@@ -1,10 +1,12 @@
-'use client';
-import { use } from "react";
+'use client'
 
-import { createContact } from '@/app/dashboard/contacts/actions'
+import Link from 'next/link'
+import { use } from 'react'
 import { useFormStatus } from 'react-dom'
 import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
-import DashboardBackButton from '@/components/dashboard/DashboardBackButton'
+import TrainerPageShell from '@/components/dashboard/TrainerPageShell'
+import ContactFields from '../ContactFields'
+import { createContact } from '../actions'
 
 function SubmitButton() {
     const { pending } = useFormStatus()
@@ -13,141 +15,42 @@ function SubmitButton() {
         <button
             type="submit"
             disabled={pending}
-            className={`inline-flex h-11 items-center justify-center rounded-xl px-6 text-sm font-medium text-white transition-all ${pending
-                    ? 'cursor-not-allowed bg-primary'
-                    : 'bg-primary shadow-lg shadow-primary/20 hover:bg-primary'
-                }`}
+            className="inline-flex min-h-11 items-center justify-center rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-60"
         >
             {pending ? 'Guardando...' : 'Crear contacto'}
         </button>
     )
 }
 
-export default function NewContactPage(
-    props: {
-        searchParams: Promise<{ [key: string]: string | string[] | undefined }>
-    }
-) {
-    const searchParams = use(props.searchParams);
-    const message = searchParams?.message
+export default function NewContactPage({ searchParams }: {
+    searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
+    const { message } = use(searchParams)
 
     return (
-        <div className="p-4 pb-24 md:p-6">
-            <div className="mx-auto max-w-2xl space-y-4">
-                <DashboardPageHeader
-                    title="Nuevo contacto"
-                    subtitle="Potencial cliente para seguimiento"
-                    backHref="/dashboard/contacts"
-                />
+        <TrainerPageShell notebook className="space-y-4 lg:space-y-7">
+            <DashboardPageHeader
+                notebook
+                title="Nuevo contacto"
+                backHref="/dashboard/contacts"
+            />
 
-                <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-4">
-                    <form className="space-y-4" action={createContact}>
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                                Nombre completo
-                            </label>
-                            <input
-                                name="full_name"
-                                required
-                                className="h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none transition focus:border-primary focus:ring-1 focus:ring-primary dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-100"
-                                placeholder="Ej: Juan Pérez"
-                            />
-                        </div>
+            <form action={createContact} className="max-w-3xl space-y-5 rounded-xl border border-border bg-card p-4 lg:rounded-none lg:border-x-0 lg:border-b-0 lg:bg-transparent lg:px-0 lg:pt-6">
+                <ContactFields />
 
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                                Teléfono
-                            </label>
-                            <input
-                                name="phone"
-                                className="h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none transition focus:border-primary focus:ring-1 focus:ring-primary dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-100"
-                                placeholder="Ej: 11 2345 6789"
-                            />
-                        </div>
+                {typeof message === 'string' && message && (
+                    <p role="alert" className="border-l-2 border-destructive px-3 py-2 text-sm text-destructive">
+                        {message}
+                    </p>
+                )}
 
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                                Objetivo
-                            </label>
-                            <input
-                                name="objective"
-                                className="h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none transition focus:border-primary focus:ring-1 focus:ring-primary dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-100"
-                                placeholder="Ej: Bajar de peso / ganar músculo"
-                            />
-                        </div>
-
-                        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                                    Estado
-                                </label>
-                                <select
-                                    name="status"
-                                    defaultValue="new"
-                                    className="h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-primary focus:ring-1 focus:ring-primary dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-100"
-                                >
-                                    <option value="new">Nuevo</option>
-                                    <option value="contacted">Contactado</option>
-                                    <option value="interested">Interesado</option>
-                                    <option value="negotiation">Negociación</option>
-                                    <option value="inactive">Inactivo</option>
-                                    <option value="lost">Perdido</option>
-                                </select>
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                                    Nivel de interés
-                                </label>
-                                <select
-                                    name="temperature"
-                                    defaultValue="warm"
-                                    className="h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-primary focus:ring-1 focus:ring-primary dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-100"
-                                >
-                                    <option value="cold">Interés bajo</option>
-                                    <option value="warm">Interés medio</option>
-                                    <option value="hot">Interés alto</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                                Próximo seguimiento
-                            </label>
-                            <input
-                                type="date"
-                                name="next_follow_up_at"
-                                className="h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-primary focus:ring-1 focus:ring-primary dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-100"
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                                Notas
-                            </label>
-                            <textarea
-                                name="notes"
-                                rows={3}
-                                className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition focus:border-primary focus:ring-1 focus:ring-primary dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-100"
-                                placeholder="Ej: Viene de Instagram, quiere entrenar 3 veces por semana..."
-                            />
-                        </div>
-
-                        {message && (
-                            <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400">
-                                {message}
-                            </div>
-                        )}
-
-                        <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
-                            <DashboardBackButton fallbackHref="/dashboard/contacts" label="Cancelar" />
-
-                            <SubmitButton />
-                        </div>
-                    </form>
+                <div className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row sm:justify-end">
+                    <Link href="/dashboard/contacts" className="inline-flex min-h-11 items-center justify-center rounded-lg border border-border px-4 text-sm font-medium text-foreground transition hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
+                        Cancelar
+                    </Link>
+                    <SubmitButton />
                 </div>
-            </div>
-        </div>
+            </form>
+        </TrainerPageShell>
     )
 }

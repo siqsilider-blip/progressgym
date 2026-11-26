@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { MessageCircle, Search, X } from 'lucide-react'
+import { ChevronRight, MessageCircle, Search, X } from 'lucide-react'
 
 type StudentRisk = {
     score: number
@@ -38,14 +38,14 @@ type Props = {
 function getRiskBadge(level: StudentRisk['level']) {
     switch (level) {
         case 'critical':
-            return { cls: 'border border-red-500/30 bg-red-500/10 text-red-800 dark:text-red-400', label: 'Crítico' }
+            return { cls: 'border border-red-500/30 bg-red-500/10 text-red-800 dark:text-red-400', tone: 'text-red-800 dark:text-red-400', label: 'Crítico' }
         case 'high':
-            return { cls: 'border border-orange-500/30 bg-orange-500/10 text-orange-800 dark:text-orange-400', label: 'Alto' }
+            return { cls: 'border border-orange-500/30 bg-orange-500/10 text-orange-800 dark:text-orange-400', tone: 'text-orange-800 dark:text-orange-400', label: 'Alto' }
         case 'medium':
-            return { cls: 'border border-yellow-500/30 bg-yellow-500/10 text-yellow-800 dark:text-yellow-300', label: 'Medio' }
+            return { cls: 'border border-yellow-500/30 bg-yellow-500/10 text-yellow-800 dark:text-yellow-300', tone: 'text-yellow-800 dark:text-yellow-300', label: 'Medio' }
         case 'low':
         default:
-            return { cls: 'border border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-400', label: 'Bajo' }
+            return { cls: 'border border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-400', tone: 'text-muted-foreground', label: 'Bajo' }
     }
 }
 
@@ -57,6 +57,8 @@ const FILTER_OPTIONS: { value: Filter; label: string }[] = [
     { value: 'without_program', label: 'Sin programa' },
     { value: 'final_week', label: 'Última semana' },
 ]
+
+const desktopAction = 'inline-flex min-h-9 items-center gap-1.5 rounded-md px-2 text-xs font-semibold transition hover:bg-accent hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring'
 
 export default function StudentsList({ students, operationsByStudentId }: Props) {
     const [search, setSearch] = useState('')
@@ -106,17 +108,17 @@ export default function StudentsList({ students, operationsByStudentId }: Props)
     const hasActiveFilters = search.trim().length > 0 || filter !== 'all'
 
     return (
-        <div className="space-y-3">
-            <div className="grid gap-2 xl:grid-cols-[minmax(18rem,1fr)_auto] xl:items-center">
+        <div className="space-y-3 lg:space-y-4">
+            <div className="grid gap-2 lg:gap-3 xl:grid-cols-[minmax(15rem,1fr)_auto] xl:items-center">
                 <label className="relative block min-w-0">
                     <span className="sr-only">Buscar alumnos</span>
-                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
                     <input
                         type="search"
                         placeholder="Buscar alumno, email o programa..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="h-11 w-full rounded-xl border border-border bg-input pl-10 pr-10 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary"
+                        className="h-11 w-full rounded-xl border border-border bg-input pl-10 pr-10 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary lg:rounded-md lg:bg-background [&::-webkit-search-cancel-button]:hidden"
                     />
                     {search && (
                         <button
@@ -130,31 +132,32 @@ export default function StudentsList({ students, operationsByStudentId }: Props)
                     )}
                 </label>
 
-                <div className="flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] xl:grid xl:grid-cols-5 xl:rounded-xl xl:border xl:border-border xl:bg-card xl:p-1 [&::-webkit-scrollbar]:hidden">
-                {FILTER_OPTIONS.map((opt) => {
-                    const isActive = filter === opt.value
-                    return (
-                        <button
-                            key={opt.value}
-                            type="button"
-                            onClick={() => setFilter(opt.value)}
-                            className={`flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg px-3 text-xs font-medium transition ${isActive
-                                    ? 'bg-primary text-primary-foreground'
-                                    : 'border border-border bg-secondary text-secondary-foreground hover:bg-muted xl:border-transparent xl:bg-transparent'
-                                }`}
-                        >
-                            {opt.label}
-                            <span className={`rounded-full px-1.5 py-0.5 text-[9px] ${isActive ? 'bg-primary-foreground/15' : 'bg-muted'}`}>
-                                {filterCounts[opt.value]}
-                            </span>
-                        </button>
-                    )
-                })}
+                <div role="group" aria-label="Filtrar alumnos" className="flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] lg:flex-wrap lg:overflow-visible lg:pb-0 [&::-webkit-scrollbar]:hidden">
+                    {FILTER_OPTIONS.map((opt) => {
+                        const isActive = filter === opt.value
+                        return (
+                            <button
+                                key={opt.value}
+                                type="button"
+                                aria-pressed={isActive}
+                                onClick={() => setFilter(opt.value)}
+                                className={`flex min-h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg px-3 text-xs font-medium transition focus-visible:outline-2 focus-visible:outline-ring lg:rounded-md ${isActive
+                                        ? 'bg-primary text-primary-foreground lg:bg-accent lg:text-brand-soft'
+                                        : 'border border-border bg-secondary text-secondary-foreground hover:bg-muted lg:border-transparent lg:bg-transparent lg:text-muted-foreground'
+                                    }`}
+                            >
+                                {opt.label}
+                                <span className={`rounded-full px-1.5 py-0.5 text-[9px] lg:p-0 lg:text-xs lg:tabular-nums ${isActive ? 'bg-primary-foreground/15 lg:bg-transparent' : 'bg-muted lg:bg-transparent'}`}>
+                                    {filterCounts[opt.value]}
+                                </span>
+                            </button>
+                        )
+                    })}
                 </div>
             </div>
 
             {/* Count */}
-            <p className="text-xs text-muted-foreground">
+            <p role="status" className={`text-xs text-muted-foreground ${hasActiveFilters ? '' : 'lg:sr-only'}`}>
                 {hasActiveFilters
                     ? `${filteredStudents.length} de ${students.length} alumnos`
                     : `${students.length} alumnos`}
@@ -162,12 +165,12 @@ export default function StudentsList({ students, operationsByStudentId }: Props)
 
             {/* List */}
             {filteredStudents.length === 0 ? (
-                <div className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
+                <div className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground lg:rounded-none lg:border-x-0 lg:bg-transparent lg:px-0">
                     No se encontraron alumnos con ese filtro.
                 </div>
             ) : (
                 <>
-                <div className="flex flex-col gap-2 xl:hidden">
+                <div className="flex flex-col gap-2 lg:hidden">
                     {filteredStudents.map((student) => {
                         const fullName =
                             `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim() || 'Sin nombre'
@@ -239,14 +242,23 @@ export default function StudentsList({ students, operationsByStudentId }: Props)
                     })}
                 </div>
 
-                <div className="hidden overflow-hidden rounded-2xl border border-border bg-card xl:block">
-                    <div className="grid grid-cols-[minmax(12rem,1.3fr)_6rem_minmax(11rem,1fr)_minmax(20rem,auto)] items-center gap-4 border-b border-border bg-muted px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                        <span>Alumno</span>
-                        <span>Riesgo</span>
-                        <span>Programa</span>
-                        <span className="text-right">Acciones</span>
-                    </div>
-                    <div className="divide-y divide-border">
+                <table className="hidden w-full table-fixed border-collapse text-left lg:table">
+                    <caption className="sr-only">Alumnos, nivel de riesgo y programa</caption>
+                    <colgroup>
+                        <col className="w-[30%]" />
+                        <col className="w-[12%]" />
+                        <col className="w-[31%]" />
+                        <col className="w-[27%]" />
+                    </colgroup>
+                    <thead className="border-y border-border text-xs text-muted-foreground">
+                        <tr>
+                            <th scope="col" className="py-3 pr-3 font-semibold">Alumno</th>
+                            <th scope="col" className="px-2 py-3 font-semibold">Riesgo</th>
+                            <th scope="col" className="px-2 py-3 font-semibold">Programa</th>
+                            <th scope="col" className="py-3 pl-2 text-right font-semibold">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
                         {filteredStudents.map((student) => {
                             const fullName = `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim() || 'Sin nombre'
                             const initials = `${(student.first_name?.[0] ?? '').toUpperCase()}${(student.last_name?.[0] ?? '').toUpperCase()}` || '?'
@@ -255,73 +267,74 @@ export default function StudentsList({ students, operationsByStudentId }: Props)
                             const riskBadge = student.risk ? getRiskBadge(student.risk.level) : null
 
                             return (
-                                <div key={student.id} className="grid grid-cols-[minmax(12rem,1.3fr)_6rem_minmax(11rem,1fr)_minmax(20rem,auto)] items-center gap-4 px-5 py-3.5 text-sm transition hover:bg-accent/65">
-                                    <Link href={`/dashboard/students/${student.id}`} className="flex min-w-0 items-center gap-3">
-                                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-[11px] font-black text-brand-soft">
-                                            {initials}
-                                        </span>
-                                        <span className="min-w-0">
-                                            <span className="block truncate font-semibold text-card-foreground">{fullName}</span>
-                                            <span className="mt-0.5 block truncate text-[10px] text-muted-foreground">{student.email || 'Sin email vinculado'}</span>
-                                        </span>
-                                    </Link>
+                                <tr key={student.id} className="border-b border-border text-sm transition hover:bg-accent/30">
+                                    <th scope="row" className="py-3 pr-3 font-normal">
+                                        <Link href={`/dashboard/students/${student.id}`} className="group flex min-w-0 items-center gap-3 rounded-md py-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
+                                            <span aria-hidden="true" className="flex size-8 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-semibold text-brand-soft">
+                                                {initials}
+                                            </span>
+                                            <span className="min-w-0 [overflow-wrap:anywhere]">
+                                                <span className="block font-semibold text-foreground group-hover:underline">{fullName}</span>
+                                                <span className="mt-0.5 block text-xs text-muted-foreground">{student.email || 'Sin email vinculado'}</span>
+                                            </span>
+                                        </Link>
+                                    </th>
 
-                                    <div>
+                                    <td className="px-2 py-3">
                                         {riskBadge ? (
-                                            <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${riskBadge.cls}`}>
+                                            <span className={`inline-flex items-center gap-1.5 text-xs font-semibold ${riskBadge.tone}`}>
+                                                <span className="size-1.5 shrink-0 rounded-full bg-current" aria-hidden="true" />
                                                 {riskBadge.label}
                                             </span>
                                         ) : (
                                             <span className="text-xs text-muted-foreground">Sin datos</span>
                                         )}
-                                    </div>
+                                    </td>
 
-                                    <div className="min-w-0">
+                                    <td className="px-2 py-3 [overflow-wrap:anywhere]">
                                         {operation?.hasActiveSession ? (
                                             <>
-                                                <p className="truncate text-xs font-semibold text-emerald-800 dark:text-emerald-300">Sesión en curso</p>
-                                                <p className="mt-0.5 truncate text-[10px] text-muted-foreground">{operation.routineName}</p>
+                                                <p className="text-xs font-semibold text-emerald-800 dark:text-emerald-300">Sesión en curso</p>
+                                                <p className="mt-0.5 text-xs text-muted-foreground">{operation.routineName}</p>
                                             </>
                                         ) : hasProgram ? (
                                             <>
-                                                <p className="truncate text-xs font-medium text-card-foreground">{operation.routineName}</p>
-                                                <p className={`mt-0.5 text-[10px] ${operation.isFinalWeek ? 'font-semibold text-amber-800 dark:text-amber-300' : 'text-muted-foreground'}`}>
+                                                <p className="text-sm font-medium text-foreground">{operation.routineName}</p>
+                                                <p className={`mt-0.5 text-xs ${operation.isFinalWeek ? 'font-semibold text-amber-800 dark:text-amber-300' : 'text-muted-foreground'}`}>
                                                     Semana {operation.programWeekNumber} de {operation.totalProgramWeeks}
                                                 </p>
                                             </>
                                         ) : (
                                             <span className="text-xs font-semibold text-rose-800 dark:text-rose-300">Sin programa</span>
                                         )}
-                                    </div>
+                                    </td>
 
-                                    <div className="flex items-center justify-end gap-2">
-                                        <Link
-                                            href={`/dashboard/messages?student=${student.id}`}
-                                            className="flex h-9 items-center gap-1.5 rounded-lg border border-border px-3 text-[11px] font-semibold text-muted-foreground transition hover:bg-accent hover:text-foreground"
-                                        >
-                                            <MessageCircle className="h-3.5 w-3.5" />
-                                            Mensaje
-                                        </Link>
-                                        <Link
-                                            href={`/dashboard/students/${student.id}`}
-                                            className="flex h-9 items-center rounded-lg border border-border px-3 text-[11px] font-semibold text-muted-foreground transition hover:bg-accent hover:text-foreground"
-                                        >
-                                            Perfil
-                                        </Link>
-                                        <Link
-                                            href={hasProgram
-                                                ? `/dashboard/routines/${operation.routineId}`
-                                                : `/dashboard/students/${student.id}/assign-routine`}
-                                            className="flex h-9 items-center rounded-lg bg-primary px-3 text-[11px] font-bold text-primary-foreground transition hover:brightness-110"
-                                        >
-                                            {hasProgram ? 'Editar rutina' : 'Asignar rutina'}
-                                        </Link>
-                                    </div>
-                                </div>
+                                    <td className="py-2 pl-2">
+                                        <div className="flex flex-wrap items-center justify-end gap-x-1">
+                                            <Link
+                                                href={`/dashboard/messages?student=${student.id}`}
+                                                aria-label={`Enviar mensaje a ${fullName}`}
+                                                className={`${desktopAction} text-muted-foreground`}
+                                            >
+                                                <MessageCircle className="size-3.5 shrink-0" aria-hidden="true" />
+                                                Mensaje
+                                            </Link>
+                                            <Link
+                                                href={hasProgram
+                                                    ? `/dashboard/routines/${operation.routineId}`
+                                                    : `/dashboard/students/${student.id}/assign-routine`}
+                                                className={`${desktopAction} text-brand-soft`}
+                                            >
+                                                {hasProgram ? 'Editar rutina' : 'Asignar rutina'}
+                                                <ChevronRight className="size-3.5 shrink-0" aria-hidden="true" />
+                                            </Link>
+                                        </div>
+                                    </td>
+                                </tr>
                             )
                         })}
-                    </div>
-                </div>
+                    </tbody>
+                </table>
                 </>
             )}
         </div>

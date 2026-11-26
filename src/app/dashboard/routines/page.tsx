@@ -1,5 +1,4 @@
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import RoutinesClient from './RoutinesClient'
 import { getServerUser } from '@/lib/auth/server'
@@ -26,26 +25,7 @@ export default async function RoutinesPage() {
     const students = studentsData ?? []
 
     if (students.length === 0) {
-        return (
-            <div className="p-4 pb-24 md:p-8">
-                <div className="mx-auto max-w-xl">
-                    <div className="rounded-2xl border border-dashed border-border bg-card p-6 text-center">
-                        <h3 className="text-base font-semibold text-card-foreground">
-                            No tenés alumnos todavía
-                        </h3>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                            Agregá tu primer alumno para crear su rutina.
-                        </p>
-                        <Link
-                            href="/dashboard/students/new"
-                            className="mt-4 inline-flex rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary"
-                        >
-                            Agregar alumno
-                        </Link>
-                    </div>
-                </div>
-            </div>
-        )
+        return <RoutinesClient students={[]} routines={[]} error={null} />
     }
 
     const studentIds = students.map((s) => s.id)

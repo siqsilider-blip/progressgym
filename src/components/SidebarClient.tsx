@@ -23,6 +23,8 @@ type SidebarClientProps = {
     unreadMessages: number
 }
 
+const NOTEBOOK_SECTIONS = new Set(['students', 'notifications', 'routines', 'templates', 'exercises', 'contacts'])
+
 export default function SidebarClient({
     signOutAction,
     unreadNotifications,
@@ -30,9 +32,7 @@ export default function SidebarClient({
 }: SidebarClientProps) {
     const pathname = usePathname()
     const [pendingHref, setPendingHref] = useState<string | null>(null)
-    const notebook =
-        pathname === '/dashboard' ||
-        (pathname !== '/dashboard/routines/new' && /^\/dashboard\/routines\/[^/]+$/.test(pathname))
+    const notebook = pathname === '/dashboard' || NOTEBOOK_SECTIONS.has(pathname.split('/')[2])
 
     useEffect(() => {
         setPendingHref(null)
@@ -93,7 +93,8 @@ export default function SidebarClient({
             mobileLabel: 'Rutinas',
             icon: ClipboardList,
             match: (path: string) =>
-                path === '/dashboard/routines' || path.startsWith('/dashboard/routines/'),
+                path === '/dashboard/routines' || path.startsWith('/dashboard/routines/') ||
+                path === '/dashboard/templates' || path.startsWith('/dashboard/templates/'),
         },
         {
             href: '/dashboard/exercises',

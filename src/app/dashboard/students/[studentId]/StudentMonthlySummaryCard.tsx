@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { Activity, CalendarCheck, Check, MessageCircle, Ruler, X } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
+import { studentSection, studentSectionTitle } from './profileStyles'
 import { buildWhatsAppUrl } from '@/lib/whatsapp'
 
 type StudentMonthlySummaryCardProps = {
@@ -43,18 +44,18 @@ export default function StudentMonthlySummaryCard({
     const whatsappUrl = studentPhone ? buildWhatsAppUrl(studentPhone, summaryMessage) : null
 
     return (
-        <section className="rounded-2xl border border-border bg-card p-4">
+        <section className={`rounded-2xl border border-border bg-card p-4 ${studentSection}`}>
             <div className="flex items-start justify-between gap-3">
                 <div>
                     <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Resumen de seguimiento</p>
-                    <h2 className="mt-1 text-sm font-bold text-foreground">Últimos 28 días</h2>
+                    <h2 className={`mt-1 text-sm font-bold text-foreground ${studentSectionTitle}`}>Últimos 28 días</h2>
                 </div>
-                <span className={`rounded-full px-2 py-1 text-[9px] font-bold ${painReports > 0 ? 'bg-amber-500/10 text-amber-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                <span className={`rounded-full px-2 py-1 text-[9px] font-bold lg:bg-transparent lg:px-0 lg:text-xs ${painReports > 0 ? 'bg-amber-500/10 text-amber-800 dark:text-amber-400' : 'bg-emerald-500/10 text-emerald-800 dark:text-emerald-400'}`}>
                     {painReports > 0 ? `${painReports} alerta${painReports === 1 ? '' : 's'}` : 'Sin alertas'}
                 </span>
             </div>
 
-            <div className="mt-3 grid grid-cols-2 gap-2">
+            <div className="mt-3 grid grid-cols-2 gap-2 lg:gap-x-5 xl:grid-cols-4">
                 <SummaryMetric
                     icon={<Activity className="h-4 w-4" />}
                     label="Entrenamientos"
@@ -150,10 +151,10 @@ function SummaryMetric({
     detail: string
 }) {
     return (
-        <div className="rounded-xl border border-border/70 bg-background/60 p-3">
+        <div className="rounded-xl border border-border/70 bg-background/60 p-3 lg:rounded-none lg:border-x-0 lg:border-t-0 lg:bg-transparent lg:px-0">
             <div className="flex items-center gap-1.5 text-primary">
                 {icon}
-                <p className="text-[9px] font-bold uppercase tracking-wide text-muted-foreground">{label}</p>
+                <p className="text-[9px] font-bold uppercase tracking-wide text-muted-foreground lg:text-xs lg:normal-case lg:tracking-normal">{label}</p>
             </div>
             <p className="mt-2 text-lg font-black text-foreground">{value}</p>
             <p className="mt-0.5 text-[9px] leading-3 text-muted-foreground">{detail}</p>

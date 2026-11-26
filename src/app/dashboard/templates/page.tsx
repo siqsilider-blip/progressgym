@@ -1,8 +1,9 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { ClipboardList, Plus, Search, X } from 'lucide-react'
+import { ChevronRight, ClipboardList, Plus, Search, X } from 'lucide-react'
 import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
+import TrainerPageShell from '@/components/dashboard/TrainerPageShell'
 import { getServerUser } from '@/lib/auth/server'
 import { hasMatchingCriteria, normalizeStringArray } from '@/lib/templateMatching'
 
@@ -108,15 +109,16 @@ export default async function TemplatesListPage(props: PageProps) {
     }
 
     return (
-        <div className="mx-auto w-full max-w-7xl space-y-4 px-4 pb-24 text-foreground md:p-6 xl:px-8 xl:pb-8">
+        <TrainerPageShell notebook width="standard" className="space-y-4 lg:space-y-7">
             <DashboardPageHeader
-                title="Templates"
+                notebook
+                title="Plantillas"
                 subtitle={`${templateList.length} programas reutilizables`}
                 backHref="/dashboard/routines"
                 action={
                     <Link
                         href="/dashboard/templates/new"
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-xs font-bold text-primary-foreground transition hover:bg-primary"
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-xs font-semibold text-primary-foreground transition hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring lg:min-h-10 lg:text-sm"
                     >
                         <Plus className="h-3.5 w-3.5" />
                         Nuevo
@@ -124,7 +126,7 @@ export default async function TemplatesListPage(props: PageProps) {
                 }
             />
 
-            <form method="get" className="flex gap-2" role="search">
+            <form method="get" className="flex gap-2 lg:max-w-xl" role="search">
                 <label className="relative min-w-0 flex-1">
                     <span className="sr-only">Buscar templates</span>
                     <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -133,12 +135,12 @@ export default async function TemplatesListPage(props: PageProps) {
                         type="search"
                         defaultValue={searchQuery}
                         placeholder="Buscar por nombre…"
-                        className="h-11 w-full rounded-xl border border-border bg-card pl-9 pr-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
+                        className="h-11 w-full rounded-lg border border-border bg-background pl-9 pr-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-ring"
                     />
                 </label>
                 <button
                     type="submit"
-                    className="h-11 rounded-xl bg-secondary px-4 text-sm font-semibold text-secondary-foreground transition hover:bg-muted"
+                    className="h-11 rounded-lg border border-border px-4 text-sm font-semibold text-foreground transition hover:bg-accent"
                 >
                     Buscar
                 </button>
@@ -154,12 +156,12 @@ export default async function TemplatesListPage(props: PageProps) {
             </form>
 
             {error ? (
-                <p className="text-sm text-red-500">
+                <p role="alert" className="text-sm text-destructive">
                     No se pudieron cargar los templates.
                 </p>
             ) : templateList.length === 0 && searchQuery ? (
-                <div className="rounded-2xl border border-dashed border-border p-8 text-center">
-                    <Search className="mx-auto h-8 w-8 text-muted-foreground" />
+                <div className="rounded-2xl border border-dashed border-border p-8 text-center lg:rounded-none lg:border-x-0 lg:border-solid lg:px-0 lg:py-5 lg:text-left">
+                    <Search aria-hidden="true" className="mx-auto h-8 w-8 text-muted-foreground lg:hidden" />
                     <p className="mt-3 text-sm text-muted-foreground">
                         No encontramos templates con “{searchQuery}”.
                     </p>
@@ -171,8 +173,8 @@ export default async function TemplatesListPage(props: PageProps) {
                     </Link>
                 </div>
             ) : templateList.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-border p-8 text-center">
-                    <ClipboardList className="mx-auto h-8 w-8 text-muted-foreground" />
+                <div className="rounded-2xl border border-dashed border-border p-8 text-center lg:rounded-none lg:border-x-0 lg:border-solid lg:px-0 lg:py-5 lg:text-left">
+                    <ClipboardList aria-hidden="true" className="mx-auto h-8 w-8 text-muted-foreground lg:hidden" />
                     <p className="mt-3 text-sm text-muted-foreground">
                         Todavía no creaste ningún template.
                     </p>
@@ -184,7 +186,7 @@ export default async function TemplatesListPage(props: PageProps) {
                     </Link>
                 </div>
             ) : (
-                <div className="grid gap-3 lg:grid-cols-2">
+                <ul className="space-y-3 lg:space-y-0 lg:border-y lg:border-border">
                     {templateList.map((template) => {
                         const stats = statsByTemplate.get(template.id) ?? { weeks: 0, exercises: 0 }
                         const isClassified = hasMatchingCriteria({
@@ -196,37 +198,38 @@ export default async function TemplatesListPage(props: PageProps) {
                             target_session_minutes: template.target_session_minutes,
                         })
                         return (
-                            <div
+                            <li
                                 key={template.id}
-                                className="flex items-center gap-3 rounded-xl border border-white/[0.07] bg-white/[0.025] p-3 transition hover:border-primary/30 hover:bg-white/[0.04]"
+                                className="flex items-center gap-3 rounded-xl border border-border bg-card p-3 lg:rounded-none lg:border-x-0 lg:border-t-0 lg:bg-transparent lg:px-0 lg:py-1.5 lg:last:border-b-0"
                             >
-                                <Link href={`/dashboard/routines/${template.id}`} className="min-w-0 flex-1">
+                                <Link href={`/dashboard/routines/${template.id}`} className="min-w-0 flex-1 rounded-md hover:text-brand-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(13rem,auto)_minmax(11.5rem,auto)_auto] lg:items-center lg:gap-3 lg:px-2 lg:py-2.5 lg:hover:bg-accent/40">
                                     <p className="truncate text-base font-semibold text-card-foreground">
                                         {template.name ?? 'Sin nombre'}
                                     </p>
-                                    <p className="mt-1 text-xs text-muted-foreground">
+                                    <p className="mt-1 text-xs text-muted-foreground lg:mt-0">
                                         {template.days_per_week ?? '—'} días/semana
                                         <span className="mx-1.5 text-border">·</span>
                                         {stats.weeks} {stats.weeks === 1 ? 'semana' : 'semanas'}
                                         <span className="mx-1.5 text-border">·</span>
                                         {stats.exercises} {stats.exercises === 1 ? 'ejercicio' : 'ejercicios'}
                                     </p>
-                                    <p className={`mt-1 text-[10px] font-medium ${isClassified ? 'text-emerald-400' : 'text-amber-400'}`}>
+                                    <p className={`mt-1 text-[10px] font-medium lg:mt-0 lg:text-xs ${isClassified ? 'text-emerald-800 dark:text-emerald-400' : 'text-amber-800 dark:text-amber-400'}`}>
                                         {isClassified ? 'Listo para recomendar' : 'Faltan criterios de recomendación'}
                                     </p>
+                                    <ChevronRight aria-hidden="true" className="hidden size-4 text-muted-foreground lg:block" />
                                 </Link>
 
                                 <Link
                                     href={`/dashboard/routines/${template.id}/assign-to-student`}
-                                    className="shrink-0 rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground transition hover:bg-primary"
+                                    className="shrink-0 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground transition hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring lg:border lg:border-border lg:bg-transparent lg:text-brand-soft lg:hover:bg-accent"
                                 >
                                     Asignar
                                 </Link>
-                            </div>
+                            </li>
                         )
                     })}
-                </div>
+                </ul>
             )}
-        </div>
+        </TrainerPageShell>
     )
 }

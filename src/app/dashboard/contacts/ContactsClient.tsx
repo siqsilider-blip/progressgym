@@ -1,8 +1,10 @@
 'use client'
 
-import React, { useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
-import { updateContactNoRedirect, deleteContact } from './actions'
+import { MessageCircle, Pencil, Trash2, X } from 'lucide-react'
+import ContactFields from './ContactFields'
+import { deleteContact, updateContactNoRedirect } from './actions'
 
 export type Contact = {
     id: string
@@ -35,10 +37,8 @@ function startOfToday() {
     return new Date(now.getFullYear(), now.getMonth(), now.getDate())
 }
 
-function formatDateLabel(value: string | null) {
-    if (!value) return '—'
-    const safe = String(value).slice(0, 10)
-    const [year, month, day] = safe.split('-')
+function formatDateLabel(value: string) {
+    const [year, month, day] = value.split('-')
     if (!year || !month || !day) return '—'
     return `${day}/${month}/${year}`
 }
@@ -59,175 +59,100 @@ const STATUS_LABELS: Record<string, string> = {
     converted: 'Convertido',
 }
 
-const STATUS_STYLES: Record<string, string> = {
-    new: 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300',
-    contacted: 'bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400',
-    interested: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-primary',
-    negotiation: 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
-    inactive: 'bg-orange-50 text-orange-600 dark:bg-orange-500/15 dark:text-orange-400',
-    lost: 'bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-400',
-    converted: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400',
-}
-
 const TEMP_LABELS: Record<string, string> = {
     cold: 'Interés bajo',
     warm: 'Interés medio',
     hot: 'Interés alto',
 }
 
-const TEMP_STYLES: Record<string, string> = {
-    cold: 'bg-sky-50 text-sky-600 dark:bg-sky-500/10 dark:text-sky-400',
-    warm: 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400',
-    hot: 'bg-orange-50 text-orange-600 dark:bg-orange-500/10 dark:text-orange-500',
-}
-
-const INPUT_CLS =
-    'h-11 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-muted-foreground'
-const SELECT_CLS =
-    'h-11 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary'
+const CONTACT_COLUMNS = 'lg:grid-cols-[minmax(0,1.25fr)_minmax(0,.7fr)_minmax(0,1fr)_auto]'
+const ROW_ACTION =
+    'inline-flex min-h-9 items-center justify-center gap-1.5 rounded-md px-2.5 text-xs font-semibold transition hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring lg:min-h-8 lg:px-1.5'
 
 function EditModal({ contact, onClose }: { contact: Contact; onClose: () => void }) {
     const router = useRouter()
+    const dialogRef = useRef<HTMLDialogElement>(null)
     const [isPending, startTransition] = useTransition()
     const [error, setError] = useState('')
 
-    function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
-        e.preventDefault()
+    useEffect(() => {
+        if (!dialogRef.current?.open) dialogRef.current?.showModal()
+    }, [])
+
+    function closeDialog() {
+        dialogRef.current?.close()
+    }
+
+    function handleSubmit(event: FormEvent<HTMLFormElement>) {
+        event.preventDefault()
         if (isPending) return
-        const formData = new FormData(e.currentTarget)
+        setError('')
+        const formData = new FormData(event.currentTarget)
         startTransition(async () => {
             const result = await updateContactNoRedirect(formData)
             if (!result.ok) {
                 setError(result.error || 'No se pudo guardar')
                 return
             }
-            onClose()
+            closeDialog()
             router.refresh()
         })
     }
 
     return (
-        <div
-            className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center sm:p-4"
-            onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+        <dialog
+            ref={dialogRef}
+            onClose={onClose}
+            onClick={(event) => { if (event.target === event.currentTarget) closeDialog() }}
+            aria-labelledby="edit-contact-title"
+            className="fixed inset-x-0 bottom-0 top-auto m-0 max-h-[94dvh] w-full max-w-none overflow-y-auto rounded-t-2xl border border-border bg-popover text-popover-foreground shadow-xl backdrop:bg-black/60 sm:inset-0 sm:m-auto sm:max-h-[calc(100dvh-2rem)] sm:max-w-lg sm:rounded-xl"
         >
-            <div className="w-full max-w-lg rounded-t-2xl border border-border bg-background shadow-xl sm:rounded-2xl">
-                <div className="flex items-center justify-between border-b border-border px-5 py-4">
-                    <h2 className="text-base font-semibold text-foreground">Editar contacto</h2>
+            <div className="flex items-center justify-between gap-2 border-b border-border px-5 py-4">
+                <h2 id="edit-contact-title" className="text-base font-semibold text-foreground lg:font-[family-name:Georgia,'Times_New_Roman',serif] lg:text-2xl lg:font-normal">
+                    Editar contacto
+                </h2>
+                <button type="button" onClick={closeDialog} className={`text-muted-foreground hover:text-foreground ${ROW_ACTION}`} aria-label="Cerrar edición">
+                    <X className="size-4" aria-hidden="true" />
+                </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4 p-5">
+                <input type="hidden" name="id" value={contact.id} />
+                <ContactFields contact={contact} />
+
+                {error && <p role="alert" className="border-l-2 border-destructive px-3 py-2 text-sm text-destructive">{error}</p>}
+
+                <div className="flex justify-end gap-2 border-t border-border pt-4">
+                    <button type="button" onClick={closeDialog} className={`border border-border text-foreground ${ROW_ACTION}`}>
+                        Cancelar
+                    </button>
                     <button
-                        type="button"
-                        onClick={onClose}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                        type="submit"
+                        disabled={isPending}
+                        className="min-h-10 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-60"
                     >
-                        ✕
+                        {isPending ? 'Guardando...' : 'Guardar'}
                     </button>
                 </div>
-
-                <div className="max-h-[75vh] overflow-y-auto">
-                    <form onSubmit={handleSubmit} className="space-y-4 p-5">
-                        <input type="hidden" name="id" value={contact.id} />
-
-                        <div>
-                            <label className="mb-1.5 block text-sm font-medium text-foreground">Nombre</label>
-                            <input name="full_name" required defaultValue={contact.full_name ?? ''} className={INPUT_CLS} placeholder="Nombre completo" />
-                        </div>
-
-                        <div>
-                            <label className="mb-1.5 block text-sm font-medium text-foreground">Teléfono</label>
-                            <input name="phone" defaultValue={contact.phone ?? ''} className={INPUT_CLS} placeholder="Ej: 11 2345 6789" />
-                        </div>
-
-                        <div>
-                            <label className="mb-1.5 block text-sm font-medium text-foreground">Objetivo</label>
-                            <input name="objective" defaultValue={contact.objective ?? ''} className={INPUT_CLS} placeholder="Ej: Bajar de peso" />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
-                            <div>
-                                <label className="mb-1.5 block text-sm font-medium text-foreground">Estado</label>
-                                <select name="status" defaultValue={contact.status ?? 'new'} className={SELECT_CLS}>
-                                    <option value="new">Nuevo</option>
-                                    <option value="contacted">Contactado</option>
-                                    <option value="interested">Interesado</option>
-                                    <option value="negotiation">Negociación</option>
-                                    <option value="inactive">Inactivo</option>
-                                    <option value="lost">Perdido</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="mb-1.5 block text-sm font-medium text-foreground">Interés</label>
-                                <select name="temperature" defaultValue={contact.temperature ?? 'warm'} className={SELECT_CLS}>
-                                    <option value="cold">Bajo</option>
-                                    <option value="warm">Medio</option>
-                                    <option value="hot">Alto</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="mb-1.5 block text-sm font-medium text-foreground">Próximo seguimiento</label>
-                            <input
-                                type="date"
-                                name="next_follow_up_at"
-                                defaultValue={contact.next_follow_up_at ? String(contact.next_follow_up_at).slice(0, 10) : ''}
-                                className={INPUT_CLS}
-                            />
-                        </div>
-
-                        <div>
-                            <label className="mb-1.5 block text-sm font-medium text-foreground">Notas</label>
-                            <textarea
-                                name="notes"
-                                rows={3}
-                                defaultValue={contact.notes ?? ''}
-                                className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-muted-foreground"
-                                placeholder="Notas sobre el contacto..."
-                            />
-                        </div>
-
-                        {error && <p className="text-sm text-red-500">{error}</p>}
-
-                        <div className="flex gap-3 pt-1">
-                            <button
-                                type="button"
-                                onClick={onClose}
-                                className="h-11 flex-1 rounded-xl border border-border text-sm font-medium text-foreground transition hover:bg-muted"
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                type="submit"
-                                disabled={isPending}
-                                className="h-11 flex-1 rounded-xl bg-primary text-sm font-semibold text-primary-foreground transition hover:bg-primary disabled:opacity-60"
-                            >
-                                {isPending ? 'Guardando...' : 'Guardar'}
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
+            </form>
+        </dialog>
     )
 }
 
-export default function ContactsClient({
-    contacts,
-    stats,
-}: {
-    contacts: Contact[]
-    stats: Stats
-}) {
+function ContactDate({ value, fallback }: { value: string | null; fallback: string }) {
+    if (!value) return fallback
+    const day = value.slice(0, 10)
+    return <time dateTime={day}>{formatDateLabel(day)}</time>
+}
+
+export default function ContactsClient({ contacts, stats }: { contacts: Contact[]; stats: Stats }) {
     const [editingContact, setEditingContact] = useState<Contact | null>(null)
-    const [confirmDeleteId, setConfirmDeleteId] = React.useState<string | null>(null)
+    const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
     const today = startOfToday()
 
     const sorted = [...contacts].sort((a, b) => {
-        const aDate = a.next_follow_up_at
-            ? parseDateOnly(String(a.next_follow_up_at).slice(0, 10))
-            : null
-        const bDate = b.next_follow_up_at
-            ? parseDateOnly(String(b.next_follow_up_at).slice(0, 10))
-            : null
+        const aDate = a.next_follow_up_at ? parseDateOnly(a.next_follow_up_at.slice(0, 10)) : null
+        const bDate = b.next_follow_up_at ? parseDateOnly(b.next_follow_up_at.slice(0, 10)) : null
         const aOverdue = !!aDate && aDate < today && !a.converted_to_student
         const bOverdue = !!bDate && bDate < today && !b.converted_to_student
         if (aOverdue && !bOverdue) return -1
@@ -238,153 +163,141 @@ export default function ContactsClient({
         return 0
     })
 
+    const overdue = stats?.overdue ?? 0
+    const metrics = [
+        { label: 'Hoy', description: 'Seguimientos programados', value: stats?.pendingToday ?? 0 },
+        { label: 'Atrasados', description: 'Seguimientos vencidos', value: overdue },
+        { label: 'Convertidos', description: 'Contactos que pasaron a alumnos', value: stats?.converted ?? 0 },
+    ]
+
     return (
         <>
-            {/* Stats */}
-            <div className="grid grid-cols-3 gap-2 lg:max-w-2xl">
-                <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-3">
-                    <p className="text-xs text-muted-foreground">Hoy</p>
-                    <p className="mt-1 text-xl font-black text-foreground">
-                        {stats?.pendingToday ?? 0}
-                    </p>
+            <dl className="grid grid-cols-3 gap-2 lg:gap-0 lg:border-y lg:border-border">
+                {metrics.map((metric) => (
+                    <div key={metric.label} className="min-w-0 rounded-xl border border-border bg-card p-3 lg:rounded-none lg:border-0 lg:bg-transparent lg:px-5 lg:py-3.5 lg:first:pl-0 lg:[&:not(:first-child)]:border-l">
+                        <dt className="text-xs font-medium text-muted-foreground lg:font-semibold lg:text-foreground">{metric.label}</dt>
+                        <dd className={`mt-1 text-xl font-black tabular-nums lg:font-[family-name:Georgia,'Times_New_Roman',serif] lg:text-4xl lg:font-normal ${metric.label === 'Atrasados' && overdue > 0 ? 'text-destructive' : 'text-foreground'}`}>
+                            {metric.value}
+                        </dd>
+                        <dd className="mt-0.5 hidden text-xs text-muted-foreground lg:block">{metric.description}</dd>
+                    </div>
+                ))}
+            </dl>
+
+            <section aria-labelledby="contacts-title">
+                <div className="mb-3 flex items-center justify-between gap-3 lg:mb-0 lg:border-b lg:border-border lg:pb-2.5">
+                    <h2 id="contacts-title" className="text-base font-semibold text-foreground lg:font-[family-name:Georgia,'Times_New_Roman',serif] lg:text-[1.75rem] lg:leading-tight lg:font-normal lg:tracking-tight">
+                        Agenda de contactos
+                    </h2>
+                    <span className="text-xs tabular-nums text-muted-foreground">
+                        {sorted.length} {sorted.length === 1 ? 'contacto' : 'contactos'}
+                    </span>
                 </div>
-                <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-3">
-                    <p className="text-xs text-muted-foreground">Atrasados</p>
-                    <p className={`mt-1 text-xl font-black ${(stats?.overdue ?? 0) > 0 ? 'text-red-500' : 'text-foreground'}`}>
-                        {stats?.overdue ?? 0}
-                    </p>
-                </div>
-                <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-3">
-                    <p className="text-xs text-muted-foreground">Convertidos</p>
-                    <p className="mt-1 text-xl font-black text-emerald-500">
-                        {stats?.converted ?? 0}
-                    </p>
-                </div>
-            </div>
 
-            {/* Contact list */}
-            <div className="grid gap-3 xl:grid-cols-2">
-                {sorted.map((c) => {
-                    const nextDate = c.next_follow_up_at
-                        ? parseDateOnly(String(c.next_follow_up_at).slice(0, 10))
-                        : null
-                    const isOverdue = !!nextDate && nextDate < today && !c.converted_to_student
-                    const waUrl = c.phone ? buildWhatsAppUrl(c.phone) : null
-                    const statusStyle = STATUS_STYLES[c.status ?? ''] ?? STATUS_STYLES.new
-                    const statusLabel = STATUS_LABELS[c.status ?? ''] ?? 'Nuevo'
-                    const tempStyle = TEMP_STYLES[c.temperature ?? ''] ?? TEMP_STYLES.warm
-                    const tempLabel = TEMP_LABELS[c.temperature ?? ''] ?? 'Interés medio'
-
-                    return (
-                        <div key={c.id} className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-3">
-                            <div className="flex items-start justify-between gap-3">
-                                <div className="min-w-0">
-                                    <p className="truncate text-sm font-semibold text-foreground">
-                                        {c.full_name}
-                                    </p>
-                                    {c.objective && (
-                                        <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                                            {c.objective}
-                                        </p>
-                                    )}
-                                </div>
-                                <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
-                                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${statusStyle}`}>
-                                        {statusLabel}
-                                    </span>
-                                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${tempStyle}`}>
-                                        {tempLabel}
-                                    </span>
-                                    {isOverdue && (
-                                        <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-600 dark:bg-red-500/10 dark:text-red-400">
-                                            Atrasado
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                                <span>
-                                    Último contacto: {c.last_contact_at ? formatDateLabel(c.last_contact_at) : 'Sin registrar'}
-                                </span>
-                                <span>·</span>
-                                <span className={isOverdue ? 'font-medium text-red-500 dark:text-red-400' : ''}>
-                                    Próximo seguimiento: {c.next_follow_up_at ? formatDateLabel(c.next_follow_up_at) : 'No definido'}
-                                </span>
-                            </div>
-
-                            <div className="mt-3 flex gap-2">
-                                {waUrl ? (
-                                    <a
-                                        href={waUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex h-9 flex-1 items-center justify-center rounded-lg bg-emerald-600 text-xs font-semibold text-white transition hover:bg-emerald-500"
-                                    >
-                                        Contactar por WhatsApp
-                                    </a>
-                                ) : (
-                                    <button
-                                        disabled
-                                        className="flex h-9 flex-1 items-center justify-center rounded-lg border border-border bg-muted text-xs text-muted-foreground"
-                                        title="Sin teléfono registrado"
-                                    >
-                                        Sin teléfono
-                                    </button>
-                                )}
-                                <button
-                                    type="button"
-                                    onClick={() => setEditingContact(c)}
-                                    className="flex h-9 items-center justify-center rounded-lg border border-border bg-secondary px-4 text-xs font-medium text-secondary-foreground transition hover:bg-muted"
-                                >
-                                    Editar
-                                </button>
-                                {confirmDeleteId === c.id ? (
-                                    <div className="flex items-center gap-1">
-                                        <button
-                                            type="button"
-                                            onClick={() => setConfirmDeleteId(null)}
-                                            className="rounded-lg border border-border bg-secondary px-2.5 py-1.5 text-xs text-secondary-foreground transition hover:bg-muted"
-                                        >
-                                            No
-                                        </button>
-                                        <form action={deleteContact}>
-                                            <input type="hidden" name="id" value={c.id} />
-                                            <button
-                                                type="submit"
-                                                className="rounded-lg bg-red-600 px-2.5 py-1.5 text-xs font-medium text-white transition hover:bg-red-500"
-                                            >
-                                                Sí
-                                            </button>
-                                        </form>
-                                    </div>
-                                ) : (
-                                    <button
-                                        type="button"
-                                        onClick={() => setConfirmDeleteId(c.id)}
-                                        className="rounded-lg border border-red-200 px-2.5 py-1.5 text-xs text-red-500 transition hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950/40"
-                                    >
-                                        Eliminar
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    )
-                })}
-
-                {contacts.length === 0 && (
-                    <div className="rounded-xl border border-border bg-card p-6 text-sm text-muted-foreground">
-                        Todavía no hay contactos cargados.
+                {sorted.length > 0 && (
+                    <div className={`hidden items-center gap-4 border-b border-border px-1 py-2 text-xs font-semibold text-muted-foreground lg:grid ${CONTACT_COLUMNS}`} aria-hidden="true">
+                        <span>Contacto</span>
+                        <span>Estado</span>
+                        <span>Próximo seguimiento</span>
+                        <span className="w-[13rem] text-right">Acciones</span>
                     </div>
                 )}
-            </div>
 
-            {editingContact && (
-                <EditModal
-                    contact={editingContact}
-                    onClose={() => setEditingContact(null)}
-                />
-            )}
+                <ul className="space-y-2 lg:space-y-0">
+                    {sorted.map((contact) => {
+                        const nextDate = contact.next_follow_up_at ? parseDateOnly(contact.next_follow_up_at.slice(0, 10)) : null
+                        const isOverdue = !!nextDate && nextDate < today && !contact.converted_to_student
+                        const waUrl = contact.phone ? buildWhatsAppUrl(contact.phone) : null
+                        const name = contact.full_name || 'Sin nombre'
+                        const status = STATUS_LABELS[contact.status ?? ''] ?? 'Nuevo'
+                        const temperature = TEMP_LABELS[contact.temperature ?? ''] ?? 'Interés medio'
+                        const confirmsDeletion = confirmDeleteId === contact.id
+
+                        return (
+                            <li key={contact.id} className="space-y-2.5 rounded-xl border border-border bg-card p-3 lg:space-y-0 lg:rounded-none lg:border-0 lg:border-b lg:bg-transparent lg:p-0">
+                                <div className={`grid gap-x-3 gap-y-2 lg:items-center lg:gap-4 lg:px-1 lg:py-3 ${CONTACT_COLUMNS}`}>
+                                    <div className="min-w-0">
+                                        <h3 className="break-words text-sm font-semibold text-foreground">{name}</h3>
+                                        {contact.objective && (
+                                            <p className="mt-0.5 break-words text-xs text-muted-foreground">{contact.objective}</p>
+                                        )}
+                                    </div>
+
+                                    <div className="flex flex-wrap gap-x-2 gap-y-1 text-xs lg:block lg:space-y-0.5">
+                                        <p className="font-medium text-foreground">{status}</p>
+                                        <p className="text-muted-foreground">{temperature}</p>
+                                    </div>
+
+                                    <div className="space-y-0.5 text-xs">
+                                        <p className={isOverdue ? 'font-semibold text-destructive' : 'font-medium text-foreground'}>
+                                            <span className="lg:hidden">Próximo seguimiento{' '}</span>
+                                            <ContactDate value={contact.next_follow_up_at} fallback="Sin fecha" />
+                                            {isOverdue && <span className="ml-1.5 font-normal">· Atrasado</span>}
+                                        </p>
+                                        <p className="text-muted-foreground">
+                                            Último contacto{' '}<ContactDate value={contact.last_contact_at} fallback="sin registrar" />
+                                        </p>
+                                    </div>
+
+                                    <div className="flex flex-wrap items-center gap-1 lg:w-[13rem] lg:flex-nowrap lg:justify-end">
+                                        {waUrl ? (
+                                            <a
+                                                href={waUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className={`text-brand-soft ${ROW_ACTION}`}
+                                                aria-label={`Contactar a ${name} por WhatsApp`}
+                                            >
+                                                <MessageCircle className="size-4" aria-hidden="true" />
+                                                WhatsApp
+                                            </a>
+                                        ) : (
+                                            <span className="px-2.5 text-xs text-muted-foreground">Sin teléfono</span>
+                                        )}
+                                        <button type="button" onClick={() => setEditingContact(contact)} className={`text-muted-foreground hover:text-foreground ${ROW_ACTION}`} aria-label={`Editar a ${name}`}>
+                                            <Pencil className="size-3.5" aria-hidden="true" />
+                                            Editar
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setConfirmDeleteId((id) => id === contact.id ? null : contact.id)}
+                                            className={`text-muted-foreground hover:text-destructive ${ROW_ACTION}`}
+                                            aria-label={`Eliminar a ${name}`}
+                                            aria-expanded={confirmsDeletion}
+                                            aria-controls={confirmsDeletion ? `delete-contact-${contact.id}` : undefined}
+                                        >
+                                            <Trash2 className="size-4" aria-hidden="true" />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {confirmsDeletion && (
+                                    <div id={`delete-contact-${contact.id}`} className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-2.5 lg:pb-3">
+                                        <p className="text-xs text-muted-foreground">¿Eliminar el contacto de {name}?</p>
+                                        <div className="flex items-center gap-1.5">
+                                            <button type="button" onClick={() => setConfirmDeleteId(null)} className={`text-muted-foreground hover:text-foreground ${ROW_ACTION}`}>Cancelar</button>
+                                            <form action={deleteContact}>
+                                                <input type="hidden" name="id" value={contact.id} />
+                                                <button type="submit" className="min-h-8 rounded-md border border-destructive/40 px-2.5 text-xs font-semibold text-destructive transition hover:bg-destructive/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
+                                                    Eliminar contacto
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                )}
+                            </li>
+                        )
+                    })}
+                </ul>
+
+                {sorted.length === 0 && (
+                    <p className="rounded-xl border border-border bg-card px-4 py-5 text-sm text-muted-foreground lg:rounded-none lg:border-x-0 lg:border-t-0 lg:bg-transparent lg:px-0">
+                        Todavía no hay contactos cargados.
+                    </p>
+                )}
+            </section>
+
+            {editingContact && <EditModal contact={editingContact} onClose={() => setEditingContact(null)} />}
         </>
     )
 }

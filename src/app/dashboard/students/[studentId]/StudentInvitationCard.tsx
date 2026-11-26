@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { Check, Copy, ExternalLink, MessageCircle, Send } from 'lucide-react'
 import { createStudentAccessInvitation } from './invite-actions'
+import { studentSection, studentSectionTitle } from './profileStyles'
 
 type PreparedInvitation = {
     inviteUrl: string | null
@@ -67,17 +68,17 @@ export default function StudentInvitationCard({
         <section
             id="student-access"
             ref={sectionRef}
-            className={`rounded-xl border bg-emerald-500/[0.055] p-3.5 ${highlight ? 'border-emerald-400/50 ring-2 ring-emerald-500/15' : 'border-emerald-500/20'}`}
+            className={`rounded-xl border bg-emerald-500/[0.055] p-3.5 lg:scroll-mt-20 lg:ring-0 ${highlight ? 'border-emerald-400/50 ring-2 ring-emerald-500/15' : 'border-emerald-500/20'} ${studentSection}`}
         >
             <div className="flex items-start gap-3">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400">
-                    <Send className="h-4 w-4" />
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-800 dark:text-emerald-400 lg:hidden">
+                    <Send className="size-4" aria-hidden="true" />
                 </div>
                 <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold text-foreground">Acceso del alumno</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <h2 className={`text-sm font-semibold text-foreground ${studentSectionTitle}`}>Acceso del alumno</h2>
                         {highlight && !linkedEmail && (
-                            <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-400">
+                            <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-800 dark:text-emerald-400">
                                 Siguiente paso
                             </span>
                         )}
@@ -91,10 +92,11 @@ export default function StudentInvitationCard({
             </div>
 
             <form onSubmit={prepareInvitation} className="mt-3 space-y-2.5">
-                <label className="block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <label htmlFor="student-invitation-email" className="block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground lg:text-xs lg:normal-case lg:tracking-normal">
                     Email del alumno
                 </label>
                 <input
+                    id="student-invitation-email"
                     type="email"
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
@@ -109,7 +111,7 @@ export default function StudentInvitationCard({
                 <button
                     type="submit"
                     disabled={isPending || !email.trim()}
-                    className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-45"
+                    className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-45 lg:rounded-md lg:bg-primary lg:text-primary-foreground"
                 >
                     <Send className="h-4 w-4" />
                     {isPending

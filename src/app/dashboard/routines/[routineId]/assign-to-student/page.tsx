@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { assignTemplateAction } from './actions'
 import BulkAssignTemplate from './BulkAssignTemplate'
 import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
+import TrainerPageShell from '@/components/dashboard/TrainerPageShell'
 import { getServerUser } from '@/lib/auth/server'
 
 type PageProps = {
@@ -35,9 +36,9 @@ export default async function AssignTemplateToStudentPage(props: PageProps) {
 
     if (templateError || !template || template.routine_kind !== 'template') {
         return (
-            <div className="p-6 text-foreground">
-                <h1 className="text-xl font-semibold">Template no encontrado.</h1>
-            </div>
+            <TrainerPageShell notebook width="form">
+                <DashboardPageHeader notebook title="Plantilla no encontrada" backHref="/dashboard/templates" />
+            </TrainerPageShell>
         )
     }
 
@@ -67,9 +68,10 @@ export default async function AssignTemplateToStudentPage(props: PageProps) {
     }
 
     return (
-        <div className="mx-auto max-w-2xl space-y-4 px-4 pb-24 text-foreground md:p-6">
+        <TrainerPageShell notebook width="form" className="space-y-4 lg:space-y-7">
             <DashboardPageHeader
-                title="Asignar template"
+                notebook
+                title="Asignar plantilla"
                 subtitle={template.name ?? 'Template'}
                 backHref={`/dashboard/routines/${params.routineId}`}
             />
@@ -89,6 +91,6 @@ export default async function AssignTemplateToStudentPage(props: PageProps) {
                     assignAction={assignTemplateAction}
                 />
             )}
-        </div>
+        </TrainerPageShell>
     )
 }

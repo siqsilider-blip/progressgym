@@ -98,14 +98,15 @@ export default function BulkAssignTemplate({ templateId, students, assignAction 
     }
 
     return (
-        <div className="space-y-3">
-            <div className="sticky top-0 z-10 space-y-2 rounded-xl border border-border bg-background/95 p-3 shadow-lg backdrop-blur">
+        <div className="max-w-3xl space-y-3 lg:space-y-0">
+            <div className="sticky top-0 z-10 space-y-2 rounded-xl border border-border bg-background/95 p-3 shadow-lg backdrop-blur lg:rounded-none lg:border-x-0 lg:px-0 lg:py-4 lg:shadow-none">
                 <input
                     type="search"
                     value={search}
                     onChange={(event) => setSearch(event.target.value)}
+                    aria-label="Buscar alumno"
                     placeholder="Buscar alumno..."
-                    className="h-10 w-full rounded-xl border border-border bg-card px-3 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                    className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-ring"
                 />
                 <div className="flex items-center justify-between gap-3">
                     <button
@@ -141,14 +142,14 @@ export default function BulkAssignTemplate({ templateId, students, assignAction 
             </div>
 
             {filtered.length === 0 ? (
-                <p className="rounded-xl border border-dashed border-border p-5 text-center text-sm text-muted-foreground">No se encontraron alumnos.</p>
+                <p className="rounded-xl border border-dashed border-border p-5 text-center text-sm text-muted-foreground lg:rounded-none lg:border-x-0 lg:border-t-0 lg:border-solid lg:px-0 lg:text-left">No se encontraron alumnos.</p>
             ) : filtered.map((student) => {
                 const isSelected = selected.has(student.id)
                 const result = results[student.id]
                 return (
                     <label
                         key={student.id}
-                        className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition ${isSelected ? 'border-primary bg-primary/5' : 'border-white/[0.07] bg-white/[0.025] hover:bg-white/[0.04]'}`}
+                        className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition lg:rounded-none lg:border-x-0 lg:border-t-0 lg:px-2 ${isSelected ? 'border-primary bg-primary/5 lg:border-border' : 'border-border bg-card hover:bg-muted lg:bg-transparent lg:hover:bg-accent/40'}`}
                     >
                         <input
                             type="checkbox"

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { studentSection, studentSectionTitle } from './profileStyles'
 import { MessageCircle, Pencil } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { buildWhatsAppUrl } from '@/lib/whatsapp'
@@ -37,13 +38,13 @@ export default function StudentContactCard({
     }
 
     return (
-        <section className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-3">
+        <section className={`rounded-xl border border-border bg-card p-3 ${studentSection}`}>
             <div className="flex items-start justify-between gap-3">
                 <div>
                     <p className="text-xs font-bold uppercase tracking-widest text-primary">
                         Contacto
                     </p>
-                    <h2 className="mt-1 text-base font-semibold text-foreground">WhatsApp del alumno</h2>
+                    <h2 className={`mt-1 text-base font-semibold text-foreground ${studentSectionTitle}`}>WhatsApp del alumno</h2>
                     {!editing && (
                         <p className="mt-1 text-sm text-muted-foreground">{phone}</p>
                     )}

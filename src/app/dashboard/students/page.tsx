@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Plus, UsersRound } from 'lucide-react'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import StudentsList from '@/components/StudentsList'
@@ -6,6 +7,7 @@ import { getStudentsRiskBatch } from './[studentId]/getStudentRisk'
 import { getElapsedProgramWeekIndex } from '@/lib/buenosAiresDate'
 import { getProgramCyclePosition } from '@/lib/trainingDomain'
 import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
+import TrainerPageShell from '@/components/dashboard/TrainerPageShell'
 import { getServerUser } from '@/lib/auth/server'
 
 type StudentRisk = {
@@ -46,11 +48,12 @@ export default async function StudentsPage() {
 
     if (studentsError) {
         return (
-            <div className="p-4 pb-24 md:p-8">
-                <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
+            <TrainerPageShell notebook className="space-y-4 lg:space-y-7">
+                <DashboardPageHeader notebook title="Alumnos" />
+                <p role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
                     Error al cargar alumnos: {studentsError.message}
-                </div>
-            </div>
+                </p>
+            </TrainerPageShell>
         )
     }
 
@@ -167,10 +170,9 @@ export default async function StudentsPage() {
     }
 
     return (
-        <div className="mx-auto w-full max-w-[1600px] space-y-4 p-4 pb-24 md:p-6 xl:px-8 xl:pb-8">
-
-            {/* Header */}
+        <TrainerPageShell notebook className="space-y-4 lg:space-y-7">
             <DashboardPageHeader
+                notebook
                 title="Alumnos"
                 subtitle={summary.critical > 0
                             ? `${summary.critical} crítico${summary.critical === 1 ? '' : 's'} · ordenados por riesgo`
@@ -180,28 +182,23 @@ export default async function StudentsPage() {
                 action={
                     <Link
                         href="/dashboard/students/new"
-                        className="rounded-xl bg-primary px-3.5 py-2 text-xs font-bold text-primary-foreground transition hover:bg-primary"
+                        className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-xs font-semibold text-primary-foreground transition hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring lg:min-h-10 lg:text-sm"
                     >
-                        + Alumno
+                        <Plus className="size-4" aria-hidden="true" />
+                        Nuevo alumno
                     </Link>
                 }
             />
 
             {studentsWithRisk.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-border p-10 text-center">
-                    <p className="text-3xl mb-3">👥</p>
-                    <p className="text-sm font-semibold text-foreground">Todavía no tenés alumnos</p>
+                <div className="rounded-2xl border border-dashed border-border p-8 text-center lg:rounded-none lg:border-x-0 lg:border-solid lg:px-0 lg:text-left">
+                    <UsersRound className="mx-auto mb-3 size-6 text-brand-soft lg:mx-0" aria-hidden="true" />
+                    <p className="text-sm font-semibold text-foreground lg:text-base">Todavía no tenés alumnos</p>
                     <p className="mt-1 text-xs text-muted-foreground">Agregá tu primer alumno para empezar</p>
-                    <Link
-                        href="/dashboard/students/new"
-                        className="mt-4 inline-block rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground"
-                    >
-                        + Agregar alumno
-                    </Link>
                 </div>
             ) : (
                 <StudentsList students={studentsWithRisk} operationsByStudentId={operationsByStudentId} />
             )}
-        </div>
+        </TrainerPageShell>
     )
 }

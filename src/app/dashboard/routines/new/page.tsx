@@ -3,12 +3,22 @@ import { redirect } from 'next/navigation'
 import { createRoutine } from './actions'
 import { getTrainerProfile } from '@/lib/getTrainerProfile'
 import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader'
+import TrainerPageShell from '@/components/dashboard/TrainerPageShell'
 import { getServerUser } from '@/lib/auth/server'
 
 type PageProps = {
     searchParams: Promise<{
         studentId?: string
     }>
+}
+
+function UnavailableRoutineForm({ message }: { message: string }) {
+    return (
+        <TrainerPageShell notebook width="form" className="space-y-4 lg:space-y-7">
+            <DashboardPageHeader notebook title="Nueva rutina" backHref="/dashboard/routines" />
+            <p className="border-y border-border py-4 text-sm text-muted-foreground">{message}</p>
+        </TrainerPageShell>
+    )
 }
 
 export default async function NewRoutinePage(props: PageProps) {
@@ -26,12 +36,7 @@ export default async function NewRoutinePage(props: PageProps) {
     const studentId = searchParams.studentId
 
     if (!studentId) {
-        return (
-            <div className="px-4 pb-6 text-white md:p-8">
-                <h1 className="text-2xl font-bold md:text-3xl">Nueva rutina</h1>
-                <p className="mt-4 text-red-400">Falta seleccionar alumno.</p>
-            </div>
-        )
+        return <UnavailableRoutineForm message="Seleccioná un alumno desde Rutinas para continuar." />
     }
 
     const { data: student, error: studentError } = await supabase
@@ -42,20 +47,16 @@ export default async function NewRoutinePage(props: PageProps) {
         .single()
 
     if (studentError || !student) {
-        return (
-            <div className="px-4 pb-6 text-white md:p-8">
-                <h1 className="text-2xl font-bold md:text-3xl">Nueva rutina</h1>
-                <p className="mt-4 text-red-400">Alumno no encontrado.</p>
-            </div>
-        )
+        return <UnavailableRoutineForm message="No encontramos al alumno seleccionado." />
     }
 
     const defaultRoutineDays = profile?.default_routine_days ?? 4
     const studentName = `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim()
 
     return (
-        <div className="mx-auto max-w-2xl space-y-4 px-4 pb-24 text-white md:p-6">
+        <TrainerPageShell notebook width="form" className="space-y-4 lg:space-y-7">
             <DashboardPageHeader
+                notebook
                 title="Nueva rutina"
                 subtitle={`Para ${studentName}`}
                 backHref="/dashboard/routines"
@@ -63,37 +64,30 @@ export default async function NewRoutinePage(props: PageProps) {
 
             <form
                 action={createRoutine}
-                className="max-w-xl space-y-4 rounded-xl border border-white/[0.07] bg-white/[0.025] p-4"
+                className="max-w-2xl space-y-4 rounded-xl border border-border bg-card p-4 lg:space-y-5 lg:rounded-none lg:border-x-0 lg:bg-transparent lg:px-0 lg:py-5"
             >
                 <input type="hidden" name="studentId" value={studentId} />
 
-                <div className="rounded-xl border border-white/[0.07] bg-black/20 p-3">
-                    <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-                        Alumno
-                    </p>
-                    <p className="mt-2 text-base font-semibold text-white">
-                        {studentName}
-                    </p>
-                </div>
-
                 <div>
-                    <label className="text-sm text-zinc-400">Nombre de la rutina</label>
+                    <label htmlFor="new-routine-name" className="text-sm font-medium text-foreground">Nombre de la rutina</label>
                     <input
+                        id="new-routine-name"
                         name="name"
                         required
                         placeholder="Ej: Rutina hipertrofia"
                         defaultValue={`Rutina ${defaultRoutineDays} días`}
-                        className="mt-2 w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-white outline-none"
+                        className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-ring"
                     />
                 </div>
 
                 <div>
-                    <label className="text-sm text-zinc-400">Cantidad de días</label>
+                    <label htmlFor="new-routine-days" className="text-sm font-medium text-foreground">Cantidad de días</label>
                     <select
+                        id="new-routine-days"
                         name="days_count"
                         required
                         defaultValue={String(defaultRoutineDays)}
-                        className="mt-2 w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-white outline-none"
+                        className="mt-2 block w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-ring lg:max-w-52"
                     >
                         <option value="1">1 día</option>
                         <option value="2">2 días</option>
@@ -104,22 +98,17 @@ export default async function NewRoutinePage(props: PageProps) {
                     </select>
                 </div>
 
-                <div className="rounded-xl border border-primary/20 bg-primary/10 p-3">
-                    <p className="text-sm font-medium text-white">
-                        Se van a crear automáticamente los días de la rutina.
-                    </p>
-                    <p className="mt-1 text-xs text-brand-soft/80">
-                        Después vas a poder entrar a cada día y agregar ejercicios.
-                    </p>
-                </div>
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                    Al crear la rutina se preparan los días para que cargues los ejercicios en el planificador.
+                </p>
 
                 <button
                     type="submit"
-                    className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-medium text-primary-foreground transition hover:bg-primary"
+                    className="w-full rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring lg:w-auto"
                 >
                     Crear rutina
                 </button>
             </form>
-        </div>
+        </TrainerPageShell>
     )
 }
