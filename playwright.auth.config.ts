@@ -2,6 +2,10 @@ import { defineConfig, devices } from '@playwright/test'
 
 const externalBaseUrl = process.env.PLAYWRIGHT_BASE_URL
 
+if (externalBaseUrl && new URL(externalBaseUrl).hostname === 'progressgym-sigma.vercel.app') {
+    throw new Error('Las pruebas autenticadas crean y eliminan datos de prueba. Usá un entorno de pruebas con su propia base de datos.')
+}
+
 export default defineConfig({
     testDir: './tests/e2e',
     testMatch: 'authenticated.spec.ts',

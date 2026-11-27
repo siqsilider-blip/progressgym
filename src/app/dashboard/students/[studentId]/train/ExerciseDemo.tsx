@@ -1,8 +1,18 @@
 'use client'
 
 import * as React from 'react'
+import dynamic from 'next/dynamic'
 import { Dumbbell, ExternalLink, PlayCircle, X } from 'lucide-react'
-import ExerciseMuscleSummary from '@/components/ExerciseMuscleSummary'
+import { parseExerciseVideoUrl } from '@/lib/exerciseVideoUrl'
+
+const ExerciseMuscleSummary = dynamic(() => import('@/components/ExerciseMuscleSummary'), {
+    ssr: false,
+    loading: () => (
+        <p role="status" className="rounded-xl border border-border p-4 text-sm text-muted-foreground">
+            Cargando el mapa muscular…
+        </p>
+    ),
+})
 
 type Props = {
     exerciseName: string
@@ -17,9 +27,9 @@ type VideoSource =
     | { kind: 'file'; url: string }
     | { kind: 'external'; url: string }
 
-function getVideoSource(rawUrl: string): VideoSource {
-    try {
-        const url = new URL(rawUrl)
+function getVideoSource(rawUrl: string): VideoSource | null {
+    const url = parseExerciseVideoUrl(rawUrl)
+    if (url) {
         const hostname = url.hostname.replace(/^www\./, '').toLowerCase()
         let youtubeId: string | null = null
 
@@ -44,9 +54,8 @@ function getVideoSource(rawUrl: string): VideoSource {
         }
 
         return { kind: 'external', url: url.toString() }
-    } catch {
-        return { kind: 'external', url: rawUrl }
     }
+    return null
 }
 
 export default function ExerciseDemo({ exerciseName, videoUrl, instructions, muscleGroup, category }: Props) {

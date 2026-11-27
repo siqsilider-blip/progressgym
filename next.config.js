@@ -6,6 +6,10 @@ const nextConfig = {
         source: '/.well-known/assetlinks.json',
         destination: '/api/android/assetlinks',
       },
+      {
+        source: '/.well-known/apple-app-site-association',
+        destination: '/api/ios/apple-app-site-association',
+      },
     ]
   },
   images: {

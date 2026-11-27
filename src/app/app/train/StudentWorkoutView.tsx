@@ -187,7 +187,7 @@ export default function StudentWorkoutView({
     const [sets, setSets] = React.useState<SetState[][]>(() => createInitialSets(exercises))
     const [openExerciseId, setOpenExerciseId] = React.useState<string | null>(() => {
         const firstIncomplete = exercises.find((exercise, exerciseIndex) =>
-            setsForExerciseIncomplete(exercise, createInitialSets(exercises)[exerciseIndex])
+            setsForExerciseIncomplete(exercise, sets[exerciseIndex])
         )
         return firstIncomplete?.id ?? exercises[0]?.id ?? null
     })

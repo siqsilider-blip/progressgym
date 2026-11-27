@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
 import { exerciseMetricFields, getExerciseMetric, isExerciseMetric, type ExerciseMetric } from '@/lib/exerciseMetric'
+import { parseExerciseVideoUrl } from '@/lib/exerciseVideoUrl'
 
 async function supabaseServer() {
     const cookieStore = await cookies()
@@ -55,6 +56,11 @@ export async function createExercise(payload: {
         return { ok: false, message: 'Elegí una medida válida.' }
     }
 
+    const videoUrl = payload.video_url?.trim() || null
+    if (videoUrl && !parseExerciseVideoUrl(videoUrl)) {
+        return { ok: false, message: 'Pegá un enlace de video que empiece con https:// o http://.' }
+    }
+
     const { error } = await supabase.from('exercises').insert({
         trainer_id: user.id,
         name: payload.name.trim(),
@@ -62,7 +68,7 @@ export async function createExercise(payload: {
         category: payload.category || null,
         level: payload.level || null,
         ...exerciseMetricFields(metric),
-        video_url: payload.video_url?.trim() || null,
+        video_url: videoUrl,
     })
 
     if (error) return { ok: false, message: error.message }
@@ -223,10 +229,14 @@ export async function updateExercise(id: string, payload: {
         return { ok: false, message: 'No se encontró el ejercicio.' }
     }
 
+    const videoUrl = payload.video_url?.trim() || null
+    if (videoUrl && !parseExerciseVideoUrl(videoUrl)) {
+        return { ok: false, message: 'Pegá un enlace de video que empiece con https:// o http://.' }
+    }
+
     let error: { message: string } | null = null
 
     if (exercise.trainer_id === null) {
-        const videoUrl = payload.video_url?.trim() || null
         const instructions = payload.description?.trim() || null
 
         if (!videoUrl && !instructions) {
@@ -255,7 +265,7 @@ export async function updateExercise(id: string, payload: {
                 name: payload.name.trim(),
                 description: payload.description?.trim() || null,
                 muscle_group: payload.muscle_group || null,
-                video_url: payload.video_url?.trim() || null,
+                video_url: videoUrl,
             })
             .eq('id', id)
             .eq('trainer_id', user.id)

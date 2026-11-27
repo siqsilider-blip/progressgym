@@ -15,7 +15,7 @@ export async function getRoutineExerciseNameMap(
 
     const { data: routineExercises, error: routineExerciseError } = await supabase
         .from('routine_day_exercises')
-        .select('id, exercise_id')
+        .select('id, exercise:exercises!routine_day_exercises_exercise_id_fkey(name)')
         .in('id', ids)
 
     if (routineExerciseError) {
@@ -23,31 +23,11 @@ export async function getRoutineExerciseNameMap(
         return namesByRoutineExercise
     }
 
-    const exerciseIds = [...new Set(
-        (routineExercises ?? [])
-            .map((row) => row.exercise_id)
-            .filter((id): id is string => Boolean(id))
-    )]
-
-    if (exerciseIds.length === 0) return namesByRoutineExercise
-
-    const { data: exercises, error: exerciseError } = await supabase
-        .from('exercises')
-        .select('id, name')
-        .in('id', exerciseIds)
-
-    if (exerciseError) {
-        console.error('[getRoutineExerciseNameMap] exercises:', exerciseError)
-        return namesByRoutineExercise
-    }
-
-    const exerciseNames = new Map(
-        (exercises ?? []).map((exercise) => [exercise.id, exercise.name])
-    )
-
     for (const routineExercise of routineExercises ?? []) {
-        const name = exerciseNames.get(routineExercise.exercise_id)
-        if (name) namesByRoutineExercise.set(routineExercise.id, name)
+        const exercise = Array.isArray(routineExercise.exercise)
+            ? routineExercise.exercise[0]
+            : routineExercise.exercise
+        if (exercise?.name) namesByRoutineExercise.set(routineExercise.id, exercise.name)
     }
 
     return namesByRoutineExercise

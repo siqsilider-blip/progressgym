@@ -122,16 +122,20 @@ export default function NativeAppBridge({ appearance }: { appearance: Appearance
 
       const backHandle = await App.addListener('backButton', async ({ canGoBack }) => {
         const openDialogs = Array.from(
-          document.querySelectorAll<HTMLElement>('[role="dialog"][aria-modal="true"]')
+          document.querySelectorAll<HTMLElement>('dialog[open], [role="dialog"][aria-modal="true"]')
         )
         const openDialog = openDialogs.reverse().find((dialog) => dialog.getClientRects().length > 0)
         if (openDialog) {
-          openDialog.dispatchEvent(new KeyboardEvent('keydown', {
-            key: 'Escape',
-            code: 'Escape',
-            bubbles: true,
-            cancelable: true,
-          }))
+          if (openDialog instanceof HTMLDialogElement) {
+            if (openDialog.dispatchEvent(new Event('cancel', { cancelable: true }))) openDialog.close()
+          } else {
+            openDialog.dispatchEvent(new KeyboardEvent('keydown', {
+              key: 'Escape',
+              code: 'Escape',
+              bubbles: true,
+              cancelable: true,
+            }))
+          }
           return
         }
 

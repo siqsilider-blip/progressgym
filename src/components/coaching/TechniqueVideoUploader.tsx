@@ -147,6 +147,15 @@ export default function TechniqueVideoUploader({
         }
     }, [open])
 
+    React.useEffect(() => {
+        if (!open || uploading) return
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') resetAndClose()
+        }
+        window.addEventListener('keydown', handleKeyDown)
+        return () => window.removeEventListener('keydown', handleKeyDown)
+    }, [open, resetAndClose, uploading])
+
     React.useEffect(() => () => {
         stopCamera(true)
         clearSelected()

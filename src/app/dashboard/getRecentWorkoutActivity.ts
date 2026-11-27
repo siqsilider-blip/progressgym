@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getRoutineExerciseNameMap } from '@/lib/coaching/getRoutineExerciseNames'
 import { getTrainerStudents } from './getTrainerStudents'
 
 export type RecentWorkoutActivityItem = {
@@ -35,37 +36,10 @@ export async function getRecentWorkoutActivity(limit = 10): Promise<
 
     if (!logs || logs.length === 0) return []
 
-    const routineDayExerciseIds = Array.from(
-        new Set(logs.map((l) => l.routine_day_exercise_id).filter(Boolean))
+    const exerciseNames = await getRoutineExerciseNameMap(
+        supabase,
+        logs.map((log) => log.routine_day_exercise_id)
     )
-
-    const { data: rde } = await supabase
-        .from('routine_day_exercises')
-        .select('id, exercise_id')
-        .in('id', routineDayExerciseIds)
-
-    const exerciseIds = Array.from(
-        new Set(rde?.map((r) => r.exercise_id).filter(Boolean))
-    )
-
-    const { data: exercises } = await supabase
-        .from('exercises')
-        .select('id, name')
-        .in('id', exerciseIds)
-
-    const rdeToExercise = new Map<string, string>()
-    rde?.forEach((r) => {
-        if (r.id && r.exercise_id) {
-            rdeToExercise.set(r.id, r.exercise_id)
-        }
-    })
-
-    const exerciseMap = new Map<string, string>()
-    exercises?.forEach((e) => {
-        if (e.id) {
-            exerciseMap.set(e.id, e.name ?? 'Ejercicio')
-        }
-    })
 
     const studentMap = new Map<string, string>()
     students.forEach((s) => {
@@ -76,11 +50,10 @@ export async function getRecentWorkoutActivity(limit = 10): Promise<
     })
 
     return logs.map((log) => {
-        const exerciseId = rdeToExercise.get(log.routine_day_exercise_id)
         return {
             studentId: log.student_id,
             studentName: studentMap.get(log.student_id) ?? 'Alumno',
-            exerciseName: exerciseMap.get(exerciseId ?? '') ?? 'Ejercicio',
+            exerciseName: exerciseNames.get(log.routine_day_exercise_id) ?? 'Ejercicio',
             weight: Number(log.weight),
             reps: log.reps,
             performedAt: log.performed_at,

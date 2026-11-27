@@ -89,6 +89,12 @@ intencional si falta la firma, para evitar generar por error un artefacto no
 publicable. Ver `docs/google-play-submission.md` y ejecutar
 `npm run native:android:release` una vez creada la clave.
 
+La comprobación automatizada pública apunta a la app publicada. El flujo
+autenticado de CI crea y elimina datos de prueba y usa un despliegue separado.
+Configurá `E2E_APP_BASE_URL` como variable de GitHub y los secretos
+`E2E_SUPABASE_URL` y `E2E_SUPABASE_SERVICE_ROLE_KEY` con la base de datos de ese
+mismo despliegue de prueba.
+
 Para probar contra otro servidor HTTPS durante desarrollo hay que habilitarlo
 explícitamente (sin la bandera, una compilación siempre usa producción):
 
@@ -120,9 +126,10 @@ APK debug pueda verificarse.
 ### iOS
 
 1. Confirmar el Bundle ID `app.progrezzia.mobile` en Apple Developer.
-2. Obtener el Team ID.
-3. Publicar `/.well-known/apple-app-site-association` con `TEAM_ID.app.progrezzia.mobile`.
-4. Habilitar Associated Domains en la firma y probar invitación, recuperación y arranque en frío.
+2. Obtener el prefijo de `application-identifier` del perfil de firma de esa app. Suele ser el Team ID.
+3. Configurar ese prefijo real en `IOS_APP_LINK_APP_ID_PREFIX` en Vercel para Production y volver a publicar la web.
+4. Confirmar que `/.well-known/apple-app-site-association` devuelve el JSON con `<prefijo>.app.progrezzia.mobile` y sin redirecciones. Si falta el prefijo o el formato es inválido, la ruta devuelve 404.
+5. Habilitar Associated Domains en la firma y probar invitación, recuperación y arranque en frío en iPhone.
 
 No se deben configurar valores ficticios: una huella incorrecta deja los
 enlaces de la versión publicada sin verificar.

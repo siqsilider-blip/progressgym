@@ -1,6 +1,6 @@
 # Progrezzia — preparación para App Store
 
-Actualizado: 20 de septiembre de 2026.
+Actualizado: 26 de noviembre de 2026.
 
 ## Ficha propuesta
 
@@ -30,13 +30,14 @@ La declaración final en App Store Connect debe coincidir con la versión enviad
 - Datos de contacto: nombre, correo electrónico y teléfono opcional.
 - Identificadores: identificador interno de usuario.
 - Salud y fitness: rutinas, ejercicios, series, peso, repeticiones, RPE e historial de entrenamiento.
-- Contenido del usuario: notas del entrenador o de la sesión, cuando existan.
+- Contenido del usuario: mensajes y notas, ficha inicial y controles, fotos de progreso y videos de técnica.
 - No se venden datos.
 - No se usan datos para publicidad.
 - No se realiza seguimiento entre aplicaciones o sitios de terceros.
 - Proveedores actuales: Supabase (autenticación y base de datos) y Vercel (alojamiento y entrega).
 
 Antes de completar la ficha, revisar si se incorporó analítica, reporte de errores, notificaciones u otro SDK nuevo.
+El target de iOS incluye `PrivacyInfo.xcprivacy` para el uso de la API de fechas de archivos por Capacitor Filesystem. Revisar el informe de privacidad generado por Xcode y confirmar la ficha antes de enviar.
 
 ## Información para revisión
 
@@ -75,7 +76,7 @@ Preparar de 3 a 6 capturas reales, sin datos personales, para el tamaño princip
 - [ ] Configurar firma, equipo y perfiles desde una Mac con Xcode.
 - [x] Generar el ícono final de 1024 × 1024 sin transparencia desde `assets/app-store/app-icon-source.svg`.
 - [ ] Hacer una prueba en iPhone real, incluyendo red lenta, cámara/video, teclado y regreso desde segundo plano.
-- [ ] Crear el archivo de la app con el SDK de iOS vigente y subirlo con Xcode.
+- [ ] Crear el archivo con Xcode 26 o posterior y el SDK de iOS 26 o posterior, y probar la compilación que se enviará. [Requisitos de Apple](https://developer.apple.com/news/upcoming-requirements/?id=04282026a).
 
 ## Pendientes que requieren decisiones externas
 

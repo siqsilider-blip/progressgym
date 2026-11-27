@@ -22,8 +22,10 @@ export async function middleware(request: NextRequest) {
         pathname === '/account-deletion' ||
         pathname === '/api/health' ||
         pathname === '/api/android/assetlinks' ||
+        pathname === '/api/ios/apple-app-site-association' ||
         pathname === '/api/internal/account-deletions/process' ||
         pathname === '/.well-known/assetlinks.json' ||
+        pathname === '/.well-known/apple-app-site-association' ||
         pathname.startsWith('/auth')
 
     if (isPublicRoute) return supabaseResponse
