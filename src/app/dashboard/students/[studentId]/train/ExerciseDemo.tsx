@@ -1,18 +1,8 @@
 'use client'
 
 import * as React from 'react'
-import dynamic from 'next/dynamic'
 import { Dumbbell, ExternalLink, PlayCircle, X } from 'lucide-react'
 import { parseExerciseVideoUrl } from '@/lib/exerciseVideoUrl'
-
-const ExerciseMuscleSummary = dynamic(() => import('@/components/ExerciseMuscleSummary'), {
-    ssr: false,
-    loading: () => (
-        <p role="status" className="rounded-xl border border-border p-4 text-sm text-muted-foreground">
-            Cargando el mapa muscular…
-        </p>
-    ),
-})
 
 type Props = {
     exerciseName: string
@@ -20,6 +10,43 @@ type Props = {
     instructions?: string | null
     muscleGroup?: string | null
     category?: string | null
+}
+
+type MuscleSummaryProps = Pick<Props, 'exerciseName' | 'muscleGroup' | 'category'>
+
+function ExerciseMuscleSummary(props: MuscleSummaryProps) {
+    const [Summary, setSummary] = React.useState<React.ComponentType<MuscleSummaryProps> | null>(null)
+    const [attempt, setAttempt] = React.useState(0)
+    const [failed, setFailed] = React.useState(false)
+
+    React.useEffect(() => {
+        let mounted = true
+        void import('@/components/ExerciseMuscleSummary').then(
+            (module) => { if (mounted) setSummary(() => module.default) },
+            () => { if (mounted) setFailed(true) },
+        )
+        return () => { mounted = false }
+    }, [attempt])
+
+    if (Summary) return <Summary {...props} />
+
+    return (
+        <div className="rounded-xl border border-border p-4 text-sm text-muted-foreground">
+            <p role="status">{failed ? 'El mapa muscular no se pudo cargar.' : 'Cargando el mapa muscular…'}</p>
+            {failed && (
+                <button
+                    type="button"
+                    className="mt-2 min-h-10 rounded-lg px-2 font-semibold text-brand-soft focus-visible:outline-2 focus-visible:outline-ring"
+                    onClick={() => {
+                        setFailed(false)
+                        setAttempt((previous) => previous + 1)
+                    }}
+                >
+                    Reintentar mapa muscular
+                </button>
+            )}
+        </div>
+    )
 }
 
 type VideoSource =
