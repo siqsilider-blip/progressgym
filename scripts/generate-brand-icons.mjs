@@ -27,7 +27,7 @@ async function writePng(path, size, fill) {
 }
 
 async function writeAdaptiveForeground(path, size) {
-    await writeFile(new URL(path, import.meta.url), await renderMark(size, 0.56))
+    await writeFile(new URL(path, import.meta.url), await renderMark(size, 0.48))
 }
 
 async function writeSplash(path, width, height) {
@@ -43,7 +43,7 @@ await Promise.all([
     writeFile(new URL('../public/brand/progrezzia-logo.webp', import.meta.url), await sharp(logo).resize({ width: 570 }).webp({ quality: 92 }).toBuffer()),
     writePng('../public/icon-192.png', 192),
     writePng('../public/icon-512.png', 512),
-    writePng('../public/icon-maskable-512.png', 512, 0.65),
+    writePng('../public/icon-maskable-512.png', 512, 0.63),
     writePng('../public/apple-touch-icon.png', 180),
     writePng('../src/app/icon.png', 512),
     writePng('../src/app/apple-icon.png', 180),
@@ -78,7 +78,7 @@ await Promise.all([
 
 await Promise.all([
     writeFile(new URL('../public/badge-72.png', import.meta.url), await renderMark(72, 0.82, true)),
-    writeFile(new URL('../android/app/src/main/res/drawable-nodpi/ic_launcher_monochrome.png', import.meta.url), await renderMark(432, 0.56, true)),
+    writeFile(new URL('../android/app/src/main/res/drawable-nodpi/ic_launcher_monochrome.png', import.meta.url), await renderMark(432, 0.48, true)),
     writeFile(new URL('../android/app/src/main/res/drawable-nodpi/ic_stat_progrezzia.png', import.meta.url), await renderMark(96, 0.9, true)),
     writeFile(new URL('../native-shell/brand-mark.webp', import.meta.url), await sharp(emblem).resize({ height: 112 }).webp().toBuffer()),
 ])
