@@ -46,7 +46,7 @@ export default async function AppHomePage() {
     const { profile } = context
     const studentId = profile.student_id
     if (!studentId) {
-        redirect('/login/student?message=Tu acceso todavía no está vinculado a una ficha. Pedile una nueva invitación a tu entrenador.')
+        redirect('/login?message=Tu acceso todavía no está vinculado a una ficha. Pedile una nueva invitación a tu entrenador.')
     }
 
     const today = getBuenosAiresDateString()

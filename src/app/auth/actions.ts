@@ -21,6 +21,10 @@ const supabaseAdmin = createSupabaseClient(
     }
 )
 
+function redirectToLogin(message: string): never {
+    redirect('/login?' + new URLSearchParams({ message }))
+}
+
 async function stopPendingDeletionLogin(
     supabase: Awaited<ReturnType<typeof createClient>>,
     userId: string
@@ -97,7 +101,7 @@ export async function signup(formData: FormData) {
     }
 
     if (!data.session) {
-        redirect('/login/trainer?message=Revisá tu correo para confirmar la cuenta y después iniciá sesión.')
+        redirectToLogin('Revisá tu correo para confirmar la cuenta y después iniciá sesión.')
     }
 
     redirect('/dashboard')
@@ -111,114 +115,49 @@ export async function signupStudent() {
     redirect('/signup/student?message=Tu entrenador debe enviarte una invitación para crear tu acceso.')
 }
 
-// ─── Login entrenador ───
-export async function loginTrainer(formData: FormData) {
+// ─── Acceso a Progrezzia ───
+export async function login(formData: FormData) {
+    const submittedEmail = formData.get('email')
+    const password = formData.get('password')
+    const email = typeof submittedEmail === 'string' ? submittedEmail.trim().toLowerCase() : ''
+
+    if (!email || typeof password !== 'string' || !password) {
+        redirectToLogin('Ingresá tu email y contraseña.')
+    }
+
     const supabase = await createClient()
-
-    const email = formData.get('email') as string
-    const password = formData.get('password') as string
-
     const { error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
-        redirect('/login/trainer?message=Email o contraseña incorrectos')
+        redirectToLogin('Email o contraseña incorrectos.')
     }
 
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     if (userError || !user) {
         await supabase.auth.signOut()
-        redirect('/login/trainer?message=No se pudo verificar tu sesión. Intentá de nuevo.')
+        redirectToLogin('No se pudo verificar tu sesión. Intentá de nuevo.')
     }
 
     await stopPendingDeletionLogin(supabase, user.id)
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .maybeSingle()
-
-    if (profile?.role === 'student') {
-        await supabase.auth.signOut()
-        redirect('/login/trainer?message=Esta cuenta es de alumno. Usá el login de alumno.')
-    }
-
-    redirect('/dashboard')
-}
-
-// ─── Login alumno ───
-export async function loginStudent(formData: FormData) {
-    const supabase = await createClient()
-
-    const email = formData.get('email') as string
-    const password = formData.get('password') as string
-
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-
-    if (error) {
-        redirect('/login/student?message=Email o contraseña incorrectos')
-    }
-
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError || !user) {
-        await supabase.auth.signOut()
-        redirect('/login/student?message=No se pudo verificar tu sesión. Intentá de nuevo.')
-    }
-
-    await stopPendingDeletionLogin(supabase, user.id)
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('role, student_id')
         .eq('id', user.id)
         .maybeSingle()
 
-    if (profile?.role !== 'student') {
+    if (profileError || (profile?.role !== 'trainer' && profile?.role !== 'student')) {
         await supabase.auth.signOut()
-        redirect('/login/student?message=Esta cuenta es de entrenador. Usá el login de entrenador.')
+        redirectToLogin('No pudimos verificar tu cuenta. Intentá de nuevo.')
     }
+
+    if (profile.role === 'trainer') redirect('/dashboard')
 
     if (!profile.student_id) {
         await supabase.auth.signOut()
-        redirect('/login/student?message=Tu acceso todavía no está vinculado a una ficha. Pedile una nueva invitación a tu entrenador.')
+        redirectToLogin('Tu acceso todavía no está vinculado a una ficha. Pedile una nueva invitación a tu entrenador.')
     }
 
     redirect('/app')
-}
-
-// ─── Login genérico (legacy, mantiene compatibilidad) ───
-export async function login(formData: FormData) {
-    const supabase = await createClient()
-
-    const email = formData.get('email') as string
-    const password = formData.get('password') as string
-
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-
-    if (error) {
-        redirect('/login?message=Email o contraseña incorrectos')
-    }
-
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError || !user) {
-        await supabase.auth.signOut()
-        redirect('/login?message=No se pudo verificar tu sesión. Intentá de nuevo.')
-    }
-
-    await stopPendingDeletionLogin(supabase, user.id)
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('role, student_id')
-        .eq('id', user.id)
-        .maybeSingle()
-
-    if (profile?.role === 'student') {
-        if (!profile.student_id) {
-            await supabase.auth.signOut()
-            redirect('/login/student?message=Tu acceso todavía no está vinculado a una ficha. Pedile una nueva invitación a tu entrenador.')
-        }
-        redirect('/app')
-    }
-
-    redirect('/dashboard')
 }
 
 // ─── Logout ───

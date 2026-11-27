@@ -14,7 +14,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     if (profile?.role === 'trainer') redirect('/dashboard')
     if (profile?.role !== 'student') redirect('/login')
     if (!profile.student_id) {
-        redirect('/login/student?message=Tu acceso todavía no está vinculado a una ficha. Pedile una nueva invitación a tu entrenador.')
+        redirect('/login?message=Tu acceso todavía no está vinculado a una ficha. Pedile una nueva invitación a tu entrenador.')
     }
 
     const supabase = await createClient()

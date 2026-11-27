@@ -27,19 +27,16 @@ const admin = createSupabaseClient(
 async function logIn(
     page: import('@playwright/test').Page,
     role: 'trainer' | 'student',
-    email: string,
-    expectSuccess = true
+    email: string
 ) {
-    await page.goto(`/login/${role}`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
+    await page.goto('/login', { waitUntil: 'domcontentloaded', timeout: 60_000 })
     await expect(page.getByLabel('Email')).toBeVisible({ timeout: 30_000 })
     await page.getByLabel('Email').fill(email)
     await page.getByLabel('Contraseña').fill(password)
-    await page.getByRole('button', { name: 'Iniciar sesión' }).click()
+    await page.getByRole('button', { name: 'Entrar', exact: true }).click()
 
-    if (expectSuccess) {
-        const destination = role === 'trainer' ? /\/dashboard(?:\?|$)/ : /\/app(?:\?|$)/
-        await expect(page).toHaveURL(destination, { timeout: 30_000 })
-    }
+    const destination = role === 'trainer' ? /\/dashboard(?:\?|$)/ : /\/app(?:\?|$)/
+    await expect(page).toHaveURL(destination, { timeout: 30_000 })
 }
 
 async function recoverStudentPage(
@@ -402,10 +399,13 @@ test('el alumno entra a su portal y no al panel del entrenador', async ({ page }
     await expect(page.getByText('Molestia post entrenamiento E2E', { exact: false })).toHaveCount(0)
 })
 
-test('cada tipo de cuenta es rechazado por el acceso equivocado', async ({ page }) => {
-    await logIn(page, 'student', trainerEmail, false)
-    await expect(page).toHaveURL(/\/login\/student\?message=/)
-    await expect(page.getByText(/esta cuenta es de entrenador/i)).toBeVisible()
+test('el acceso muestra un aviso si las credenciales son incorrectas', async ({ page }) => {
+    await page.goto('/login')
+    await page.getByLabel('Email', { exact: true }).fill(studentEmail)
+    await page.getByLabel('Contraseña', { exact: true }).fill('una-contraseña-incorrecta')
+    await page.getByRole('button', { name: 'Entrar', exact: true }).click()
+    await expect(page.getByRole('status')).toHaveText('Email o contraseña incorrectos.')
+    await expect(page).toHaveURL(/\/login\?message=/)
 })
 
 test('el alumno completa su ficha inicial y el entrenador la recibe', async ({ page }, testInfo) => {

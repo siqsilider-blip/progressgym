@@ -15,29 +15,48 @@ test('la portada carga y permite comenzar', async ({ page }) => {
     expect(hasHorizontalOverflow).toBe(false)
 })
 
-test('el acceso separa correctamente entrenador y alumno', async ({ page }) => {
+test('el acceso ofrece un solo formulario para ambos roles', async ({ page }) => {
     await page.goto('/login')
 
     await expect(page.getByRole('heading', { name: 'Progrezzia' })).toBeVisible()
-    await expect(page.getByRole('link', { name: /soy entrenador/i })).toHaveAttribute(
-        'href',
-        '/login/trainer'
-    )
-    await expect(page.getByRole('link', { name: /soy alumno/i })).toHaveAttribute(
-        'href',
-        '/login/student'
-    )
+    await expect(page.getByLabel('Email', { exact: true })).toBeVisible()
+    await expect(page.getByLabel('Contraseña', { exact: true })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Entrar', exact: true })).toBeVisible()
+    await expect(page.getByRole('link', { name: /soy entrenador|soy alumno/i })).toHaveCount(0)
+    await expect(page.getByRole('link', { name: 'Crear cuenta de entrenador' })).toHaveAttribute('href', '/signup/trainer')
+})
+
+test('los accesos anteriores conservan el mensaje y abren el mismo formulario', async ({ page }) => {
+    const message = 'Revisá tu correo para confirmar la cuenta.'
+    for (const path of ['/login/student', '/login/trainer']) {
+        await page.goto(path + '?' + new URLSearchParams({ message }))
+        await expect(page).toHaveURL(/\/login\?message=/)
+        await expect(page.getByRole('status')).toHaveText(message)
+        await expect(page.getByRole('button', { name: 'Entrar', exact: true })).toBeVisible()
+    }
+})
+
+test('la invitación y la recuperación mantienen sus propios pasos', async ({ page }) => {
+    await page.goto('/auth/invitation?token_hash=preview-only&type=signup')
+    await expect(page.getByRole('heading', { name: 'Activá tu acceso' })).toBeVisible()
+    await expect(page.getByRole('button', { name: /continuar y crear contraseña/i })).toBeVisible()
+
+    await page.goto('/login')
+    await page.getByRole('link', { name: '¿Olvidaste tu contraseña?' }).click()
+    await expect(page).toHaveURL(/\/forgot-password$/)
+    await expect(page.getByLabel('Email', { exact: true })).toBeVisible()
+    await expect(page.getByRole('link', { name: /volver al login/i })).toHaveAttribute('href', '/login')
 })
 
 test('los alumnos crean su acceso únicamente desde una invitación', async ({ page }) => {
     await page.goto('/signup/student')
 
-    await expect(page).toHaveURL(/\/login\/student\?message=/)
+    await expect(page).toHaveURL(/\/login\?message=/)
     await expect(page.getByText(/tu entrenador debe enviarte una invitación/i)).toBeVisible()
 })
 
 test('las áreas privadas no se muestran sin sesión', async ({ page }) => {
-    for (const privatePath of ['/dashboard', '/dashboard/routines', '/app/train']) {
+    for (const privatePath of ['/native', '/dashboard', '/dashboard/routines', '/app/train']) {
         await page.goto(privatePath)
         await expect(page).toHaveURL(/\/login(?:\?|$)/)
     }

@@ -89,7 +89,7 @@ export default async function ForgotPasswordPage(
 
                 <div className="space-y-2 text-center">
                     <p>
-                        <a href="/login/trainer" className="text-xs font-bold text-brand-on-dark hover:text-white transition-colors">
+                        <a href="/login" className="text-xs font-bold text-brand-on-dark hover:text-white transition-colors">
                             ← Volver al login
                         </a>
                     </p>

@@ -123,7 +123,7 @@ export default async function SignupTrainerPage(
                 <div className="text-center">
                     <p className="text-xs" style={{ color: 'rgba(255,255,255,0.2)' }}>
                         ¿Ya tenés cuenta?{' '}
-                        <a href="/login/trainer" className="font-bold text-brand-on-dark hover:text-white transition-colors">Iniciar sesión</a>
+                        <a href="/login" className="font-bold text-brand-on-dark hover:text-white transition-colors">Iniciar sesión</a>
                     </p>
                 </div>
             </div>

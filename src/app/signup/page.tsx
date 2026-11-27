@@ -58,7 +58,7 @@ export default function SignupPage() {
 
                 {/* Card Alumno */}
                 <div className="mb-7">
-                    <Link href="/login/student?message=Tu entrenador debe enviarte una invitación para crear tu acceso." className="group block w-full rounded-2xl border p-4 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                    <Link href="/login?message=Tu entrenador debe enviarte una invitación para crear tu acceso." className="group block w-full rounded-2xl border p-4 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
                         style={{ background: 'linear-gradient(135deg, rgba(201,135,150,0.1), rgba(233,160,173,0.05))', borderColor: 'rgba(201,135,150,0.2)', boxShadow: '0 4px 24px rgba(201,135,150,0.06)' }}>
                         <div className="flex items-center gap-3.5">
                             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-2xl"
