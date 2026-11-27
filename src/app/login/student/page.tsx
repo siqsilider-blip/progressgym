@@ -1,3 +1,4 @@
+import { ProgrezziaMark } from '@/components/ProgrezziaBrand'
 import { loginStudent } from '@/app/auth/actions'
 
 export default async function StudentLoginPage(
@@ -28,16 +29,7 @@ export default async function StudentLoginPage(
 
                 {/* Logo */}
                 <div className="flex flex-col items-center gap-3 mb-8">
-                    <div className="relative">
-                        <div className="absolute inset-0 rounded-2xl blur-xl opacity-60"
-                            style={{ background: 'linear-gradient(135deg, #c98796, #e9a0ad)' }} />
-                        <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl"
-                            style={{ background: 'linear-gradient(135deg, #c98796, #e9a0ad)', boxShadow: '0 0 40px rgba(201,135,150,0.45)' }}>
-                            <svg className="h-7 w-7 text-[#111111]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                            </svg>
-                        </div>
-                    </div>
+                    <ProgrezziaMark size={56} />
                     <div className="text-center">
                         <h1 className="text-2xl font-black tracking-tight">Progrezzia</h1>
                         <p className="mt-1 text-xs font-medium" style={{ color: 'rgba(255,255,255,0.35)' }}>

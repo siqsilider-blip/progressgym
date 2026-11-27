@@ -1,5 +1,6 @@
 'use client'
 
+import { ProgrezziaMark } from '@/components/ProgrezziaBrand'
 import Link from 'next/link'
 
 export default function LandingPage() {
@@ -48,11 +49,7 @@ export default function LandingPage() {
       {/* ── Navbar ── */}
       <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-5 py-4 border-b border-white/[0.05] bg-[#111111]/90 backdrop-blur-xl">
         <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #c98796, #e9a0ad)', boxShadow: '0 0 20px rgba(201,135,150,0.5)' }}>
-            <svg className="h-4 w-4 text-[#111111]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-            </svg>
-          </div>
+          <ProgrezziaMark size={32} />
           <span className="text-sm font-black tracking-tight">Progrezzia</span>
         </div>
         <div className="flex items-center gap-2">
@@ -331,11 +328,7 @@ export default function LandingPage() {
       {/* ── Footer ── */}
       <footer className="px-5 pb-8 text-center border-t" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
         <div className="flex items-center justify-center gap-2 py-5">
-          <div className="h-6 w-6 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #c98796, #e9a0ad)' }}>
-            <svg className="h-3 w-3 text-[#111111]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-            </svg>
-          </div>
+          <ProgrezziaMark size={24} />
           <span className="text-xs font-black" style={{ color: 'rgba(255,255,255,0.25)' }}>Progrezzia</span>
         </div>
         <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.12)' }}>© 2026 Progrezzia · Hecho para entrenadores</p>

@@ -1,65 +1,49 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import sharp from 'sharp'
 
-const source = await readFile(new URL('../assets/app-store/app-icon-source.svg', import.meta.url))
+const background = '#111111'
+const transparent = { r: 0, g: 0, b: 0, alpha: 0 }
+const emblem = await readFile(new URL('../assets/app-store/progrezzia-emblem.webp', import.meta.url))
+const logo = await readFile(new URL('../assets/app-store/progrezzia-logo.webp', import.meta.url))
 
-const arrowSource = Buffer.from(`
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
-  <path d="M266 680 442 504l118 118 212-212" fill="none" stroke="#C98796" stroke-width="82" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M594 368h220v220" fill="none" stroke="#C98796" stroke-width="82" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>`)
-
-async function renderIcon(size) {
-    return sharp(source)
-        .resize(size, size)
-        .flatten({ background: '#111111' })
-        .removeAlpha()
-        .png()
-        .toBuffer()
+async function renderMark(size, fill, monochrome = false) {
+    const markSize = Math.round(size * fill)
+    let mark = await sharp(emblem).resize(markSize, markSize, { fit: 'contain', background: transparent }).png().toBuffer()
+    if (monochrome) {
+        const alpha = await sharp(mark).extractChannel('alpha').raw().toBuffer()
+        mark = await sharp({ create: { width: markSize, height: markSize, channels: 3, background: '#ffffff' } })
+            .joinChannel(alpha, { raw: { width: markSize, height: markSize, channels: 1 } }).png().toBuffer()
+    }
+    return sharp({ create: { width: size, height: size, channels: 4, background: transparent } })
+        .composite([{ input: mark, gravity: 'centre' }]).png().toBuffer()
 }
 
-async function writePng(path, size) {
-    await writeFile(new URL(path, import.meta.url), await renderIcon(size))
+async function renderIcon(size, fill = 0.72) {
+    return sharp(await renderMark(size, fill)).flatten({ background }).removeAlpha().png().toBuffer()
+}
+
+async function writePng(path, size, fill) {
+    await writeFile(new URL(path, import.meta.url), await renderIcon(size, fill))
 }
 
 async function writeAdaptiveForeground(path, size) {
-    await writeFile(
-        new URL(path, import.meta.url),
-        await sharp(arrowSource).resize(size, size).png().toBuffer()
-    )
+    await writeFile(new URL(path, import.meta.url), await renderMark(size, 0.56))
 }
 
 async function writeSplash(path, width, height) {
-    const shortestSide = Math.min(width, height)
-    const markSize = Math.round(shortestSide * 0.27)
-    const markX = Math.round((width - markSize) / 2)
-    const markY = Math.round((height - markSize) / 2 - shortestSide * 0.05)
-    const titleY = Math.round(markY + markSize + shortestSide * 0.09)
-    const titleSize = Math.max(18, Math.round(shortestSide * 0.055))
-    const splashSource = Buffer.from(`
-      <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
-        <defs>
-          <radialGradient id="glow" cx="50%" cy="46%" r="42%">
-            <stop offset="0" stop-color="#C98796" stop-opacity=".16"/>
-            <stop offset="1" stop-color="#C98796" stop-opacity="0"/>
-          </radialGradient>
-        </defs>
-        <rect width="${width}" height="${height}" fill="#111111"/>
-        <rect width="${width}" height="${height}" fill="url(#glow)"/>
-        <g transform="translate(${markX} ${markY}) scale(${markSize / 1024})">
-          <path d="M266 680 442 504l118 118 212-212" fill="none" stroke="#C98796" stroke-width="82" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M594 368h220v220" fill="none" stroke="#C98796" stroke-width="82" stroke-linecap="round" stroke-linejoin="round"/>
-        </g>
-        <text x="50%" y="${titleY}" text-anchor="middle" fill="#F5F2EE" font-family="Arial, sans-serif" font-size="${titleSize}" font-weight="800" letter-spacing="${Math.max(1, Math.round(shortestSide * 0.006))}">PROGREZZIA</text>
-      </svg>`)
-
-    await writeFile(new URL(path, import.meta.url), await sharp(splashSource).png().toBuffer())
+    const logoWidth = Math.round(Math.min(width, height) * 0.34)
+    const lockup = await sharp(logo).resize({ width: logoWidth }).png().toBuffer()
+    const splash = await sharp({ create: { width, height, channels: 3, background } })
+        .composite([{ input: lockup, gravity: 'centre' }]).removeAlpha().png().toBuffer()
+    await writeFile(new URL(path, import.meta.url), splash)
 }
 
 await Promise.all([
+    writeFile(new URL('../public/brand/progrezzia-emblem.webp', import.meta.url), await sharp(emblem).resize({ height: 160 }).webp({ quality: 92 }).toBuffer()),
+    writeFile(new URL('../public/brand/progrezzia-logo.webp', import.meta.url), await sharp(logo).resize({ width: 570 }).webp({ quality: 92 }).toBuffer()),
     writePng('../public/icon-192.png', 192),
     writePng('../public/icon-512.png', 512),
-    writePng('../public/icon-maskable-512.png', 512),
+    writePng('../public/icon-maskable-512.png', 512, 0.65),
     writePng('../public/apple-touch-icon.png', 180),
     writePng('../src/app/icon.png', 512),
     writePng('../src/app/apple-icon.png', 180),
@@ -92,19 +76,15 @@ await Promise.all([
     writeSplash('../android/app/src/main/res/drawable-land-xxxhdpi/splash.png', 1920, 1280),
 ])
 
-const badgeSource = Buffer.from(`
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
-  <path d="M266 680 442 504l118 118 212-212" fill="none" stroke="#fff" stroke-width="96" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M594 368h220v220" fill="none" stroke="#fff" stroke-width="96" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>`)
-
-await writeFile(
-    new URL('../public/badge-72.png', import.meta.url),
-    await sharp(badgeSource).resize(72, 72).png().toBuffer()
-)
+await Promise.all([
+    writeFile(new URL('../public/badge-72.png', import.meta.url), await renderMark(72, 0.82, true)),
+    writeFile(new URL('../android/app/src/main/res/drawable-nodpi/ic_launcher_monochrome.png', import.meta.url), await renderMark(432, 0.56, true)),
+    writeFile(new URL('../android/app/src/main/res/drawable-nodpi/ic_stat_progrezzia.png', import.meta.url), await renderMark(96, 0.9, true)),
+    writeFile(new URL('../native-shell/brand-mark.webp', import.meta.url), await sharp(emblem).resize({ height: 112 }).webp().toBuffer()),
+])
 
 const faviconSizes = [16, 32, 48, 64]
-const faviconImages = await Promise.all(faviconSizes.map(renderIcon))
+const faviconImages = await Promise.all(faviconSizes.map((size) => renderIcon(size)))
 const directorySize = 6 + faviconImages.length * 16
 const directory = Buffer.alloc(directorySize)
 directory.writeUInt16LE(0, 0)

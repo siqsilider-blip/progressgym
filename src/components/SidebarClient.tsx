@@ -1,5 +1,6 @@
 'use client'
 
+import { ProgrezziaMark } from '@/components/ProgrezziaBrand'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
@@ -130,14 +131,7 @@ export default function SidebarClient({
                 <div className={notebook ? 'px-4 pb-4 pt-6' : 'border-b border-sidebar-border px-6 py-6'}>
                     <Link href="/dashboard" prefetch className="block">
                         <div className="flex items-center gap-2.5">
-                            <div
-                                className={`flex shrink-0 items-center justify-center rounded-lg ${notebook ? 'size-8 bg-primary text-primary-foreground' : 'size-7 text-[#111111]'}`}
-                                style={notebook ? undefined : { background: 'linear-gradient(135deg, #c98796, #e9a0ad)', boxShadow: '0 0 16px rgba(201,135,150,0.4)' }}
-                            >
-                                <svg aria-hidden="true" className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                                </svg>
-                            </div>
+                            <ProgrezziaMark size={32} />
                             <div>
                                 <p className="text-sm font-black tracking-tight text-sidebar-foreground">Progrezzia</p>
                                 <p className={`text-muted-foreground ${notebook ? 'whitespace-nowrap text-[11px] leading-tight' : 'text-[10px]'}`}>Panel del entrenador</p>
@@ -221,14 +215,7 @@ export default function SidebarClient({
             {/* ── Header mobile ── */}
             <div className="fixed inset-x-0 top-0 z-40 flex h-14 items-center justify-between border-b border-sidebar-border bg-sidebar/95 px-4 backdrop-blur lg:hidden">
                 <Link href="/dashboard" prefetch className="flex items-center gap-2">
-                    <div
-                        className="flex h-6 w-6 items-center justify-center rounded-lg"
-                        style={{ background: 'linear-gradient(135deg, #c98796, #e9a0ad)' }}
-                    >
-                        <svg className="h-3 w-3 text-[#111111]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                        </svg>
-                    </div>
+                    <ProgrezziaMark size={24} />
                     <span className="text-sm font-black text-sidebar-foreground">Progrezzia</span>
                 </Link>
 

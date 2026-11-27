@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v3-brand'
+const CACHE_VERSION = 'v4-brand'
 const STATIC_CACHE = `progrezzia-static-${CACHE_VERSION}`
 const OFFLINE_URL = '/offline.html'
 

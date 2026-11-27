@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { ProgrezziaMark } from '@/components/ProgrezziaBrand'
 
 export default function SignupPage() {
     return (
@@ -24,14 +25,7 @@ export default function SignupPage() {
 
                 {/* Logo */}
                 <div className="flex flex-col items-center gap-3 mb-8">
-                    <div className="relative">
-                        <div className="absolute inset-0 rounded-2xl blur-xl opacity-60"
-                            style={{ background: 'linear-gradient(135deg, #c98796, #e9a0ad)' }} />
-                        <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl text-2xl"
-                            style={{ background: 'linear-gradient(135deg, #c98796, #e9a0ad)', boxShadow: '0 0 40px rgba(201,135,150,0.5)' }}>
-                            📈
-                        </div>
-                    </div>
+                    <ProgrezziaMark size={56} />
                     <div className="text-center">
                         <h1 className="text-2xl font-black tracking-tight">Crear cuenta</h1>
                         <p className="mt-1 text-xs font-medium" style={{ color: 'rgba(255,255,255,0.35)' }}>
